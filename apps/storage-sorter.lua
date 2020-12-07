@@ -13,11 +13,16 @@ end
 function dropIntoOutputChest(topOrBottom)
     for slot = 1, 16 do
         turtle.select(slot)
+        local dropFn
 
         if (topOrBottom == "bottom") then
-            turtle.dropUp()
+            dropFn = turtle.dropUp
         else
-            turtle.dropDown()
+            dropFn = turtle.dropDown
+        end
+
+        while not dropFn() do
+            os.sleep(7)
         end
     end
 end
