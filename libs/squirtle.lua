@@ -35,12 +35,16 @@ function squirtle.getMissingFuel()
 end
 
 function squirtle.refuelUsingLocalLava()
+    local emptyBucketSlot = nil
+
     while squirtle.getMissingFuel() > 1000 do
         local lavaBucketSlot = squirtle.findSlotOfItem("minecraft:lava_bucket")
 
         if lavaBucketSlot then
             turtle.select(lavaBucketSlot)
             turtle.refuel()
+            emptyBucketSlot = emptyBucketSlot or lavaBucketSlot
+            turtle.transferTo(emptyBucketSlot)
         else
             return
         end
@@ -50,7 +54,7 @@ end
 function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     local monitor = squirtle.wrapDefaultMonitor()
     if not monitor then return end
-    
+
     local text = string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
     local w, h = monitor.getSize()
     local y = math.ceil(h / 2)
