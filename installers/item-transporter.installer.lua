@@ -1,8 +1,8 @@
 -- wget https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/installers/item-transporter.installer.lua install
-
 local files = {
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/apps/item-transporter.lua", path = "/apps/item-transporter.lua"},
-    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/item-transporter.autocomplete.lua", path = "/startup/item-transporter.autocomplete.lua"}
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/item-transporter.autocomplete.lua", path = "/startup/item-transporter.autocomplete.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/squirtle.lua", path = "/libs/squirtle.lua"}
 }
 
 for i = 1, #files do
