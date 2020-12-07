@@ -49,6 +49,8 @@ end
 
 function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     local monitor = squirtle.wrapDefaultMonitor()
+    if not monitor then return end
+    
     local text = string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
     local w, h = monitor.getSize()
     local y = math.ceil(h / 2)
