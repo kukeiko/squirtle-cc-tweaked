@@ -1,3 +1,7 @@
+package.path = package.path .. ";/libs/?.lua"
+
+local squirtle = require "squirtle"
+
 function suckFromInputChest(topOrBottom)
     if (topOrBottom == "bottom") then
         while (turtle.suckDown()) do end
@@ -59,50 +63,6 @@ function distributeItems()
     turtle.turnLeft()
 end
 
-function suckFromSide(side)
-    if side == "top" then
-        return turtle.suckUp()
-    elseif side == "bottom" then
-        return turtle.suckDown()
-    else
-        return turtle.suck()
-    end
-end
-
-function printFuelLevelToMonitor(criticalFuelLevelPc)
-    local monitor = peripheral.wrap("back")
-    if not monitor then return end
-
-    local text = string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
-    local w, h = monitor.getSize()
-    local y = math.ceil(h / 2)
-    local x = math.ceil((w - #text) / 2);
-    monitor.clear()
-    monitor.setCursorPos(x, y)
-    monitor.write(text)
-
-    local lavaBucketsToFull = math.floor((turtle.getFuelLimit() - turtle.getFuelLevel()) / 1000);
-    text = string.format("%d more buckets", lavaBucketsToFull)
-    x = math.ceil((w - #text) / 2);
-    monitor.setCursorPos(x, 5)
-    monitor.write(text)
-
-    if getFuelLevelPercent() < criticalFuelLevelPc then
-        text = "*Critical*"
-        x = math.ceil((w - #text) / 2);
-        monitor.setCursorPos(x, 1)
-        monitor.write(text)
-        text = "Turtle needs Lava"
-        x = math.ceil((w - #text) / 2);
-        monitor.setCursorPos(x, 2)
-        monitor.write(text)
-    end
-end
-
-function getFuelLevelPercent()
-    return turtle.getFuelLevel() / turtle.getFuelLimit() * 100
-end
-
 function findSlotOfItem(name)
     for slot = 1, 16 do
         local item = turtle.getItemDetail(slot)
@@ -111,49 +71,37 @@ function findSlotOfItem(name)
     end
 end
 
-function refuelFromLava()
-    while turtle.getFuelLimit() - turtle.getFuelLevel() > 1000 do
-        local lavaBucketSlot = findSlotOfItem("minecraft:lava_bucket")
-
-        if lavaBucketSlot then
-            turtle.select(lavaBucketSlot)
-            turtle.refuel()
-        else
-            return
-        end
-    end
-end
-
 function main(args)
-    local minFuelPercent = 10
+    print("[storage-sorter @ 1.0.1]")
+    local minFuelPercent = 50
     local inputSide = args[1] or "top";
-    print(inputSide)
+    print("[status] input taken from " .. inputSide)
 
     while (true) do
-        printFuelLevelToMonitor(minFuelPercent)
-        refuelFromLava()
+        squirtle.printFuelLevelToMonitor(minFuelPercent)
+        squirtle.refuelUsingLocalLava()
 
-        while getFuelLevelPercent() <= minFuelPercent do
-            print("fuel critical - put lava buckets into turtle inventory, then hit ENTER")
+        while squirtle.getFuelLevelPercent() <= minFuelPercent do
+            print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
 
             while true do
                 local _, key = os.pullEvent("key")
                 if (key == keys.enter) then break end
             end
 
-            refuelFromLava()
-            printFuelLevelToMonitor(minFuelPercent)
+            squirtle.refuelUsingLocalLava()
+            squirtle.printFuelLevelToMonitor(minFuelPercent)
         end
 
-        printFuelLevelToMonitor(minFuelPercent)
-        print("fuel level OK")
-        print("waiting for items in input chest...")
-        while not suckFromSide(inputSide) do os.sleep(3) end
-        print("found items, waiting 3s for more...")
+        squirtle.printFuelLevelToMonitor(minFuelPercent)
+        print("[status] fuel level ok")
+        print("[waiting] checking input chest...")
+        while not squirtle.suck(inputSide) do os.sleep(3) end
+        print("[waiting] found items, waiting 3s for more...")
         os.sleep(3)
-        print("sorting items into storage")
         suckFromInputChest(inputSide)
-        refuelFromLava()
+        squirtle.refuelUsingLocalLava()
+        print("[task] sorting items into storage")
         distributeItems()
         dropIntoOutputChest(inputSide)
     end

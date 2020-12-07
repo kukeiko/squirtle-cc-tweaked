@@ -1,6 +1,8 @@
+-- wget https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/installers/storage-sorter.installer.lua install
 local files = {
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/apps/storage-sorter.lua", path = "/apps/storage-sorter.lua"},
-    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/storage-sorter.autocomplete.lua", path = "/startup/item-transfer.autocomplete.lua"}
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/storage-sorter.autocomplete.lua", path = "/startup/item-transfer.autocomplete.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/squirtle.lua", path = "/libs/squirtle.lua"}
 }
 
 for i = 1, #files do
