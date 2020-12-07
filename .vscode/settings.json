@@ -3,7 +3,10 @@
         "turtle",
         "peripheral",
         "shell",
-        "keys"
+        "keys",
+        "http",
+        "fs",
+        "module"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"

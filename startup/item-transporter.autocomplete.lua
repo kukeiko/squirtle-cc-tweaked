@@ -1,0 +1,1 @@
+shell.setAlias("item-transporter", "apps/item-transporter.lua")
