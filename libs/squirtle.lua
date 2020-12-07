@@ -14,6 +14,43 @@ function squirtle.suck(side, count)
     end
 end
 
+function squirtle.turn(side, times)
+    local turnFn
+    times = times or 1
+
+    if side == "left" then
+        turnFn = turtle.turnLeft
+    elseif side == "right" then
+        turnFn = turtle.turnRight
+    else
+        error("side " .. side .. " is not a valid side to turn to")
+    end
+
+    for _ = 1, times do turnFn() end
+end
+
+function squirtle.turnInverse(side, times)
+    return squirtle.turn(squirtle.invertSide(side), times)
+end
+
+function squirtle.invertSide(side)
+    if side == "left" then
+        return "right"
+    elseif side == "right" then
+        return "left"
+    elseif side == "top" then
+        return "bottom"
+    elseif side == "bottom" then
+        return "top"
+    elseif side == "front" then
+        return "back"
+    elseif side == "back" then
+        return "front"
+    else
+        error(side .. " is not a valid side")
+    end
+end
+
 function squirtle.wrapDefaultMonitor()
     local sides = {"back", "front", "left", "right", "top", "bottom"}
 
