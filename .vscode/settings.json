@@ -1,0 +1,12 @@
+{
+    "Lua.diagnostics.globals": [
+        "turtle",
+        "peripheral",
+        "shell",
+        "keys"
+    ],
+    "Lua.diagnostics.disable": [
+        "lowercase-global"
+    ],
+    "vscode-lua-format.configPath": "vscode-lua-format.config"
+}
