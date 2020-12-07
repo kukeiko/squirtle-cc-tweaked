@@ -8,7 +8,8 @@ local files = {
 for i = 1, #files do
     local url = files[i].url
     local path = files[i].path
-    local response = http.get(url, nil, true)
+    local cachePreventionHack = string.format("%s?v=%d", url, os.time())
+    local response = http.get(cachePreventionHack, nil, true)
     local content = response.readAll()
     response.close()
 
