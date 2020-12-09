@@ -56,14 +56,14 @@ function navigateTunnel()
 end
 
 function main()
-    print("[item-transporter @ 1.3.0]")
+    print("[item-transporter @ 1.3.1]")
     local minFuelPercent = 10
 
     while (true) do
         squirtle.printFuelLevelToMonitor(minFuelPercent)
         squirtle.refuelUsingLocalLava()
 
-        while squirtle.getFuelLevelPercent() <= minFuelPercent do
+        while squirtle.getFuelLevelPercent() < minFuelPercent do
             print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
 
             while true do

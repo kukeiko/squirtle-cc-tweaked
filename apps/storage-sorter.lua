@@ -110,7 +110,7 @@ function main(args)
         squirtle.printFuelLevelToMonitor(minFuelPercent)
         squirtle.refuelUsingLocalLava()
 
-        while squirtle.getFuelLevelPercent() <= minFuelPercent do
+        while squirtle.getFuelLevelPercent() < minFuelPercent do
             print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
 
             while true do
