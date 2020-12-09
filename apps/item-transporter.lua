@@ -23,6 +23,12 @@ function navigateTunnel()
         if turtle.forward() then
             strategy = "forward"
             forbidden = "back"
+        elseif forbidden ~= "up" and turtle.up() then
+            strategy = "up"
+            forbidden = "down"
+        elseif forbidden ~= "down" and turtle.down() then
+            strategy = "down"
+            forbidden = "up"
         elseif turtle.turnLeft() and turtle.forward() then
             strategy = "forward"
             forbidden = "back"
@@ -32,12 +38,6 @@ function navigateTunnel()
         elseif turtle.turnLeft() and turtle.forward() then
             strategy = "forward"
             forbidden = "back"
-        elseif forbidden ~= "up" and turtle.up() then
-            strategy = "up"
-            forbidden = "down"
-        elseif forbidden ~= "down" and turtle.down() then
-            strategy = "down"
-            forbidden = "up"
         else
             return true
         end
@@ -56,7 +56,7 @@ function navigateTunnel()
 end
 
 function main()
-    print("[item-transporter @ 1.1.0]")
+    print("[item-transporter @ 1.2.0]")
     local minFuelPercent = 32
 
     while (true) do
