@@ -35,6 +35,36 @@ function squirtle.turn(side, times)
     end
 end
 
+function squirtle.turnTo(side)
+    if (side == "left") then
+        return turtle.turnLeft()
+    elseif (side == "right") then
+        return turtle.turnRight()
+    elseif (side == "back") then
+        return squirtle.turn("left", 2)
+    end
+end
+
+function squirtle.suck(side, count)
+    if (side == "top") then
+        return turtle.suckUp(count)
+    elseif (side == "bottom") then
+        return turtle.suckDown(count)
+    else
+        return turtle.suck(count)
+    end
+end
+
+function squirtle.drop(side, count)
+    if (side == "top") then
+        return turtle.dropUp(count)
+    elseif (side == "bottom") then
+        return turtle.dropDown(count)
+    else
+        return turtle.drop(count)
+    end
+end
+
 function squirtle.turnInverse(side, times)
     return squirtle.turn(squirtle.invertSide(side), times)
 end
