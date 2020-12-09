@@ -3,7 +3,7 @@ package.path = package.path .. ";/libs/?.lua"
 local squirtle = require "squirtle"
 
 function main()
-    print("[item-transporter @ 1.0.0]")
+    print("[item-transporter @ 1.1.0]")
     local minFuelPercent = 32
 
     while (true) do

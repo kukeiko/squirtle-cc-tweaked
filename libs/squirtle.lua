@@ -1,3 +1,7 @@
+package.path = package.path .. ";/libs/?.lua"
+
+local Monitor = require "monitor"
+local MonitorModemProxy = require "monitor-modem-proxy"
 local squirtle = {}
 
 function squirtle.getFuelLevelPercent()
@@ -26,7 +30,9 @@ function squirtle.turn(side, times)
         error("side " .. side .. " is not a valid side to turn to")
     end
 
-    for _ = 1, times do turnFn() end
+    for _ = 1, times do
+        turnFn()
+    end
 end
 
 function squirtle.turnInverse(side, times)
@@ -54,7 +60,24 @@ end
 function squirtle.wrapDefaultMonitor()
     local sides = {"back", "front", "left", "right", "top", "bottom"}
 
-    for i = 1, #sides do if peripheral.getType(sides[i]) == "monitor" then return peripheral.wrap(sides[i]) end end
+    for i = 1, #sides do
+        if peripheral.getType(sides[i]) == "monitor" then
+            return Monitor.new(peripheral.wrap(sides[i]))
+        end
+    end
+
+    for i = 1, #sides do
+        if peripheral.getType(sides[i]) == "modem" then
+            local modem = peripheral.wrap(sides[i])
+            local remoteNames = modem.getNamesRemote()
+
+            for e = 1, #remoteNames do
+                if (modem.getTypeRemote(remoteNames[e]) == "monitor") then
+                    return MonitorModemProxy.new(remoteNames[e], modem)
+                end
+            end
+        end
+    end
 
     return false, "No nearby default monitor available"
 end
@@ -63,7 +86,9 @@ function squirtle.findSlotOfItem(name)
     for slot = 1, 16 do
         local item = turtle.getItemDetail(slot)
 
-        if item and item.name == name then return slot end
+        if item and item.name == name then
+            return slot
+        end
     end
 end
 
@@ -90,31 +115,33 @@ end
 
 function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     local monitor = squirtle.wrapDefaultMonitor()
-    if not monitor then return end
+    if not monitor then
+        return
+    end
 
     local text = string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
-    local w, h = monitor.getSize()
+    local w, h = monitor:getSize()
     local y = math.ceil(h / 2)
     local x = math.ceil((w - #text + 1) / 2);
-    monitor.clear()
-    monitor.setCursorPos(x, y)
-    monitor.write(text)
+    monitor:clear()
+    monitor:setCursorPos(x, y)
+    monitor:write(text)
 
     local lavaBucketsToFull = math.floor((turtle.getFuelLimit() - turtle.getFuelLevel()) / 1000);
     text = string.format("%d more buckets", lavaBucketsToFull)
     x = math.ceil((w - #text + 1) / 2);
-    monitor.setCursorPos(x, 5)
-    monitor.write(text)
+    monitor:setCursorPos(x, 5)
+    monitor:write(text)
 
     if squirtle.getFuelLevelPercent() < criticalFuelLevelPc then
         text = "*Critical*"
         x = math.ceil((w - #text + 1) / 2);
-        monitor.setCursorPos(x, 1)
-        monitor.write(text)
+        monitor:setCursorPos(x, 1)
+        monitor:write(text)
         text = "Turtle needs Lava"
         x = math.ceil((w - #text + 1) / 2);
-        monitor.setCursorPos(x, 2)
-        monitor.write(text)
+        monitor:setCursorPos(x, 2)
+        monitor:write(text)
     end
 end
 
