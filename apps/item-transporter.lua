@@ -56,8 +56,8 @@ function navigateTunnel()
 end
 
 function main()
-    print("[item-transporter @ 1.2.0]")
-    local minFuelPercent = 32
+    print("[item-transporter @ 1.3.0]")
+    local minFuelPercent = 10
 
     while (true) do
         squirtle.printFuelLevelToMonitor(minFuelPercent)

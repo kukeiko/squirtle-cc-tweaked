@@ -145,6 +145,7 @@ end
 
 function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     local monitor = squirtle.wrapDefaultMonitor()
+
     if not monitor then
         return
     end
@@ -157,20 +158,27 @@ function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     monitor:setCursorPos(x, y)
     monitor:write(text)
 
-    local lavaBucketsToFull = math.floor((turtle.getFuelLimit() - turtle.getFuelLevel()) / 1000);
-    text = string.format("%d more buckets", lavaBucketsToFull)
-    x = math.ceil((w - #text + 1) / 2);
-    monitor:setCursorPos(x, 5)
-    monitor:write(text)
-
     if squirtle.getFuelLevelPercent() < criticalFuelLevelPc then
         text = "*Critical*"
         x = math.ceil((w - #text + 1) / 2);
         monitor:setCursorPos(x, 1)
         monitor:write(text)
+
         text = "Turtle needs Lava"
         x = math.ceil((w - #text + 1) / 2);
         monitor:setCursorPos(x, 2)
+        monitor:write(text)
+
+        local requiredLavaBuckets = math.ceil(((criticalFuelLevelPc - squirtle.getFuelLevelPercent()) / 100) * (turtle.getFuelLimit() / 1000))
+
+        if requiredLavaBuckets == 1 then
+            text = string.format("%d more bucket", requiredLavaBuckets)
+        else
+            text = string.format("%d more buckets", requiredLavaBuckets)
+        end
+
+        x = math.ceil((w - #text + 1) / 2);
+        monitor:setCursorPos(x, 5)
         monitor:write(text)
     end
 end

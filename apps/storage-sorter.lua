@@ -78,7 +78,7 @@ function findSlotOfItem(name)
 end
 
 function main(args)
-    print("[storage-sorter @ 2.1.0]")
+    print("[storage-sorter @ 2.2.0]")
     local minFuelPercent = 50
 
     local inputSide = nil
