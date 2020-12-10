@@ -56,7 +56,7 @@ function navigateTunnel()
 end
 
 function main()
-    print("[item-transporter @ 1.3.1]")
+    print("[item-transporter @ 1.3.2]")
     local minFuelPercent = 10
 
     while (true) do
@@ -98,6 +98,8 @@ function main()
 
         while (squirtle.suck(inputChestSide)) do
         end
+
+        squirtle.refuelUsingLocalLava()
 
         print("[task] navigating tunnel to output chest")
         navigateTunnel()
