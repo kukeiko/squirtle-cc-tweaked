@@ -14,7 +14,7 @@ function findSideOfNearbyChest()
     return false, "No nearby chest available"
 end
 
-function navigateTunnel()
+function navigateTunnel(checkEarlyExit)
     local forbidden
 
     while true do
@@ -52,11 +52,15 @@ function navigateTunnel()
             while turtle.down() do
             end
         end
+
+        if checkEarlyExit ~= nil and checkEarlyExit() then
+            return true
+        end
     end
 end
 
 function main()
-    print("[item-transporter @ 1.3.2]")
+    print("[item-transporter @ 1.4.0]")
     local minFuelPercent = 10
 
     while (true) do
@@ -102,7 +106,7 @@ function main()
         squirtle.refuelUsingLocalLava()
 
         print("[task] navigating tunnel to output chest")
-        navigateTunnel()
+        navigateTunnel(findSideOfNearbyChest)
 
         local outputChestSide, outputChestSideError = findSideOfNearbyChest()
 
@@ -120,7 +124,7 @@ function main()
 
         print("[status] unloaded as much as i could")
         print("[task] navigating tunnel to input chest")
-        navigateTunnel()
+        navigateTunnel(findSideOfNearbyChest)
     end
 end
 

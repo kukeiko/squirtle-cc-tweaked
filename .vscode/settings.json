@@ -9,7 +9,8 @@
         "module"
     ],
     "Lua.diagnostics.disable": [
-        "lowercase-global"
+        "lowercase-global",
+        "undefined-field"
     ],
     "vscode-lua-format.configPath": "vscode-lua-format.config"
 }
