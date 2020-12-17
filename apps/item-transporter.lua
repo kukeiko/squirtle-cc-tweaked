@@ -1,18 +1,6 @@
 package.path = package.path .. ";/libs/?.lua"
 
-local squirtle = require "squirtle"
-
-function findSideOfNearbyChest()
-    local sides = {"back", "front", "left", "right", "top", "bottom"}
-
-    for i = 1, #sides do
-        if peripheral.getType(sides[i]) == "minecraft:chest" then
-            return sides[i]
-        end
-    end
-
-    return false, "No nearby chest available"
-end
+local Squirtle = require "squirtle"
 
 function navigateTunnel(checkEarlyExit)
     local forbidden
@@ -54,72 +42,69 @@ function navigateTunnel(checkEarlyExit)
         end
 
         if checkEarlyExit ~= nil and checkEarlyExit() then
-            return true
+            return checkEarlyExit()
         end
     end
 end
 
+function findSideOfNearbyChest()
+    local _, side = Squirtle.wrapChest()
+
+    return side
+end
+
 function main()
-    print("[item-transporter @ 1.4.0]")
+    print("[item-transporter @ 1.5.0]")
     local minFuelPercent = 10
 
     while (true) do
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
-        squirtle.refuelUsingLocalLava()
-
-        while squirtle.getFuelLevelPercent() < minFuelPercent do
-            print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
-
-            while true do
-                local _, key = os.pullEvent("key")
-                if (key == keys.enter) then
-                    break
-                end
-            end
-
-            squirtle.refuelUsingLocalLava()
-            squirtle.printFuelLevelToMonitor(minFuelPercent)
-        end
-
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
-        print("[status] fuel level ok")
+        Squirtle.preTaskRefuelRoutine(minFuelPercent)
 
         print("[waiting] checking input chest...")
-        local inputChestSide, e = findSideOfNearbyChest()
+        local inputChestSide = findSideOfNearbyChest()
 
         if (not inputChestSide) then
-            error(e)
+            error("No nearby chest available")
         end
 
-        squirtle.turnTo(inputChestSide)
+        local suckSide = inputChestSide
 
-        while not squirtle.suck(inputChestSide) do
+        if Squirtle.turnTo(inputChestSide) then
+            suckSide = "front"
+        end
+
+        while not Squirtle.suck(suckSide) do
             os.sleep(3)
         end
 
         print("[waiting] found items, waiting 3s for more...")
         os.sleep(3)
 
-        while (squirtle.suck(inputChestSide)) do
+        while (Squirtle.suck(suckSide)) do
         end
 
-        squirtle.refuelUsingLocalLava()
+        Squirtle.refuelUsingLocalLava()
+        Squirtle.printFuelLevelToMonitor(minFuelPercent)
 
         print("[task] navigating tunnel to output chest")
-        navigateTunnel(findSideOfNearbyChest)
 
-        local outputChestSide, outputChestSideError = findSideOfNearbyChest()
+        local outputChestSide, outputChestSideError = navigateTunnel(findSideOfNearbyChest)
 
         if (not outputChestSide) then
             error(outputChestSideError)
         end
 
-        squirtle.turnTo(outputChestSide)
+        local dropSide = outputChestSide
+
+        if Squirtle.turnTo(outputChestSide) then
+            dropSide = "front"
+        end
+
         print("[status] unloading...")
 
         for slot = 1, 16 do
             turtle.select(slot)
-            squirtle.drop(outputChestSide)
+            Squirtle.drop(dropSide)
         end
 
         print("[status] unloaded as much as i could")

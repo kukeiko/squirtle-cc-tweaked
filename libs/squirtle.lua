@@ -2,10 +2,19 @@ package.path = package.path .. ";/libs/?.lua"
 
 local Monitor = require "monitor"
 local MonitorModemProxy = require "monitor-modem-proxy"
+local Sides = require "sides"
 local squirtle = {}
 
 function squirtle.getFuelLevelPercent()
     return turtle.getFuelLevel() / turtle.getFuelLimit() * 100
+end
+
+function squirtle.turnTo(side)
+    if side == "left" or side == "right" or side == "back" then
+        return squirtle.turn(side)
+    end
+
+    return false
 end
 
 function squirtle.suck(side, count)
@@ -18,40 +27,33 @@ function squirtle.suck(side, count)
     end
 end
 
-function squirtle.turn(side, times)
-    local turnFn
-    times = times or 1
-
-    if side == "left" then
-        turnFn = turtle.turnLeft
-    elseif side == "right" then
-        turnFn = turtle.turnRight
-    else
-        error("side " .. side .. " is not a valid side to turn to")
-    end
-
-    for _ = 1, times do
-        turnFn()
-    end
-end
-
-function squirtle.turnTo(side)
+function squirtle.turn(side)
     if (side == "left") then
         return turtle.turnLeft()
     elseif (side == "right") then
         return turtle.turnRight()
     elseif (side == "back") then
-        return squirtle.turn("left", 2)
+        local s, e = turtle.turnLeft()
+
+        if not s then
+            return e
+        end
+
+        return turtle.turnLeft()
+    else
+        error("Can only turn to left, right and back")
     end
 end
 
 function squirtle.suck(side, count)
-    if (side == "top") then
+    if side == "top" then
         return turtle.suckUp(count)
     elseif (side == "bottom") then
         return turtle.suckDown(count)
-    else
+    elseif side == "front" or side == nil then
         return turtle.suck(count)
+    else
+        error("Can only suck from front, top or bottom")
     end
 end
 
@@ -60,13 +62,21 @@ function squirtle.drop(side, count)
         return turtle.dropUp(count)
     elseif (side == "bottom") then
         return turtle.dropDown(count)
-    else
+    elseif side == "front" or side == nil then
         return turtle.drop(count)
+    else
+        error("Can only drop in front, top or bottom")
     end
 end
 
-function squirtle.turnInverse(side, times)
-    return squirtle.turn(squirtle.invertSide(side), times)
+function squirtle.undoTurn(side)
+    if side == "back" then
+        return squirtle.turn(side)
+    elseif side == "left" or side == "right" then
+        return squirtle.turn(Sides.invert(side))
+    else
+        error("Can only unto left, right & back turns")
+    end
 end
 
 function squirtle.invertSide(side)
@@ -88,7 +98,7 @@ function squirtle.invertSide(side)
 end
 
 function squirtle.wrapDefaultMonitor()
-    local sides = {"back", "front", "left", "right", "top", "bottom"}
+    local sides = Sides.all()
 
     for i = 1, #sides do
         if peripheral.getType(sides[i]) == "monitor" then
@@ -110,6 +120,37 @@ function squirtle.wrapDefaultMonitor()
     end
 
     return false, "No nearby default monitor available"
+end
+
+---@param types table The type(s) of peripheral to wrap
+---@param sides? table
+function squirtle.wrapPeripheral(types, sides)
+    sides = sides or Sides.all()
+
+    for i = 1, #sides do
+        local foundType = peripheral.getType(sides[i])
+
+        if foundType ~= nil then
+            for e = 1, #types do
+                if foundType == types[e] then
+                    return peripheral.wrap(sides[i]), sides[i], types[e]
+                end
+            end
+        end
+    end
+end
+
+---@param sides? table
+function squirtle.wrapChest(sides)
+    sides = sides or Sides.all()
+
+    for i = 1, #sides do
+        local candidate = peripheral.wrap(sides[i])
+
+        if candidate ~= nil and type(candidate.getItemDetail) == "function" then
+            return peripheral.wrap(sides[i]), sides[i]
+        end
+    end
 end
 
 function squirtle.findSlotOfItem(name)
@@ -141,6 +182,28 @@ function squirtle.refuelUsingLocalLava()
             return
         end
     end
+end
+
+function squirtle.preTaskRefuelRoutine(minFuelPercent)
+    squirtle.printFuelLevelToMonitor(minFuelPercent)
+    squirtle.refuelUsingLocalLava()
+
+    while squirtle.getFuelLevelPercent() < minFuelPercent do
+        print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
+
+        while true do
+            local _, key = os.pullEvent("key")
+            if (key == keys.enter) then
+                break
+            end
+        end
+
+        squirtle.refuelUsingLocalLava()
+        squirtle.printFuelLevelToMonitor(minFuelPercent)
+    end
+
+    squirtle.printFuelLevelToMonitor(minFuelPercent)
+    print("[status] fuel level ok")
 end
 
 function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)

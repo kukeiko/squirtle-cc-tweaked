@@ -1,34 +1,22 @@
 package.path = package.path .. ";/libs/?.lua"
 
-local squirtle = require "squirtle"
+local Squirtle = require "squirtle"
+local Sides = require "sides"
 
-function suckFromInputChest(topOrBottom)
-    if (topOrBottom == "bottom") then
-        while (turtle.suckDown()) do end
-    else
-        while (turtle.suckUp()) do end
-    end
-end
-
-function dropIntoOutputChest(topOrBottom)
+function dropIntoOutputChest(outputSide)
     for slot = 1, 16 do
         if turtle.getItemCount(slot) > 0 then
             turtle.select(slot)
-            local dropFn
 
-            if (topOrBottom == "bottom") then
-                dropFn = turtle.dropUp
-            else
-                dropFn = turtle.dropDown
+            while not Squirtle.drop(outputSide) do
+                os.sleep(7)
             end
-
-            while not dropFn() do os.sleep(7) end
         end
     end
 end
 
-function dropIntoStorageChest(outputSide)
-    local filterChest = peripheral.wrap("bottom")
+function dropIntoStorageChest(side)
+    local filterChest = peripheral.wrap(side)
     local filteredItems = filterChest.list()
     local slotsToDrop = {}
 
@@ -36,104 +24,94 @@ function dropIntoStorageChest(outputSide)
         for slot = 1, 16 do
             local candidate = turtle.getItemDetail(slot)
 
-            if (candidate ~= nil and candidate.name == filteredItem.name) then table.insert(slotsToDrop, slot) end
+            if (candidate ~= nil and candidate.name == filteredItem.name) then
+                table.insert(slotsToDrop, slot)
+            end
         end
     end
 
     if (#slotsToDrop > 0) then
-        squirtle.turn(outputSide)
+        local dropSide = side
+
+        if Sides.isHorizontal(side) then
+            Squirtle.turn(side)
+            dropSide = "front"
+        end
 
         for i = 1, #slotsToDrop do
             turtle.select(slotsToDrop[i])
-            turtle.drop()
+            Squirtle.drop(dropSide)
         end
 
-        squirtle.turnInverse(outputSide)
+        if Sides.isHorizontal(side) then
+            Squirtle.undoTurn(side)
+        end
     end
 end
 
-function distributeItems(outputSide)
-    while (turtle.forward()) do
-        local chest = peripheral.wrap("bottom")
+function distributeItems()
+    while turtle.forward() do
+        local chest, outputSide = Squirtle.wrapChest({"left", "right"})
 
-        -- todo: need common lib fn for identifying chests
-        if (chest ~= nil and type(chest.getItemDetail) == "function") then dropIntoStorageChest(outputSide) end
+        if (chest ~= nil) then
+            dropIntoStorageChest(outputSide)
+        end
     end
 
-    turtle.turnLeft()
-    turtle.turnLeft()
+    Squirtle.turn("back")
 
-    while (turtle.forward()) do end
+    while (turtle.forward()) do
+    end
 
-    turtle.turnLeft()
-    turtle.turnLeft()
+    Squirtle.turn("back")
 end
 
 function findSlotOfItem(name)
     for slot = 1, 16 do
         local item = turtle.getItemDetail(slot)
 
-        if item and item.name == name then return slot end
+        if item and item.name == name then
+            return slot
+        end
     end
 end
 
 function main(args)
-    print("[storage-sorter @ 2.2.0]")
+    print("[storage-sorter @ 3.0.0]")
     local minFuelPercent = 50
 
-    local inputSide = nil
+    local vInputSide = nil
     local argInputSide = args[1]
 
     if argInputSide == "from-bottom" then
-        inputSide = "bottom"
+        vInputSide = "bottom"
     elseif argInputSide == "from-top" then
-        inputSide = "top"
+        vInputSide = "top"
     else
         error("invalid 1st argument: " .. argInputSide)
     end
 
-    local outputSide = nil
-    local argOutputSide = args[2];
-
-    if argOutputSide == "to-left" then
-        outputSide = "left"
-    elseif argOutputSide == "to-right" then
-        outputSide = "right"
-    else
-        error("invalid 2nd argument: " .. argOutputSide)
-    end
-
-    print("[status] input taken from " .. inputSide)
-    print("[status] output taken to " .. outputSide)
+    print("[status] input taken from " .. vInputSide)
 
     while (true) do
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
-        squirtle.refuelUsingLocalLava()
+        Squirtle.preTaskRefuelRoutine(minFuelPercent)
 
-        while squirtle.getFuelLevelPercent() < minFuelPercent do
-            print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
-
-            while true do
-                local _, key = os.pullEvent("key")
-                if (key == keys.enter) then break end
-            end
-
-            squirtle.refuelUsingLocalLava()
-            squirtle.printFuelLevelToMonitor(minFuelPercent)
-        end
-
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
-        print("[status] fuel level ok")
         print("[waiting] checking input chest...")
-        while not squirtle.suck(inputSide) do os.sleep(3) end
+        while not Squirtle.suck(vInputSide) do
+            os.sleep(3)
+        end
         print("[waiting] found items, waiting 3s for more...")
         os.sleep(3)
-        suckFromInputChest(inputSide)
-        squirtle.refuelUsingLocalLava()
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
+
+        while Squirtle.suck(vInputSide) do
+        end
+
+        Squirtle.refuelUsingLocalLava()
+        Squirtle.printFuelLevelToMonitor(minFuelPercent)
+
         print("[task] sorting items into storage")
-        distributeItems(outputSide)
-        dropIntoOutputChest(inputSide)
+        distributeItems()
+        dropIntoOutputChest(Sides.invert(vInputSide))
     end
 end
 

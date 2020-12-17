@@ -4,6 +4,7 @@ local files = {
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/storage-sorter.autocomplete.lua", path = "/startup/item-transfer.autocomplete.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor-modem-proxy.lua", path = "/libs/monitor-modem-proxy.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor.lua", path = "/libs/monitor.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/sides.lua", path = "/libs/sides.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/squirtle.lua", path = "/libs/squirtle.lua"}
 }
 
