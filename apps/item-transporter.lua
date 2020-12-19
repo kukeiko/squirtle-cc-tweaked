@@ -53,8 +53,14 @@ function findSideOfNearbyChest()
     return side
 end
 
-function main()
-    print("[item-transporter @ 1.5.0]")
+function main(args)
+    if args[1] == "run-on-startup" then
+        local file = fs.open("startup/item-transporter.autorun.lua", "w")
+        file.write("shell.run(\"item-transporter\")")
+        file.close()
+    end
+
+    print("[item-transporter @ 1.6.0]")
     local minFuelPercent = 10
 
     while (true) do
@@ -113,4 +119,4 @@ function main()
     end
 end
 
-main()
+main(arg)

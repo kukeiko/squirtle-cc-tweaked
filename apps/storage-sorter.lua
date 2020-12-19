@@ -77,7 +77,13 @@ function findSlotOfItem(name)
 end
 
 function main(args)
-    print("[storage-sorter @ 3.0.0]")
+    if args[2] == "run-on-startup" then
+        local file = fs.open("startup/storage-sorter.autorun.lua", "w")
+        file.write("shell.run(\"storage-sorter\", \"" .. args[1] .. "\")")
+        file.close()
+    end
+
+    print("[storage-sorter @ 3.1.0]")
     local minFuelPercent = 50
 
     local vInputSide = nil
