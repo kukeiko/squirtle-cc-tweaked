@@ -33,6 +33,24 @@ function Sides.isVertical(side)
     return side == "top" or side == "bottom"
 end
 
+function Sides.turnRight(side)
+    if side == "left" then
+        return "front"
+    elseif side == "right" then
+        return "back"
+    elseif side == "top" then
+        return "top"
+    elseif side == "bottom" then
+        return "bottom"
+    elseif side == "front" then
+        return "right"
+    elseif side == "back" then
+        return "left"
+    else
+        error(side .. " is not a valid side")
+    end
+end
+
 return Sides
 
 -- local sides = require("sides")

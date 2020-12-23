@@ -9,7 +9,7 @@ function squirtle.getFuelLevelPercent()
     return turtle.getFuelLevel() / turtle.getFuelLimit() * 100
 end
 
-function squirtle.turnTo(side)
+function squirtle.tryTurn(side)
     if side == "left" or side == "right" or side == "back" then
         return squirtle.turn(side)
     end
@@ -44,6 +44,32 @@ function squirtle.turn(side)
         error("Can only turn to left, right and back")
     end
 end
+
+function squirtle.turnAround()
+    local s, e = turtle.turnLeft()
+
+    if not s then
+        return e
+    end
+
+    return turtle.turnLeft()
+end
+
+-- function squirtle.forwardUntilFail()
+--     local moved = 0
+
+--     while true do
+--         local s, e = turtle.forward()
+
+--         if not s then
+--             return s, e
+--         end
+
+--         moved = moved + 1
+--     end
+
+--     return moved
+-- end
 
 function squirtle.suck(side, count)
     if side == "top" then
@@ -141,7 +167,7 @@ function squirtle.wrapPeripheral(types, sides)
 end
 
 ---@param sides? table
-function squirtle.wrapChest(sides)
+function squirtle.wrapItemContainer(sides)
     sides = sides or Sides.all()
 
     for i = 1, #sides do
@@ -153,14 +179,52 @@ function squirtle.wrapChest(sides)
     end
 end
 
-function squirtle.findSlotOfItem(name)
-    for slot = 1, 16 do
+function squirtle.findItem(name)
+    for slot = 1, squirtle.numSlots() do
         local item = turtle.getItemDetail(slot)
 
         if item and item.name == name then
             return slot
         end
     end
+end
+
+function squirtle.selectItem(name)
+    local slot = squirtle.findItem(name)
+
+    if not slot then
+        return false
+    end
+
+    turtle.select(slot)
+
+    return slot
+end
+
+function squirtle.numSlots()
+    return 16
+end
+
+function squirtle.numEmptySlots()
+    local numEmpty = 0
+
+    for slot = 1, squirtle.numSlots() do
+        if turtle.getItemCount(slot) == 0 then
+            numEmpty = numEmpty + 1
+        end
+    end
+
+    return numEmpty
+end
+
+function squirtle.hasEmptySlot()
+    for slot = 1, squirtle.numSlots() do
+        if turtle.getItemCount(slot) == 0 then
+            return true
+        end
+    end
+
+    return false
 end
 
 function squirtle.getMissingFuel()
@@ -171,7 +235,7 @@ function squirtle.refuelUsingLocalLava()
     local emptyBucketSlot = nil
 
     while squirtle.getMissingFuel() > 1000 do
-        local lavaBucketSlot = squirtle.findSlotOfItem("minecraft:lava_bucket")
+        local lavaBucketSlot = squirtle.findItem("minecraft:lava_bucket")
 
         if lavaBucketSlot then
             turtle.select(lavaBucketSlot)
@@ -184,29 +248,42 @@ function squirtle.refuelUsingLocalLava()
     end
 end
 
-function squirtle.preTaskRefuelRoutine(minFuelPercent)
-    squirtle.printFuelLevelToMonitor(minFuelPercent)
+function squirtle.waitForUserToHitEnter()
+    while true do
+        local _, key = os.pullEvent("key")
+        if (key == keys.enter) then
+            break
+        end
+    end
+end
+
+function squirtle.preTaskRefuelRoutine(minFuel)
+    squirtle.printFuelLevelToMonitor(minFuel)
     squirtle.refuelUsingLocalLava()
 
-    while squirtle.getFuelLevelPercent() < minFuelPercent do
+    while turtle.getFuelLevel() < minFuel do
         print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
-
-        while true do
-            local _, key = os.pullEvent("key")
-            if (key == keys.enter) then
-                break
-            end
-        end
-
+        squirtle.waitForUserToHitEnter()
         squirtle.refuelUsingLocalLava()
-        squirtle.printFuelLevelToMonitor(minFuelPercent)
+        squirtle.printFuelLevelToMonitor(minFuel)
     end
 
-    squirtle.printFuelLevelToMonitor(minFuelPercent)
+    squirtle.printFuelLevelToMonitor(minFuel)
     print("[status] fuel level ok")
 end
 
-function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
+function squirtle.selectFirstEmptySlot()
+    for slot = 1, 16 do
+        if turtle.getItemCount(slot) == 0 then
+            turtle.select(slot)
+            return slot
+        end
+    end
+
+    return false
+end
+
+function squirtle.printFuelLevelToMonitor(minFuel)
     local monitor = squirtle.wrapDefaultMonitor()
 
     if not monitor then
@@ -221,18 +298,18 @@ function squirtle.printFuelLevelToMonitor(criticalFuelLevelPc)
     monitor:setCursorPos(x, y)
     monitor:write(text)
 
-    if squirtle.getFuelLevelPercent() < criticalFuelLevelPc then
+    if turtle.getFuelLevel() < minFuel then
         text = "*Critical*"
         x = math.ceil((w - #text + 1) / 2);
         monitor:setCursorPos(x, 1)
         monitor:write(text)
 
-        text = "Turtle needs Lava"
+        text = "Turtle needs Fuel"
         x = math.ceil((w - #text + 1) / 2);
         monitor:setCursorPos(x, 2)
         monitor:write(text)
 
-        local requiredLavaBuckets = math.ceil(((criticalFuelLevelPc - squirtle.getFuelLevelPercent()) / 100) * (turtle.getFuelLimit() / 1000))
+        local requiredLavaBuckets = math.ceil((minFuel - turtle.getFuelLevel()) / 1000)
 
         if requiredLavaBuckets == 1 then
             text = string.format("%d more bucket", requiredLavaBuckets)
