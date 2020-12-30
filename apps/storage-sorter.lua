@@ -61,7 +61,7 @@ function parseInputSide(argInputSide)
     elseif argInputSide == "from-top" then
         return "top"
     else
-        error("invalid input side argument: " .. argInputSide)
+        error("invalid input side: " .. argInputSide)
     end
 end
 
@@ -163,20 +163,46 @@ end
 
 function lookAtBuffer()
     for _ = 1, 4 do
-        if peripheral.getType("front") ~= "minecraft:barrel" then
-            turtle.turnLeft()
+        if peripheral.getType("front") == "minecraft:barrel" then
+            return true
         else
-            break
+            turtle.turnLeft()
         end
     end
 
     if peripheral.getType("front") ~= "minecraft:barrel" then
-        error("barrel is missing")
+        -- error("barrel is missing")
+        return false
+    end
+end
+
+function startup()
+    if not lookAtBuffer() then
+        -- either the player did not place a barrel for the turtle, or we're not at our starting position.
+        -- we first assume that we're not at our starting position due to the chunk the turtle is in being unloaded during its trip.
+        -- (chunk loaders won't help as they won't fix the case where all players leave the server)
+
+        while not turtle.forward() do
+            turtle.turnLeft()
+        end
+
+        while turtle.forward() do
+        end
+
+        if not lookAtBuffer() then
+            Squirtle.turnAround()
+            while turtle.forward() do
+            end
+
+            if not lookAtBuffer() then
+                error("no barrel found")
+            end
+        end
     end
 end
 
 function main(args)
-    print("[storage-sorter @ 4.0.0]")
+    print("[storage-sorter @ 4.0.1]")
     local argInputSide, argRunOnStartup = table.unpack(args)
     local vInputSide = parseInputSide(args[1])
 
@@ -185,7 +211,8 @@ function main(args)
     end
 
     local fuelPerTrip = 100
-    lookAtBuffer()
+
+    startup()
 
     while true do
         Squirtle.printFuelLevelToMonitor(fuelPerTrip)
@@ -199,7 +226,7 @@ function main(args)
         local chestHadNoChange = numInputItems == countItems(vInputSide)
         local percentFullChest = numInputItems / peripheral.call(vInputSide, "size")
 
-        if hasEnoughFuel and numInputItems > 0 and (numInputItems == countItems(vInputSide) ) then
+        if hasEnoughFuel and numInputItems > 0 and (numInputItems == countItems(vInputSide)) then
             print("no change in input for 3s, sorting items into storage...")
 
             -- [todo] it is possible we're sucking in fuel we haven't been able to forward
