@@ -227,6 +227,26 @@ function squirtle.hasEmptySlot()
     return false
 end
 
+function squirtle.isEmpty()
+    for slot = 1, squirtle.numSlots() do
+        if turtle.getItemCount(slot) > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+function squirtle.isFull()
+    for slot = 1, squirtle.numSlots() do
+        if turtle.getItemCount(slot) == 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
 function squirtle.getMissingFuel()
     return turtle.getFuelLimit() - turtle.getFuelLevel()
 end

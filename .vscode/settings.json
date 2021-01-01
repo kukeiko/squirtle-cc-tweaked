@@ -6,7 +6,8 @@
         "keys",
         "http",
         "fs",
-        "module"
+        "module",
+        "textutils"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global",
