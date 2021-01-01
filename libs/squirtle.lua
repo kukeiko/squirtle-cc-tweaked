@@ -17,6 +17,16 @@ function squirtle.tryTurn(side)
     return false
 end
 
+function squirtle.facePeripheral(side)
+    if side == "left" or side == "right" or side == "back" then
+        squirtle.turn(side)
+
+        return "front"
+    end
+
+    return side
+end
+
 function squirtle.suck(side, count)
     if side == "top" then
         return turtle.suckUp(count)
@@ -102,6 +112,16 @@ function squirtle.undoTurn(side)
         return squirtle.turn(Sides.invert(side))
     else
         error("Can only unto left, right & back turns")
+    end
+end
+
+function squirtle.tryUndoTurn(side)
+    if side == "back" then
+        return squirtle.turn(side)
+    elseif side == "left" or side == "right" then
+        return squirtle.turn(Sides.invert(side))
+    else
+        return false
     end
 end
 
@@ -293,8 +313,19 @@ function squirtle.preTaskRefuelRoutine(minFuel)
 end
 
 function squirtle.selectFirstEmptySlot()
-    for slot = 1, 16 do
+    for slot = 1, squirtle.numSlots() do
         if turtle.getItemCount(slot) == 0 then
+            turtle.select(slot)
+            return slot
+        end
+    end
+
+    return false
+end
+
+function squirtle.selectFirstNonEmptySlot()
+    for slot = 1, squirtle.numSlots() do
+        if turtle.getItemCount(slot) > 0 then
             turtle.select(slot)
             return slot
         end

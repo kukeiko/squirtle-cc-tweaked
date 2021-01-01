@@ -25,6 +25,10 @@ function Sides.all()
     return {"back", "front", "left", "right", "top", "bottom"}
 end
 
+function Sides.horizontal()
+    return {"back", "front", "left", "right"}
+end
+
 function Sides.isHorizontal(side)
     return side == "left" or side == "right" or side == "back"
 end
