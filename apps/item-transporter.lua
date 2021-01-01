@@ -1,8 +1,48 @@
 package.path = package.path .. ";/libs/?.lua"
 
 local Squirtle = require "squirtle"
+local FuelDictionary = require "fuel-dictionary"
 
-function navigateTunnel(checkEarlyExit)
+local statePath = "/state/apps/item-transporter.state"
+
+local function getDefaultState()
+    return {isBufferOpen = false, isTransporting = false, fuelPerTrip = 100}
+end
+
+local function saveState(state)
+    local file = fs.open(statePath, "w")
+    file.write(textutils.serialize(state))
+    file.close()
+end
+
+local function loadState()
+    if not fs.exists(statePath) then
+        saveState(getDefaultState())
+    end
+
+    local state = getDefaultState()
+    local file = fs.open(statePath, "r")
+    local savedState = textutils.unserialize(file.readAll())
+    file.close()
+
+    for k, v in pairs(savedState) do
+        state[k] = v
+    end
+
+    return state
+end
+
+local function patchState(patch)
+    local state = loadState()
+
+    for k, v in pairs(patch) do
+        state[k] = v
+    end
+
+    saveState(state)
+end
+
+local function navigateTunnel(checkEarlyExit)
     local forbidden
 
     while true do
@@ -47,27 +87,13 @@ function navigateTunnel(checkEarlyExit)
     end
 end
 
-function useAsFuel(name)
-    return name == "minecraft:lava_bucket" or name == "minecraft:bamboo"
-end
-
-function getItemRefuelAmount(name)
-    if name == "minecraft:lava_bucket" then
-        return 1000
-    elseif name == "minecraft:bamboo" then
-        return 2
-    else
-        return 0
-    end
-end
-
-function findSideOfNearbyChest()
+local function findSideOfNearbyChest()
     local _, side = Squirtle.wrapPeripheral({"minecraft:chest"})
 
     return side
 end
 
-function countItems(side)
+local function countItems(side)
     local items = peripheral.call(side, "list")
     local numItems = 0
 
@@ -78,7 +104,7 @@ function countItems(side)
     return numItems
 end
 
-function refuelFromBuffer(bufferSide)
+local function refuelFromBuffer(bufferSide)
     if not Squirtle.selectFirstEmptySlot() then
         error("inventory unexpectedly full")
     end
@@ -92,7 +118,6 @@ function refuelFromBuffer(bufferSide)
 
         turtle.refuel()
 
-        -- drop an empty bucket or leftover items into the output chest in case we refueled using lava
         if turtle.getItemCount() > 0 then
             local nextSlot = turtle.getSelectedSlot() + 1
 
@@ -107,8 +132,8 @@ function refuelFromBuffer(bufferSide)
     end
 end
 
-function refuel(inputSide)
-    print("[task] refueling (current: " .. turtle.getFuelLevel() .. ")")
+local function refuel(inputSide)
+    -- print("[task] refueling (current: " .. turtle.getFuelLevel() .. ")")
     local bufferSide = "front"
     local inputChest = peripheral.wrap(inputSide)
     local missingFuel = Squirtle.getMissingFuel()
@@ -117,8 +142,8 @@ function refuel(inputSide)
     -- collect the slots with fuel for consumption, and immediately push into the output
     -- any fuel we don't need so the next turtle can use it.
     for slot, item in pairs(inputChest.list()) do
-        if useAsFuel(item.name) then
-            local itemRefuelAmount = getItemRefuelAmount(item.name)
+        if FuelDictionary.isFuel(item.name) then
+            local itemRefuelAmount = FuelDictionary.getRefuelAmount(item.name)
 
             if itemRefuelAmount < missingFuel then
                 table.insert(slotsToConsume, slot)
@@ -135,6 +160,7 @@ function refuel(inputSide)
     end
 
     print("can refuel from " .. turtle.getFuelLevel() .. " to " .. turtle.getFuelLimit() - math.max(0, missingFuel))
+    patchState({isBufferOpen = true})
 
     for i = 1, #slotsToConsume do
         if inputChest.pushItems(bufferSide, slotsToConsume[i]) == 0 then
@@ -149,10 +175,11 @@ function refuel(inputSide)
     end
 
     refuelFromBuffer(bufferSide)
+    patchState({isBufferOpen = false})
     print("refueled to " .. turtle.getFuelLevel())
 end
 
-function lookAtBuffer()
+local function lookAtBuffer()
     for _ = 1, 4 do
         if peripheral.getType("front") ~= "minecraft:barrel" then
             turtle.turnLeft()
@@ -161,13 +188,58 @@ function lookAtBuffer()
         end
     end
 
-    if peripheral.getType("front") ~= "minecraft:barrel" then
-        error("barrel is missing")
+    return peripheral.getType("front") == "minecraft:barrel"
+end
+
+local function dumpInventoryToOutput(outputSide)
+    for slot = 1, Squirtle.numSlots() do
+        if turtle.getItemCount(slot) > 0 then
+            turtle.select(slot)
+
+            while not Squirtle.drop(outputSide) do
+                os.sleep(7)
+            end
+        end
     end
 end
 
-function main(args)
-    print("[item-transporter @ 2.0.0]")
+local function startup()
+    local state = loadState()
+    local bufferSide = "front"
+
+    if not lookAtBuffer() then
+        print("got interrupted while not at home, trying to find it...")
+        -- find home
+        local outputChestSide = navigateTunnel(findSideOfNearbyChest)
+
+        if not lookAtBuffer() then
+            print("we reached end, dump inventory...")
+            local dropSide = outputChestSide
+
+            if Squirtle.tryTurn(outputChestSide) then
+                dropSide = "front"
+            end
+
+            dumpInventoryToOutput(dropSide)
+
+            -- we navigated to the end, dump and return back
+            navigateTunnel(findSideOfNearbyChest)
+
+            if not lookAtBuffer() then
+                error("barrel is missing")
+            end
+        end
+    end
+
+    if state.isBufferOpen then
+        print("got interrupted while buffer is open, refueling from it to clear it out...")
+        refuelFromBuffer(bufferSide)
+        patchState({isBufferOpen = false})
+    end
+end
+
+local function main(args)
+    print("[item-transporter @ 2.1.0]")
 
     if args[1] == "run-on-startup" then
         local file = fs.open("startup/item-transporter.autorun.lua", "w")
@@ -176,7 +248,12 @@ function main(args)
     end
 
     local fuelPerTrip = 100
-    lookAtBuffer()
+
+    startup()
+
+    if not lookAtBuffer() then
+        error("barrel is missing")
+    end
 
     while (true) do
         local inputChestSide = findSideOfNearbyChest()
@@ -219,23 +296,17 @@ function main(args)
             end
 
             print("[status] unloading...")
-
-            for slot = 1, 16 do
-                if turtle.getItemCount(slot) > 0 then
-                    turtle.select(slot)
-
-                    while not Squirtle.drop(dropSide) do
-                        os.sleep(7)
-                    end
-                end
-            end
+            dumpInventoryToOutput(dropSide)
 
             print("[status] unloaded as much as i could")
             print("[task] navigating tunnel to input chest")
             navigateTunnel(findSideOfNearbyChest)
             fuelPerTrip = fuelLevelBeforeTrip - turtle.getFuelLevel()
             print("fuel per trip:" .. fuelPerTrip)
-            lookAtBuffer()
+
+            if not lookAtBuffer() then
+                error("barrel is missing")
+            end
         end
     end
 end

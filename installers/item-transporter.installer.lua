@@ -2,6 +2,7 @@
 local files = {
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/apps/item-transporter.lua", path = "/apps/item-transporter.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/item-transporter.autocomplete.lua", path = "/startup/item-transporter.autocomplete.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/fuel-dictionary.lua", path = "/libs/fuel-dictionary.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor-modem-proxy.lua", path = "/libs/monitor-modem-proxy.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor.lua", path = "/libs/monitor.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/sides.lua", path = "/libs/sides.lua"},
