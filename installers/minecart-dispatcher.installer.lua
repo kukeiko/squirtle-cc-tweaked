@@ -2,6 +2,8 @@
 local files = {
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/apps/minecart-dispatcher.lua", path = "/apps/minecart-dispatcher.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/startup/minecart-dispatcher.autocomplete.lua", path = "/startup/minecart-dispatcher.autocomplete.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor-modem-proxy.lua", path = "/libs/monitor-modem-proxy.lua"},
+    {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/monitor.lua", path = "/libs/monitor.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/sides.lua", path = "/libs/sides.lua"},
     {url = "https://raw.githubusercontent.com/kukeiko/squirtle-cc-tweaked/main/libs/squirtle.lua", path = "/libs/squirtle.lua"}
 }
