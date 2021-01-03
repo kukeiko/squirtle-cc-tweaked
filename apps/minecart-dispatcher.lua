@@ -5,7 +5,7 @@ local Squirtle = require "squirtle"
 
 local function writeStartupFile()
     local file = fs.open("startup/minecart-dispatcher.autorun.lua", "w")
-    file.write("shell.run(\"minecart-dispatcher\"")
+    file.write("shell.run(\"minecart-dispatcher\")")
     file.close()
 end
 
