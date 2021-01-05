@@ -1,14 +1,25 @@
 package.path = package.path .. ";/libs/?.lua"
 
 local FuelDictionary = {}
-local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:bamboo"] = 2}
+local fuelItems = {
+    ["minecraft:lava_bucket"] = 1000,
+    ["minecraft:coal"] = 80,
+    ["minecraft:bamboo"] = 2
+}
 
-function FuelDictionary.isFuel(name)
-    return fuelItems[name] ~= nil
+--- @param item string
+function FuelDictionary.isFuel(item)
+    return fuelItems[item] ~= nil
 end
 
-function FuelDictionary.getRefuelAmount(name)
-    return fuelItems[name] or 0
+--- @param item string
+function FuelDictionary.getRefuelAmount(item)
+    return fuelItems[item] or 0
+end
+
+--- @param stack table
+function FuelDictionary.getStackRefuelAmount(stack)
+    return FuelDictionary.getRefuelAmount(stack.name) * stack.count
 end
 
 return FuelDictionary
