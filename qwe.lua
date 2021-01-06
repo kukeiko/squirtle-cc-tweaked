@@ -24,20 +24,24 @@ function testA()
         inventorySlot = 8
     }
 
+    -- [todo] confusing because from reading this it looks like Resources.reduce()
+    -- does not manipulate the table in place
     local reduced = Resources.reduce(requiredResources, providedResources)
 
-    Pretty.print(Pretty.pretty(reduced))
+    Pretty.print(Pretty.pretty(requiredResources))
 end
 
 function testB()
     local resourceProviders = ResourceProviders.new()
-    local found = resourceProviders:find({fuelLevel = turtle.getFuelLevel() + 3})
 
-    Utils.prettyPrint(found)
+    -- print(turtle.getFuelLevel())
 
-    for i = 1, #found do
-        print("exec provider...")
-        found[i].execute()
+    -- local requiredResources = {fuelLevel = turtle.getFuelLevel() + 3}
+    local requiredResources = {consumeItem = {{name = "minecraft:bamboo", count = 2}}}
+    local expanded = resourceProviders:expand(requiredResources)
+
+    if expanded then
+        Utils.prettyPrint(expanded)
     end
 end
 
@@ -45,4 +49,5 @@ function testC()
     print(Inventory.sumFuelLevel())
 end
 
+-- testA()
 testB()

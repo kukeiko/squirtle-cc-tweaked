@@ -27,7 +27,7 @@ function Utils.copy(obj, seen)
     s[obj] = res
 
     for k, v in pairs(obj) do
-        res[copy(k, s)] = copy(v, s)
+        res[Utils.copy(k, s)] = Utils.copy(v, s)
     end
 
     return res
@@ -35,6 +35,16 @@ end
 
 function Utils.prettyPrint(value)
     Pretty.print(Pretty.pretty(value))
+end
+
+function Utils.count(table)
+    local size = 0
+
+    for _ in pairs(table) do
+        size = size + 1
+    end
+
+    return size
 end
 
 return Utils

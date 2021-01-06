@@ -12,7 +12,7 @@ local function reduceAmount(a, b)
     end
 end
 
-local reducers = function()
+local reducers = (function()
     return {
         fuelLevel = reduceAmount,
         inventorySlot = reduceAmount,
@@ -52,12 +52,41 @@ local reducers = function()
             end
         end
     }
+end)()
+
+local function mergeAmount(a, b)
+    return a + b
 end
+
+local mergers = (function()
+    return {
+        fuelLevel = mergeAmount,
+        inventorySlot = mergeAmount,
+        consumeItem = function(a, b)
+            for i = 1, #b do
+                local item = b[i].name
+
+                for e = 1, #a do
+                    if a[e].name == item then
+                        a[e].count = a[e].count + b[i].count
+                        break
+                    end
+
+                    if e == #a then
+                        table.insert(a, b[i])
+                    end
+                end
+            end
+
+            return a
+        end
+    }
+end)()
 
 function Resources.reduce(a, b)
     for resource, value in pairs(b) do
         if a[resource] ~= nil then
-            local reducer = reducers()[resource]
+            local reducer = reducers[resource]
 
             if not reducer then
                 error("no reducer for resource '" .. resource .. "'")
@@ -74,6 +103,24 @@ function Resources.reduce(a, b)
     end
 
     return nil
+end
+
+function Resources.merge(a, b)
+    for resource, value in pairs(b) do
+        if a[resource] == nil then
+            a[resource] = value
+        else
+            local merger = mergers[resource]
+
+            if not merger then
+                error("no merger for resource '" .. resource .. "'")
+            end
+
+            a[resource] = merger(a[resource], value)
+        end
+    end
+
+    return a
 end
 
 return Resources
