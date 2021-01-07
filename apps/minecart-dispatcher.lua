@@ -42,7 +42,7 @@ local function main(args)
 
         if not Inventory.isEmpty() then
             print("found items! waiting for minecart...")
-            Squirtle.selectFirstNonEmptySlot()
+            Inventory.selectFirstOccupiedSlot()
             local dropSide, undoFaceBarrel = Turtle.faceSide(barrelSide)
             Turtle.drop(dropSide, 1)
 

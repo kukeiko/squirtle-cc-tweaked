@@ -8,35 +8,6 @@ local Turtle = require "turtle"
 
 local squirtle = {}
 
-function squirtle.moveFirstSlotSomewhereElse()
-    if turtle.getItemCount(1) == 0 then
-        return true
-    end
-
-    turtle.select(1)
-
-    local slot = squirtle.firstEmptySlot()
-
-    if not slot then
-        return false
-    end
-
-    turtle.transferTo(slot)
-end
-
-function squirtle.dumpInventoryToOutput(outputSide)
-    for slot = 1, Inventory.numSlots() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
-
-            while not Turtle.drop(outputSide) or turtle.getItemCount(slot) > 0 do
-                print("[task] output full, waiting 7s...")
-                os.sleep(7)
-            end
-        end
-    end
-end
-
 function squirtle.wrapDefaultMonitor()
     local sides = Sides.all()
 
@@ -80,19 +51,6 @@ function squirtle.wrapPeripheral(types, sides)
     end
 end
 
----@param sides? table
-function squirtle.wrapItemContainer(sides)
-    sides = sides or Sides.all()
-
-    for i = 1, #sides do
-        local candidate = peripheral.wrap(sides[i])
-
-        if candidate ~= nil and type(candidate.getItemDetail) == "function" then
-            return peripheral.wrap(sides[i]), sides[i]
-        end
-    end
-end
-
 function squirtle.refuelUsingLocalLava()
     local emptyBucketSlot = nil
 
@@ -117,43 +75,6 @@ function squirtle.waitForUserToHitEnter()
             break
         end
     end
-end
-
-function squirtle.preTaskRefuelRoutine(minFuel)
-    squirtle.printFuelLevelToMonitor(minFuel)
-    squirtle.refuelUsingLocalLava()
-
-    while turtle.getFuelLevel() < minFuel do
-        print("[waiting] fuel critical - put lava buckets into turtle inventory, then hit enter")
-        squirtle.waitForUserToHitEnter()
-        squirtle.refuelUsingLocalLava()
-        squirtle.printFuelLevelToMonitor(minFuel)
-    end
-
-    squirtle.printFuelLevelToMonitor(minFuel)
-    print("[status] fuel level ok")
-end
-
-function squirtle.firstEmptySlot()
-    for slot = 1, Inventory.numSlots() do
-        if turtle.getItemCount(slot) == 0 then
-            return slot
-        end
-    end
-
-    return nil
-end
-
-function squirtle.selectFirstEmptySlot()
-    local slot = squirtle.firstEmptySlot()
-
-    if not slot then
-        return false
-    end
-
-    turtle.select(slot)
-
-    return slot
 end
 
 function squirtle.firstEmptySlotInItems(table, size)
@@ -198,7 +119,7 @@ function squirtle.suckSlotFromContainer(side, slot, count)
 
             print("temporarily load first container slot into turtle...")
             local initialSlot = turtle.getSelectedSlot()
-            squirtle.selectFirstEmptySlot()
+            Inventory.selectFirstEmptySlot()
             Turtle.suck(side)
             container.pushItems(side, slot, count, 1)
             -- [todo] if we want to be super strict, we would have to move the
@@ -216,17 +137,6 @@ function squirtle.suckSlotFromContainer(side, slot, count)
     end
 
     return Turtle.suck()
-end
-
-function squirtle.selectFirstNonEmptySlot()
-    for slot = 1, Inventory.numSlots() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
-            return slot
-        end
-    end
-
-    return false
 end
 
 function squirtle.printFuelLevelToMonitor(minFuel)

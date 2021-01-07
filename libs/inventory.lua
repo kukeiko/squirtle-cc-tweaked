@@ -5,6 +5,7 @@ end
 package.path = package.path .. ";/libs/?.lua"
 
 local FuelDictionary = require "fuel-dictionary"
+local Turtle = require "turtle"
 
 local Inventory = {}
 
@@ -44,6 +45,39 @@ function Inventory.isFull()
     return true
 end
 
+function Inventory.firstEmptySlot()
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) == 0 then
+            return slot
+        end
+    end
+
+    return nil
+end
+
+function Inventory.selectFirstEmptySlot()
+    local slot = Inventory.firstEmptySlot()
+
+    if not slot then
+        return false
+    end
+
+    turtle.select(slot)
+
+    return slot
+end
+
+function Inventory.selectFirstOccupiedSlot()
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) > 0 then
+            turtle.select(slot)
+            return slot
+        end
+    end
+
+    return false
+end
+
 -- [todo] unsure about how we deal with various data types for items (name only, stack, name-map => stack, slot-map => stack, ...)
 function Inventory.find(name)
     for slot = 1, Inventory.size() do
@@ -67,9 +101,32 @@ function Inventory.select(name)
     return slot
 end
 
--- function Inventory.findStack(stack)
---     error("not implemented")
--- end
+function Inventory.moveFirstSlotSomewhereElse()
+    if turtle.getItemCount(1) == 0 then
+        return true
+    end
+
+    turtle.select(1)
+
+    local slot = Inventory.firstEmptySlot()
+
+    if not slot then
+        return false
+    end
+
+    turtle.transferTo(slot)
+end
+
+function Inventory.dumpTo(outputSide)
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) > 0 then
+            turtle.select(slot)
+            Turtle.drop(outputSide)
+        end
+    end
+
+    return Inventory.isEmpty()
+end
 
 function Inventory.sumFuelLevel()
     local fuelSlots = Inventory.getFuelSlots()

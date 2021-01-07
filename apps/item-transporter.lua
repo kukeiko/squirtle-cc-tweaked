@@ -108,7 +108,7 @@ local function countItems(side)
 end
 
 local function refuelFromBuffer(bufferSide)
-    if not Squirtle.selectFirstEmptySlot() then
+    if not Inventory.selectFirstEmptySlot() then
         error("inventory unexpectedly full")
     end
 
@@ -208,7 +208,10 @@ local function startup()
         if not lookAtBuffer() then
             print("[startup] found the end instead, dumping inventory...")
             local dropSide = Turtle.faceSide(outputChestSide)
-            Squirtle.dumpInventoryToOutput(dropSide)
+            
+            while not Inventory.dumpTo(dropSide) do
+                os.sleep(7)
+            end
 
             -- we navigated to the end, dump and return back
             navigateTunnel(findSideOfNearbyChest)
@@ -232,7 +235,7 @@ local function unloadAnyOneItem()
     if inputChestSide then
         local dropSide, undoFacePeripheral = Turtle.facePeripheral(inputChestSide)
 
-        for slot = 1, Inventory.numSlots() do
+        for slot = 1, Inventory.size() do
             if turtle.getItemCount(slot) > 0 then
                 turtle.select(slot)
                 Turtle.drop(dropSide)

@@ -13,7 +13,7 @@ function Refueler.refuelFromInventory()
     local remainingSlots = {}
     local firstEmptyBucketSlot = nil
 
-    for slot = 1, Inventory.numSlots() do
+    for slot = 1, Inventory.size() do
         local item = turtle.getItemDetail(slot)
 
         if item ~= nil and FuelDictionary.isFuel(item.name) then
@@ -78,7 +78,7 @@ function Refueler.refuelFromBuffer(side, maxFuelLevel, allowedOverFlow)
         return 0
     end
 
-    if not Squirtle.moveFirstSlotSomewhereElse() then
+    if not Inventory.moveFirstSlotSomewhereElse() then
         error("inventory full")
     end
 
@@ -125,7 +125,7 @@ function Refueler.refuelFromInputUsingBuffer(inputSide, bufferSide, maxFuelLevel
         buffer.pushItems(bufferSide, 1, firstEmptyBufferSlot)
     end
 
-    if not Squirtle.selectFirstEmptySlot() then
+    if not Inventory.selectFirstEmptySlot() then
         return 0, "inventory full"
     end
 

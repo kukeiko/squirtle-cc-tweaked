@@ -2,6 +2,7 @@ package.path = package.path .. ";/libs/?.lua"
 
 local FuelDictionary = require "fuel-dictionary"
 local Inventory = require "inventory"
+local Peripheral = require "peripheral"
 local Refueler = require "refueler"
 local Sides = require "sides"
 local Squirtle = require "squirtle"
@@ -77,7 +78,7 @@ local function resetState()
 end
 
 local function refuelFromBuffer(bufferSide, outputSide)
-    if not Squirtle.selectFirstEmptySlot() then
+    if not Inventory.selectFirstEmptySlot() then
         error("inventory unexpectedly full")
     end
 
@@ -203,7 +204,7 @@ local function dropIntoStorageChest(side)
         itemsToDrop[filteredItem.name] = true
     end
 
-    for slot = 1, Inventory.numSlots() do
+    for slot = 1, Inventory.size() do
         local candidate = turtle.getItemDetail(slot)
 
         if candidate ~= nil and itemsToDrop[candidate.name] then
@@ -237,7 +238,7 @@ local function distribute()
     local fuelPerTrip = 0
 
     while not Inventory.isEmpty() and turtle.forward() do
-        local chest, outputSide = Squirtle.wrapItemContainer({"left", "right"})
+        local chest, outputSide = Peripheral.wrapContainer({"left", "right"})
 
         if (chest ~= nil) then
             dropIntoStorageChest(outputSide)
@@ -324,7 +325,10 @@ local function startup(inputSide, fuelPerTrip)
             distribute()
         else
             print("[startup] rebooted while dumping cargo to output")
-            Squirtle.dumpInventoryToOutput(outputSide)
+
+            while not Inventory.dumpTo(outputSide) do
+                os.sleep(7)
+            end
         end
     end
 end
@@ -387,7 +391,10 @@ local function main(args)
             patchState({fuelPerTrip = fuelPerTrip})
 
             -- pass items we couldn't sort in to the next turtle
-            Squirtle.dumpInventoryToOutput(outputSide)
+
+            while not Inventory.dumpTo(outputSide) do
+                os.sleep(7)
+            end
 
             print("[task] checking input chest...")
         end
