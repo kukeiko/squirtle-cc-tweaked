@@ -1,145 +1,39 @@
 package.path = package.path .. ";/libs/?.lua"
 
+local Inventory = require "inventory"
 local Monitor = require "monitor"
 local MonitorModemProxy = require "monitor-modem-proxy"
 local Sides = require "sides"
+local Turtle = require "turtle"
+
 local squirtle = {}
 
-function squirtle.getFuelLevelPercent()
-    return turtle.getFuelLevel() / turtle.getFuelLimit() * 100
-end
-
-function squirtle.tryTurn(side)
-    if side == "left" or side == "right" or side == "back" then
-        return squirtle.turn(side)
+function squirtle.moveFirstSlotSomewhereElse()
+    if turtle.getItemCount(1) == 0 then
+        return true
     end
 
-    return false
-end
+    turtle.select(1)
 
-function squirtle.facePeripheral(side)
-    if side == "left" or side == "right" or side == "back" then
-        squirtle.turn(side)
+    local slot = squirtle.firstEmptySlot()
 
-        return "front"
-    end
-
-    return side
-end
-
-function squirtle.suck(side, count)
-    if side == "top" then
-        return turtle.suckUp(count)
-    elseif side == "bottom" then
-        return turtle.suckDown(count)
-    else
-        return turtle.suck(count)
-    end
-end
-
-function squirtle.turn(side)
-    if (side == "left") then
-        return turtle.turnLeft()
-    elseif (side == "right") then
-        return turtle.turnRight()
-    elseif (side == "back") then
-        local s, e = turtle.turnLeft()
-
-        if not s then
-            return e
-        end
-
-        return turtle.turnLeft()
-    else
-        error("Can only turn to left, right and back")
-    end
-end
-
-function squirtle.turnAround()
-    local s, e = turtle.turnLeft()
-
-    if not s then
-        return e
-    end
-
-    return turtle.turnLeft()
-end
-
--- function squirtle.forwardUntilFail()
---     local moved = 0
-
---     while true do
---         local s, e = turtle.forward()
-
---         if not s then
---             return s, e
---         end
-
---         moved = moved + 1
---     end
-
---     return moved
--- end
-
-function squirtle.suck(side, count)
-    if side == "top" then
-        return turtle.suckUp(count)
-    elseif (side == "bottom") then
-        return turtle.suckDown(count)
-    elseif side == "front" or side == nil then
-        return turtle.suck(count)
-    else
-        error("Can only suck from front, top or bottom")
-    end
-end
-
-function squirtle.drop(side, count)
-    if (side == "top") then
-        return turtle.dropUp(count)
-    elseif (side == "bottom") then
-        return turtle.dropDown(count)
-    elseif side == "front" or side == nil then
-        return turtle.drop(count)
-    else
-        error("Can only drop in front, top or bottom")
-    end
-end
-
-function squirtle.undoTurn(side)
-    if side == "back" then
-        return squirtle.turn(side)
-    elseif side == "left" or side == "right" then
-        return squirtle.turn(Sides.invert(side))
-    else
-        error("Can only unto left, right & back turns")
-    end
-end
-
-function squirtle.tryUndoTurn(side)
-    if side == "back" then
-        return squirtle.turn(side)
-    elseif side == "left" or side == "right" then
-        return squirtle.turn(Sides.invert(side))
-    else
+    if not slot then
         return false
     end
+
+    turtle.transferTo(slot)
 end
 
-function squirtle.invertSide(side)
-    if side == "left" then
-        return "right"
-    elseif side == "right" then
-        return "left"
-    elseif side == "top" then
-        return "bottom"
-    elseif side == "bottom" then
-        return "top"
-    elseif side == "front" then
-        return "back"
-    elseif side == "back" then
-        return "front"
-    else
-        error(side .. " is not a valid side")
+function squirtle.dumpInventoryToOutput(outputSide)
+    for slot = 1, Inventory.numSlots() do
+        if turtle.getItemCount(slot) > 0 then
+            turtle.select(slot)
+
+            while not Turtle.drop(outputSide) or turtle.getItemCount(slot) > 0 do
+                print("[task] output full, waiting 7s...")
+                os.sleep(7)
+            end
+        end
     end
 end
 
@@ -199,83 +93,11 @@ function squirtle.wrapItemContainer(sides)
     end
 end
 
-function squirtle.findItem(name)
-    for slot = 1, squirtle.numSlots() do
-        local item = turtle.getItemDetail(slot)
-
-        if item and item.name == name then
-            return slot
-        end
-    end
-end
-
-function squirtle.selectItem(name)
-    local slot = squirtle.findItem(name)
-
-    if not slot then
-        return false
-    end
-
-    turtle.select(slot)
-
-    return slot
-end
-
-function squirtle.numSlots()
-    return 16
-end
-
-function squirtle.numEmptySlots()
-    local numEmpty = 0
-
-    for slot = 1, squirtle.numSlots() do
-        if turtle.getItemCount(slot) == 0 then
-            numEmpty = numEmpty + 1
-        end
-    end
-
-    return numEmpty
-end
-
-function squirtle.hasEmptySlot()
-    for slot = 1, squirtle.numSlots() do
-        if turtle.getItemCount(slot) == 0 then
-            return true
-        end
-    end
-
-    return false
-end
-
-function squirtle.isEmpty()
-    for slot = 1, squirtle.numSlots() do
-        if turtle.getItemCount(slot) > 0 then
-            return false
-        end
-    end
-
-    return true
-end
-
-function squirtle.isFull()
-    for slot = 1, squirtle.numSlots() do
-        if turtle.getItemCount(slot) == 0 then
-            return false
-        end
-    end
-
-    return true
-end
-
-function squirtle.getMissingFuel()
-    return turtle.getFuelLimit() - turtle.getFuelLevel()
-end
-
 function squirtle.refuelUsingLocalLava()
     local emptyBucketSlot = nil
 
-    while squirtle.getMissingFuel() > 1000 do
-        local lavaBucketSlot = squirtle.findItem("minecraft:lava_bucket")
+    while Turtle.getMissingFuel() > 1000 do
+        local lavaBucketSlot = Inventory.find("minecraft:lava_bucket")
 
         if lavaBucketSlot then
             turtle.select(lavaBucketSlot)
@@ -312,19 +134,92 @@ function squirtle.preTaskRefuelRoutine(minFuel)
     print("[status] fuel level ok")
 end
 
-function squirtle.selectFirstEmptySlot()
-    for slot = 1, squirtle.numSlots() do
+function squirtle.firstEmptySlot()
+    for slot = 1, Inventory.numSlots() do
         if turtle.getItemCount(slot) == 0 then
-            turtle.select(slot)
             return slot
         end
     end
 
-    return false
+    return nil
+end
+
+function squirtle.selectFirstEmptySlot()
+    local slot = squirtle.firstEmptySlot()
+
+    if not slot then
+        return false
+    end
+
+    turtle.select(slot)
+
+    return slot
+end
+
+function squirtle.firstEmptySlotInItems(table, size)
+    for index = 1, size do
+        if table[index] == nil then
+            return index
+        end
+    end
+end
+
+function squirtle.emptySlotsInItems(items, size)
+    local emptySlots = {}
+
+    for slot = 1, size do
+        if items[slot] == nil then
+            table.insert(emptySlots, slot)
+        end
+    end
+
+    return emptySlots
+end
+
+function squirtle.suckSlotFromContainer(side, slot, count)
+    if slot == 1 then
+        return Turtle.suck(side, count)
+    end
+
+    local container = peripheral.wrap(side)
+    local items = container.list()
+
+    if items[1] ~= nil then
+        local firstEmptySlot = squirtle.firstEmptySlotInItems(items, container.size())
+
+        if not firstEmptySlot and Inventory.isFull() then
+            -- [todo] add and use "unloadAnyOneItem()" method from item-transporter
+            error("container full. turtle also full, so no temporary unloading possible.")
+        elseif not firstEmptySlot then
+            if count ~= nil and count ~= items[slot].count then
+                -- [todo] we're not gonna have a slot free in the container
+                error("not yet implemented: container would still be full even after moving slot")
+            end
+
+            print("temporarily load first container slot into turtle...")
+            local initialSlot = turtle.getSelectedSlot()
+            squirtle.selectFirstEmptySlot()
+            Turtle.suck(side)
+            container.pushItems(side, slot, count, 1)
+            -- [todo] if we want to be super strict, we would have to move the
+            -- item we just sucked in back to the first slot after sucking the requested item
+            Turtle.drop(side)
+            print("pushing back temporarily loaded item")
+            turtle.select(initialSlot)
+        else
+            print("moving first slot to first empty slot")
+            container.pushItems(side, 1, nil, firstEmptySlot)
+            container.pushItems(side, slot, count, 1)
+        end
+    else
+        container.pushItems(side, slot, count, 1)
+    end
+
+    return Turtle.suck()
 end
 
 function squirtle.selectFirstNonEmptySlot()
-    for slot = 1, squirtle.numSlots() do
+    for slot = 1, Inventory.numSlots() do
         if turtle.getItemCount(slot) > 0 then
             turtle.select(slot)
             return slot
@@ -341,7 +236,8 @@ function squirtle.printFuelLevelToMonitor(minFuel)
         return
     end
 
-    local text = string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
+    local text =
+        string.format("Fuel: %3.2f %%", turtle.getFuelLevel() / turtle.getFuelLimit() * 100)
     local w, h = monitor:getSize()
     local y = math.ceil(h / 2)
     local x = math.ceil((w - #text + 1) / 2);

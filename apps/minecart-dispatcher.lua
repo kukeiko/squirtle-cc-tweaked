@@ -1,7 +1,9 @@
 package.path = package.path .. ";/libs/?.lua"
 
+local Inventory = require "inventory"
 local Sides = require "sides"
 local Squirtle = require "squirtle"
+local Turtle = require "turtle"
 
 local function writeStartupFile()
     local file = fs.open("startup/minecart-dispatcher.autorun.lua", "w")
@@ -22,7 +24,7 @@ local function main(args)
         error("no nearby chest found")
     end
 
-    inputSide = Squirtle.facePeripheral(inputSide)
+    inputSide = Turtle.faceSide(inputSide)
 
     local barrel, barrelSide = Squirtle.wrapPeripheral({"minecraft:barrel"}, Sides.horizontal())
 
@@ -31,32 +33,32 @@ local function main(args)
     end
 
     while true do
-        local suckSide = Squirtle.facePeripheral(inputSide)
+        local suckSide, undoFaceInput = Turtle.faceSide(inputSide)
 
-        while Squirtle.suck(suckSide) do
+        while Turtle.suck(suckSide) do
         end
 
-        Squirtle.tryUndoTurn(inputSide)
+        undoFaceInput()
 
-        if not Squirtle.isEmpty() then
+        if not Inventory.isEmpty() then
             print("found items! waiting for minecart...")
             Squirtle.selectFirstNonEmptySlot()
-            local dropSide = Squirtle.facePeripheral(barrelSide)
-            Squirtle.drop(dropSide, 1)
+            local dropSide, undoFaceBarrel = Turtle.faceSide(barrelSide)
+            Turtle.drop(dropSide, 1)
 
-            while not Squirtle.suck("bottom") do
+            while not Turtle.suck("bottom") do
             end
 
-            Squirtle.tryUndoTurn(barrelSide)
+            undoFaceBarrel()
 
             print("minecart is here! filling it up...")
             local minecartFull = false
 
-            for slot = 1, Squirtle.numSlots() do
+            for slot = 1, Inventory.size() do
                 if turtle.getItemCount(slot) > 0 then
                     turtle.select(slot)
 
-                    if not Squirtle.drop("bottom") then
+                    if not Turtle.drop("bottom") then
                         minecartFull = true
                     end
                 end

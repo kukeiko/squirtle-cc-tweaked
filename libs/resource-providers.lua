@@ -56,7 +56,7 @@ function ResourceProviders:find(resources)
                         local open = stack.count
 
                         while open > 0 do
-                            if not Squirtle.selectItem(stack.name) then
+                            if not Inventory.select(stack.name) then
                                 error("required fuel stack no longer available")
                             end
 

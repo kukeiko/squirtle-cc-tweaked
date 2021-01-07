@@ -14,7 +14,7 @@ end
 
 -- https://stackoverflow.com/a/26367080/1611592
 function Utils.copy(obj, seen)
-    if type(obj) ~= 'table' then
+    if type(obj) ~= "table" then
         return obj
     end
 

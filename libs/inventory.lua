@@ -12,6 +12,65 @@ function Inventory.size()
     return 16
 end
 
+function Inventory.availableSize()
+    local numEmpty = 0
+
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) == 0 then
+            numEmpty = numEmpty + 1
+        end
+    end
+
+    return numEmpty
+end
+
+function Inventory.isEmpty()
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+function Inventory.isFull()
+    for slot = 1, Inventory.size() do
+        if turtle.getItemCount(slot) == 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+-- [todo] unsure about how we deal with various data types for items (name only, stack, name-map => stack, slot-map => stack, ...)
+function Inventory.find(name)
+    for slot = 1, Inventory.size() do
+        local item = turtle.getItemDetail(slot)
+
+        if item and item.name == name then
+            return slot
+        end
+    end
+end
+
+function Inventory.select(name)
+    local slot = Inventory.find(name)
+
+    if not slot then
+        return false
+    end
+
+    turtle.select(slot)
+
+    return slot
+end
+
+-- function Inventory.findStack(stack)
+--     error("not implemented")
+-- end
+
 function Inventory.sumFuelLevel()
     local fuelSlots = Inventory.getFuelSlots()
     local fuel = 0

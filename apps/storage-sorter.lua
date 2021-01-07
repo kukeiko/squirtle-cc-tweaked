@@ -1,9 +1,11 @@
 package.path = package.path .. ";/libs/?.lua"
 
-local Squirtle = require "squirtle"
-local Sides = require "sides"
 local FuelDictionary = require "fuel-dictionary"
+local Inventory = require "inventory"
 local Refueler = require "refueler"
+local Sides = require "sides"
+local Squirtle = require "squirtle"
+local Turtle = require "turtle"
 
 local function writeStartupFile(argInputSide)
     local file = fs.open("startup/storage-sorter.autorun.lua", "w")
@@ -90,7 +92,7 @@ local function refuelFromBuffer(bufferSide, outputSide)
 
         -- drop an empty bucket or leftover items into the output chest in case we refueled using lava
         if turtle.getItemCount() > 0 then
-            while not Squirtle.drop(outputSide) do
+            while not Turtle.drop(outputSide) do
             end
         end
     end
@@ -100,12 +102,12 @@ local function refuelFromInventory(outputSide)
     local refueled, remainingSlots = Refueler.refuelFromInventory()
 
     if refueled > 0 then
-        print("refueled " .. refueled .. " from inventory")
+        print("[refuel] refueled " .. refueled .. " from inventory")
     end
 
     for i = 1, #remainingSlots do
         turtle.select(remainingSlots[i])
-        Squirtle.drop(outputSide)
+        Turtle.drop(outputSide)
     end
 end
 
@@ -113,7 +115,7 @@ local function refuel(inputSide)
     local outputSide = Sides.invert(inputSide)
     local bufferSide = "front"
     local inputChest = peripheral.wrap(inputSide)
-    local missingFuel = Squirtle.getMissingFuel()
+    local missingFuel = Turtle.getMissingFuel()
     local slotsToConsume = {}
 
     -- collect the slots with fuel for consumption, and immediately push into the output
@@ -134,11 +136,12 @@ local function refuel(inputSide)
     end
 
     -- early exit - missing fuel after using items would stay the same
-    if missingFuel == Squirtle.getMissingFuel() then
+    if missingFuel == Turtle.getMissingFuel() then
         return 0
     end
 
-    print("refueling from " .. turtle.getFuelLevel() .. " to " .. turtle.getFuelLimit() - math.max(0, missingFuel) .. "...")
+    print("[refuel] trying to refuel from " .. turtle.getFuelLevel() .. " to " ..
+              turtle.getFuelLimit() - math.max(0, missingFuel) .. "...")
     patchState({isBufferOpen = true})
 
     for i = 1, #slotsToConsume do
@@ -148,14 +151,15 @@ local function refuel(inputSide)
             refuelFromBuffer(bufferSide, outputSide)
 
             if inputChest.pushItems(bufferSide, slotsToConsume[i]) == 0 then
-                error("could not push into buffer, which should've been empty because we just emptied it for refueling")
+                error(
+                    "could not push into buffer, which should've been empty because we just emptied it for refueling")
             end
         end
     end
 
     refuelFromBuffer(bufferSide, outputSide)
     patchState({isBufferOpen = false})
-    print("refueled to " .. turtle.getFuelLevel())
+    print("[refuel] refueled to " .. turtle.getFuelLevel())
 end
 
 local function getChestStats(side)
@@ -199,7 +203,7 @@ local function dropIntoStorageChest(side)
         itemsToDrop[filteredItem.name] = true
     end
 
-    for slot = 1, Squirtle.numSlots() do
+    for slot = 1, Inventory.numSlots() do
         local candidate = turtle.getItemDetail(slot)
 
         if candidate ~= nil and itemsToDrop[candidate.name] then
@@ -208,31 +212,31 @@ local function dropIntoStorageChest(side)
     end
 
     if (#slotsToDrop > 0) then
-        Squirtle.turn(side)
+        local dropSide, undoFaceStorage = Turtle.faceSide(side)
 
         -- [todo]: break early if chest is full. need to be careful about chests that
         -- have more than one item type to sort in.
         for i = 1, #slotsToDrop do
             turtle.select(slotsToDrop[i])
 
-            if not turtle.drop() and numItemTypes == 1 then
+            if not Turtle.drop(dropSide) and numItemTypes == 1 then
                 -- we can break early because chest only accepts 1 type of item, so a failure in
                 -- dropping items can only be because the chest is full
                 break
             end
         end
 
-        Squirtle.undoTurn(side)
+        undoFaceStorage()
     end
 
     turtle.select(1)
 end
 
 local function distribute()
-    Squirtle.turnAround()
+    Turtle.turnAround()
     local fuelPerTrip = 0
 
-    while not Squirtle.isEmpty() and turtle.forward() do
+    while not Inventory.isEmpty() and turtle.forward() do
         local chest, outputSide = Squirtle.wrapItemContainer({"left", "right"})
 
         if (chest ~= nil) then
@@ -244,7 +248,7 @@ local function distribute()
 
     patchState({isDistributing = false})
     -- go home
-    Squirtle.turnAround()
+    Turtle.turnAround()
 
     while turtle.forward() do
         fuelPerTrip = fuelPerTrip + 1
@@ -253,19 +257,7 @@ local function distribute()
     return fuelPerTrip
 end
 
-local function dumpInventoryToOutput(outputSide)
-    for slot = 1, Squirtle.numSlots() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
-
-            while not Squirtle.drop(outputSide) do
-                os.sleep(7)
-            end
-        end
-    end
-end
-
-local function goHomeFromAnyState()
+local function findHome()
     if not lookAtBuffer() then
         -- either the player did not place a barrel for the turtle, or we're not at our starting position.
         -- we first assume that we're not at our starting position due to the chunk the turtle is in being unloaded during its trip.
@@ -279,12 +271,12 @@ local function goHomeFromAnyState()
         end
 
         if not lookAtBuffer() then
-            Squirtle.turnAround()
+            Turtle.turnAround()
             while turtle.forward() do
             end
 
             if not lookAtBuffer() then
-                error("no barrel found")
+                error("could not find home: no barrel found")
             end
         end
     end
@@ -303,7 +295,7 @@ local function clearBuffer(bufferSide, outputSide)
 end
 
 local function startup(inputSide, fuelPerTrip)
-    goHomeFromAnyState()
+    findHome()
     Squirtle.printFuelLevelToMonitor(fuelPerTrip)
 
     local state = loadState()
@@ -311,37 +303,39 @@ local function startup(inputSide, fuelPerTrip)
     local outputSide = Sides.invert(inputSide)
 
     if state.isBufferOpen then
-        print("buffer corrupted. cleaning out...")
+        print("[startup] buffer was open during reboot, clearing it out...")
         clearBuffer(bufferSide, outputSide)
         patchState({isBufferOpen = false})
     end
 
     refuelFromInventory(outputSide)
 
-    if not Squirtle.isEmpty() then
+    if not Inventory.isEmpty() then
         if state.isDistributing then
-            print("i was interrupted while distributing cargo")
+            print("[startup] rebooted while sorting items into storage")
 
             while turtle.getFuelLevel() < fuelPerTrip do
-                print("not enough fuel - put fuel into inventory, then hit enter")
+                print("[startup] not enough fuel - put fuel into inventory, then hit enter")
                 Squirtle.waitForUserToHitEnter()
-                refuelFromInventory()
+                refuelFromInventory(outputSide)
             end
 
+            print("[startup] distributing cargo...")
             distribute()
         else
-            print("i was interrupted while dumping to output")
-            dumpInventoryToOutput(outputSide)
+            print("[startup] rebooted while dumping cargo to output")
+            Squirtle.dumpInventoryToOutput(outputSide)
         end
     end
 end
 
 local function main(args)
-    print("[storage-sorter @ 4.1.0]")
+    print("[storage-sorter @ 4.2.0]")
 
     -- todo: consolidate parsing into 1 method
     local argInputSide = args[1]
     local inputSide = parseInputSide(argInputSide)
+    local outputSide = Sides.invert(inputSide)
     local options = parseOptions(args)
 
     if options.autorun then
@@ -367,7 +361,7 @@ local function main(args)
 
         local hasEnoughFuel = turtle.getFuelLevel() >= fuelPerTrip
         local chestHadNoChange = numInputItems == getChestStats(inputSide)
-        local hasFullTurtleLoad = numInputStacks >= Squirtle.numEmptySlots()
+        local hasFullTurtleLoad = numInputStacks >= Inventory.availableSize()
 
         if hasEnoughFuel and numInputItems > 0 and (chestHadNoChange or hasFullTurtleLoad) then
             if chestHadNoChange then
@@ -376,21 +370,26 @@ local function main(args)
                 print("chest has more than i can carry")
             end
 
-            print("sorting items into storage...")
+            print("[task] sorting items into storage...")
             patchState({isDistributing = true})
 
-            -- [todo] it is possible we're sucking in fuel we haven't been able to forward
-            -- to the next turtle during the refuel routine. figure out if that's bad or not.
-            while Squirtle.suck(inputSide) do
+            -- [todo] protect against slow input feed
+            while Turtle.suck(inputSide) do
             end
+
+            -- [note] it's possible fuel got added to the input directly after we refueled from it.
+            -- in that case, refuel from inventory once more so we quickly pass on extra fuel
+            -- to the next turtle. we don't have to check for an empty inventory after this call
+            -- (i.e. we only sucked in fuel) because distribute() checks for it already.
+            refuelFromInventory(outputSide)
 
             fuelPerTrip = distribute()
             patchState({fuelPerTrip = fuelPerTrip})
 
-            print("pushing remaining into output chest...")
-            dumpInventoryToOutput(Sides.invert(inputSide))
+            -- pass items we couldn't sort in to the next turtle
+            Squirtle.dumpInventoryToOutput(outputSide)
 
-            print("checking input chest...")
+            print("[task] checking input chest...")
         end
     end
 end

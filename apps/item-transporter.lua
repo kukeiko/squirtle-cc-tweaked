@@ -1,7 +1,10 @@
 package.path = package.path .. ";/libs/?.lua"
 
-local Squirtle = require "squirtle"
 local FuelDictionary = require "fuel-dictionary"
+local Inventory = require "inventory"
+local Refueler = require "refueler"
+local Squirtle = require "squirtle"
+local Turtle = require "turtle"
 
 local statePath = "/state/apps/item-transporter.state"
 
@@ -136,7 +139,7 @@ local function refuel(inputSide)
     -- print("[task] refueling (current: " .. turtle.getFuelLevel() .. ")")
     local bufferSide = "front"
     local inputChest = peripheral.wrap(inputSide)
-    local missingFuel = Squirtle.getMissingFuel()
+    local missingFuel = Turtle.getMissingFuel()
     local slotsToConsume = {}
 
     -- collect the slots with fuel for consumption, and immediately push into the output
@@ -155,11 +158,12 @@ local function refuel(inputSide)
     end
 
     -- early exit - missing fuel after using items would stay the same
-    if missingFuel == Squirtle.getMissingFuel() then
+    if missingFuel == Turtle.getMissingFuel() then
         return 0
     end
 
-    print("can refuel from " .. turtle.getFuelLevel() .. " to " .. turtle.getFuelLimit() - math.max(0, missingFuel))
+    print("can refuel from " .. turtle.getFuelLevel() .. " to " .. turtle.getFuelLimit() -
+              math.max(0, missingFuel))
     patchState({isBufferOpen = true})
 
     for i = 1, #slotsToConsume do
@@ -169,7 +173,8 @@ local function refuel(inputSide)
             refuelFromBuffer(bufferSide)
 
             if inputChest.pushItems(bufferSide, slotsToConsume[i]) == 0 then
-                error("could not push into buffer, which should've been empty because we just emptied it for refueling")
+                error(
+                    "could not push into buffer, which should've been empty because we just emptied it for refueling")
             end
         end
     end
@@ -191,36 +196,19 @@ local function lookAtBuffer()
     return peripheral.getType("front") == "minecraft:barrel"
 end
 
-local function dumpInventoryToOutput(outputSide)
-    for slot = 1, Squirtle.numSlots() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
-
-            while not Squirtle.drop(outputSide) do
-                os.sleep(7)
-            end
-        end
-    end
-end
-
 local function startup()
     local state = loadState()
     local bufferSide = "front"
 
     if not lookAtBuffer() then
-        print("got interrupted while not at home, trying to find it...")
+        print("[startup] rebooted while not at home, trying to find it...")
         -- find home
         local outputChestSide = navigateTunnel(findSideOfNearbyChest)
 
         if not lookAtBuffer() then
-            print("we reached end, dump inventory...")
-            local dropSide = outputChestSide
-
-            if Squirtle.tryTurn(outputChestSide) then
-                dropSide = "front"
-            end
-
-            dumpInventoryToOutput(dropSide)
+            print("[startup] found the end instead, dumping inventory...")
+            local dropSide = Turtle.faceSide(outputChestSide)
+            Squirtle.dumpInventoryToOutput(dropSide)
 
             -- we navigated to the end, dump and return back
             navigateTunnel(findSideOfNearbyChest)
@@ -238,6 +226,98 @@ local function startup()
     end
 end
 
+local function unloadAnyOneItem()
+    local inputChestSide = findSideOfNearbyChest()
+
+    if inputChestSide then
+        local dropSide, undoFacePeripheral = Turtle.facePeripheral(inputChestSide)
+
+        for slot = 1, Inventory.numSlots() do
+            if turtle.getItemCount(slot) > 0 then
+                turtle.select(slot)
+                Turtle.drop(dropSide)
+
+                if turtle.getItemCount(slot) == 0 then
+                    undoFacePeripheral()
+                    return true
+                end
+            end
+        end
+    end
+
+    -- [todo] hardcoded
+    if lookAtBuffer() then
+        local bufferSide = "front"
+        local buffer = peripheral.wrap(bufferSide)
+        local emptyBufferSlots = Squirtle.emptySlotsInItems(buffer.list(), buffer.size())
+
+        if #emptyBufferSlots > 1 then
+            turtle.select(1)
+            Turtle.drop(bufferSide)
+
+            return true
+        end
+    end
+
+    return false
+end
+
+local function ensureMinimalFuelLevel(minFuel)
+    if turtle.getFuelLevel() >= math.max(minFuel, 0) then
+        return
+    end
+
+    print("[refuel] need " .. minFuel - turtle.getFuelLevel() ..
+              " more fuel to continue, trying to find some...")
+
+    local refueled = Refueler.refuelFromInventory()
+
+    if refueled > 0 and turtle.getFuelLevel() >= minFuel then
+        print("[refuel] found enough fuel in the inventory")
+        return
+    elseif refueled > 0 and turtle.getFuelLevel() < minFuel then
+        print("[refuel] refueled " .. refueled .. " from inventory, but it's not enough")
+    end
+
+    if not lookAtBuffer() then
+        -- [todo] allow user to add fuel into inventory manually
+        -- [todo] check input chest
+        error("not enough fuel to continue. can't check barrel because i'm not next to it.")
+    end
+
+    if Inventory.isFull() and not unloadAnyOneItem() then
+        -- [todo] allow user to add fuel into inventory manually
+        error(
+            "not enough fuel to continue, there might be some in input and/or buffer, but my inventory is full and i could not temporarily unload an item")
+    end
+
+    -- [todo] hardcoded
+    local bufferSide = "front"
+    -- [todo] should also always consume lava buckets cause it's an emergency (i.e. allow to consume more fuel than necessary)
+    -- [todo] update todo above because it does it now (cause of the 1000)
+    refueled = Refueler.refuelFromBuffer(bufferSide, minFuel, 1000)
+
+    if refueled > 0 and turtle.getFuelLevel() >= minFuel then
+        print("[refuel] found enough fuel in the buffer")
+        return
+    elseif refueled > 0 and turtle.getFuelLevel() < minFuel then
+        print("[refuel] refueled " .. refueled .. " from buffer, but it's not enough")
+    end
+
+    local inputChestSide = findSideOfNearbyChest()
+
+    if inputChestSide then
+        refueled = Refueler.refuelFromInputUsingBuffer(inputChestSide, bufferSide, minFuel, 1000)
+
+        if refueled > 0 and turtle.getFuelLevel() >= minFuel then
+            print("[refuel] found enough fuel in the input")
+            return
+        elseif refueled > 0 and turtle.getFuelLevel() < minFuel then
+            print("[refuel] refueled " .. refueled .. " from input, but it's not enough")
+        end
+    end
+end
+
 local function main(args)
     print("[item-transporter @ 2.1.0]")
 
@@ -247,7 +327,8 @@ local function main(args)
         file.close()
     end
 
-    local fuelPerTrip = 100
+    -- local fuelPerTrip = 100
+    local fuelPerTrip = 20000
 
     startup()
 
@@ -262,53 +343,69 @@ local function main(args)
             error("no nearby chest available")
         end
 
+        -- [wip]
         Squirtle.printFuelLevelToMonitor(fuelPerTrip)
-        refuel(inputChestSide)
+        ensureMinimalFuelLevel(fuelPerTrip)
         Squirtle.printFuelLevelToMonitor(fuelPerTrip)
 
-        local numInputItems = countItems(inputChestSide)
+        print("sleepy 3s")
         os.sleep(3)
-
-        if turtle.getFuelLevel() >= fuelPerTrip and numInputItems > 0 and numInputItems == countItems(inputChestSide) then
-            print("no change in input for 3s, transporting items...")
-
-            local suckSide = inputChestSide
-
-            if Squirtle.tryTurn(inputChestSide) then
-                suckSide = "front"
-            end
-
-            while Squirtle.suck(suckSide) do
-            end
-
-            print("[task] navigating tunnel to output chest")
-            local fuelLevelBeforeTrip = turtle.getFuelLevel()
-            local outputChestSide, outputChestSideError = navigateTunnel(findSideOfNearbyChest)
-
-            if (not outputChestSide) then
-                error(outputChestSideError)
-            end
-
-            local dropSide = outputChestSide
-
-            if Squirtle.tryTurn(outputChestSide) then
-                dropSide = "front"
-            end
-
-            print("[status] unloading...")
-            dumpInventoryToOutput(dropSide)
-
-            print("[status] unloaded as much as i could")
-            print("[task] navigating tunnel to input chest")
-            navigateTunnel(findSideOfNearbyChest)
-            fuelPerTrip = fuelLevelBeforeTrip - turtle.getFuelLevel()
-            print("fuel per trip:" .. fuelPerTrip)
-
-            if not lookAtBuffer() then
-                error("barrel is missing")
-            end
-        end
     end
+
+    -- while (true) do
+    --     local inputChestSide = findSideOfNearbyChest()
+
+    --     if (not inputChestSide) then
+    --         error("no nearby chest available")
+    --     end
+
+    --     Squirtle.printFuelLevelToMonitor(fuelPerTrip)
+    --     refuel(inputChestSide)
+    --     Squirtle.printFuelLevelToMonitor(fuelPerTrip)
+
+    --     local numInputItems = countItems(inputChestSide)
+    --     os.sleep(3)
+
+    --     if turtle.getFuelLevel() >= fuelPerTrip and numInputItems > 0 and numInputItems == countItems(inputChestSide) then
+    --         print("no change in input for 3s, transporting items...")
+
+    --         local suckSide = inputChestSide
+
+    --         if Squirtle.tryTurn(inputChestSide) then
+    --             suckSide = "front"
+    --         end
+
+    --         while Squirtle.suck(suckSide) do
+    --         end
+
+    --         print("[task] navigating tunnel to output chest")
+    --         local fuelLevelBeforeTrip = turtle.getFuelLevel()
+    --         local outputChestSide, outputChestSideError = navigateTunnel(findSideOfNearbyChest)
+
+    --         if (not outputChestSide) then
+    --             error(outputChestSideError)
+    --         end
+
+    --         local dropSide = outputChestSide
+
+    --         if Squirtle.tryTurn(outputChestSide) then
+    --             dropSide = "front"
+    --         end
+
+    --         print("[status] unloading...")
+    --         Squirtle.dumpInventoryToOutput(dropSide)
+
+    --         print("[status] unloaded as much as i could")
+    --         print("[task] navigating tunnel to input chest")
+    --         navigateTunnel(findSideOfNearbyChest)
+    --         fuelPerTrip = fuelLevelBeforeTrip - turtle.getFuelLevel()
+    --         print("fuel per trip:" .. fuelPerTrip)
+
+    --         if not lookAtBuffer() then
+    --             error("barrel is missing")
+    --         end
+    --     end
+    -- end
 end
 
 main(arg)
