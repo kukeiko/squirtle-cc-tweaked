@@ -1,5 +1,7 @@
 package.path = package.path .. ";/libs/?.lua"
 
+local Utils = require "utils"
+
 local FuelDictionary = {}
 local fuelItems = {
     ["minecraft:lava_bucket"] = 1000,
@@ -20,6 +22,41 @@ end
 --- @param stack table
 function FuelDictionary.getStackRefuelAmount(stack)
     return FuelDictionary.getRefuelAmount(stack.name) * stack.count
+end
+
+function FuelDictionary.pickStacks(stacks, fuelLevel, allowedOverFlow)
+    allowedOverFlow = math.max(allowedOverFlow or 0, 0)
+    local pickedStacks = {}
+    local openFuel = fuelLevel
+
+    for slot, stack in pairs(stacks) do
+        if FuelDictionary.isFuel(stack.name) then
+            local stackRefuelAmount = FuelDictionary.getStackRefuelAmount(stack)
+
+            if stackRefuelAmount <= openFuel then
+                pickedStacks[slot] = stack
+                openFuel = openFuel - stackRefuelAmount
+            else
+                local itemRefuelAmount = FuelDictionary.getRefuelAmount(stack.name)
+                local numRequiredItems = math.ceil(openFuel / itemRefuelAmount)
+
+                if (numRequiredItems * itemRefuelAmount) - openFuel <= allowedOverFlow then
+                    pickedStacks[slot] = {name = stack.name, count = numRequiredItems}
+                    openFuel = openFuel - stackRefuelAmount
+                end
+            end
+
+            if openFuel <= 0 then
+                break
+            end
+        end
+    end
+
+    if Utils.isEmpty(pickedStacks) then
+        pickedStacks = nil
+    end
+
+    return pickedStacks, openFuel
 end
 
 return FuelDictionary

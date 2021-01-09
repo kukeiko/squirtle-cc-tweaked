@@ -1,7 +1,7 @@
 package.path = package.path .. ";/libs/?.lua"
 
 function main(args)
-    if args[2] == "run-on-startup" then
+    if args[2] == "autorun" then
         local file = fs.open("startup/storage-hopper.autorun.lua", "w")
         file.write("shell.run(\"storage-hopper\", \"" .. args[1] .. "\")")
         file.close()

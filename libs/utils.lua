@@ -33,6 +33,14 @@ function Utils.copy(obj, seen)
     return res
 end
 
+function Utils.isEmpty(t)
+    for _, _ in pairs(t) do
+        return false
+    end
+
+    return true
+end
+
 function Utils.prettyPrint(value)
     Pretty.print(Pretty.pretty(value))
 end
@@ -45,6 +53,25 @@ function Utils.count(table)
     end
 
     return size
+end
+
+function Utils.waitForUserToHitEnter()
+    while true do
+        local _, key = os.pullEvent("key")
+        if (key == keys.enter) then
+            break
+        end
+    end
+end
+
+function Utils.writeAutorunFile(args)
+    local file = fs.open("startup/minecart-dispatcher.autorun.lua", "w")
+    file.write("shell.run(\"" .. table.concat(args) .. "\")")
+    file.close()
+end
+
+function Utils.noop()
+    -- do nothing
 end
 
 return Utils

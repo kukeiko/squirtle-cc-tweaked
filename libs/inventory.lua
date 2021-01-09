@@ -1,7 +1,3 @@
-if not turtle then
-    error("not a turtle")
-end
-
 package.path = package.path .. ";/libs/?.lua"
 
 local FuelDictionary = require "fuel-dictionary"
@@ -17,7 +13,7 @@ function Inventory.availableSize()
     local numEmpty = 0
 
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) == 0 then
+        if Turtle.getItemCount(slot) == 0 then
             numEmpty = numEmpty + 1
         end
     end
@@ -27,7 +23,7 @@ end
 
 function Inventory.isEmpty()
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) > 0 then
+        if Turtle.getItemCount(slot) > 0 then
             return false
         end
     end
@@ -37,7 +33,7 @@ end
 
 function Inventory.isFull()
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) == 0 then
+        if Turtle.getItemCount(slot) == 0 then
             return false
         end
     end
@@ -47,7 +43,7 @@ end
 
 function Inventory.firstEmptySlot()
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) == 0 then
+        if Turtle.getItemCount(slot) == 0 then
             return slot
         end
     end
@@ -62,15 +58,15 @@ function Inventory.selectFirstEmptySlot()
         return false
     end
 
-    turtle.select(slot)
+    Turtle.select(slot)
 
     return slot
 end
 
 function Inventory.selectFirstOccupiedSlot()
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
+        if Turtle.getItemCount(slot) > 0 then
+            Turtle.select(slot)
             return slot
         end
     end
@@ -79,11 +75,13 @@ function Inventory.selectFirstOccupiedSlot()
 end
 
 -- [todo] unsure about how we deal with various data types for items (name only, stack, name-map => stack, slot-map => stack, ...)
-function Inventory.find(name)
+function Inventory.find(name, exact)
     for slot = 1, Inventory.size() do
-        local item = turtle.getItemDetail(slot)
+        local item = Turtle.getItemDetail(slot)
 
-        if item and item.name == name then
+        if item and exact and item.name == name then
+            return slot
+        elseif item and string.find(item.name, name) then
             return slot
         end
     end
@@ -96,17 +94,17 @@ function Inventory.select(name)
         return false
     end
 
-    turtle.select(slot)
+    Turtle.select(slot)
 
     return slot
 end
 
 function Inventory.moveFirstSlotSomewhereElse()
-    if turtle.getItemCount(1) == 0 then
+    if Turtle.getItemCount(1) == 0 then
         return true
     end
 
-    turtle.select(1)
+    Turtle.select(1)
 
     local slot = Inventory.firstEmptySlot()
 
@@ -114,13 +112,13 @@ function Inventory.moveFirstSlotSomewhereElse()
         return false
     end
 
-    turtle.transferTo(slot)
+    Turtle.transferTo(slot)
 end
 
 function Inventory.dumpTo(outputSide)
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
+        if Turtle.getItemCount(slot) > 0 then
+            Turtle.select(slot)
             Turtle.drop(outputSide)
         end
     end
@@ -128,12 +126,36 @@ function Inventory.dumpTo(outputSide)
     return Inventory.isEmpty()
 end
 
+function Inventory.condense()
+    for slot = Inventory.size(), 1, -1 do
+        local item = Turtle.getItemDetail(slot)
+
+        if item then
+            for targetSlot = 1, slot - 1 do
+                local candidate = Turtle.getItemDetail(targetSlot)
+
+                if candidate and candidate.name == item.name then
+                    Turtle.select(slot)
+                    Turtle.transferTo(targetSlot)
+                    if Turtle.getItemCount(slot) == 0 then
+                        break
+                    end
+                elseif not candidate then
+                    Turtle.select(slot)
+                    Turtle.transferTo(targetSlot)
+                    break
+                end
+            end
+        end
+    end
+end
+
 function Inventory.sumFuelLevel()
     local fuelSlots = Inventory.getFuelSlots()
     local fuel = 0
 
     for i = 1, #fuelSlots do
-        fuel = fuel + FuelDictionary.getStackRefuelAmount(turtle.getItemDetail(fuelSlots[i]))
+        fuel = fuel + FuelDictionary.getStackRefuelAmount(Turtle.getItemDetail(fuelSlots[i]))
     end
 
     return fuel
@@ -143,7 +165,7 @@ function Inventory.getFuelSlots()
     local fuelSlots = {}
 
     for slot = 1, Inventory.size() do
-        if turtle.getItemCount(slot) > 0 and FuelDictionary.isFuel(turtle.getItemDetail(slot).name) then
+        if Turtle.getItemCount(slot) > 0 and FuelDictionary.isFuel(Turtle.getItemDetail(slot).name) then
             table.insert(fuelSlots, slot)
         end
     end
@@ -155,7 +177,7 @@ function Inventory.getFuelStacks()
     local fuelStacks = {}
 
     for slot = 1, Inventory.size() do
-        local stack = turtle.getItemDetail(slot)
+        local stack = Turtle.getItemDetail(slot)
 
         if stack ~= nil and FuelDictionary.isFuel(stack.name) then
             table.insert(fuelStacks, stack)
@@ -163,6 +185,20 @@ function Inventory.getFuelStacks()
     end
 
     return fuelStacks
+end
+
+function Inventory.list()
+    local list = {}
+
+    for slot = 1, Inventory.size() do
+        local item = Turtle.getItemDetail(slot)
+
+        if item then
+            list[slot] = item
+        end
+    end
+
+    return list
 end
 
 return Inventory

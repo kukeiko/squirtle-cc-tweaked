@@ -7,6 +7,7 @@ local Refueler = require "refueler"
 local Sides = require "sides"
 local Squirtle = require "squirtle"
 local Turtle = require "turtle"
+local Utils = require "utils"
 
 local function writeStartupFile(argInputSide)
     local file = fs.open("startup/storage-sorter.autorun.lua", "w")
@@ -100,16 +101,17 @@ local function refuelFromBuffer(bufferSide, outputSide)
 end
 
 local function refuelFromInventory(outputSide)
-    local refueled, remainingSlots = Refueler.refuelFromInventory()
+    error("refuelFromInventory() not implemented")
+    -- local refueled, remainingSlots = Refueler.refuelFromInventory()
 
-    if refueled > 0 then
-        print("[refuel] refueled " .. refueled .. " from inventory")
-    end
+    -- if refueled > 0 then
+    --     print("[refuel] refueled " .. refueled .. " from inventory")
+    -- end
 
-    for i = 1, #remainingSlots do
-        turtle.select(remainingSlots[i])
-        Turtle.drop(outputSide)
-    end
+    -- for i = 1, #remainingSlots do
+    --     turtle.select(remainingSlots[i])
+    --     Turtle.drop(outputSide)
+    -- end
 end
 
 local function refuel(inputSide)
@@ -238,7 +240,7 @@ local function distribute()
     local fuelPerTrip = 0
 
     while not Inventory.isEmpty() and turtle.forward() do
-        local chest, outputSide = Peripheral.wrapContainer({"left", "right"})
+        local chest, outputSide = Peripheral.wrapOneContainer({"left", "right"})
 
         if (chest ~= nil) then
             dropIntoStorageChest(outputSide)
@@ -317,7 +319,7 @@ local function startup(inputSide, fuelPerTrip)
 
             while turtle.getFuelLevel() < fuelPerTrip do
                 print("[startup] not enough fuel - put fuel into inventory, then hit enter")
-                Squirtle.waitForUserToHitEnter()
+                Utils.waitForUserToHitEnter()
                 refuelFromInventory(outputSide)
             end
 

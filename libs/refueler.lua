@@ -2,143 +2,179 @@ package.path = package.path .. ";/libs/?.lua"
 
 local FuelDictionary = require "fuel-dictionary"
 local Inventory = require "inventory"
+local Peripheral = require "peripheral"
 local Squirtle = require "squirtle"
 local Turtle = require "turtle"
+local Utils = require "utils"
 
 local Refueler = {}
 
--- todo: add "maxFuelLevel" & "allowedOverFlow" args, just like @pickFuelSlots
-function Refueler.refuelFromInventory()
-    local fuelLevelAtStart = turtle.getFuelLevel()
-    local remainingSlots = {}
-    local firstEmptyBucketSlot = nil
+---@param workspace Workspace
+---@param fuelLevel integer
+---@return boolean
+function Refueler.requireFuelLevel(workspace, fuelLevel)
+    if Turtle.hasFuel(fuelLevel) then
+        return true
+    end
 
-    for slot = 1, Inventory.size() do
-        local item = turtle.getItemDetail(slot)
+    local openFuel = fuelLevel - Turtle.getFuelLevel()
+    print("[refuel] need " .. openFuel .. " more fuel to continue, trying to find some...")
 
-        if item ~= nil and FuelDictionary.isFuel(item.name) then
-            local refuelAmount = FuelDictionary.getRefuelAmount(item.name)
-            local numItemsToRefuel = math.floor(Turtle.getMissingFuel() / refuelAmount)
+    local overflow = 1000
 
-            if numItemsToRefuel > 0 then
-                turtle.select(slot)
-                turtle.refuel(numItemsToRefuel)
+    if workspace:hasInventory() then
+        print("[refuel] checking inventory...")
+        openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
 
-                if item.name == "minecraft:lava_bucket" then
-                    if not firstEmptyBucketSlot then
-                        firstEmptyBucketSlot = slot
-                    else
-                        turtle.transferTo(firstEmptyBucketSlot)
-                    end
-                end
-            end
+        if openFuel == 0 then
+            print("[refuel] found enough fuel in the inventory")
+            return true
+        end
 
-            if turtle.getItemCount(slot) > 0 then
-                table.insert(remainingSlots, slot)
+        print("[refuel] refueled some from inventory, need " .. openFuel .. " more ...")
+    end
+
+    -- [todo] run input check and inventory check (where user adds fuel manually) in parallel
+    if workspace:hasInventory() and workspace:hasInput() and workspace:hasBuffer() then
+        print("[refuel] checking input...")
+        openFuel = Refueler.refuelFromInput(workspace, openFuel, overflow)
+
+        if openFuel > 0 then
+            print("[refuel] need " .. openFuel .. " more fuel, checking input every 7s...")
+        end
+
+        while openFuel > 0 do
+            os.sleep(7)
+            openFuel = Refueler.refuelFromInput(workspace, openFuel, overflow)
+        end
+
+        print("[refuel] found enough fuel via input")
+    end
+
+    if workspace:hasInventory() then
+        while openFuel > 0 do
+            print("[help] not enough fuel, need " .. openFuel ..
+                      " more. put some into inventory, then hit enter.")
+            Utils.waitForUserToHitEnter()
+            openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
+        end
+    end
+
+    return false, "not enough fuel (need " .. openFuel .. " more)"
+end
+
+---@param workspace Workspace
+---@param fuel integer|nil
+---@param overflow integer|nil
+---@return number
+function Refueler.refuelFromInventory(workspace, fuel, overflow)
+    workspace:assertHasInventory()
+
+    fuel = fuel or Turtle.getMissingFuel()
+    local fuelStacks = FuelDictionary.pickStacks(Inventory.list(), fuel, overflow)
+
+    if fuelStacks == nil then
+        return fuel
+    end
+
+    local emptyBucketSlot = Inventory.find("minecraft:bucket")
+    local fuelAtStart = Turtle.getFuelLevel()
+
+    for slot, stack in pairs(fuelStacks) do
+        Turtle.select(slot)
+        Turtle.refuel(stack.count)
+
+        local remaining = Turtle.getItemDetail(slot)
+
+        if remaining and remaining.name == "minecraft:bucket" then
+            if emptyBucketSlot == nil then
+                emptyBucketSlot = slot
+            elseif not Turtle.transferTo(emptyBucketSlot) then
+                emptyBucketSlot = slot
             end
         end
     end
 
-    return turtle.getFuelLevel() - fuelLevelAtStart, remainingSlots
-end
+    if emptyBucketSlot and workspace:hasOutput() then
+        local _, outputSide = workspace:wrapOutput()
 
-function Refueler.pickFuelSlots(items, maxFuelLevel, allowedOverFlow)
-    maxFuelLevel = math.max(maxFuelLevel or 0, 0)
-    local missingFuel = maxFuelLevel - turtle.getFuelLevel()
+        print("[refuel] dropping empty buckets to output...")
+        local dropSide, undoFaceOutput = Turtle.faceSide(outputSide)
 
-    if missingFuel <= 0 then
-        return {}
+        while Inventory.select("minecraft:bucket") do
+            Turtle.drop(dropSide)
+        end
+
+        undoFaceOutput()
     end
 
-    local pickedSlots = {}
-    allowedOverFlow = math.max(allowedOverFlow or 0, 0)
+    return math.max(0, fuel - (Turtle.getFuelLevel() - fuelAtStart))
+end
 
-    for slot, item in pairs(items) do
-        if FuelDictionary.isFuel(item.name) then
-            local itemRefuelAmount = FuelDictionary.getRefuelAmount(item.name)
+---@param workspace Workspace
+---@param fuel number|nil
+---@param overflow integer|nil
+---@return integer
+function Refueler.refuelFromBuffer(workspace, fuel, overflow)
+    fuel = fuel or Turtle.getMissingFuel()
+    local buffer = workspace:wrapBuffer()
+    local fuelStacks = FuelDictionary.pickStacks(buffer.list(), fuel, overflow)
 
-            if itemRefuelAmount < missingFuel + allowedOverFlow then
-                table.insert(pickedSlots, slot)
-                missingFuel = missingFuel - item.count * itemRefuelAmount
-            end
+    if fuelStacks == nil then
+        return fuel
+    end
+
+    local bufferSide = Peripheral.getName(buffer)
+    local fuelAtStart = Turtle.getFuelLevel()
+    local emptySlot = Squirtle.requireEmptySlot()
+    Turtle.select(emptySlot)
+    local suckSide, undoFaceBuffer = Turtle.faceSide(bufferSide)
+    local openFuel = fuel
+
+    for slot, stack in pairs(fuelStacks) do
+        if not Squirtle.suckSlotFromContainer(suckSide, slot, stack.count) then
+            undoFaceBuffer()
+            openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
+            Turtle.faceSide(bufferSide)
         end
     end
 
-    table.sort(pickedSlots)
+    undoFaceBuffer()
+    openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
 
-    return pickedSlots, missingFuel
+    return math.max(0, fuel - (Turtle.getFuelLevel() - fuelAtStart))
 end
 
-function Refueler.refuelFromBuffer(side, maxFuelLevel, allowedOverFlow)
-    -- question - if the buffer is full, are we allowed to temporarily use the turtle inventory?
-    local buffer = peripheral.wrap(side)
-    local fuelSlots = Refueler.pickFuelSlots(buffer.list(), maxFuelLevel, allowedOverFlow)
+---@param workspace Workspace
+---@param fuel integer|nil
+---@param overflow integer|nil
+---@return integer
+function Refueler.refuelFromInput(workspace, fuel, overflow)
+    workspace:assertHasInventory()
+    workspace:assertHasInput()
+    workspace:assertHasBuffer()
 
-    if #fuelSlots == 0 then
-        return 0
+    fuel = fuel or Turtle.getMissingFuel()
+    local input = workspace:wrapInput()
+    local fuelStacks = FuelDictionary.pickStacks(input.list(), fuel, overflow)
+
+    if fuelStacks == nil then
+        return fuel
     end
 
-    if not Inventory.moveFirstSlotSomewhereElse() then
-        error("inventory full")
-    end
+    local fuelAtStart = Turtle.getFuelLevel()
+    local openFuel = fuel
+    local _, bufferSide = workspace:wrapBuffer()
 
-    turtle.select(1)
-    local fuelLevelAtStart = turtle.getFuelLevel()
-
-    for i = 1, #fuelSlots do
-        local bufferFuelSlot = fuelSlots[i]
-        print("sucking buffer fuel slot: " .. bufferFuelSlot)
-        -- [todo] it can happen that we suck in more fuel than expected in case buffer is not compacted
-        -- think about how we wanna have the API behave here.
-        -- suckSlotFromContainer(bufferSide, bufferFuelSlot)
-        Squirtle.suckSlotFromContainer(side, bufferFuelSlot)
-        turtle.refuel()
-
-        if turtle.getItemCount(1) > 0 then
-            print("dropping remainder")
-            Turtle.drop(side)
-            -- consolidate empty buckets
-            buffer.pushItems(side, 1, nil, 2)
+    for slot, stack in pairs(fuelStacks) do
+        if input.pushItems(bufferSide, slot, stack.count) < stack.count then
+            openFuel = Refueler.refuelFromBuffer(workspace, openFuel, overflow)
         end
     end
 
-    return turtle.getFuelLevel() - fuelLevelAtStart
-end
+    openFuel = Refueler.refuelFromBuffer(workspace, openFuel, overflow)
 
-function Refueler.refuelFromInputUsingBuffer(inputSide, bufferSide, maxFuelLevel, allowedOverflow)
-    local input = peripheral.wrap(inputSide)
-    local fuelSlots = Refueler.pickFuelSlots(input.list(), maxFuelLevel, allowedOverflow)
-
-    if #fuelSlots == 0 then
-        return 0, "no fuel in input"
-    end
-
-    local fuelLevelAtStart = turtle.getFuelLevel()
-    local buffer = peripheral.wrap(bufferSide)
-    local firstEmptyBufferSlot = Squirtle.firstEmptySlotInItems(buffer.list(), buffer.size())
-
-    if not firstEmptyBufferSlot then
-        return 0, "buffer full"
-    end
-
-    if firstEmptyBufferSlot ~= 1 then
-        buffer.pushItems(bufferSide, 1, firstEmptyBufferSlot)
-    end
-
-    if not Inventory.selectFirstEmptySlot() then
-        return 0, "inventory full"
-    end
-
-    for i = 1, #fuelSlots do
-        local fuelSlot = fuelSlots[i]
-        input.pushItems(bufferSide, fuelSlot, nil, 1)
-        Turtle.suck(bufferSide)
-        turtle.refuel()
-
-        -- todo: what if is bucket?
-    end
-
-    return turtle.getFuelLevel() - fuelLevelAtStart
+    return math.max(0, fuel - (Turtle.getFuelLevel() - fuelAtStart))
 end
 
 return Refueler

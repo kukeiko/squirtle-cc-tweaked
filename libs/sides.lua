@@ -1,6 +1,7 @@
 package.path = package.path .. ";/libs/?.lua"
 
 local Sides = {}
+-- local numeric = {front = 0, right = 1, back = 2, left = 3}
 
 function Sides.invert(side)
     if side == "left" then
@@ -26,15 +27,33 @@ function Sides.all()
 end
 
 function Sides.horizontal()
-    return {"back", "front", "left", "right"}
+    return {"front", "back", "left", "right"}
 end
 
 function Sides.isHorizontal(side)
-    return side == "left" or side == "right" or side == "back"
+    return side == "left" or side == "right" or side == "back" or side == "front"
 end
 
 function Sides.isVertical(side)
     return side == "top" or side == "bottom"
+end
+
+function Sides.turnLeft(side)
+    if side == "left" then
+        return "back"
+    elseif side == "right" then
+        return "front"
+    elseif side == "top" then
+        return "top"
+    elseif side == "bottom" then
+        return "bottom"
+    elseif side == "front" then
+        return "left"
+    elseif side == "back" then
+        return "right"
+    else
+        error(side .. " is not a valid side")
+    end
 end
 
 function Sides.turnRight(side)

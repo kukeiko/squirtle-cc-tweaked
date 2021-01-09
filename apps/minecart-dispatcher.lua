@@ -1,24 +1,19 @@
 package.path = package.path .. ";/libs/?.lua"
 
 local Inventory = require "inventory"
+local Peripheral = require "peripheral"
 local Sides = require "sides"
-local Squirtle = require "squirtle"
 local Turtle = require "turtle"
-
-local function writeStartupFile()
-    local file = fs.open("startup/minecart-dispatcher.autorun.lua", "w")
-    file.write("shell.run(\"minecart-dispatcher\")")
-    file.close()
-end
+local Utils = require "utils"
 
 local function main(args)
     print("[minecart-dispatcher @ 1.0.0]")
 
     if args[1] == "autorun" then
-        writeStartupFile()
+        Utils.writeAutorunFile({"minecart-dispatcher"})
     end
 
-    local input, inputSide = Squirtle.wrapPeripheral({"minecraft:chest"})
+    local input, inputSide = Peripheral.wrapOne({"minecraft:chest"})
 
     if not input then
         error("no nearby chest found")
@@ -26,7 +21,7 @@ local function main(args)
 
     inputSide = Turtle.faceSide(inputSide)
 
-    local barrel, barrelSide = Squirtle.wrapPeripheral({"minecraft:barrel"}, Sides.horizontal())
+    local barrel, barrelSide = Peripheral.wrapOne({"minecraft:barrel"}, Sides.horizontal())
 
     if not barrel then
         error("no nearby barrel found")
@@ -52,20 +47,10 @@ local function main(args)
             undoFaceBarrel()
 
             print("minecart is here! filling it up...")
-            local minecartFull = false
+            local dumpedAll = Inventory.dumpTo("bottom")
 
-            for slot = 1, Inventory.size() do
-                if turtle.getItemCount(slot) > 0 then
-                    turtle.select(slot)
-
-                    if not Turtle.drop("bottom") then
-                        minecartFull = true
-                    end
-                end
-            end
-
-            if minecartFull then
-                print("minecart is full, dispatching...")
+            if not dumpedAll then
+                print("could not dump more items, dispatching minecart...")
                 redstone.setOutput("bottom", true)
                 os.sleep(1)
                 redstone.setOutput("bottom", false)
