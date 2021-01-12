@@ -22,20 +22,18 @@ function Refueler.requireFuelLevel(workspace, fuelLevel)
 
     local overflow = 1000
 
-    if workspace:hasInventory() then
-        print("[refuel] checking inventory...")
-        openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
+    print("[refuel] checking inventory...")
+    openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
 
-        if openFuel == 0 then
-            print("[refuel] found enough fuel in the inventory")
-            return true
-        end
-
-        print("[refuel] refueled some from inventory, need " .. openFuel .. " more ...")
+    if openFuel == 0 then
+        print("[refuel] found enough fuel in the inventory")
+        return true
     end
 
+    print("[refuel] refueled some from inventory, need " .. openFuel .. " more ...")
+
     -- [todo] run input check and inventory check (where user adds fuel manually) in parallel
-    if workspace:hasInventory() and workspace:hasInput() and workspace:hasBuffer() then
+    if workspace.input and workspace.buffer then
         print("[refuel] checking input...")
         openFuel = Refueler.refuelFromInput(workspace, openFuel, overflow)
 
@@ -51,13 +49,11 @@ function Refueler.requireFuelLevel(workspace, fuelLevel)
         print("[refuel] found enough fuel via input")
     end
 
-    if workspace:hasInventory() then
-        while openFuel > 0 do
-            print("[help] not enough fuel, need " .. openFuel ..
-                      " more. put some into inventory, then hit enter.")
-            Utils.waitForUserToHitEnter()
-            openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
-        end
+    while openFuel > 0 do
+        print("[help] not enough fuel, need " .. openFuel ..
+                  " more. put some into inventory, then hit enter.")
+        Utils.waitForUserToHitEnter()
+        openFuel = Refueler.refuelFromInventory(workspace, openFuel, overflow)
     end
 
     return false, "not enough fuel (need " .. openFuel .. " more)"
@@ -68,8 +64,6 @@ end
 ---@param overflow integer|nil
 ---@return number
 function Refueler.refuelFromInventory(workspace, fuel, overflow)
-    workspace:assertHasInventory()
-
     fuel = fuel or Turtle.getMissingFuel()
     local fuelStacks = FuelDictionary.pickStacks(Inventory.list(), fuel, overflow)
 
@@ -95,8 +89,8 @@ function Refueler.refuelFromInventory(workspace, fuel, overflow)
         end
     end
 
-    if emptyBucketSlot and workspace:hasOutput() then
-        local _, outputSide = workspace:wrapOutput()
+    if emptyBucketSlot and workspace.output then
+        local outputSide = workspace.output.side
 
         print("[refuel] dropping empty buckets to output...")
         local dropSide, undoFaceOutput = Turtle.faceSide(outputSide)
@@ -117,7 +111,7 @@ end
 ---@return integer
 function Refueler.refuelFromBuffer(workspace, fuel, overflow)
     fuel = fuel or Turtle.getMissingFuel()
-    local buffer = workspace:wrapBuffer()
+    local buffer = Peripheral.wrap(workspace.buffer.side)
     local fuelStacks = FuelDictionary.pickStacks(buffer.list(), fuel, overflow)
 
     if fuelStacks == nil then
@@ -150,12 +144,8 @@ end
 ---@param overflow integer|nil
 ---@return integer
 function Refueler.refuelFromInput(workspace, fuel, overflow)
-    workspace:assertHasInventory()
-    workspace:assertHasInput()
-    workspace:assertHasBuffer()
-
     fuel = fuel or Turtle.getMissingFuel()
-    local input = workspace:wrapInput()
+    local input = Peripheral.wrap(workspace.input.side)
     local fuelStacks = FuelDictionary.pickStacks(input.list(), fuel, overflow)
 
     if fuelStacks == nil then
@@ -164,7 +154,7 @@ function Refueler.refuelFromInput(workspace, fuel, overflow)
 
     local fuelAtStart = Turtle.getFuelLevel()
     local openFuel = fuel
-    local _, bufferSide = workspace:wrapBuffer()
+    local bufferSide = workspace.buffer.side
 
     for slot, stack in pairs(fuelStacks) do
         if input.pushItems(bufferSide, slot, stack.count) < stack.count then
@@ -175,6 +165,61 @@ function Refueler.refuelFromInput(workspace, fuel, overflow)
     openFuel = Refueler.refuelFromBuffer(workspace, openFuel, overflow)
 
     return math.max(0, fuel - (Turtle.getFuelLevel() - fuelAtStart))
+end
+
+---@param workspace Workspace
+function Refueler.refuel(workspace)
+    if workspace.inventory then
+        Refueler.refuelFromInventory(workspace)
+    end
+
+    if workspace.buffer then
+        Refueler.refuelFromBuffer(workspace)
+    end
+
+    if workspace.input then
+        Refueler.refuelFromInput(workspace)
+    end
+end
+
+---@param workspace Workspace
+function Refueler.passFuelToOutput(workspace)
+    if workspace.inventory then
+        local stacksInInventory = FuelDictionary.filterStacks(Inventory.list())
+
+        if stacksInInventory then
+            local dropSide, undoFaceOutput = Turtle.faceSide(workspace.output.side)
+
+            for slot in pairs(stacksInInventory) do
+                Turtle.select(slot)
+                Turtle.drop(dropSide)
+            end
+
+            undoFaceOutput()
+        end
+    end
+
+    if workspace.input then
+        local input = Peripheral.wrap(workspace.input.side)
+        local stacksInInput = FuelDictionary.filterStacks(input.list())
+
+        if stacksInInput then
+            for slot in pairs(stacksInInput) do
+                input.pushItems(workspace.output.side, slot)
+            end
+        end
+    end
+
+    if workspace.buffer then
+        local buffer = Peripheral.wrap(workspace.buffer.side)
+        local stacksInBuffer = FuelDictionary.filterStacks(buffer.list())
+
+        if stacksInBuffer then
+            for slot in pairs(stacksInBuffer) do
+                buffer.pushItems(workspace.output.side, slot)
+            end
+        end
+    end
 end
 
 return Refueler

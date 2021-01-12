@@ -3,6 +3,7 @@ package.path = package.path .. ";/libs/?.lua"
 local Home = require "home"
 local Inventory = require "inventory"
 local Navigator = require "navigator"
+local Peripheral = require "peripheral"
 local Refueler = require "refueler"
 local Sides = require "sides"
 local Squirtle = require "squirtle"
@@ -60,42 +61,35 @@ local function findHome()
         Turtle.faceSide(barrelSide)
         horizontalBlock = "minecraft:barrel"
     elseif not horizontalBlock then
-        for _ = 1, 4 do
-            Turtle.turnLeft()
-            horizontalBlock = Turtle.inspectName("front")
+        local anyHorizontalBlock = Turtle.faceFirstBlock(Sides.horizontal())
 
-            if horizontalBlock then
-                break
-            end
-        end
-
-        if not horizontalBlock then
+        if not anyHorizontalBlock then
             error("no horizontal block")
         end
+
+        horizontalBlock = anyHorizontalBlock.name
     end
 
     return Home.new(verticalBlock, verticalSide, horizontalBlock)
 end
 
 local function main(args)
-    print("[item-transporter @ 3.0.0-dev]")
+    print("[item-transporter @ 3.0.0]")
 
     if args[1] == "autorun" then
         Utils.writeAutorunFile({"item-transporter"})
     end
 
     local fuelPerTrip = 100
-    local mobileWorkspace = Workspace.new()
-    mobileWorkspace:setInventory()
+    local mobileWorkspace = Workspace.create()
     Refueler.requireFuelLevel(mobileWorkspace, fuelPerTrip)
 
     local home = findHome()
     home:park()
 
-    local workspace = Workspace.new()
-    workspace:setInventory()
-    workspace:setInput(findSideOfChest(), "minecraft:chest")
-    workspace:setBuffer(findSideOfBuffer(), "minecraft:barrel")
+    local workspace = Workspace.create()
+    workspace.input = {side = findSideOfChest()}
+    workspace.buffer = {side = findSideOfBuffer()}
 
     local minFuel = fuelPerTrip * 2
 
@@ -104,9 +98,9 @@ local function main(args)
         Refueler.requireFuelLevel(workspace, minFuel)
         Squirtle.printFuelLevelToMonitor(minFuel)
 
-        local input = workspace:wrapInput()
-        local _, bufferSide = workspace:wrapBuffer()
-        local lastTransferredAt = os.time() * 60 * 69
+        local input = Peripheral.wrap(workspace.input.side)
+        local bufferSide = workspace.buffer.side
+        local lastTransferredAt = os.time() * 60 * 60
 
         while true do
             local inputItems = input.list()

@@ -24,6 +24,22 @@ function FuelDictionary.getStackRefuelAmount(stack)
     return FuelDictionary.getRefuelAmount(stack.name) * stack.count
 end
 
+function FuelDictionary.filterStacks(stacks)
+    local fuelStacks = {}
+
+    for slot, stack in pairs(stacks) do
+        if FuelDictionary.isFuel(stack.name) then
+            fuelStacks[slot] = stack
+        end
+    end
+
+    if Utils.isEmpty(fuelStacks) then
+        return nil
+    end
+
+    return fuelStacks
+end
+
 function FuelDictionary.pickStacks(stacks, fuelLevel, allowedOverFlow)
     allowedOverFlow = math.max(allowedOverFlow or 0, 0)
     local pickedStacks = {}

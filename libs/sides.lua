@@ -23,11 +23,11 @@ end
 
 ---@return table
 function Sides.all()
-    return {"back", "front", "left", "right", "top", "bottom"}
+    return {"front", "back", "top", "bottom", "left", "right"}
 end
 
 function Sides.horizontal()
-    return {"front", "back", "left", "right"}
+    return {"front", "left", "right", "back"}
 end
 
 function Sides.isHorizontal(side)

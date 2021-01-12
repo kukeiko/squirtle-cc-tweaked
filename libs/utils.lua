@@ -65,13 +65,13 @@ function Utils.waitForUserToHitEnter()
 end
 
 function Utils.writeAutorunFile(args)
-    local file = fs.open("startup/minecart-dispatcher.autorun.lua", "w")
-    file.write("shell.run(\"" .. table.concat(args) .. "\")")
+    local file = fs.open("startup/" .. args[1] .. ".autorun.lua", "w")
+    file.write("shell.run(\"" .. table.concat(args, " ") .. "\")")
     file.close()
 end
 
 function Utils.noop()
-    -- do nothing
+    -- intentionally do nothing
 end
 
 return Utils

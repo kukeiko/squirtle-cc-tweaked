@@ -5,18 +5,20 @@ end
 package.path = package.path .. ";/libs/?.lua"
 
 local Sides = require "sides"
+
+local native = turtle
 local noop = function()
 end
 
 local Turtle = {}
 
-setmetatable(Turtle, {__index = turtle})
+setmetatable(Turtle, {__index = native})
 
 function Turtle.turn(side)
     if side == "left" then
-        return turtle.turnLeft()
+        return native.turnLeft()
     elseif side == "right" then
-        return turtle.turnRight()
+        return native.turnRight()
     elseif side == "back" then
         return Turtle.turnAround()
     else
@@ -25,13 +27,13 @@ function Turtle.turn(side)
 end
 
 function Turtle.turnAround()
-    local s, e = turtle.turnLeft()
+    local s, e = native.turnLeft()
 
     if not s then
         return e
     end
 
-    return turtle.turnLeft()
+    return native.turnLeft()
 end
 
 function Turtle.faceSide(side)
@@ -40,9 +42,9 @@ function Turtle.faceSide(side)
 
         return "front", function()
             if side == "left" then
-                return turtle.turnRight()
+                return native.turnRight()
             elseif side == "right" then
-                return turtle.turnLeft()
+                return native.turnLeft()
             elseif side == "back" then
                 return Turtle.turnAround()
             end
@@ -50,6 +52,15 @@ function Turtle.faceSide(side)
     end
 
     return side, noop
+end
+
+function Turtle.suckAll(side)
+    local suckSide, undoFaceBuffer = Turtle.faceSide(side)
+
+    while Turtle.suck(suckSide) do
+    end
+
+    undoFaceBuffer()
 end
 
 function Turtle.turnToHaveSideAt(side, at)
@@ -67,79 +78,88 @@ function Turtle.turnToHaveSideAt(side, at)
     elseif side == "back" then
         return Turtle.turn(at)
     elseif side == "left" and at == "front" then
-        return Turtle.turnLeft()
+        return native.turnLeft()
     elseif side == "left" and at == "back" then
-        return Turtle.turnRight()
+        return native.turnRight()
     elseif side == "right" and at == "front" then
-        return Turtle.turnRight()
+        return native.turnRight()
     elseif side == "right" and at == "back" then
-        return Turtle.turnLeft()
+        return native.turnLeft()
     end
 
     return false
 end
 
+function Turtle.forwardUntilBlocked()
+    while native.forward() do end
+end
+
 function Turtle.suck(side, count)
     if side == "top" then
-        return turtle.suckUp(count)
+        return native.suckUp(count)
     elseif side == "bottom" then
-        return turtle.suckDown(count)
+        return native.suckDown(count)
     elseif side == "front" or side == nil then
-        return turtle.suck(count)
+        return native.suck(count)
     else
         error("Can only suck from front, top or bottom")
     end
 end
 
 function Turtle.drop(side, count)
-    if (side == "top") then
-        return turtle.dropUp(count)
-    elseif (side == "bottom") then
-        return turtle.dropDown(count)
+    if side == "top" then
+        return native.dropUp(count)
+    elseif side == "bottom" then
+        return native.dropDown(count)
     elseif side == "front" or side == nil then
-        return turtle.drop(count)
+        return native.drop(count)
     else
         error("Can only drop in front, top or bottom")
     end
 end
 
-function Turtle.inspectName(side)
-    side = side or "front"
+function Turtle.inspect(side)
     local inspectFn
 
-    if side == "front" then
-        inspectFn = Turtle.inspect
+    if side == "front" or side == nil then
+        inspectFn = native.inspect
     elseif side == "top" then
-        inspectFn = Turtle.inspectUp
+        inspectFn = native.inspectUp
     elseif side == "bottom" then
-        inspectFn = Turtle.inspectDown
+        inspectFn = native.inspectDown
     else
-        error("can only inspect in front, top or bottom")
+        error("can only inspect front, top or bottom")
     end
 
     local success, inspected = inspectFn()
 
-    if not success then
-        return success, inspected
+    if success then
+        return inspected
     end
+end
 
-    return inspected.name
+function Turtle.inspectName(side)
+    local inspected = Turtle.inspect(side)
+
+    if inspected then
+        return inspected.name
+    end
 end
 
 function Turtle.inspectUpAndDown()
-    local _, up = Turtle.inspectUp()
-    local _, down = Turtle.inspectDown()
+    local _, up = native.inspectUp()
+    local _, down = native.inspectDown()
 
     return up, down
 end
 
 function Turtle.inspectNameDownOrUp()
-    local _, down = Turtle.inspectDown()
+    local _, down = native.inspectDown()
 
     if down then
         return down.name, "bottom"
     else
-        local _, up = Turtle.inspectUp()
+        local _, up = native.inspectUp()
 
         if up then
             return up.name, "top"
@@ -148,19 +168,35 @@ function Turtle.inspectNameDownOrUp()
 end
 
 function Turtle.getMissingFuel()
-    local fuelLevel = turtle.getFuelLevel()
+    local fuelLevel = native.getFuelLevel()
 
     if fuelLevel == "unlimited" then
         return 0
     end
 
-    return turtle.getFuelLimit() - turtle.getFuelLevel()
+    return native.getFuelLimit() - native.getFuelLevel()
 end
 
 function Turtle.hasFuel(level)
-    local fuelLevel = turtle.getFuelLevel()
+    local fuelLevel = native.getFuelLevel()
 
     return fuelLevel == "unlimited" or fuelLevel >= level
+end
+
+function Turtle.faceFirstBlock(sides)
+    sides = sides or Sides.all()
+
+    for i = 1, #sides do
+        local side = sides[i]
+        local inspectSide, undoFaceSide = Turtle.faceSide(side)
+        local inspected = Turtle.inspect(inspectSide)
+
+        if not inspected then
+            undoFaceSide()
+        else
+            return inspected, side
+        end
+    end
 end
 
 return Turtle

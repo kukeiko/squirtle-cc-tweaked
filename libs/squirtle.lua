@@ -110,6 +110,61 @@ function Squirtle.requireEmptySlot()
     error("no empty slot available")
 end
 
+function Squirtle.wrapLocalPeripherals()
+    local peripherals = {
+        top = Peripheral.wrap("top"),
+        bottom = Peripheral.wrap("bottom"),
+        front = Peripheral.wrap("front"),
+        back = Peripheral.wrap("back")
+    }
+
+    if Squirtle.hasAnyPeripheralEquipped() then
+        Turtle.turnLeft()
+        peripherals.left = Peripheral.wrap("front")
+        peripherals.right = Peripheral.wrap("back")
+        Turtle.turnRight()
+    else
+        peripherals.left = Peripheral.wrap("left")
+        peripherals.right = Peripheral.wrap("right")
+    end
+
+    return peripherals
+end
+
+-- [todo] i was lazy
+function Squirtle.wrapLocalContainers(sides)
+    sides = sides or Sides.all()
+
+    local all = {
+        top = Peripheral.wrap("top"),
+        bottom = Peripheral.wrap("bottom"),
+        front = Peripheral.wrap("front"),
+        back = Peripheral.wrap("back")
+    }
+
+    if Squirtle.hasAnyPeripheralEquipped() then
+        Turtle.turnLeft()
+        all.left = Peripheral.wrap("front")
+        all.right = Peripheral.wrap("back")
+        Turtle.turnRight()
+    else
+        all.left = Peripheral.wrap("left")
+        all.right = Peripheral.wrap("right")
+    end
+
+    local requested = {}
+
+    for i = 1, #sides do
+        local side = sides[i]
+
+        if all[side] and Peripheral.isContainer(all[side]) then
+            requested[side] = all[side]
+        end
+    end
+
+    return requested
+end
+
 function Squirtle.getLocalPeripherals()
     local available = {
         top = Peripheral.getType("top"),
@@ -140,6 +195,14 @@ function Squirtle.findSideOfLocalPeripheral(types)
                 return side
             end
         end
+    end
+end
+
+function Squirtle.findSideOfWirelessModem()
+    if Peripheral.isWirelessModem("left") then
+        return "left"
+    elseif Peripheral.isWirelessModem("right") then
+        return "right"
     end
 end
 
@@ -217,11 +280,14 @@ function Squirtle.wrapDefaultMonitor()
     for i = 1, #sides do
         if peripheral.getType(sides[i]) == "modem" then
             local modem = peripheral.wrap(sides[i])
-            local remoteNames = modem.getNamesRemote()
 
-            for e = 1, #remoteNames do
-                if (modem.getTypeRemote(remoteNames[e]) == "monitor") then
-                    return MonitorModemProxy.new(remoteNames[e], modem)
+            if modem.getNamesRemote then
+                local remoteNames = modem.getNamesRemote()
+
+                for e = 1, #remoteNames do
+                    if (modem.getTypeRemote(remoteNames[e]) == "monitor") then
+                        return MonitorModemProxy.new(remoteNames[e], modem)
+                    end
                 end
             end
         end

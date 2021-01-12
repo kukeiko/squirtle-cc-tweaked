@@ -1,19 +1,16 @@
 package.path = package.path .. ";/libs/?.lua"
 
-local FuelDictionary = require "fuel-dictionary"
+local Home = require "home"
+local Container = require "container"
 local Inventory = require "inventory"
+local Logger = require "logger"
 local Peripheral = require "peripheral"
 local Refueler = require "refueler"
 local Sides = require "sides"
 local Squirtle = require "squirtle"
 local Turtle = require "turtle"
 local Utils = require "utils"
-
-local function writeStartupFile(argInputSide)
-    local file = fs.open("startup/storage-sorter.autorun.lua", "w")
-    file.write("shell.run(\"storage-sorter\", \"" .. argInputSide .. "\")")
-    file.close()
-end
+local Workspace = require "workspace"
 
 local function parseInputSide(argInputSide)
     if argInputSide == "from-bottom" then
@@ -35,161 +32,6 @@ local function parseOptions(args)
     end
 
     return options
-end
-
-local function getDefaultState()
-    return {isBufferOpen = false, isDistributing = false, fuelPerTrip = 100}
-end
-
-local function saveState(state)
-    local file = fs.open("/apps/storage-sorter.state", "w")
-    file.write(textutils.serialize(state))
-    file.close()
-end
-
-local function loadState()
-    if not fs.exists("/apps/storage-sorter.state") then
-        saveState(getDefaultState())
-    end
-
-    local state = getDefaultState()
-    local file = fs.open("/apps/storage-sorter.state", "r")
-    local savedState = textutils.unserialize(file.readAll())
-    file.close()
-
-    for k, v in pairs(savedState) do
-        state[k] = v
-    end
-
-    return state
-end
-
-local function patchState(patch)
-    local state = loadState()
-
-    for k, v in pairs(patch) do
-        state[k] = v
-    end
-
-    saveState(state)
-end
-
-local function resetState()
-    saveState(getDefaultState())
-end
-
-local function refuelFromBuffer(bufferSide, outputSide)
-    if not Inventory.selectFirstEmptySlot() then
-        error("inventory unexpectedly full")
-    end
-
-    local bufferStorage = peripheral.wrap(bufferSide)
-
-    for _ = 1, bufferStorage.size() do
-        if not turtle.suck() then
-            break
-        end
-
-        turtle.refuel()
-
-        -- drop an empty bucket or leftover items into the output chest in case we refueled using lava
-        if turtle.getItemCount() > 0 then
-            while not Turtle.drop(outputSide) do
-            end
-        end
-    end
-end
-
-local function refuelFromInventory(outputSide)
-    error("refuelFromInventory() not implemented")
-    -- local refueled, remainingSlots = Refueler.refuelFromInventory()
-
-    -- if refueled > 0 then
-    --     print("[refuel] refueled " .. refueled .. " from inventory")
-    -- end
-
-    -- for i = 1, #remainingSlots do
-    --     turtle.select(remainingSlots[i])
-    --     Turtle.drop(outputSide)
-    -- end
-end
-
-local function refuel(inputSide)
-    local outputSide = Sides.invert(inputSide)
-    local bufferSide = "front"
-    local inputChest = peripheral.wrap(inputSide)
-    local missingFuel = Turtle.getMissingFuel()
-    local slotsToConsume = {}
-
-    -- collect the slots with fuel for consumption, and immediately push into the output
-    -- any fuel we don't need so the next turtle can use it.
-    for slot, item in pairs(inputChest.list()) do
-        local itemRefuelAmount = FuelDictionary.getRefuelAmount(item.name)
-
-        if itemRefuelAmount > 0 then
-            if itemRefuelAmount < missingFuel then
-                table.insert(slotsToConsume, slot)
-                missingFuel = missingFuel - item.count * itemRefuelAmount
-            else
-                -- [note] we're not checking for failure here because we assume it'll fail only because the output chest is full,
-                -- and it might have space available the next time we refuel, so passing on extra fuel should still work over time.
-                inputChest.pushItems(outputSide, slot)
-            end
-        end
-    end
-
-    -- early exit - missing fuel after using items would stay the same
-    if missingFuel == Turtle.getMissingFuel() then
-        return 0
-    end
-
-    print("[refuel] trying to refuel from " .. turtle.getFuelLevel() .. " to " ..
-              turtle.getFuelLimit() - math.max(0, missingFuel) .. "...")
-    patchState({isBufferOpen = true})
-
-    for i = 1, #slotsToConsume do
-        if inputChest.pushItems(bufferSide, slotsToConsume[i]) == 0 then
-            -- while this branch *could* be hit because input chest changed, we're not gonna assume that for simplicity's sake.
-            -- instead we assume it happened because the buffer is full
-            refuelFromBuffer(bufferSide, outputSide)
-
-            if inputChest.pushItems(bufferSide, slotsToConsume[i]) == 0 then
-                error(
-                    "could not push into buffer, which should've been empty because we just emptied it for refueling")
-            end
-        end
-    end
-
-    refuelFromBuffer(bufferSide, outputSide)
-    patchState({isBufferOpen = false})
-    print("[refuel] refueled to " .. turtle.getFuelLevel())
-end
-
-local function getChestStats(side)
-    local items = peripheral.call(side, "list")
-    local numItems = 0
-    local numStacks = 0
-
-    for _, item in pairs(items) do
-        numItems = numItems + item.count
-        numStacks = numStacks + 1
-    end
-
-    return numItems, numStacks
-end
-
-local function lookAtBuffer()
-    for _ = 1, 4 do
-        if peripheral.getType("front") == "minecraft:barrel" then
-            return true
-        else
-            turtle.turnLeft()
-        end
-    end
-
-    if peripheral.getType("front") ~= "minecraft:barrel" then
-        return false
-    end
 end
 
 local function dropIntoStorageChest(side)
@@ -236,169 +78,181 @@ local function dropIntoStorageChest(side)
 end
 
 local function distribute()
-    Turtle.turnAround()
-    local fuelPerTrip = 0
+    local modemSide = Squirtle.findSideOfWirelessModem()
+    local outputSide = Sides.invert(modemSide)
 
     while not Inventory.isEmpty() and turtle.forward() do
-        local chest, outputSide = Peripheral.wrapOneContainer({"left", "right"})
-
-        if (chest ~= nil) then
+        if Peripheral.isContainerPresent(outputSide) then
             dropIntoStorageChest(outputSide)
         end
-
-        fuelPerTrip = fuelPerTrip + 1
     end
 
-    patchState({isDistributing = false})
     -- go home
+    Turtle.turn(modemSide)
+    Turtle.turn(modemSide)
+    Turtle.forwardUntilBlocked()
     Turtle.turnAround()
-
-    while turtle.forward() do
-        fuelPerTrip = fuelPerTrip + 1
-    end
-
-    return fuelPerTrip
 end
 
 local function findHome()
-    if not lookAtBuffer() then
-        -- either the player did not place a barrel for the turtle, or we're not at our starting position.
-        -- we first assume that we're not at our starting position due to the chunk the turtle is in being unloaded during its trip.
-        -- (chunk loaders won't help as they won't fix the case where all players leave the server)
+    local containers = Squirtle.wrapLocalContainers()
+    -- [todo] check peripherals. we want to later make use of the crafting table, which could be equipped (possibly together with a modem)
+    local modemSide = Squirtle.findSideOfWirelessModem()
 
-        while not turtle.forward() do
-            turtle.turnLeft()
-        end
-
-        while turtle.forward() do
-        end
-
-        if not lookAtBuffer() then
-            Turtle.turnAround()
-            while turtle.forward() do
-            end
-
-            if not lookAtBuffer() then
-                error("could not find home: no barrel found")
-            end
-        end
-    end
-end
-
-local function clearBuffer(bufferSide, outputSide)
-    local buffer = peripheral.wrap(bufferSide)
-
-    for slot = 1, buffer.size() do
-        while buffer.getItemDetail(slot) ~= nil do
-            buffer.pushItems(outputSide, slot)
-            -- todo: unnecessarily slow for cases where push was successful
-            os.sleep(1)
-        end
-    end
-end
-
-local function startup(inputSide, fuelPerTrip)
-    findHome()
-    Squirtle.printFuelLevelToMonitor(fuelPerTrip)
-
-    local state = loadState()
-    local bufferSide = "front"
-    local outputSide = Sides.invert(inputSide)
-
-    if state.isBufferOpen then
-        print("[startup] buffer was open during reboot, clearing it out...")
-        clearBuffer(bufferSide, outputSide)
-        patchState({isBufferOpen = false})
+    if not modemSide then
+        -- [todo] implement Squirtle.requireWirelessModem(side)
+        error("no wireless modem equipped")
     end
 
-    refuelFromInventory(outputSide)
+    if not containers.top or not containers.bottom then
+        Logger.log("turned off while not at home, trying to find it...")
+        Logger.debug("trying to infer the state i was in...")
 
-    if not Inventory.isEmpty() then
-        if state.isDistributing then
-            print("[startup] rebooted while sorting items into storage")
-
-            while turtle.getFuelLevel() < fuelPerTrip do
-                print("[startup] not enough fuel - put fuel into inventory, then hit enter")
-                Utils.waitForUserToHitEnter()
-                refuelFromInventory(outputSide)
-            end
-
-            print("[startup] distributing cargo...")
+        if containers.front then
+            -- we were just unloading stuff
+            Logger.debug("i was unloading items into a chest")
+            dropIntoStorageChest("front")
+            Turtle.turn(modemSide)
             distribute()
+        elseif containers.back then
+            -- we were just in the middle of turning back home
+            Logger.debug("i was just turning towards home")
+            Turtle.turn(modemSide)
+            Turtle.forwardUntilBlocked()
+        elseif containers.left then
+            -- if modem is on the left, we were heading home. otherwise we were distributing.
+            if modemSide == "left" then
+                Logger.debug("i was heading home")
+                Turtle.forwardUntilBlocked()
+            else
+                Logger.debug("i was distributing")
+                distribute()
+            end
+        elseif containers.right then
+            -- if modem is on the left, we were distributing. otherwise we were heading home.
+            if modemSide == "left" then
+                Logger.debug("i was distributing")
+                distribute()
+            else
+                Logger.debug("i was heading home")
+                Turtle.forwardUntilBlocked()
+            end
         else
-            print("[startup] rebooted while dumping cargo to output")
+            -- we are either distributing or heading home.
+            Logger.debug("i was either distributing or heading home")
 
-            while not Inventory.dumpTo(outputSide) do
-                os.sleep(7)
+            while Turtle.forward() do
+                containers = Squirtle.wrapLocalContainers()
+
+                if containers.left then
+                    -- if modem is on the left, we were heading home. otherwise we were distributing.
+                    if modemSide == "left" then
+                        Logger.debug("i was heading home")
+                        Turtle.forwardUntilBlocked()
+                    else
+                        Logger.debug("i was distributing")
+                        distribute()
+                    end
+                    break
+                elseif containers.right then
+                    -- if modem is on the left, we were distributing. otherwise we were heading home.
+                    if modemSide == "left" then
+                        Logger.debug("i was distributing")
+                        distribute()
+                    else
+                        Logger.debug("i was heading home")
+                        Turtle.forwardUntilBlocked()
+                    end
+                    break
+                end
             end
         end
+
+        containers = Squirtle.wrapLocalContainers()
     end
+
+    -- [todo] recovery code is kinda stable, but optimizations are missing, like emptying out inventory to output
+    -- (since via recovery we should've distributed as expected)
+
+    local bufferSide
+
+    for _, side in pairs(Sides.horizontal()) do
+        if containers[side] and Peripheral.getType(containers[side]) == "minecraft:barrel" then
+            bufferSide = side
+            break
+        end
+    end
+
+    if not bufferSide then
+        error("no barrel (to use as a buffer) found :(")
+    end
+
+    Turtle.turnToHaveSideAt(bufferSide, "back")
+
+    return Home.new(Turtle.inspectName("bottom"), "bottom", "minecraft:barrel", "back")
 end
 
 local function main(args)
-    print("[storage-sorter @ 4.2.0]")
-
+    print("[storage-sorter @ 5.0.0]")
     -- todo: consolidate parsing into 1 method
     local argInputSide = args[1]
     local inputSide = parseInputSide(argInputSide)
-    local outputSide = Sides.invert(inputSide)
+    -- local outputSide = Sides.invert(inputSide)
+
     local options = parseOptions(args)
 
     if options.autorun then
-        writeStartupFile(argInputSide)
+        Utils.writeAutorunFile({"storage-sorter", argInputSide})
     end
 
-    if options.reset then
-        resetState()
-    end
+    -- local home = findHome()
+    findHome()
+    local workspace = Workspace.create()
+    workspace.input = {side = inputSide}
+    workspace.buffer = {side = "back"}
+    workspace.output = {side = Sides.invert(inputSide)}
 
-    local state = loadState()
-    local fuelPerTrip = state.fuelPerTrip
-
-    startup(inputSide, fuelPerTrip)
+    local fuelPerTrip = 200
 
     while true do
-        Squirtle.printFuelLevelToMonitor(fuelPerTrip)
-        refuel(inputSide)
-        Squirtle.printFuelLevelToMonitor(fuelPerTrip)
+        local minFuel = fuelPerTrip * 2
+        Squirtle.printFuelLevelToMonitor(minFuel)
+        Refueler.requireFuelLevel(workspace, minFuel)
+        Squirtle.printFuelLevelToMonitor(minFuel)
 
-        local numInputItems, numInputStacks = getChestStats(inputSide)
-        os.sleep(3)
+        if Turtle.getMissingFuel() > 0 then
+            Refueler.refuel(workspace)
+            Squirtle.printFuelLevelToMonitor(minFuel)
+        end
 
-        local hasEnoughFuel = turtle.getFuelLevel() >= fuelPerTrip
-        local chestHadNoChange = numInputItems == getChestStats(inputSide)
-        local hasFullTurtleLoad = numInputStacks >= Inventory.availableSize()
+        Refueler.passFuelToOutput(workspace)
 
-        if hasEnoughFuel and numInputItems > 0 and (chestHadNoChange or hasFullTurtleLoad) then
-            if chestHadNoChange then
-                print("no change for 3s")
-            elseif hasFullTurtleLoad then
-                print("chest has more than i can carry")
+        local input = Peripheral.wrap(workspace.input.side)
+
+        for slot in pairs(input.list()) do
+            if input.pushItems(workspace.buffer.side, slot) == 0 then
+                break
             end
+        end
 
-            print("[task] sorting items into storage...")
-            patchState({isDistributing = true})
+        local buffer = Peripheral.wrap(workspace.buffer.side)
 
-            -- [todo] protect against slow input feed
-            while Turtle.suck(inputSide) do
-            end
+        if Container.countItems(buffer.list()) > 0 then
+            Turtle.suckAll(workspace.buffer.side)
+        end
 
-            -- [note] it's possible fuel got added to the input directly after we refueled from it.
-            -- in that case, refuel from inventory once more so we quickly pass on extra fuel
-            -- to the next turtle. we don't have to check for an empty inventory after this call
-            -- (i.e. we only sucked in fuel) because distribute() checks for it already.
-            refuelFromInventory(outputSide)
-
-            fuelPerTrip = distribute()
-            patchState({fuelPerTrip = fuelPerTrip})
-
-            -- pass items we couldn't sort in to the next turtle
-
-            while not Inventory.dumpTo(outputSide) do
+        if not Inventory.isEmpty() then
+            Logger.log("distributing...")
+            local fuelBeforeTrip = Turtle.getFuelLevel()
+            distribute()
+            fuelPerTrip = fuelBeforeTrip - Turtle.getFuelLevel()
+            Logger.log("dumping to output...")
+            while not Inventory.dumpTo(workspace.output.side) do
                 os.sleep(7)
             end
-
-            print("[task] checking input chest...")
+            Logger.log("checking input...")
+        else
+            os.sleep(3)
         end
     end
 end
