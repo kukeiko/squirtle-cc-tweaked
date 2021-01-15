@@ -2,7 +2,7 @@ package.path = package.path .. ";/libs/?.lua"
 
 local Utils = require "utils";
 
-print("[pipe-activity @ 1.0.0]")
+print("[pipe-activity @ 1.0.1]")
 
 if arg[1] == "autorun" then
     Utils.writeAutorunFile({"pipe-activity"})
