@@ -2,11 +2,15 @@ package.path = package.path .. ";/libs/?.lua"
 
 local Utils = require "utils";
 
-print("[pipe-activity @ 1.0.1]")
+print("[pipe-activity @ 1.0.2]")
 
 if arg[1] == "autorun" then
     Utils.writeAutorunFile({"pipe-activity"})
 end
+
+local lightSignalToggle = true
+local signalBack = false
+local timeOfLastSignal = 0
 
 function signalTick()
     while true do
