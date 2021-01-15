@@ -14,7 +14,7 @@ function signalTick()
 
         if redstone.getInput("back") and not signalBack then
             signalBack = true
-            timeOfLastSignal = timestamp()
+            timeOfLastSignal = Utils.timestamp()
         elseif signalBack then
             signalBack = false
         end
@@ -25,7 +25,7 @@ function lightTick()
     while true do
         os.sleep(1)
 
-        if timestamp() - timeOfLastSignal <= 3 then
+        if Utils.timestamp() - timeOfLastSignal <= 3 then
             redstone.setOutput("front", lightSignalToggle)
             lightSignalToggle = not lightSignalToggle
         end

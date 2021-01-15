@@ -74,4 +74,8 @@ function Utils.noop()
     -- intentionally do nothing
 end
 
+function Utils.timestamp()
+    return os.time() * 60 * 60 / 100
+end
+
 return Utils
