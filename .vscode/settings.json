@@ -8,7 +8,8 @@
         "fs",
         "module",
         "textutils",
-        "redstone"
+        "redstone",
+        "parallel"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global",
