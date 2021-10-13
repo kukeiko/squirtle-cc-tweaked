@@ -1,0 +1,343 @@
+local Cardinal = require "squirtle.libs.cardinal"
+local Vector = require "squirtle.libs.vector"
+local PathFinding = {}
+
+---@param a Vector
+---@param b Vector
+local function manhattan(a, b)
+    return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
+end
+
+---@param hierarchy Vector[]
+---@param start Vector
+---@param goal Vector
+local function toPath(hierarchy, start, goal)
+    local path = {}
+    local next = goal
+
+    while not next:equals(start) do
+        table.insert(path, 1, next)
+        next = hierarchy[next:toString()]
+    end
+
+    return path
+end
+
+---@param open Vector[]
+---@param naturals Vector[]
+---@param forced Vector[]
+---@param pruned Vector[]
+---@param totalCost number[]
+local function findBest(open, naturals, forced, pruned, totalCost)
+    local lowestF = nil
+    local bestType = nil
+
+    ---@type Vector
+    local best = nil
+
+    for key, value in pairs(open) do
+        local type = 3
+
+        if naturals[key] then
+            type = 0
+        elseif forced[key] then
+            type = 1
+        elseif pruned[key] then
+            type = 2
+        end
+
+        if lowestF == nil or totalCost[key] < lowestF or
+            (totalCost[key] <= lowestF and type < bestType) then
+            best = value
+            lowestF = totalCost[key]
+            bestType = type
+        end
+    end
+
+    return best
+end
+
+---@param world Vector[]
+---@param start Vector
+---@param goal Vector
+---@param orientation integer
+function PathFinding.aStarPruning(world, start, goal, orientation)
+    if (world[goal:toString()] ~= nil) then
+        return false, "target is blocked"
+    end
+
+    ---@type Vector[]
+    local open = {}
+    local numOpen = 0
+    local closed = {}
+
+    ---@type Vector[]
+    local reverseMap = {}
+    local pastCost = {}
+    local futureCost = {}
+    local totalCost = {}
+    local startKey = start:toString()
+    local naturals = {}
+    local forced = {}
+    local pruned = {}
+
+    open[startKey] = start
+    pastCost[startKey] = 0
+    futureCost[startKey] = manhattan(start, goal)
+    totalCost[startKey] = pastCost[startKey] + futureCost[startKey]
+    numOpen = numOpen + 1
+
+    local cycles = 0
+    local timeStarted = os.clock()
+    local timeout = 3
+
+    while (numOpen > 0) do
+        cycles = cycles + 1
+
+        if cycles % 100 == 0 then
+            if os.clock() - timeStarted >= timeout then
+                return false, timeout .. "s timeout reached"
+            end
+
+            -- [todo] make event name more unique to prevent collisions?
+            os.queueEvent("a-star-progress")
+            os.pullEvent("a-star-progress")
+        end
+
+        local current = findBest(open, naturals, forced, pruned, totalCost)
+        local currentKey = current:toString()
+
+        if Vector.equals(current, goal) then
+            return toPath(reverseMap, start, goal)
+        end
+
+        open[currentKey] = nil
+        closed[currentKey] = current
+        numOpen = numOpen - 1
+
+        if reverseMap[currentKey] then
+            local delta = current - reverseMap[currentKey]
+            orientation = Cardinal.fromVector(delta)
+        end
+
+        local neighbours = {}
+
+        for i = 0, 5 do
+            local neighbour = current + Cardinal.toVector(i)
+            local neighbourKey = neighbour:toString()
+            local requiresTurn = false
+
+            if i ~= orientation and not Cardinal.isVertical(i) then
+                requiresTurn = true
+            end
+
+            if closed[neighbourKey] == nil and world[neighbourKey] == nil then
+                local tentativePastCost = pastCost[currentKey] + 1
+
+                if (requiresTurn) then
+                    tentativePastCost = tentativePastCost + 1
+                end
+
+                if open[neighbourKey] == nil or tentativePastCost < pastCost[neighbourKey] then
+                    pastCost[neighbourKey] = tentativePastCost
+
+                    local neighbourFutureCost = manhattan(neighbour, goal)
+
+                    if (neighbour.x ~= goal.x) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.z ~= goal.z) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.y ~= goal.y) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+
+                    futureCost[neighbourKey] = neighbourFutureCost
+                    totalCost[neighbourKey] = pastCost[neighbourKey] + neighbourFutureCost
+
+                    reverseMap[neighbourKey] = current
+
+                    if (open[neighbourKey] == nil) then
+                        open[neighbourKey] = neighbour
+                        neighbours[i] = neighbour
+                        numOpen = numOpen + 1
+                    end
+                end
+            end
+        end
+
+        -- pruning
+        if (reverseMap[currentKey] ~= nil) then
+            for neighbourOrientation, neighbour in pairs(neighbours) do
+                local neighbourKey = neighbour:toString()
+
+                if (neighbourOrientation == orientation) then
+                    -- add natural neighbour
+                    naturals[neighbourKey] = neighbour
+                else
+                    -- check blockade
+                    local check = reverseMap[currentKey] + Cardinal.toVector(neighbourOrientation) -
+                                      Cardinal.toVector(orientation)
+                    local checkKey = check:toString()
+
+                    if (world[checkKey] == nil) then
+                        -- add neighbour to prune
+                        pruned[neighbourKey] = neighbour
+                    else
+                        -- add neighbour to forced
+                        forced[neighbourKey] = neighbour
+                    end
+                end
+            end
+        end
+    end
+
+    return false, "should not happen"
+end
+
+-- local function yieldI
+
+---@param world World
+---@param start Vector
+---@param goal Vector
+---@param orientation integer
+function PathFinding.findPath(world, start, goal, orientation)
+    -- [todo] same algorithm as PathFinding.aStarPruning(), but w/ World class instance
+    -- to check for boundaries.
+    if world:isBlocked(goal) then
+        return false, "target is blocked"
+    end
+
+    ---@type Vector[]
+    local open = {}
+    local numOpen = 0
+    local closed = {}
+
+    ---@type Vector[]
+    local reverseMap = {}
+    local pastCost = {}
+    local futureCost = {}
+    local totalCost = {}
+    local startKey = start:toString()
+    local naturals = {}
+    local forced = {}
+    local pruned = {}
+
+    open[startKey] = start
+    pastCost[startKey] = 0
+    futureCost[startKey] = manhattan(start, goal)
+    totalCost[startKey] = pastCost[startKey] + futureCost[startKey]
+    numOpen = numOpen + 1
+
+    local cycles = 0
+    local timeStarted = os.clock()
+    local timeout = 3
+
+    while (numOpen > 0) do
+        cycles = cycles + 1
+
+        if cycles % 100 == 0 then
+            if os.clock() - timeStarted >= timeout then
+                return false, timeout .. "s timeout reached"
+            end
+
+            -- [todo] make event name more unique to prevent collisions?
+            os.queueEvent("a-star-progress")
+            os.pullEvent("a-star-progress")
+        end
+
+        local current = findBest(open, naturals, forced, pruned, totalCost)
+
+        if Vector.equals(current, goal) then
+            return toPath(reverseMap, start, goal)
+        end
+
+        local currentKey = current:toString()
+
+        open[currentKey] = nil
+        closed[currentKey] = current
+        numOpen = numOpen - 1
+
+        if reverseMap[currentKey] then
+            local delta = current - reverseMap[currentKey]
+            orientation = Cardinal.fromVector(delta)
+        end
+
+        local neighbours = {}
+
+        for i = 0, 5 do
+            local neighbour = current + Cardinal.toVector(i)
+            local neighbourKey = neighbour:toString()
+            local requiresTurn = false
+
+            if i ~= orientation and not Cardinal.isVertical(i) then
+                requiresTurn = true
+            end
+
+            if closed[neighbourKey] == nil and world:isInBounds(neighbour) and
+                not world:isBlocked(neighbour) then
+                local tentativePastCost = pastCost[currentKey] + 1
+
+                if (requiresTurn) then
+                    tentativePastCost = tentativePastCost + 1
+                end
+
+                if open[neighbourKey] == nil or tentativePastCost < pastCost[neighbourKey] then
+                    pastCost[neighbourKey] = tentativePastCost
+
+                    local neighbourFutureCost = manhattan(neighbour, goal)
+
+                    if (neighbour.x ~= goal.x) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.z ~= goal.z) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.y ~= goal.y) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+
+                    futureCost[neighbourKey] = neighbourFutureCost
+                    totalCost[neighbourKey] = pastCost[neighbourKey] + neighbourFutureCost
+                    reverseMap[neighbourKey] = current
+
+                    if (open[neighbourKey] == nil) then
+                        open[neighbourKey] = neighbour
+                        neighbours[i] = neighbour
+                        numOpen = numOpen + 1
+                    end
+                end
+            end
+        end
+
+        -- pruning
+        if (reverseMap[currentKey] ~= nil) then
+            for neighbourOrientation, neighbour in pairs(neighbours) do
+                local neighbourKey = neighbour:toString()
+
+                if (neighbourOrientation == orientation) then
+                    -- add natural neighbour
+                    naturals[neighbourKey] = neighbour
+                else
+                    -- check blockade
+                    local check = reverseMap[currentKey] + Cardinal.toVector(neighbourOrientation) -
+                                      Cardinal.toVector(orientation)
+
+                    -- if (world[checkKey] == nil) then
+                    if not world:isBlocked(check) then
+                        -- add neighbour to prune
+                        pruned[neighbourKey] = neighbour
+                    else
+                        -- add neighbour to forced
+                        forced[neighbourKey] = neighbour
+                    end
+                end
+            end
+        end
+    end
+
+    return false, "no path available"
+end
+
+return PathFinding
