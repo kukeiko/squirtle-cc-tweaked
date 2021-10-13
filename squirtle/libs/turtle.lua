@@ -382,7 +382,7 @@ end
 
 function Turtle.tryWalkPathPeaceful(path, location, facing)
     if (#path == 0) then
-        return true, 0
+        return true, location, facing
     end
 
     -- local newLocation = location

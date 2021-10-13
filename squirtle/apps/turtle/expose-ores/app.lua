@@ -60,7 +60,59 @@ local function nextPoint(point, world)
     end
 end
 
-local function sameLayerLoop()
+---@param world World
+local function moveToLayerLoop(position, facing, world, layer)
+    local goal = world.transform.position:plus(Vector.new(0, layer - 1, 0))
+    local lastGoal = goal
+
+    while true do
+        local navSuccess, newFacing, newLocation, msg =
+            Navigator.navigateTo(position, facing, goal, world, function(block)
+                return not string.find(block.name, "ore")
+            end)
+
+        facing = newFacing
+        position = newLocation
+        lastGoal = goal
+
+        if not navSuccess then
+            goal = nextPoint(lastGoal, world)
+
+            if goal:equals(lastGoal) then
+                error(string.format("no entry to layer %d found", layer))
+            end
+
+            print("hit an unbreakable block, finding next point...")
+        else
+            return true, facing, position
+        end
+    end
+end
+
+local function exposeLayerLoop(position, facing, world)
+    local lastGoal = position
+
+    while true do
+        local goal = nextPoint(lastGoal, world)
+        -- print("next point:", goal)
+
+        if goal:equals(lastGoal) then
+            return true
+        end
+
+        local navSuccess, newFacing, newLocation, msg =
+            Navigator.navigateTo(position, facing, goal, world, function(block)
+                return not string.find(block.name, "ore")
+            end)
+
+        facing = newFacing
+        position = newLocation
+        lastGoal = goal
+
+        -- if not navSuccess then
+        --     print("hit an unbreakable block, finding next point...")
+        -- end
+    end
 end
 
 ---@param state ExposeOresAppState
@@ -68,34 +120,28 @@ local function loop(state)
     print("[tick]")
     print("home:", state.home)
     local facing, position = Turtle.orientate()
-    local world = World.new(Transform.new(state.home), 2, 1, 2)
+    local world = World.new(Transform.new(state.home), 16, 7, 16)
+    local layer = 1
 
     if position.y ~= state.checkpoint.y then
         return false, "moving to different layer not supported yet"
     else
-        local lastGoal = position
-
         while true do
-            local goal = nextPoint(lastGoal, world)
-            print("next point:", goal)
+            print("exposing layer", layer)
+            exposeLayerLoop(position, facing, world)
+            layer = layer + 1
 
-            if goal:equals(lastGoal) then
-                print("reached last block!")
+            if layer > world.height then
+                print("finished, goin' home!")
+                facing, position = Turtle.orientate()
+                Navigator.navigateTo(position, facing, state.home, world)
                 return true
             end
-
-            local navSuccess, newFacing, newLocation, msg =
-                Navigator.navigateTo(position, facing, goal, world, function(block)
-                    return not string.find(block.name, "ore")
-                end)
-
-            facing = newFacing
-            position = newLocation
-            lastGoal = goal
-
-            if not navSuccess then
-                print("hit an unbreakable block, finding next point...")
-            end
+            print("moving to layer", layer)
+            -- [todo] update cached instead
+            facing, position = Turtle.orientate()
+            moveToLayerLoop(position, facing, world, layer)
+            facing, position = Turtle.orientate()
         end
     end
 
