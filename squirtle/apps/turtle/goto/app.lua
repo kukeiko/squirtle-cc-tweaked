@@ -13,23 +13,6 @@ local function printUsage()
     print("goto <x> <y> <z>")
 end
 
----@param world World
-local function scan(world, location, facing)
-    local detections = Turtle.detectAll()
-
-    for side, isOccupied in pairs(detections) do
-        local scannedLocation = location + Cardinal.toVector(Cardinal.fromSide(side, facing))
-
-        if isOccupied then
-            world:setBlock(scannedLocation)
-        else
-            world:clearBlock(scannedLocation)
-        end
-    end
-
-    return detections
-end
-
 local function navigateTo(target, world)
     print("navigate to", target)
     local facing, location = Turtle.orientate()
@@ -37,27 +20,6 @@ local function navigateTo(target, world)
     return Navigator.navigateTo(location, facing, target, world, function(block)
         return block.name == "minecraft:stone"
     end)
-    -- while true do
-    --     scan(world, location, facing)
-    --     -- local path, msg = PathFinding.aStarPruning(world, location, target, facing)
-    --     local path, msg = PathFinding.findPath(world, location, target, facing)
-
-    --     if not path then
-    --         print(msg)
-    --         return false, msg
-    --     end
-
-    --     local success, newLocation, newFacing = Turtle.tryWalkPathPeaceful(path, location, facing)
-
-    --     if success then
-    --         print("success!")
-    --         return true
-    --     else
-    --         print("hit a block, scanning...")
-    --         location = newLocation
-    --         facing = newFacing
-    --     end
-    -- end
 end
 
 local function main(args)

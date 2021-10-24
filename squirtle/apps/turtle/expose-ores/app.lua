@@ -26,11 +26,9 @@ end
 local function setup()
     print("[setup]")
     local facing, position = Turtle.orientate()
-    local home = position:asChunkOrigin()
-    -- local home = Vector.new(home.x * 16, position.y, home.z * 16)
 
     ---@type ExposeOresAppState
-    local state = {home = home, checkpoint = home:copy()}
+    local state = {home = position:copy(), checkpoint = position:copy()}
 
     Utils.saveAppState(state, appName)
     Utils.waitForUserToHitEnter()
@@ -60,6 +58,10 @@ local function nextPoint(point, world)
     end
 end
 
+local function breakable(block)
+    return not string.find(block.name, "ore")
+end
+
 ---@param world World
 local function moveToLayerLoop(position, facing, world, layer)
     local goal = world.transform.position:plus(Vector.new(0, layer - 1, 0))
@@ -67,9 +69,7 @@ local function moveToLayerLoop(position, facing, world, layer)
 
     while true do
         local navSuccess, newFacing, newLocation, msg =
-            Navigator.navigateTo(position, facing, goal, world, function(block)
-                return not string.find(block.name, "ore")
-            end)
+            Navigator.navigateTo(position, facing, goal, world, breakable)
 
         facing = newFacing
         position = newLocation
@@ -79,6 +79,8 @@ local function moveToLayerLoop(position, facing, world, layer)
             goal = nextPoint(lastGoal, world)
 
             if goal:equals(lastGoal) then
+                -- [todo] instead of erroring out, maybe just go home?
+                -- and print that this layer is not reachable
                 error(string.format("no entry to layer %d found", layer))
             end
 
@@ -89,12 +91,14 @@ local function moveToLayerLoop(position, facing, world, layer)
     end
 end
 
-local function exposeLayerLoop(position, facing, world)
+---@param position Vector
+---@param facing integer
+---@param world World
+local function exposeLayer(position, facing, world)
     local lastGoal = position
 
     while true do
         local goal = nextPoint(lastGoal, world)
-        -- print("next point:", goal)
 
         if goal:equals(lastGoal) then
             return true
@@ -108,19 +112,14 @@ local function exposeLayerLoop(position, facing, world)
         facing = newFacing
         position = newLocation
         lastGoal = goal
-
-        -- if not navSuccess then
-        --     print("hit an unbreakable block, finding next point...")
-        -- end
     end
 end
 
 ---@param state ExposeOresAppState
 local function loop(state)
-    print("[tick]")
     print("home:", state.home)
     local facing, position = Turtle.orientate()
-    local world = World.new(Transform.new(state.home), 16, 7, 16)
+    local world = World.new(Transform.new(state.home), 3, 3, 3)
     local layer = 1
 
     if position.y ~= state.checkpoint.y then
@@ -128,7 +127,7 @@ local function loop(state)
     else
         while true do
             print("exposing layer", layer)
-            exposeLayerLoop(position, facing, world)
+            exposeLayer(position, facing, world)
             layer = layer + 1
 
             if layer > world.height then

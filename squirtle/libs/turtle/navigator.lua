@@ -36,15 +36,15 @@ local function move(side, length, options)
     end
 end
 
----@param location Vector
----@param facing integer
----@param path Vector[]
----@param options? NavigatorMoveOptions
-function Navigator.walkPath(location, facing, path, options)
-    if #path == 0 then
-        return true, location, facing
-    end
-end
+-- ---@param location Vector
+-- ---@param facing integer
+-- ---@param path Vector[]
+-- ---@param options? NavigatorMoveOptions
+-- function Navigator.walkPath(location, facing, path, options)
+--     if #path == 0 then
+--         return true, location, facing
+--     end
+-- end
 
 ---@param start Vector
 ---@param facing integer
