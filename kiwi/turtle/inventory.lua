@@ -1,4 +1,8 @@
 local nativeTurtle = turtle
+local bitSourceSlot = 15
+local bitSlot = 16
+local bitItemType = "minecraft:redstone_torch"
+local bitDisplayName = "bit"
 
 ---@class KiwiInventory
 local KiwiInventory = {}
@@ -24,9 +28,10 @@ function KiwiInventory.list()
 end
 
 ---@param slot integer
+---@param detailed? boolean
 ---@return ItemStack?
-function KiwiInventory.getStack(slot)
-    return nativeTurtle.getItemDetail(slot)
+function KiwiInventory.getStack(slot, detailed)
+    return nativeTurtle.getItemDetail(slot, detailed)
 end
 
 ---@param slot integer
@@ -148,8 +153,10 @@ function KiwiInventory.selectItem(name)
     return slot
 end
 
-function KiwiInventory.transfer(slot)
-    return nativeTurtle.transferTo(slot)
+---@param slot integer
+---@param count? integer
+function KiwiInventory.transfer(slot, count)
+    return nativeTurtle.transferTo(slot, count)
 end
 
 function KiwiInventory.moveFirstSlotSomewhereElse()
@@ -191,6 +198,61 @@ function KiwiInventory.condense()
             end
         end
     end
+end
+
+function KiwiInventory.readBits()
+    local stack = KiwiInventory.getStack(bitSlot, true)
+
+    -- [todo] should we error in case there is a stack and it is not
+    -- the type of bit item we except?
+    if stack and stack.name == bitItemType and stack.displayName:lower() == bitDisplayName then
+        return stack.count
+    end
+
+    return 0
+end
+
+-- [todo] throw errors?
+---@param bits integer
+function KiwiInventory.setBits(bits)
+    local current = KiwiInventory.readBits()
+
+    if current == bits then
+        return true
+    elseif current < bits then
+        KiwiInventory.selectSlot(bitSourceSlot)
+        return KiwiInventory.transfer(bitSlot, bits - current)
+    elseif current > bits then
+        KiwiInventory.selectSlot(bitSlot)
+        return KiwiInventory.transfer(bitSourceSlot, current - bits)
+    end
+end
+
+-- [todo] throw errors?
+---@param bits integer
+function KiwiInventory.orBits(bits)
+    local current = KiwiInventory.readBits()
+    local next = bit.bor(bits, current)
+
+    if next ~= current then
+        return KiwiInventory.setBits(next)
+    end
+
+    return true
+end
+
+
+-- [todo] throw errors?
+---@param bits integer
+function KiwiInventory.xorBits(bits)
+    local current = KiwiInventory.readBits()
+    local next = bit.bxor(bits, current)
+
+    if next ~= current then
+        return KiwiInventory.setBits(next)
+    end
+
+    return true
 end
 
 return KiwiInventory
