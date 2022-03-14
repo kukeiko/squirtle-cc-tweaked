@@ -8,11 +8,8 @@ local Inventory = require "kiwi.turtle.inventory"
 local inspect = require "kiwi.turtle.inspect"
 local turn = require "kiwi.turtle.turn"
 
--- barrel redstone signal being off means we activated the hopper, which we only do when:
---  - we're unloading items to be dispatched into the chestcart
---  - we were checking to see if there is a chestcart beneath the turtle, waiting
--- we first need to unload all the coal we need (last line of inventory of shared chest is reserved for input, if full, dont take more from chestcart
--- so that the dispatcher on the other side sees there is still some untaken coal, which means it should not send any more for now maybe?)
+---@class KiwiChestcartDispatcherSettings
+
 local function usage()
     print("usage:")
     print("chestcart-dispatcher in|out")
@@ -109,19 +106,37 @@ local function fillCart()
     end
 end
 
-local function dispatch()
-    redstone.setOutput("right", false)
-    os.sleep(2)
-    redstone.setOutput("right", true)
+local function facePistonPedestal()
+    local chest, chestSide = Peripheral.wrapOne({"minecraft:chest", Side.horizontal()})
+
+    if not chest then
+        print("can't face piston pedestal: chest not found")
+    end
+
+    if chestSide == Side.front then
+        -- return
+    elseif chestSide == Side.back then
+        return true
+    elseif chestSide == Side.left then
+        return turn(Side.right)
+    elseif chestSide == Side.right then
+    end
+end
+
+-- [todo] unfinished, not sure how to do it yet
+local function ifHasModemEquipToCorrectSide()
+    local left, right = Peripheral.getType(Side.left), Peripheral.getType(Side.right)
+
+    if left == "modem" or right == "modem" then
+        -- we have a modem to the left but still found the chest - no switch necessary
+        if Peripheral.wrapOne({"minecraft:chest"}, Side.horizontal) then
+            return false
+        end
+    end
 end
 
 local function main(args)
     local isOutput
-
-    -- [todo] remove
-    if not args[1] then
-        args[1] = "out"
-    end
 
     if args[1] == "in" then
         isOutput = false
@@ -131,50 +146,69 @@ local function main(args)
         return usage()
     end
 
-    faceDetectorRail()
+    local bottom = inspect(Side.bottom)
 
-    local pistonPedestalSide = "right"
-
-    if not isOutput then
-        pistonPedestalSide = "left"
+    if not bottom or bottom.name ~= "minecraft:barrel" then
+        error("no barrel @ bottom")
     end
 
-    -- extend piston in case unexpected shutdown happened during chestcart dispatch
-    redstone.setOutput(pistonPedestalSide, true)
+    faceDetectorRail()
 
-    -- if we have items in inventory, we were either loading or unloading the chestcart.
-    -- therefore move back to barrel
-    dumpInventoryToBarrel()
+    local left, right = Peripheral.getType(Side.left), Peripheral.getType(Side.right)
+    local chestSide, pistonPedestalSide
+
+    if left == "minecraft:chest" then
+        chestSide = Side.left
+        pistonPedestalSide = Side.right
+    elseif right == "minecraft:chest" then
+        chestSide = Side.right
+        pistonPedestalSide = Side.left
+    else
+        error("no chest to either left or the right")
+    end
+
+    redstone.setOutput(Side.getName(pistonPedestalSide), true)
+    -- only front will be false, so that piston is extended if we're not looking at it
+    -- redstone.setOutput("left", true)
+    -- redstone.setOutput("right", true)
+    redstone.setOutput("back", true)
+
+    turn(pistonPedestalSide)
 
     local targetFuelLevel = 160
 
     while true do
-        if redstone.getInput("front") then
+        os.pullEvent("redstone")
+        if redstone.getInput(Side.getName(chestSide)) then
+            print("cart is here! emptying it out...")
+            turn(chestSide)
             emptyCart()
-            local _, chestSide = wrapChest()
 
             if isOutput then
-                transferFuel(Side.bottom, chestSide, targetFuelLevel)
-                transferGoods(chestSide, Side.bottom)
+                turn(chestSide)
+                transferFuel(Side.bottom, Side.front, targetFuelLevel)
+                transferGoods(Side.front, Side.bottom)
+                turn(pistonPedestalSide)
                 fillCart()
             else
-                transferGoods(Side.bottom, chestSide)
+                turn(chestSide)
+                transferGoods(Side.bottom, Side.front)
 
                 if Peripheral.getType(Side.top) == "minecraft:chest" then
                     transferFuel(Side.top, Side.bottom, targetFuelLevel)
                 else
-                    transferFuel(chestSide, Side.bottom, targetFuelLevel)
+                    transferFuel(Side.front, Side.bottom, targetFuelLevel)
                 end
+
+                turn(pistonPedestalSide)
                 fillCart()
             end
-            redstone.setOutput(pistonPedestalSide, false)
-            os.sleep(2)
-            redstone.setOutput(pistonPedestalSide, true)
-        end
 
-        os.pullEvent("redstone")
-        print("received redstone signal!")
-        -- os.sleep(3)
+            print("dispatching")
+            turn(pistonPedestalSide)
+            -- need to sleep a bit, otherwise we will pull our own redstone signal
+            os.sleep(2)
+        end
     end
 end
 

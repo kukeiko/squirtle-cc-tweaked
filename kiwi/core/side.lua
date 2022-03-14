@@ -23,6 +23,16 @@ function KiwiSide.all()
     return sides
 end
 
+function KiwiSide.horizontal()
+    local sides = {}
+
+    for i = 0, 3 do
+        table.insert(sides, i)
+    end
+
+    return sides
+end
+
 ---@param side number
 function KiwiSide.getName(side)
     return names[side] or tostring(side);

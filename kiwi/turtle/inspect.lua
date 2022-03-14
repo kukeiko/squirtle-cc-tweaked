@@ -21,6 +21,6 @@ return function(side)
     if success then
         return block
     else
-        return false
+        return nil
     end
 end
