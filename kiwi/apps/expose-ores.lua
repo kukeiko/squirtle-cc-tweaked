@@ -1,7 +1,6 @@
 package.path = package.path .. ";/?.lua"
 
 local Kiwi = require "kiwi"
-local orientate = require "kiwi.turtle.orientate"
 local navigate = require "kiwi.turtle.navigate"
 local isHome = require "kiwi.turtle.is-home"
 local orientate = require "kiwi.turtle.orientate"

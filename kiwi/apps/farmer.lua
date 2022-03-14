@@ -211,6 +211,7 @@ local function moveNext()
         -- end
     end
 end
+
 -- the only way for the turtle to find home is to find a chest at bottom,
 -- at which point the turtle will move back and then down. it'll then
 -- expect there to be a barrel - otherwise errors out.

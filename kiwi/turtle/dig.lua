@@ -7,7 +7,7 @@ local natives = {
     [Side.bottom] = native.digDown
 }
 
----@param side integer
+---@param side? integer
 ---@param toolSide? string
 return function(side, toolSide)
     local handler = natives[Side.fromArg(side or Side.front)]
