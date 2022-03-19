@@ -13,12 +13,13 @@ local KiwiUtils = require "kiwi.utils"
 
 ---@param source KiwiChest
 ---@param target KiwiChest
-function topOffInputStacks(source, target)
+function pushInput(source, target)
     local sourceItems = source:getDetailedItemList()
     local targetItems = target:getDetailedItemList()
 
     -- [todo] hardcoded input slot range
-    for targetSlot = 1, 9 do
+    -- for targetSlot = 1, 9 do
+    for targetSlot = 19, 27 do
         local targetItem = targetItems[targetSlot]
 
         if targetItem ~= nil and targetItem:numMissing() > 0 then
@@ -46,9 +47,7 @@ end
 ---@param target KiwiChest
 function takeOutput(source, target)
     -- figure out how much stuff we can load up in total,
-    -- which is summing input + putput stacks in io-chest,
-    -- then having a looky at how much we have in buffer,
-    -- and only take what is needed to not exceed
+    -- which is summing input + output stacks in io-chest,
     local sourceItems = source:getDetailedItemList()
 
     ---@type table<string, integer>
@@ -60,6 +59,7 @@ function takeOutput(source, target)
 
     KiwiUtils.prettyPrint(maxStock)
 
+    -- then having a looky at how much we have in buffer,
     local targetItems = target:getDetailedItemList()
 
     for _, targetItem in pairs(targetItems) do
@@ -68,8 +68,9 @@ function takeOutput(source, target)
         end
     end
 
+    -- and then take items from output
     -- [todo] hardcoded output slot range
-    for slot = 10, 27 do
+    for slot = 1, 18 do
         local sourceItem = sourceItems[slot]
 
         if sourceItem ~= nil then
@@ -87,7 +88,7 @@ end
 function main(args)
     local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
     local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
-    topOffInputStacks(bufferBarrel, ioChest)
+    pushInput(bufferBarrel, ioChest)
     takeOutput(ioChest, bufferBarrel)
 end
 

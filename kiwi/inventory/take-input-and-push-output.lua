@@ -1,7 +1,3 @@
-package.path = package.path .. ";/?.lua"
-
-local KiwiChest = require "kiwi.core.chest"
-local KiwiPeripheral = require "kiwi.core.peripheral"
 local KiwiUtils = require "kiwi.utils"
 
 ---@param chest KiwiChest
@@ -13,7 +9,7 @@ local function readInputStock(chest)
     local requiredInputStock = {}
 
     -- [todo] hardcoded input slot range
-    for slot = 1, 9 do
+    for slot = 19, 27 do
         local item = items[slot]
 
         if item ~= nil then
@@ -26,7 +22,7 @@ end
 
 ---@param source KiwiChest
 ---@param target KiwiChest
-local function doTheThing(source, target)
+return function(source, target)
     -- figure out how much per item we need to satisfy input by reading input line from target.
     -- then have a look at how much we of it in source and subtract the stock.
     -- resulting negative values mean that we have enough of it; and that we could use
@@ -55,7 +51,7 @@ local function doTheThing(source, target)
     local targetItems = target:getDetailedItemList()
 
     -- [todo] hardcoded output slot range
-    for targetSlot = 10, 27 do
+    for targetSlot = 1, 18 do
         local targetItem = targetItems[targetSlot]
 
         if targetItem ~= nil then
@@ -85,7 +81,7 @@ local function doTheThing(source, target)
 
     -- take input
     -- [todo] hardcoded input slot range
-    for targetSlot = 1, 9 do
+    for targetSlot = 19, 27 do
         local targetItem = targetItems[targetSlot]
 
         if targetItem ~= nil then
@@ -99,11 +95,3 @@ local function doTheThing(source, target)
         end
     end
 end
-
-local function main(args)
-    local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
-    local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
-    doTheThing(bufferBarrel, ioChest)
-end
-
-return main(arg)
