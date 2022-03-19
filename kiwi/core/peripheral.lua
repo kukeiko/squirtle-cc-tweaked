@@ -3,7 +3,12 @@ local native = peripheral
 ---@class KiwiPeripheral
 local KiwiPeripheral = {}
 
-function KiwiPeripheral.getSide(types, sides)
+---@return integer
+function KiwiPeripheral.findSide(types, sides)
+    if type(types) == "string" then
+        types = {types}
+    end
+
     sides = sides or Side.all()
 
     for i = 1, #sides do
