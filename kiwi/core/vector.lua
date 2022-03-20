@@ -35,8 +35,7 @@ end
 
 ---@return KiwiVector
 function KiwiVector.cast(data)
-    if type(data) ~= "table" or type(data.x) ~= "number" or type(data.y) ~= "number" or type(data.z) ~=
-        "number" then
+    if type(data) ~= "table" or type(data.x) ~= "number" or type(data.y) ~= "number" or type(data.z) ~= "number" then
         error("not a vector")
     end
 

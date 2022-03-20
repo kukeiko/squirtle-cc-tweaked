@@ -3,6 +3,7 @@ local native = peripheral
 ---@class KiwiPeripheral
 local KiwiPeripheral = {}
 
+---@param types string[]|string
 ---@return integer
 function KiwiPeripheral.findSide(types, sides)
     if type(types) == "string" then
