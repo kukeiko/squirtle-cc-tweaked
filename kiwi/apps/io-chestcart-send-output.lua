@@ -9,56 +9,29 @@ package.path = package.path .. ";/?.lua"
 
 local KiwiPeripheral = require "kiwi.core.peripheral"
 local KiwiChest = require "kiwi.core.chest"
-local KiwiUtils = require "kiwi.utils"
 local pushInput = require "kiwi.inventory.push-input"
+local takeOutput = require "kiwi.inventory.take-output"
 
----@param source KiwiChest
----@param target KiwiChest
-function takeOutput(source, target)
-    -- figure out how much stuff we can load up in total,
-    -- which is summing input + output stacks in io-chest,
-    local sourceItems = source:getDetailedItemList()
-
+---@param chest KiwiChest
+---@return table<string, integer>
+local function getMaxStock(chest)
+    -- figure out how much stuff we can load up in total, which is summing input + output stacks in io-chest
     ---@type table<string, integer>
     local maxStock = {}
 
-    for _, sourceItem in pairs(sourceItems) do
+    for _, sourceItem in pairs(chest:getDetailedItemList()) do
         maxStock[sourceItem.name] = (maxStock[sourceItem.name] or 0) + sourceItem.maxCount
     end
 
-    KiwiUtils.prettyPrint(maxStock)
-
-    -- then having a looky at how much we have in buffer,
-    local targetItems = target:getDetailedItemList()
-
-    for _, targetItem in pairs(targetItems) do
-        if maxStock[targetItem.name] ~= nil then
-            maxStock[targetItem.name] = maxStock[targetItem.name] - targetItem.count
-        end
-    end
-
-    -- and then take items from output
-    -- [todo] hardcoded output slot range
-    for slot = 1, 18 do
-        local sourceItem = sourceItems[slot]
-
-        if sourceItem ~= nil then
-            local maxStockForItem = maxStock[sourceItem.name]
-
-            if maxStockForItem ~= nil and maxStockForItem > 0 then
-                local numToTransfer = math.min(sourceItem.count - 1, maxStockForItem)
-                local numTransferred = source:pushItems(target.side, slot, numToTransfer)
-                maxStock[sourceItem.name] = maxStockForItem - numTransferred
-            end
-        end
-    end
+    return maxStock
 end
 
 function main(args)
     local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
     local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
     pushInput(bufferBarrel, ioChest)
-    takeOutput(ioChest, bufferBarrel)
+    local maxStock = getMaxStock(ioChest)
+    takeOutput(ioChest, bufferBarrel, maxStock)
 end
 
 return main(arg)

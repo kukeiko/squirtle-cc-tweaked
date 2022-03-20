@@ -2,7 +2,6 @@ local Peripheral = require "kiwi.core.peripheral"
 local KiwiSide = require "kiwi.core.side"
 local KiwiDetailedItemStack = require "kiwi.core.detailed-item-stack"
 local KiwiItemStack = require "kiwi.core.item-stack"
-local KiwiItemStockRequirement = require "kiwi.core.item-stock-requirement"
 
 ---@class KiwiChest
 ---@field side integer
@@ -48,6 +47,26 @@ function KiwiChest:getDetailedItemList()
     end
 
     return list
+end
+
+function KiwiChest:getFirstInputSlot()
+    -- [todo] hardcoded
+    return 19
+end
+
+function KiwiChest:getLastInputSlot()
+    -- [todo] hardcoded
+    return 27
+end
+
+function KiwiChest:getFirstOutputSlot()
+    -- [todo] hardcoded
+    return 1
+end
+
+function KiwiChest:getLastOutputSlot()
+    -- [todo] hardcoded
+    return 18
 end
 
 ---@param target integer
