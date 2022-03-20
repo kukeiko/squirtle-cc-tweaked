@@ -1,6 +1,6 @@
-local getState = require "kiwi.core.get-state"
-local changeState = require "kiwi.core.change-state"
-local Vector = require "kiwi.core.vector"
+local Vector = require "lib.elements.vector"
+local getState = require "lib.squirtle.get-state"
+local changeState = require "lib.squirtle.change-state"
 
 ---@param refresh boolean
 return function(refresh)

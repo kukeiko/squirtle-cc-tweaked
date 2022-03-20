@@ -1,19 +1,19 @@
----@class KiwiSide
-local KiwiSide = {front = 0, right = 1, back = 2, left = 3, top = 4, bottom = 5}
+---@class Side
+local Side = {front = 0, right = 1, back = 2, left = 3, top = 4, bottom = 5}
 
 if not turtle then
-    KiwiSide.right = 3
-    KiwiSide.left = 1
+    Side.right = 3
+    Side.left = 1
 end
 
 local names = {}
 
-for k, v in pairs(KiwiSide) do
+for k, v in pairs(Side) do
     names[v] = k
 end
 
 ---@return number[]
-function KiwiSide.all()
+function Side.all()
     local sides = {}
 
     for i = 0, 5 do
@@ -23,7 +23,7 @@ function KiwiSide.all()
     return sides
 end
 
-function KiwiSide.horizontal()
+function Side.horizontal()
     local sides = {}
 
     for i = 0, 3 do
@@ -34,13 +34,13 @@ function KiwiSide.horizontal()
 end
 
 ---@param side number
-function KiwiSide.getName(side)
+function Side.getName(side)
     return names[side] or tostring(side);
 end
 
 ---@param str string
-function KiwiSide.fromString(str)
-    local side = KiwiSide[str:lower()]
+function Side.fromString(str)
+    local side = Side[str:lower()]
 
     if side == nil then
         error("invalid Side name: " .. str)
@@ -50,7 +50,7 @@ function KiwiSide.fromString(str)
 end
 
 ---@param arg string|number
-function KiwiSide.fromArg(arg)
+function Side.fromArg(arg)
     local type = type(arg)
 
     -- [todo] use cc.expect
@@ -61,7 +61,7 @@ function KiwiSide.fromArg(arg)
             error("Side out of range: " .. arg)
         end
     elseif type == "string" then
-        return KiwiSide.fromString(arg)
+        return Side.fromString(arg)
     else
         error("unexpected Side arg type: " .. type)
     end
@@ -70,21 +70,21 @@ end
 ---@param side integer
 ---@param times? number
 ---@return integer
-function KiwiSide.rotateLeft(side, times)
+function Side.rotateLeft(side, times)
     return (side - (times or 1)) % 4
 end
 
 ---@param side integer
 ---@param times? number
 ---@return integer
-function KiwiSide.rotateRight(side, times)
+function Side.rotateRight(side, times)
     return (side + (times or 1)) % 4
 end
 
 ---@param side integer
 ---@return integer
-function KiwiSide.rotateAround(side)
+function Side.rotateAround(side)
     return (side + 2) % 4
 end
 
-return KiwiSide
+return Side

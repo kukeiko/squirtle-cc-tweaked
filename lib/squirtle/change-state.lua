@@ -1,6 +1,6 @@
-local getState = require "kiwi.core.get-state"
+local getState = require "lib.squirtle.get-state"
 
----@param patch KiwiState
+---@param patch SquirtleState
 return function(patch)
     local state = getState()
 
