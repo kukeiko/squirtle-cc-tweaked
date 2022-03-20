@@ -236,10 +236,13 @@ local function main(args)
             -- [todo] should only check for horizontal sides
             local chest = Peripheral.wrapOne({"minecraft:chest"})
 
+            -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
+            -- so should just error out, complaining that there is no io-chest.
             if not chest then
                 if not move(Side.back) then
                     error("could not back down from input barrel")
                 end
+
                 if not move(Side.bottom) then
                     error("could not back down from input barrel")
                 end
