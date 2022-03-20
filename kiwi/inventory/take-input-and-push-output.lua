@@ -33,7 +33,7 @@ return function(source, target)
     -- find that in source and push to target, where transferCount is based on input table value
 
     local requiredInputStock = readInputStock(target)
-    KiwiUtils.prettyPrint(requiredInputStock)
+    -- KiwiUtils.prettyPrint(requiredInputStock)
 
     for _, sourceItem in pairs(source:getDetailedItemList()) do
         if requiredInputStock[sourceItem.name] ~= nil then
@@ -44,7 +44,7 @@ return function(source, target)
         end
     end
 
-    KiwiUtils.prettyPrint(requiredInputStock)
+    -- KiwiUtils.prettyPrint(requiredInputStock)
 
     -- push output
     local sourceItems = source:getDetailedItemList()
