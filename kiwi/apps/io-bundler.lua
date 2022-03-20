@@ -151,11 +151,6 @@ local function getDefaultState()
 end
 
 local function main(args)
-
-    KiwiUtils.saveAppState({foo = 1}, "io-bundler")
-    if true then
-        return
-    end
     -- local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
     -- local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
     -- local inputStacks -- = getInputStacks(ioChest)
@@ -206,8 +201,7 @@ local function main(args)
                 -- [todo] saving doesnt work yet? i guess it has to do with disk size.
                 -- but interestingly enough {foo = 1} can be saved.
                 -- KiwiUtils.saveAppState(state.maxStock, "io-bundler")
-                KiwiUtils.saveAppState({foo = 1}, "io-bundler")
-                return
+                KiwiUtils.saveAppState(state, "io-bundler")
             else
                 doRemoteWork(state.maxStock, state.inputStacks, state.outputStacks)
             end
