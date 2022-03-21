@@ -1,13 +1,15 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local Chest = require "world.chest"
 local Peripheral = require "world.peripheral"
-local Side = require "elements.side"
+local Chest = require "world.chest"
+local pushInput = require "squirtle.transfer.push-input"
+local takeOutput = require "squirtle.transfer.take-output"
 local takeInputAndPushOutput = require "squirtle.transfer.take-input-and-push-output"
 local turn = require "squirtle.turn"
 local suck = require "squirtle.suck"
 local Inventory = require "squirtle.inventory"
 local drop = require "squirtle.drop"
+local Side = require "elements.side"
 
 local function facePistonPedestal()
     local chestSide = Peripheral.findSide("minecraft:chest")
@@ -30,7 +32,39 @@ local function dumpInventoryToBarrel()
     end
 end
 
+---@param chest Chest
+---@return table<string, integer>
+local function getMaxStock(chest)
+    -- figure out how much stuff we can load up in total, which is summing input + output stacks in io-chest
+    ---@type table<string, integer>
+    local maxStock = {}
+
+    for _, sourceItem in pairs(chest:getDetailedItemList()) do
+        maxStock[sourceItem.name] = (maxStock[sourceItem.name] or 0) + sourceItem.maxCount
+    end
+
+    return maxStock
+end
+
+local function printUsage()
+    print("Usage:")
+    print("io-chestcart send-output|send-input")
+end
+
+---@param args table
+---@return boolean success
 local function main(args)
+    local sendOutput
+
+    if args[1] == "send-output" then
+        sendOutput = true
+    elseif args[1] == "send-input" then
+        sendOutput = false
+    else
+        printUsage()
+        return false
+    end
+
     facePistonPedestal()
 
     while true do
@@ -73,11 +107,18 @@ local function main(args)
 
             redstone.setOutput(Side.getName(Side.back), true)
             turn(signalSide) -- turning to chest
-            -------------------
+
             local bufferBarrel = Chest.new(Peripheral.findSide("minecraft:barrel"))
             local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
-            takeInputAndPushOutput(bufferBarrel, ioChest)
-            -------------------
+
+            if sendOutput then
+                pushInput(bufferBarrel, ioChest)
+                local maxStock = getMaxStock(ioChest)
+                takeOutput(ioChest, bufferBarrel, maxStock)
+            else
+                takeInputAndPushOutput(bufferBarrel, ioChest)
+            end
+
             turn(pistonSignalSide)
             redstone.setOutput(Side.getName(Side.back), false)
             while suck(Side.bottom) do
@@ -109,6 +150,7 @@ local function main(args)
 
     end
 
+    return true
 end
 
 return main(arg)
