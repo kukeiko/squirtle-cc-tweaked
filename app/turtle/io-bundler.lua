@@ -7,14 +7,15 @@ local Utils = require "utils"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
 local Side = require "elements.side"
-local Inventory = require "squirtle.inventory"
 local inspect = require "squirtle.inspect"
 local move = require "squirtle.move"
 local turn = require "squirtle.turn"
-local takeInputAndPushOutput = require "squirtle.transfer.take-input-and-push-output"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
-local pushInput = require "squirtle.transfer.push-input"
 local takeOutput = require "squirtle.transfer.take-output"
+local pushInput = require "squirtle.transfer.push-input"
+local pullInput = require "squirtle.transfer.pull-input"
+local pushOutput = require "squirtle.transfer.push-output"
+local dump = require "squirtle.dump"
 
 ---@class IoBundlerAppState
 ---@field maxStock table<string, integer>
@@ -53,62 +54,31 @@ local function getOutputStacks(chest)
     return outputStacks
 end
 
----@param chest Chest
+---@param side integer
 ---@return table<string, integer>
-local function getMaxStock(chest)
-    local items = chest:getDetailedItemList()
+local function getMaxStock(side)
+    local maxStock = Chest.getInputMaxStock(side)
 
-    ---@type table<string, integer>
-    local maxStock = {}
-    local inputStacks = getInputStacks(chest)
-
-    for _, item in pairs(inputStacks) do
-        maxStock[item.name] = (maxStock[item.name] or 0) + item.maxCount
-    end
-
-    for slot = chest:getFirstOutputSlot(), chest:getLastOutputSlot() do
-        local item = items[slot]
-
-        if item ~= nil then
-            local numMissing = item:numMissing()
-
-            if numMissing > 0 then
-                maxStock[item.name] = (maxStock[item.name] or 0) + numMissing
-            end
-        end
+    for item, count in pairs(Chest.getOutputMissingStock(side)) do
+        maxStock[item] = (maxStock[item] or 0) + count
     end
 
     return maxStock
 end
 
-local function dumpInventoryToBarrel()
-    -- [todo] list() might return an array with all slots set in the future
-    for slot in pairs(Inventory.list()) do
-        Inventory.selectSlot(slot)
-        -- [todo] hardcoded side & using native directly
-        turtle.dropDown()
-    end
-end
-
 ---@param stacks DetailedItemStack[]
 ---@param barrel Chest
 local function suckStacksFromBarrel(stacks, barrel)
+    -- [todo] quite dirtily & unefficient method; doesn't stop on first suck fail
     for _, item in pairs(stacks) do
         for barrelSlot, barrelItem in pairs(barrel:getItemList()) do
             if barrelItem.name == item.name then
-                -- [todo] assuming that the slot has enough. as a hack, we could first condense the barrel.
+                -- [todo] we're assuming that the slot has enough. as a hack, we could first condense the barrel.
                 suckSlotFromChest(barrel.side, barrelSlot)
                 break
             end
         end
     end
-end
-
----@param buffer Chest
----@param ioChest Chest
-local function doHomework(buffer, ioChest)
-    dumpInventoryToBarrel()
-    takeInputAndPushOutput(buffer, ioChest)
 end
 
 ---@param maxStock table<string, integer>
@@ -118,7 +88,7 @@ local function doRemoteWork(maxStock, inputStacks, outputStacks)
     print("doin remote work")
     local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
     print("dumping inventory to barrel")
-    dumpInventoryToBarrel()
+    dump(Side.bottom)
     local bufferBarrel = Chest.new(Side.bottom)
     print("pushing input to io-chest")
     pushInput(bufferBarrel, ioChest)
@@ -175,12 +145,22 @@ local function main(args)
                 state.outputStacks = getOutputStacks(ioChest)
                 -- doHomework(bufferBarrel, ioChest)
                 print("dump inventory to barrel")
-                dumpInventoryToBarrel()
-                print("take input and push output")
-                takeInputAndPushOutput(bufferBarrel, ioChest)
-                state.maxStock = getMaxStock(ioChest)
+                dump(Side.bottom)
+
+                print("pulling input")
+                pullInput(ioChest.side, bufferBarrel.side)
+
+                print("pushing output")
+                local inputMaxStock = Chest.getInputMaxStock(ioChest.side)
+                pushOutput(bufferBarrel.side, ioChest.side, inputMaxStock)
+
+                print("determining stock for next round")
+                local outputMissingStock = Chest.getOutputMissingStock(ioChest.side)
+                state.maxStock = Chest.addStock(inputMaxStock, outputMissingStock)
+
                 print("sucking input from barrel")
                 suckStacksFromBarrel(state.inputStacks, bufferBarrel)
+
                 print("saving state to disk")
                 -- [todo] saving doesnt work yet? i guess it has to do with disk size.
                 -- but interestingly enough {foo = 1} can be saved.

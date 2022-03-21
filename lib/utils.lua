@@ -10,24 +10,32 @@ function Utils.concat(a, b)
 end
 
 -- https://stackoverflow.com/a/26367080/1611592
-function Utils.copy(obj, seen)
-    if type(obj) ~= "table" then
-        return obj
-    end
-
-    if seen and seen[obj] then
-        return seen[obj]
+---@param tbl table
+function Utils.clone(tbl, seen)
+    if seen and seen[tbl] then
+        return seen[tbl]
     end
 
     local s = seen or {}
-    local res = setmetatable({}, getmetatable(obj))
-    s[obj] = res
+    local res = setmetatable({}, getmetatable(tbl))
+    s[tbl] = res
 
-    for k, v in pairs(obj) do
-        res[Utils.copy(k, s)] = Utils.copy(v, s)
+    for k, v in pairs(tbl) do
+        res[Utils.clone(k, s)] = Utils.clone(v, s)
     end
 
     return res
+end
+
+---@param tbl table
+function Utils.copy(tbl)
+    local copy = {}
+
+    for k, v in pairs(tbl) do
+        copy[k] = v
+    end
+
+    return copy
 end
 
 function Utils.isEmpty(t)

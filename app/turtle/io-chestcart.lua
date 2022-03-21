@@ -3,13 +3,12 @@ package.path = package.path .. ";/lib/?.lua"
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
-local Inventory = require "squirtle.inventory"
 local pushInput = require "squirtle.transfer.push-input"
 local takeOutput = require "squirtle.transfer.take-output"
-local takeInputAndPushOutput = require "squirtle.transfer.take-input-and-push-output"
+local pullInput = require "squirtle.transfer.pull-input"
+local pushOutput = require "squirtle.transfer.push-output"
 local turn = require "squirtle.turn"
 local suck = require "squirtle.suck"
-local drop = require "squirtle.drop"
 local dump = require "squirtle.dump"
 
 local function facePistonPedestal()
@@ -51,20 +50,6 @@ local function dumpBarrelToChest()
     if suck(Side.bottom) then
         dumpBarrelToChest()
     end
-end
-
----@param chest Chest
----@return table<string, integer>
-local function getMaxStock(chest)
-    -- figure out how much stuff we can load up in total, which is summing input + output stacks in io-chest
-    ---@type table<string, integer>
-    local maxStock = {}
-
-    for _, sourceItem in pairs(chest:getDetailedItemList()) do
-        maxStock[sourceItem.name] = (maxStock[sourceItem.name] or 0) + sourceItem.maxCount
-    end
-
-    return maxStock
 end
 
 local function printUsage()
@@ -112,10 +97,10 @@ local function main(args)
 
             if sendOutput then
                 pushInput(bufferBarrel, ioChest)
-                local maxStock = getMaxStock(ioChest)
-                takeOutput(ioChest, bufferBarrel, maxStock)
+                takeOutput(ioChest, bufferBarrel, Chest.getInputOutputMaxStock(ioChest.side))
             else
-                takeInputAndPushOutput(bufferBarrel, ioChest)
+                pullInput(ioChest.side, bufferBarrel.side)
+                pushOutput(bufferBarrel.side, ioChest.side, Chest.getInputMaxStock(ioChest.side))
             end
 
             turn(pistonSignalSide)

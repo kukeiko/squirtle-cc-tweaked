@@ -13,7 +13,6 @@ end
 ---@param target Chest
 ---@param maxStock table<string, integer>
 return function(source, target, maxStock)
-    local sourceItems = source:getDetailedItemList()
     local targetItems = target:getDetailedItemList()
 
     --- to prevent mutating input table
@@ -27,7 +26,7 @@ return function(source, target, maxStock)
     end
 
     -- and then take items from output
-    -- [todo] hardcoded output slot range
+    local sourceItems = source:getDetailedItemList()
     for slot = source:getFirstOutputSlot(), source:getLastOutputSlot() do
         local sourceItem = sourceItems[slot]
 
