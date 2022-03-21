@@ -1,12 +1,12 @@
-local getState = require "kiwi.core.get-state"
-local changeState = require "kiwi.core.change-state"
-local Side = require "kiwi.core.side"
-local Fuel = require "kiwi.core.fuel"
-local Cardinal = require "kiwi.core.cardinal"
-local refuel = require "kiwi.turtle.refuel"
+local Side = require "elements.side"
+local Cardinal = require "elements.cardinal"
+local getState = require "squirtle.get-state"
+local changeState = require "squirtle.change-state"
+local Fuel = require "squirtle.fuel"
+local refuel = require "squirtle.refuel"
 local native = turtle
 
----@class KiwiMoveOptions
+---@class SquirtleMoveOptions
 ---@field attack? boolean
 ---@field dig? boolean|function
 
@@ -19,7 +19,7 @@ local natives = {
 
 ---@param side? integer|string
 ---@param times? integer
----@param options? KiwiMoveOptions
+---@param options? SquirtleMoveOptions
 return function(side, times, options)
     local handler = natives[Side.fromArg(side or Side.front)]
 

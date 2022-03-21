@@ -1,10 +1,10 @@
----@class KiwiItemStack
+---@class ItemStack
 ---@field count integer
 ---@field name string
 local ItemStack = {}
 
 ---@param data table
----@return KiwiItemStack
+---@return ItemStack
 function ItemStack.cast(data)
     return data;
 end

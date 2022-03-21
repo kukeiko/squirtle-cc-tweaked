@@ -1,4 +1,4 @@
-local getState = require "lib.squirtle.get-state"
+local getState = require "squirtle.get-state"
 
 ---@param patch SquirtleState
 return function(patch)

@@ -1,15 +1,14 @@
 package.path = package.path .. ";/?.lua"
 
-local Kiwi = require "kiwi"
-local Inventory = require "kiwi.turtle.inventory"
-local Fuel = require "kiwi.core.fuel"
-local Peripheral = require "kiwi.core.peripheral"
-local refuelFromInventory = require "kiwi.turtle.refuel.from-inventory"
-local Side = Kiwi.Side
-local inspect = Kiwi.Turtle.inspect
-local move = Kiwi.Turtle.move
-local turn = Kiwi.Turtle.turn
-local dig = Kiwi.Turtle.dig
+local Inventory = require "squirtle.inventory"
+local Fuel = require "squirtle.fuel"
+local Peripheral = require "world.peripheral"
+local refuelFromInventory = require "squirtle.refuel.from-inventory"
+local Side = require "elements.side"
+local inspect = require "squirtle.inspect"
+local move = require "squirtle.move"
+local turn = require "squirtle.turn"
+local dig = require "squirtle.dig"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -25,7 +24,7 @@ local cropsReadyAges = {
     ["minecraft:carrots"] = 7
 }
 
----@param block KiwiBlock
+---@param block Block
 local function getBlockTurnSide(block)
     if block.name == "minecraft:spruce_fence" then
         return Side.left
@@ -69,13 +68,13 @@ local function selectSlotWithSeedsOfCrop(crops)
     return false
 end
 
----@param block KiwiBlock
+---@param block Block
 ---@return boolean
 local function isCrops(block)
     return block.tags["minecraft:crops"]
 end
 
----@param crops KiwiBlock
+---@param crops Block
 ---@return integer
 local function getCropsRemainingAge(crops)
     local readyAge = cropsReadyAges[crops.name]
@@ -167,7 +166,7 @@ local function doHomeStuff()
     for slot = 1, 16 do
         if Inventory.selectSlotIfNotEmpty(slot) then
             if not Fuel.isFuel(Inventory.getStack(slot)) then
-                -- [todo] use kiwi
+                -- [todo] use squirtle
                 turtle.drop()
             end
         end
@@ -268,7 +267,7 @@ local function main(args)
                 end
 
                 dig(Side.bottom)
-                -- [todo] use kiwi
+                -- [todo] use squirtle
                 turtle.placeDown()
             end
         elseif not block then

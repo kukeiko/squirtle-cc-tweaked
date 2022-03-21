@@ -1,30 +1,37 @@
 package.path = package.path .. ";/?.lua"
 
-local Kiwi = require "kiwi"
-local navigate = require "kiwi.turtle.navigate"
-local isHome = require "kiwi.turtle.is-home"
-local orientate = require "kiwi.turtle.orientate"
-local World = require "kiwi.core.world"
-local Body = require "kiwi.core.body"
+local Vector = require "elements.vector"
+local Side = require "elements.vector"
+local World = require "scout.world"
+local Transform = require "scout.transform"
+local inspect = require "squirtle.inspect"
+local navigate = require "squirtle.navigate"
+local orientate = require "squirtle.orientate"
+
+local function isHome()
+    local inspected = inspect(Side.bottom)
+
+    return inspected and inspected.name == "minecraft:barrel"
+end
 
 ---@param point Vector
----@param world KiwiWorld
+---@param world World
 local function nextPoint(point, world)
-    local relative = point:minus(world.body.position)
+    local relative = point:minus(world.transform.position)
 
     if relative.z % 2 == 0 then
         if relative.x + 1 < world.width then
-            return point + Kiwi.Vector.new(1, 0, 0)
+            return point + Vector.new(1, 0, 0)
         elseif relative.z + 1 < world.depth then
-            return point + Kiwi.Vector.new(0, 0, 1)
+            return point + Vector.new(0, 0, 1)
         else
             return false
         end
     else
         if relative.x - 1 >= 0 then
-            return point + Kiwi.Vector.new(-1, 0, 0)
+            return point + Vector.new(-1, 0, 0)
         elseif relative.z + 1 < world.depth then
-            return point + Kiwi.Vector.new(0, 0, 1)
+            return point + Vector.new(0, 0, 1)
         else
             return false
         end
@@ -36,9 +43,9 @@ local function breakable(block)
 end
 
 ---@param layer integer
----@param world KiwiWorld
+---@param world World
 local function moveToLayer(layer, world)
-    local goal = world.body.position:plus(Kiwi.Vector.new(0, layer, 0))
+    local goal = world.transform.position:plus(Vector.new(0, layer, 0))
 
     while goal do
         if navigate(goal, world, breakable) then
@@ -52,9 +59,9 @@ local function moveToLayer(layer, world)
 end
 
 ---@param layer integer
----@param world KiwiWorld
+---@param world World
 local function exposeLayer(layer, world)
-    local goal = world.body.position:plus(Kiwi.Vector.new(0, layer, 0))
+    local goal = world.transform.position:plus(Vector.new(0, layer, 0))
 
     while goal do
         navigate(goal, world, breakable)
@@ -68,7 +75,7 @@ local function main(args)
     end
 
     local position, facing = orientate()
-    local world = World.new(Body.new(position), 3, 2, 3)
+    local world = World.new(Transform.new(position), 3, 2, 3)
     local layer = 0
 
     while layer < world.height do
@@ -77,7 +84,7 @@ local function main(args)
         layer = layer + 1
     end
 
-    navigate(world.body.position, world, breakable)
+    navigate(world.transform.position, world, breakable)
     print("all done!")
 end
 

@@ -1,6 +1,4 @@
-local KiwiUtils = require "kiwi.utils"
-
----@param chest KiwiChest
+---@param chest Chest
 ---@return table<string, integer>
 local function readInputStock(chest)
     local items = chest:getDetailedItemList()
@@ -20,8 +18,8 @@ local function readInputStock(chest)
     return requiredInputStock
 end
 
----@param source KiwiChest
----@param target KiwiChest
+---@param source Chest
+---@param target Chest
 return function(source, target)
     -- figure out how much per item we need to satisfy input by reading input line from target.
     -- then have a look at how much we of it in source and subtract the stock.
@@ -33,7 +31,6 @@ return function(source, target)
     -- find that in source and push to target, where transferCount is based on input table value
 
     local requiredInputStock = readInputStock(target)
-    -- KiwiUtils.prettyPrint(requiredInputStock)
 
     for _, sourceItem in pairs(source:getDetailedItemList()) do
         if requiredInputStock[sourceItem.name] ~= nil then
@@ -43,8 +40,6 @@ return function(source, target)
             requiredInputStock[sourceItem.name] = -sourceItem.count
         end
     end
-
-    -- KiwiUtils.prettyPrint(requiredInputStock)
 
     -- push output
     local sourceItems = source:getDetailedItemList()

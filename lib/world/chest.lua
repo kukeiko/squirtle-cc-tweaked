@@ -1,39 +1,39 @@
-local Peripheral = require "kiwi.core.peripheral"
-local KiwiSide = require "kiwi.core.side"
-local KiwiDetailedItemStack = require "kiwi.core.detailed-item-stack"
-local KiwiItemStack = require "kiwi.core.item-stack"
+local Peripheral = require "world.peripheral"
+local Side = require "elements.side"
+local DetailedItemStack = require "world.detailed-item-stack"
+local ItemStack = require "world.item-stack"
 
----@class KiwiChest
+---@class Chest
 ---@field side integer
-local KiwiChest = {}
+local Chest = {}
 
 ---@param side integer
----@return KiwiChest
-function KiwiChest.new(side)
-    side = KiwiSide.fromArg(side)
-    ---@type KiwiChest
+---@return Chest
+function Chest.new(side)
+    side = Side.fromArg(side)
+    ---@type Chest
     local instance = {side = side}
-    setmetatable(instance, {__index = KiwiChest})
+    setmetatable(instance, {__index = Chest})
     return instance
 end
 
----@return KiwiItemStack[]
-function KiwiChest:getItemList()
+---@return ItemStack[]
+function Chest:getItemList()
     local nativeList = Peripheral.call(self.side, "list")
-    ---@type KiwiItemStack[]
+    ---@type ItemStack[]
     local list = {}
 
     for slot, nativeItem in pairs(nativeList) do
-        list[slot] = KiwiItemStack.cast(nativeItem)
+        list[slot] = ItemStack.cast(nativeItem)
     end
 
     return list
 end
 
----@return KiwiDetailedItemStack[]
-function KiwiChest:getDetailedItemList()
+---@return DetailedItemStack[]
+function Chest:getDetailedItemList()
     local nativeList = Peripheral.call(self.side, "list")
-    ---@type KiwiDetailedItemStack[]
+    ---@type DetailedItemStack[]
     local list = {}
 
     for slot, _ in pairs(nativeList) do
@@ -43,28 +43,28 @@ function KiwiChest:getDetailedItemList()
             error("slot #" .. slot .. " unexpectedly empty")
         end
 
-        list[slot] = KiwiDetailedItemStack.cast(nativeItem)
+        list[slot] = DetailedItemStack.cast(nativeItem)
     end
 
     return list
 end
 
-function KiwiChest:getFirstInputSlot()
+function Chest:getFirstInputSlot()
     -- [todo] hardcoded
     return 19
 end
 
-function KiwiChest:getLastInputSlot()
+function Chest:getLastInputSlot()
     -- [todo] hardcoded
     return 27
 end
 
-function KiwiChest:getFirstOutputSlot()
+function Chest:getFirstOutputSlot()
     -- [todo] hardcoded
     return 1
 end
 
-function KiwiChest:getLastOutputSlot()
+function Chest:getLastOutputSlot()
     -- [todo] hardcoded
     return 18
 end
@@ -74,8 +74,8 @@ end
 ---@param limit? integer
 ---@param toSlot? integer
 ---@return integer
-function KiwiChest:pushItems(target, fromSlot, limit, toSlot)
-    return Peripheral.call(self.side, "pushItems", KiwiSide.getName(target), fromSlot, limit, toSlot)
+function Chest:pushItems(target, fromSlot, limit, toSlot)
+    return Peripheral.call(self.side, "pushItems", Side.getName(target), fromSlot, limit, toSlot)
 end
 
 ---@param target integer
@@ -83,13 +83,13 @@ end
 ---@param limit? integer
 ---@param toSlot? integer
 ---@return integer
-function KiwiChest:pullItems(target, fromSlot, limit, toSlot)
-    return Peripheral.call(self.side, "pullItems", KiwiSide.getName(target), fromSlot, limit, toSlot)
+function Chest:pullItems(target, fromSlot, limit, toSlot)
+    return Peripheral.call(self.side, "pullItems", Side.getName(target), fromSlot, limit, toSlot)
 end
 
 ---@return integer
-function KiwiChest:getSize()
+function Chest:getSize()
     return Peripheral.call(self.side, "size")
 end
 
-return KiwiChest
+return Chest

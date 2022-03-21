@@ -1,18 +1,17 @@
-local Cardinal = require "kiwi.core.cardinal"
-local Side = require "kiwi.core.side"
-local PathFinding = require "kiwi.core.path-finding"
-local orientate = require "kiwi.turtle.orientate"
-local moveTo = require "kiwi.turtle.move-to"
-local inspect = require "kiwi.turtle.inspect"
-local dig = require "kiwi.turtle.dig"
-local World = require "kiwi.core.world"
-local Body = require "kiwi.core.body"
-local refuel = require "kiwi.turtle.refuel"
+local Cardinal = require "elements.cardinal"
+local PathFinding = require "scout.path-finding"
+local orientate = require "squirtle.orientate"
+local World = require "scout.world"
+local Transform = require "scout.transform"
+local inspect = require "squirtle.inspect"
+local dig = require "squirtle.dig"
+local refuel = require "squirtle.refuel"
+local moveToPoint = require "squirtle.move.to-point"
 
----@param path KiwiVector[]
+---@param path Vector[]
 local function walkPath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = moveTo(next)
+        local success, failedSide = moveToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -22,10 +21,10 @@ local function walkPath(path)
     return true
 end
 
----@param to KiwiVector
----@param world? KiwiWorld
+---@param to Vector
+---@param world? World
 ---@param breakable? function
----@param options? KiwiMoveOptions
+---@param options? SquirtleMoveOptions
 return function(to, world, breakable, options)
     -- [todo] remove breakable() in favor of options;
     -- also we could pass them along to walkPath(),
@@ -35,7 +34,7 @@ return function(to, world, breakable, options)
         return false
     end
 
-    world = world or World.new(Body.new(orientate()))
+    world = world or World.new(Transform.new(orientate()))
     local from, facing = orientate()
 
     while true do

@@ -9,8 +9,8 @@ local function shallowCopyTable(table)
     return copy
 end
 
----@param source KiwiChest
----@param target KiwiChest
+---@param source Chest
+---@param target Chest
 ---@param maxStock table<string, integer>
 return function(source, target, maxStock)
     local sourceItems = source:getDetailedItemList()

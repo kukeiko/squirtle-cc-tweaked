@@ -1,16 +1,16 @@
-local Utils = require "kiwi.utils"
-local refuelFromInventory = require "kiwi.turtle.refuel.from-inventory"
+local Utils = require "utils"
+local Fuel = require "squirtle.fuel"
+local refuelFromInventory = require "squirtle.refuel.from-inventory"
 
----@param fuel integer
+---@param fuel? integer
 return function(fuel)
-    local openFuel = fuel
+    fuel = fuel or Fuel.getMissingFuel()
 
-    while openFuel > 0 do
+    while Fuel.getFuelLevel() < fuel do
+        local openFuel = fuel - Fuel.getFuelLevel()
         print(string.format("[help] not enough fuel, need %d more.", openFuel))
         print("please put some into inventory, then hit enter.")
         Utils.waitForUserToHitEnter()
-        openFuel = refuelFromInventory(openFuel)
+        refuelFromInventory(openFuel)
     end
-
-    return openFuel
 end

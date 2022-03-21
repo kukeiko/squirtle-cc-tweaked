@@ -1,7 +1,7 @@
-local KiwiChet = require "kiwi.core.chest"
-local KiwiInventory = require "kiwi.turtle.inventory"
-local suck = require "kiwi.turtle.suck"
-local drop = require "kiwi.turtle.drop"
+local Chest = require "world.chest"
+local Inventory = require "squirtle.inventory"
+local suck = require "squirtle.suck"
+local drop = require "squirtle.drop"
 
 local function firstEmptySlotInItems(table, size)
     for index = 1, size do
@@ -20,13 +20,13 @@ return function(side, slot, limit)
         return suck(side, limit)
     end
 
-    local chest = KiwiChet.new(side)
+    local chest = Chest.new(side)
     local items = chest:getItemList()
 
     if items[1] ~= nil then
         local firstEmptySlot = firstEmptySlotInItems(items, chest:getSize())
 
-        if not firstEmptySlot and KiwiInventory.isFull() then
+        if not firstEmptySlot and Inventory.isFull() then
             -- [todo] add and use "unloadAnyOneItem()" method from item-transporter
             error("container full. turtle also full, so no temporary unloading possible.")
         elseif not firstEmptySlot then
@@ -37,7 +37,7 @@ return function(side, slot, limit)
 
             print("temporarily load first container slot into turtle...")
             local initialSlot = turtle.getSelectedSlot()
-            KiwiInventory.selectFirstEmptySlot()
+            Inventory.selectFirstEmptySlot()
             suck(side)
             chest:pushItems(side, slot, limit, 1)
             -- [todo] if we want to be super strict, we would have to move the

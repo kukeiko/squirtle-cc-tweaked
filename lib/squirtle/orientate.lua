@@ -1,14 +1,14 @@
-local Side = require "lib.elements.side"
-local Cardinal = require "lib.elements.cardinal"
-local getState = require "lib.squirtle.get-state"
-local changeState = require "lib.squirtle.change-state"
-local locate = require "lib.squirtle.navigation.locate"
-local refuel = require "kiwi.turtle.refuel"
-local move = require "kiwi.turtle.move"
-local turn = require "kiwi.turtle.turn"
+local Side = require "elements.side"
+local Cardinal = require "elements.cardinal"
+local getState = require "squirtle.get-state"
+local changeState = require "squirtle.change-state"
+local locate = require "squirtle.locate"
+local refuel = require "squirtle.refuel"
+local move = require "squirtle.move"
+local turn = require "squirtle.turn"
 
 ---@param side integer
----@param position KiwiVector
+---@param position Vector
 local function stepOut(side, position)
     refuel(2)
 
@@ -30,11 +30,13 @@ local function stepOut(side, position)
     return true
 end
 
----@param position KiwiVector
+---@param position Vector
 local function orientateSameLayer(position)
     -- [todo] note to self: i purposely turn first cause it looks nicer. especially
     -- when it moves back, then forward again. looks like a little dance.
     -- what i wrote this note actually for: allow for different styles and randomization
+    -- [todo#2] well, good i wrote this note. because i was surprised that the turtle
+    -- doesn't first try simply moving forward, and i was wondering why.
     turn(Side.right)
     local success = stepOut(Side.back, position) or stepOut(Side.front, position)
     turn(Side.left)
@@ -47,7 +49,7 @@ local function orientateSameLayer(position)
 end
 
 ---@param refresh boolean
----@return KiwiVector position, integer facing
+---@return Vector position, integer facing
 return function(refresh)
     local state = getState()
     local position = locate(refresh)

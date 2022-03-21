@@ -1,10 +1,10 @@
----@class KiwiWorld
----@field body KiwiBody
+---@class World
+---@field transform Transform
 ---@field width? integer
 ---@field height? integer
 ---@field depth? integer
 ---@field data table
-local KiwiWorld = {}
+local World = {}
 
 local function swap(a, b)
     return b, a
@@ -30,44 +30,45 @@ local function isInRange(value, from, length)
     return value >= from and value < to
 end
 
----@param body KiwiBody
+---@param transform Transform
 ---@param width? integer
 ---@param depth? integer
 ---@param height? integer
 ---@param data? table
----@return KiwiWorld
-function KiwiWorld.new(body, width, height, depth, data)
+---@return World
+function World.new(transform, width, height, depth, data)
+    -- [todo] we have a transform, but we're never using its facing. a bit confusing
     ---@type World
-    local instance = {body = body, width = width, height = height, depth = depth, data = data or {}}
+    local instance = {transform = transform, width = width, height = height, depth = depth, data = data or {}}
 
-    setmetatable(instance, {__index = KiwiWorld})
+    setmetatable(instance, {__index = World})
 
     return instance
 end
 
 ---@param x integer
-function KiwiWorld:isInBoundsX(x)
-    return isInRange(x, self.body.position.x, self.width)
+function World:isInBoundsX(x)
+    return isInRange(x, self.transform.position.x, self.width)
 end
 
 ---@param y integer
-function KiwiWorld:isInBoundsY(y)
-    return isInRange(y, self.body.position.y, self.height)
+function World:isInBoundsY(y)
+    return isInRange(y, self.transform.position.y, self.height)
 end
 
 ---@param z integer
-function KiwiWorld:isInBoundsZ(z)
-    return isInRange(z, self.body.position.z, self.depth)
+function World:isInBoundsZ(z)
+    return isInRange(z, self.transform.position.z, self.depth)
 end
 
----@param point KiwiVector
-function KiwiWorld:isInBounds(point)
+---@param point Vector
+function World:isInBounds(point)
     return self:isInBoundsX(point.x) and self:isInBoundsY(point.y) and self:isInBoundsZ(point.z)
 end
 
----@param point KiwiVector
+---@param point Vector
 ---@return boolean
-function KiwiWorld:isBlocked(point)
+function World:isBlocked(point)
     if not self:isInBounds(point) then
         return nil
     else
@@ -75,14 +76,14 @@ function KiwiWorld:isBlocked(point)
     end
 end
 
----@param point KiwiVector
-function KiwiWorld:setBlock(point)
+---@param point Vector
+function World:setBlock(point)
     self.data[tostring(point)] = true
 end
 
----@param point KiwiVector
-function KiwiWorld:clearBlock(point)
+---@param point Vector
+function World:clearBlock(point)
     self.data[tostring(point)] = nil
 end
 
-return KiwiWorld
+return World

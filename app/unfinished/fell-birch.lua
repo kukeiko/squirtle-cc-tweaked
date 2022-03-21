@@ -7,18 +7,17 @@ package.path = package.path .. ";/?.lua"
     leafs to naturally decay, and goodies dropped are collected via water. app: lumberjack
 ]]
 
-local Inventory = require "kiwi.turtle.inventory"
-local inspect = require "kiwi.turtle.inspect"
-local Side = require "kiwi.core.side"
-local Utils = require "kiwi.utils"
-local turn = require "kiwi.turtle.turn"
-local dig = require "kiwi.turtle.dig"
-local move = require "kiwi.turtle.move"
+local Inventory = require "squirtle.inventory"
+local inspect = require "squirtle.inspect"
+local Side = require "elements.side"
+local turn = require "squirtle.turn"
+local dig = require "squirtle.dig"
+local move = require "squirtle.move"
 
 ---@class TheState
----@field front? KiwiBlock
----@field bottom? KiwiBlock
----@field top? KiwiBlock
+---@field front? Block
+---@field bottom? Block
+---@field top? Block
 ---@field bits number
 
 local myBits = {leafLoop = 1, leafLoopEntered = 2, steppingOut = 4, climbing = 8}
@@ -118,7 +117,7 @@ local function main(args)
                 end
 
                 print("stepped out, placing planks")
-                -- [todo] use kiwi
+                -- [todo] use squirtle
                 turtle.place()
             elseif isSteppingOut and not isLeafLoop and enteredLeafLoop then
                 print("stepping back by moving forwards...")

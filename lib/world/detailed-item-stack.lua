@@ -1,4 +1,4 @@
----@class KiwiDetailedItemStack
+---@class DetailedItemStack
 ---@field count integer
 ---@field name string
 ---@field maxCount integer
@@ -8,7 +8,7 @@
 local DetailedItemStack = {}
 
 ---@param data table
----@return KiwiDetailedItemStack
+---@return DetailedItemStack
 function DetailedItemStack.cast(data)
     setmetatable(data, {__index = DetailedItemStack})
     return data;
@@ -18,7 +18,7 @@ function DetailedItemStack:numMissing()
     return self.maxCount - self.count
 end
 
----@param other KiwiDetailedItemStack
+---@param other DetailedItemStack
 function DetailedItemStack:equals(other)
     return self.name == other.name and self.displayName == other.displayName and self.nbt == other.nbt
 end

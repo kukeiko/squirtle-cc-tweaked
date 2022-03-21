@@ -1,4 +1,4 @@
-local Side = require "kiwi.core.side"
+local Side = require "elements.side"
 local native = turtle
 
 local natives = {
@@ -8,7 +8,7 @@ local natives = {
 }
 
 ---@param side? integer|string
----@return KiwiBlock? block
+---@return Block? block
 return function(side)
     local handler = natives[Side.fromArg(side or Side.front)]
 

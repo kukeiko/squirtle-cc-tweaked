@@ -1,7 +1,7 @@
-local Side = require "kiwi.core.side"
-local Cardinal = require "kiwi.core.cardinal"
-local getState = require "kiwi.core.get-state"
-local changeState = require "kiwi.core.change-state"
+local Side = require "elements.side"
+local Cardinal = require "elements.cardinal"
+local getState = require "squirtle.get-state"
+local changeState = require "squirtle.change-state"
 local native = turtle
 
 local function turnLeft()

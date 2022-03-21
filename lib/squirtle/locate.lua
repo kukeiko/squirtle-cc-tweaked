@@ -1,6 +1,6 @@
-local Vector = require "lib.elements.vector"
-local getState = require "lib.squirtle.get-state"
-local changeState = require "lib.squirtle.change-state"
+local Vector = require "elements.vector"
+local getState = require "squirtle.get-state"
+local changeState = require "squirtle.change-state"
 
 ---@param refresh boolean
 return function(refresh)

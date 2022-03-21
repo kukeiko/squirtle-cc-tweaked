@@ -7,25 +7,25 @@
 -- or, alternatively, we could make two separate programs
 package.path = package.path .. ";/?.lua"
 
-local KiwiPeripheral = require "kiwi.core.peripheral"
-local KiwiChest = require "kiwi.core.chest"
-local pushInput = require "kiwi.inventory.push-input"
-local takeOutput = require "kiwi.inventory.take-output"
-local turn = require "kiwi.turtle.turn"
-local suck = require "kiwi.turtle.suck"
-local Inventory = require "kiwi.turtle.inventory"
-local drop = require "kiwi.turtle.drop"
-local KiwiSide = require "kiwi.core.side"
+local Peripheral = require "world.peripheral"
+local Chest = require "world.chest"
+local pushInput = require "squirtle.transfer.push-input"
+local takeOutput = require "squirtle.transfer.take-output"
+local turn = require "squirtle.turn"
+local suck = require "squirtle.suck"
+local Inventory = require "squirtle.inventory"
+local drop = require "squirtle.drop"
+local Side = require "elements.side"
 
 local function facePistonPedestal()
-    local chestSide = KiwiPeripheral.findSide("minecraft:chest")
+    local chestSide = Peripheral.findSide("minecraft:chest")
 
-    if chestSide == KiwiSide.left then
-        turn(KiwiSide.right)
-    elseif chestSide == KiwiSide.right then
-        turn(KiwiSide.left)
-    elseif chestSide == KiwiSide.front then
-        turn(KiwiSide.back)
+    if chestSide == Side.left then
+        turn(Side.right)
+    elseif chestSide == Side.right then
+        turn(Side.left)
+    elseif chestSide == Side.front then
+        turn(Side.back)
     end
 end
 
@@ -38,7 +38,7 @@ local function dumpInventoryToBarrel()
     end
 end
 
----@param chest KiwiChest
+---@param chest Chest
 ---@return table<string, integer>
 local function getMaxStock(chest)
     -- figure out how much stuff we can load up in total, which is summing input + output stacks in io-chest
@@ -53,7 +53,6 @@ local function getMaxStock(chest)
 end
 
 local function main(args)
-    -- redstone.setOutput(KiwiSide.front, true)
     facePistonPedestal()
 
     while true do
@@ -61,15 +60,15 @@ local function main(args)
 
         local signalSide
 
-        if redstone.getInput(KiwiSide.getName(KiwiSide.left)) then
-            signalSide = KiwiSide.left
-        elseif redstone.getInput(KiwiSide.getName(KiwiSide.right)) then
-            signalSide = KiwiSide.right
+        if redstone.getInput(Side.getName(Side.left)) then
+            signalSide = Side.left
+        elseif redstone.getInput(Side.getName(Side.right)) then
+            signalSide = Side.right
         end
 
         if signalSide then
-            local pistonSignalSide = KiwiSide.rotateAround(signalSide)
-            redstone.setOutput(KiwiSide.getName(pistonSignalSide), true)
+            local pistonSignalSide = Side.rotateAround(signalSide)
+            redstone.setOutput(Side.getName(pistonSignalSide), true)
             turn(signalSide)
 
             while suck() do
@@ -94,19 +93,19 @@ local function main(args)
                 error("buffer full")
             end
 
-            redstone.setOutput(KiwiSide.getName(KiwiSide.back), true)
+            redstone.setOutput(Side.getName(Side.back), true)
             turn(signalSide) -- turning to chest
             -------------------
-            local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
-            local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
+            local bufferBarrel = Chest.new(Peripheral.findSide("minecraft:barrel"))
+            local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
             pushInput(bufferBarrel, ioChest)
             local maxStock = getMaxStock(ioChest)
             takeOutput(ioChest, bufferBarrel, maxStock)
             -------------------
 
             turn(pistonSignalSide)
-            redstone.setOutput(KiwiSide.getName(KiwiSide.back), false)
-            while suck(KiwiSide.bottom) do
+            redstone.setOutput(Side.getName(Side.back), false)
+            while suck(Side.bottom) do
             end
 
             if not Inventory.isEmpty() then
@@ -116,7 +115,7 @@ local function main(args)
                 end
             end
 
-            while suck(KiwiSide.bottom) do
+            while suck(Side.bottom) do
             end
 
             if not Inventory.isEmpty() then
@@ -127,7 +126,7 @@ local function main(args)
             end
 
             turn(pistonSignalSide)
-            redstone.setOutput(KiwiSide.getName(pistonSignalSide), false)
+            redstone.setOutput(Side.getName(pistonSignalSide), false)
             os.sleep(1)
         else
             -- ignore, and maybe print warning?
@@ -136,15 +135,5 @@ local function main(args)
     end
 
 end
-
--- function main(args)
---     facePistonPedestal()
-
---     local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
---     local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
---     pushInput(bufferBarrel, ioChest)
---     local maxStock = getMaxStock(ioChest)
---     takeOutput(ioChest, bufferBarrel, maxStock)
--- end
 
 return main(arg)

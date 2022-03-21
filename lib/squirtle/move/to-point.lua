@@ -1,21 +1,14 @@
-local Cardinal = require "kiwi.core.cardinal"
-local Side = require "kiwi.core.side"
-local locate = require "kiwi.turtle.locate"
-local move = require "kiwi.turtle.move"
-local face = require "kiwi.turtle.face"
-local Utils = require "kiwi.utils"
+local Cardinal = require "elements.cardinal"
+local Side = require "elements.side"
+local locate = require "squirtle.locate"
+local move = require "squirtle.move"
+local face = require "squirtle.face"
 
----@param target KiwiVector
----@param options KiwiMoveOptions
+---@param target Vector
+---@param options SquirtleMoveOptions
 return function(target, options)
-    local l = locate()
     local delta = target:minus(locate())
 
-    -- print("[move-to-locate]")
-    -- Utils.prettyPrint(l)
-    -- print("[move-to-delta]")
-    -- Utils.prettyPrint(delta)
-    -- Utils.waitForUserToHitEnter()
     if delta.y > 0 then
         if not move(Side.top, delta.y, options) then
             return false, Side.top

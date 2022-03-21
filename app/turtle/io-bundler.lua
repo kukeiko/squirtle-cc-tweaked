@@ -3,25 +3,25 @@
 -- and put input in and take output out.
 package.path = package.path .. ";/?.lua"
 
-local KiwiUtils = require "kiwi.utils"
-local KiwiPeripheral = require "kiwi.core.peripheral"
-local KiwiChest = require "kiwi.core.chest"
-local KiwiSide = require "kiwi.core.side"
-local KiwiInventory = require "kiwi.turtle.inventory"
-local inspect = require "kiwi.turtle.inspect"
-local move = require "kiwi.turtle.move"
-local turn = require "kiwi.turtle.turn"
-local takeInputAndPushOutput = require "kiwi.inventory.take-input-and-push-output"
-local suckSlotFromChest = require "kiwi.inventory.suck-slot-from-chest"
-local pushInput = require "kiwi.inventory.push-input"
-local takeOutput = require "kiwi.inventory.take-output"
+local Utils = require "utils"
+local Peripheral = require "world.peripheral"
+local Chest = require "world.chest"
+local Side = require "elements.side"
+local Inventory = require "squirtle.inventory"
+local inspect = require "squirtle.inspect"
+local move = require "squirtle.move"
+local turn = require "squirtle.turn"
+local takeInputAndPushOutput = require "squirtle.transfer.take-input-and-push-output"
+local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
+local pushInput = require "squirtle.transfer.push-input"
+local takeOutput = require "squirtle.transfer.take-output"
 
 ---@class IoBundlerAppState
 ---@field maxStock table<string, integer>
----@field inputStacks KiwiDetailedItemStack[]
----@field outputStacks KiwiDetailedItemStack[]
+---@field inputStacks DetailedItemStack[]
+---@field outputStacks DetailedItemStack[]
 
----@param chest KiwiChest
+---@param chest Chest
 local function getInputStacks(chest)
     local items = chest:getDetailedItemList()
     local inputStacks = {}
@@ -37,7 +37,7 @@ local function getInputStacks(chest)
     return inputStacks
 end
 
----@param chest KiwiChest
+---@param chest Chest
 local function getOutputStacks(chest)
     local items = chest:getDetailedItemList()
     local outputStacks = {}
@@ -53,7 +53,7 @@ local function getOutputStacks(chest)
     return outputStacks
 end
 
----@param chest KiwiChest
+---@param chest Chest
 ---@return table<string, integer>
 local function getMaxStock(chest)
     local items = chest:getDetailedItemList()
@@ -83,15 +83,15 @@ end
 
 local function dumpInventoryToBarrel()
     -- [todo] list() might return an array with all slots set in the future
-    for slot in pairs(KiwiInventory.list()) do
-        KiwiInventory.selectSlot(slot)
+    for slot in pairs(Inventory.list()) do
+        Inventory.selectSlot(slot)
         -- [todo] hardcoded side & using native directly
         turtle.dropDown()
     end
 end
 
----@param stacks KiwiDetailedItemStack[]
----@param barrel KiwiChest
+---@param stacks DetailedItemStack[]
+---@param barrel Chest
 local function suckStacksFromBarrel(stacks, barrel)
     for _, item in pairs(stacks) do
         for barrelSlot, barrelItem in pairs(barrel:getItemList()) do
@@ -104,22 +104,22 @@ local function suckStacksFromBarrel(stacks, barrel)
     end
 end
 
----@param buffer KiwiChest
----@param ioChest KiwiChest
+---@param buffer Chest
+---@param ioChest Chest
 local function doHomework(buffer, ioChest)
     dumpInventoryToBarrel()
     takeInputAndPushOutput(buffer, ioChest)
 end
 
 ---@param maxStock table<string, integer>
----@param inputStacks KiwiDetailedItemStack[]
----@param outputStacks KiwiDetailedItemStack[]
+---@param inputStacks DetailedItemStack[]
+---@param outputStacks DetailedItemStack[]
 local function doRemoteWork(maxStock, inputStacks, outputStacks)
     print("doin remote work")
-    local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
+    local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
     print("dumping inventory to barrel")
     dumpInventoryToBarrel()
-    local bufferBarrel = KiwiChest.new(KiwiSide.bottom)
+    local bufferBarrel = Chest.new(Side.bottom)
     print("pushing input to io-chest")
     pushInput(bufferBarrel, ioChest)
     print("take output from io-chest")
@@ -130,7 +130,7 @@ local function doRemoteWork(maxStock, inputStacks, outputStacks)
     suckStacksFromBarrel(outputStacks, bufferBarrel)
 end
 
----@param barrel KiwiChest
+---@param barrel Chest
 local function isHomeBarrel(barrel)
     local items = barrel:getDetailedItemList()
 
@@ -151,42 +151,26 @@ local function getDefaultState()
 end
 
 local function main(args)
-    -- local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
-    -- local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
-    -- local inputStacks -- = getInputStacks(ioChest)
-    -- local outputStacks -- = getOutputStacks(ioChest)
-    -- local maxStock
-
     -- [todo] i expected loadAppState() to write if not exists. consider doing that?
-    if not KiwiUtils.hasAppState("io-bundler") then
-        KiwiUtils.saveAppState(getDefaultState(), "io-bundler")
+    if not Utils.hasAppState("io-bundler") then
+        Utils.saveAppState(getDefaultState(), "io-bundler")
     end
 
-    -- [todo] state.inputStacks & outputStacks arent really KiwiDetailedItemStack[],
+    -- [todo] state.inputStacks & outputStacks arent really DetailedItemStack[],
     -- for now its all good as we only read data and dont call any class instance methods. yet.
     ---@type IoBundlerAppState
-    local state = KiwiUtils.loadAppState("io-bundler", getDefaultState())
-
-    -- if state ~= nil then
-    --     inputStacks = state.inputStacks
-    --     outputStacks = state.outputStacks
-    --     maxStock = state.maxStock
-    -- end
-    -- doHomework(bufferBarrel, ioChest)
-    -- local maxStock = getMaxStock(ioChest)
-    -- suckStacksFromBarrel(inputStacks, bufferBarrel)
-    -- now it time go farm collect, yes?
+    local state = Utils.loadAppState("io-bundler", getDefaultState())
 
     while true do
-        local bottom = inspect(KiwiSide.bottom)
+        local bottom = inspect(Side.bottom)
 
         if bottom and bottom.name == "minecraft:barrel" then
             print("bottom is barrel? but is it home?")
-            local bufferBarrel = KiwiChest.new(KiwiPeripheral.findSide("minecraft:barrel"))
+            local bufferBarrel = Chest.new(Peripheral.findSide("minecraft:barrel"))
 
             if isHomeBarrel(bufferBarrel) then
                 print("yes, it be home! doin homework")
-                local ioChest = KiwiChest.new(KiwiPeripheral.findSide("minecraft:chest"))
+                local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
                 state.inputStacks = getInputStacks(ioChest)
                 state.outputStacks = getOutputStacks(ioChest)
                 -- doHomework(bufferBarrel, ioChest)
@@ -200,8 +184,7 @@ local function main(args)
                 print("saving state to disk")
                 -- [todo] saving doesnt work yet? i guess it has to do with disk size.
                 -- but interestingly enough {foo = 1} can be saved.
-                -- KiwiUtils.saveAppState(state.maxStock, "io-bundler")
-                KiwiUtils.saveAppState(state, "io-bundler")
+                Utils.saveAppState(state, "io-bundler")
             else
                 doRemoteWork(state.maxStock, state.inputStacks, state.outputStacks)
             end
@@ -215,7 +198,7 @@ local function main(args)
             end
 
             print("obstacle, turning right")
-            turn(KiwiSide.right)
+            turn(Side.right)
         end
     end
 end

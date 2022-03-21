@@ -1,4 +1,4 @@
-local Side = require "kiwi.core.side"
+local Side = require "elements.side"
 local native = turtle
 
 local natives = {

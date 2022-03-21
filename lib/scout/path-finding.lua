@@ -1,18 +1,18 @@
-local Cardinal = require "kiwi.core.cardinal"
-local KiwiVector = require "kiwi.core.vector"
+local Cardinal = require "elements.cardinal"
+local Vector = require "elements.vector"
 
----@class KiwiPathFinding
+---@class PathFinding
 local PathFinding = {}
 
----@param a KiwiVector
----@param b KiwiVector
+---@param a Vector
+---@param b Vector
 function PathFinding.manhattan(a, b)
     return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
 end
 
----@param hierarchy KiwiVector[]
----@param start KiwiVector
----@param goal KiwiVector
+---@param hierarchy Vector[]
+---@param start Vector
+---@param goal Vector
 local function toPath(hierarchy, start, goal)
     local path = {}
     local next = goal
@@ -25,16 +25,16 @@ local function toPath(hierarchy, start, goal)
     return path
 end
 
----@param open KiwiVector[]
----@param naturals KiwiVector[]
----@param forced KiwiVector[]
----@param pruned KiwiVector[]
+---@param open Vector[]
+---@param naturals Vector[]
+---@param forced Vector[]
+---@param pruned Vector[]
 ---@param totalCost number[]
 local function findBest(open, naturals, forced, pruned, totalCost)
     local lowestF = nil
     local bestType = nil
 
-    ---@type KiwiVector
+    ---@type Vector
     local best = nil
 
     for key, value in pairs(open) do
@@ -48,8 +48,7 @@ local function findBest(open, naturals, forced, pruned, totalCost)
             type = 2
         end
 
-        if lowestF == nil or totalCost[key] < lowestF or
-            (totalCost[key] <= lowestF and type < bestType) then
+        if lowestF == nil or totalCost[key] < lowestF or (totalCost[key] <= lowestF and type < bestType) then
             best = value
             lowestF = totalCost[key]
             bestType = type
@@ -59,21 +58,21 @@ local function findBest(open, naturals, forced, pruned, totalCost)
     return best
 end
 
----@param world KiwiWorld
----@param start KiwiVector
----@param goal KiwiVector
+---@param world World
+---@param start Vector
+---@param goal Vector
 ---@param orientation integer
 function PathFinding.findPath(world, start, goal, orientation)
     if world:isBlocked(goal) then
         return false, "target is blocked"
     end
 
-    ---@type KiwiVector[]
+    ---@type Vector[]
     local open = {}
     local numOpen = 0
     local closed = {}
 
-    ---@type KiwiVector[]
+    ---@type Vector[]
     local reverseMap = {}
     local pastCost = {}
     local futureCost = {}
@@ -108,7 +107,7 @@ function PathFinding.findPath(world, start, goal, orientation)
 
         local current = findBest(open, naturals, forced, pruned, totalCost)
 
-        if KiwiVector.equals(current, goal) then
+        if Vector.equals(current, goal) then
             return toPath(reverseMap, start, goal)
         end
 
@@ -134,8 +133,7 @@ function PathFinding.findPath(world, start, goal, orientation)
                 requiresTurn = true
             end
 
-            if closed[neighbourKey] == nil and world:isInBounds(neighbour) and
-                not world:isBlocked(neighbour) then
+            if closed[neighbourKey] == nil and world:isInBounds(neighbour) and not world:isBlocked(neighbour) then
                 local tentativePastCost = pastCost[currentKey] + 1
 
                 if (requiresTurn) then

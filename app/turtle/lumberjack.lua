@@ -1,12 +1,12 @@
 package.path = package.path .. ";/?.lua"
 
-local Side = require "kiwi.core.side"
-local Peripheral = require "kiwi.core.peripheral"
-local Inventory = require "kiwi.turtle.inventory"
-local turn = require "kiwi.turtle.turn"
-local inspect = require "kiwi.turtle.inspect"
-local move = require "kiwi.turtle.move"
-local dig = require "kiwi.turtle.dig"
+local Side = require "elements.side"
+local Peripheral = require "world.peripheral"
+local Inventory = require "squirtle.inventory"
+local turn = require "squirtle.turn"
+local inspect = require "squirtle.inspect"
+local move = require "squirtle.move"
+local dig = require "squirtle.dig"
 
 local lumberjackBits = {planting = 1, harvesting = 2}
 
@@ -20,7 +20,7 @@ function indexOf(tbl, item)
     return -1
 end
 
----@param block KiwiBlock
+---@param block Block
 local function getBlockTurnSide(block)
     if block.name == "minecraft:spruce_fence" then
         return Side.left
@@ -66,7 +66,7 @@ local function doWork()
     print("doing work!")
     Inventory.selectItem("minecraft:dirt")
     move(Side.top)
-    turtle.placeDown() -- [todo] use kiwi
+    turtle.placeDown() -- [todo] use squirtle
     Inventory.selectItem("minecraft:birch_sapling")
     move(Side.back)
     turtle.place()

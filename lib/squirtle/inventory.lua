@@ -4,20 +4,20 @@ local bitSlot = 16
 local bitItemType = "minecraft:redstone_torch"
 local bitDisplayName = "bit"
 
----@class KiwiInventory
-local KiwiInventory = {}
+---@class Inventory
+local Inventory = {}
 
 ---@return integer
-function KiwiInventory.size()
+function Inventory.size()
     return 16
 end
 
 ---@return ItemStack[]
-function KiwiInventory.list()
+function Inventory.list()
     local list = {}
 
-    for slot = 1, KiwiInventory.size() do
-        local item = KiwiInventory.getStack(slot)
+    for slot = 1, Inventory.size() do
+        local item = Inventory.getStack(slot)
 
         if item then
             list[slot] = item
@@ -30,27 +30,27 @@ end
 ---@param slot integer
 ---@param detailed? boolean
 ---@return ItemStack?
-function KiwiInventory.getStack(slot, detailed)
+function Inventory.getStack(slot, detailed)
     return nativeTurtle.getItemDetail(slot, detailed)
 end
 
 ---@param slot integer
-function KiwiInventory.selectSlot(slot)
+function Inventory.selectSlot(slot)
     return nativeTurtle.select(slot)
 end
 
 ---@param slot integer
 ---@return integer
-function KiwiInventory.numInSlot(slot)
+function Inventory.numInSlot(slot)
     return nativeTurtle.getItemCount(slot)
 end
 
 ---@return integer
-function KiwiInventory.availableSize()
+function Inventory.availableSize()
     local numEmpty = 0
 
-    for slot = 1, KiwiInventory.size() do
-        if KiwiInventory.numInSlot(slot) == 0 then
+    for slot = 1, Inventory.size() do
+        if Inventory.numInSlot(slot) == 0 then
             numEmpty = numEmpty + 1
         end
     end
@@ -59,9 +59,9 @@ function KiwiInventory.availableSize()
 end
 
 ---@return boolean
-function KiwiInventory.isEmpty()
-    for slot = 1, KiwiInventory.size() do
-        if KiwiInventory.numInSlot(slot) > 0 then
+function Inventory.isEmpty()
+    for slot = 1, Inventory.size() do
+        if Inventory.numInSlot(slot) > 0 then
             return false
         end
     end
@@ -70,9 +70,9 @@ function KiwiInventory.isEmpty()
 end
 
 ---@return boolean
-function KiwiInventory.isFull()
-    for slot = 1, KiwiInventory.size() do
-        if KiwiInventory.numInSlot(slot) == 0 then
+function Inventory.isFull()
+    for slot = 1, Inventory.size() do
+        if Inventory.numInSlot(slot) == 0 then
             return false
         end
     end
@@ -81,11 +81,11 @@ function KiwiInventory.isFull()
 end
 
 ---@param startAt? number
-function KiwiInventory.firstEmptySlot(startAt)
+function Inventory.firstEmptySlot(startAt)
     startAt = startAt or 1
 
-    for slot = startAt, KiwiInventory.size() do
-        if KiwiInventory.numInSlot(slot) == 0 then
+    for slot = startAt, Inventory.size() do
+        if Inventory.numInSlot(slot) == 0 then
             return slot
         end
     end
@@ -94,23 +94,23 @@ function KiwiInventory.firstEmptySlot(startAt)
 end
 
 ---@return boolean|integer
-function KiwiInventory.selectFirstEmptySlot()
-    local slot = KiwiInventory.firstEmptySlot()
+function Inventory.selectFirstEmptySlot()
+    local slot = Inventory.firstEmptySlot()
 
     if not slot then
         return false
     end
 
-    KiwiInventory.selectSlot(slot)
+    Inventory.selectSlot(slot)
 
     return slot
 end
 
 ---@return boolean|integer
-function KiwiInventory.selectFirstOccupiedSlot()
-    for slot = 1, KiwiInventory.size() do
-        if KiwiInventory.numInSlot(slot) > 0 then
-            KiwiInventory.selectSlot(slot)
+function Inventory.selectFirstOccupiedSlot()
+    for slot = 1, Inventory.size() do
+        if Inventory.numInSlot(slot) > 0 then
+            Inventory.selectSlot(slot)
             return slot
         end
     end
@@ -119,9 +119,9 @@ function KiwiInventory.selectFirstOccupiedSlot()
 end
 
 ---@return boolean
-function KiwiInventory.selectSlotIfNotEmpty(slot)
-    if KiwiInventory.numInSlot(slot) > 0 then
-        return KiwiInventory.selectSlot(slot)
+function Inventory.selectSlotIfNotEmpty(slot)
+    if Inventory.numInSlot(slot) > 0 then
+        return Inventory.selectSlot(slot)
     else
         return false
     end
@@ -129,9 +129,9 @@ end
 
 ---@param name string
 ---@param exact? boolean
-function KiwiInventory.find(name, exact)
-    for slot = 1, KiwiInventory.size() do
-        local item = KiwiInventory.getStack(slot)
+function Inventory.find(name, exact)
+    for slot = 1, Inventory.size() do
+        local item = Inventory.getStack(slot)
 
         if item and exact and item.name == name then
             return slot
@@ -141,58 +141,58 @@ function KiwiInventory.find(name, exact)
     end
 end
 
-function KiwiInventory.selectItem(name)
-    local slot = KiwiInventory.find(name)
+function Inventory.selectItem(name)
+    local slot = Inventory.find(name)
 
     if not slot then
         return false
     end
 
-    KiwiInventory.selectSlot(slot)
+    Inventory.selectSlot(slot)
 
     return slot
 end
 
 ---@param slot integer
 ---@param count? integer
-function KiwiInventory.transfer(slot, count)
+function Inventory.transfer(slot, count)
     return nativeTurtle.transferTo(slot, count)
 end
 
-function KiwiInventory.moveFirstSlotSomewhereElse()
-    if KiwiInventory.numInSlot(1) == 0 then
+function Inventory.moveFirstSlotSomewhereElse()
+    if Inventory.numInSlot(1) == 0 then
         return true
     end
 
-    KiwiInventory.selectSlot(1)
+    Inventory.selectSlot(1)
 
-    local slot = KiwiInventory.firstEmptySlot()
+    local slot = Inventory.firstEmptySlot()
 
     if not slot then
         return false
     end
 
-    KiwiInventory.transfer(slot)
+    Inventory.transfer(slot)
 end
 
-function KiwiInventory.condense()
-    for slot = KiwiInventory.size(), 1, -1 do
-        local item = KiwiInventory.getStack(slot)
+function Inventory.condense()
+    for slot = Inventory.size(), 1, -1 do
+        local item = Inventory.getStack(slot)
 
         if item then
             for targetSlot = 1, slot - 1 do
-                local candidate = KiwiInventory.getStack(targetSlot)
+                local candidate = Inventory.getStack(targetSlot)
 
                 if candidate and candidate.name == item.name then
-                    KiwiInventory.selectSlot(slot)
-                    KiwiInventory.transfer(targetSlot)
+                    Inventory.selectSlot(slot)
+                    Inventory.transfer(targetSlot)
 
-                    if KiwiInventory.numInSlot(slot) == 0 then
+                    if Inventory.numInSlot(slot) == 0 then
                         break
                     end
                 elseif not candidate then
-                    KiwiInventory.selectSlot(slot)
-                    KiwiInventory.transfer(targetSlot)
+                    Inventory.selectSlot(slot)
+                    Inventory.transfer(targetSlot)
                     break
                 end
             end
@@ -200,8 +200,8 @@ function KiwiInventory.condense()
     end
 end
 
-function KiwiInventory.readBits()
-    local stack = KiwiInventory.getStack(bitSlot, true)
+function Inventory.readBits()
+    local stack = Inventory.getStack(bitSlot, true)
 
     -- [todo] should we error in case there is a stack and it is not
     -- the type of bit item we except?
@@ -214,45 +214,44 @@ end
 
 -- [todo] throw errors?
 ---@param bits integer
-function KiwiInventory.setBits(bits)
-    local current = KiwiInventory.readBits()
+function Inventory.setBits(bits)
+    local current = Inventory.readBits()
 
     if current == bits then
         return true
     elseif current < bits then
-        KiwiInventory.selectSlot(bitSourceSlot)
-        return KiwiInventory.transfer(bitSlot, bits - current)
+        Inventory.selectSlot(bitSourceSlot)
+        return Inventory.transfer(bitSlot, bits - current)
     elseif current > bits then
-        KiwiInventory.selectSlot(bitSlot)
-        return KiwiInventory.transfer(bitSourceSlot, current - bits)
+        Inventory.selectSlot(bitSlot)
+        return Inventory.transfer(bitSourceSlot, current - bits)
     end
 end
 
 -- [todo] throw errors?
 ---@param bits integer
-function KiwiInventory.orBits(bits)
-    local current = KiwiInventory.readBits()
+function Inventory.orBits(bits)
+    local current = Inventory.readBits()
     local next = bit.bor(bits, current)
 
     if next ~= current then
-        return KiwiInventory.setBits(next)
+        return Inventory.setBits(next)
     end
 
     return true
 end
-
 
 -- [todo] throw errors?
 ---@param bits integer
-function KiwiInventory.xorBits(bits)
-    local current = KiwiInventory.readBits()
+function Inventory.xorBits(bits)
+    local current = Inventory.readBits()
     local next = bit.bxor(bits, current)
 
     if next ~= current then
-        return KiwiInventory.setBits(next)
+        return Inventory.setBits(next)
     end
 
     return true
 end
 
-return KiwiInventory
+return Inventory

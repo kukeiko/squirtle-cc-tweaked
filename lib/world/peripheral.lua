@@ -1,11 +1,11 @@
-local Side = require "kiwi.core.side"
+local Side = require "elements.side"
 local native = peripheral
----@class KiwiPeripheral
-local KiwiPeripheral = {}
+---@class Peripheral
+local Peripheral = {}
 
 ---@param types string[]|string
 ---@return integer
-function KiwiPeripheral.findSide(types, sides)
+function Peripheral.findSide(types, sides)
     if type(types) == "string" then
         types = {types}
     end
@@ -13,7 +13,7 @@ function KiwiPeripheral.findSide(types, sides)
     sides = sides or Side.all()
 
     for i = 1, #sides do
-        local foundType = KiwiPeripheral.getType(sides[i])
+        local foundType = Peripheral.getType(sides[i])
 
         if foundType ~= nil then
             for e = 1, #types do
@@ -25,68 +25,68 @@ function KiwiPeripheral.findSide(types, sides)
     end
 end
 
-function KiwiPeripheral.isModem(side)
-    return KiwiPeripheral.getType(side) == "modem"
+function Peripheral.isModem(side)
+    return Peripheral.getType(side) == "modem"
 end
 
-function KiwiPeripheral.isWirelessModem(side)
-    return KiwiPeripheral.isModem(side) and KiwiPeripheral.call(side, "isWireless")
+function Peripheral.isWirelessModem(side)
+    return Peripheral.isModem(side) and Peripheral.call(side, "isWireless")
 end
 
-function KiwiPeripheral.isWorkbench(side)
-    return KiwiPeripheral.getType(side) == "workbench"
+function Peripheral.isWorkbench(side)
+    return Peripheral.getType(side) == "workbench"
 end
 
-function KiwiPeripheral.wrapOne(types, sides)
+function Peripheral.wrapOne(types, sides)
     sides = sides or Side.all()
 
     for i = 1, #sides do
-        local foundType = KiwiPeripheral.getType(sides[i])
+        local foundType = Peripheral.getType(sides[i])
 
         if foundType ~= nil then
             for e = 1, #types do
                 if foundType == types[e] then
-                    return KiwiPeripheral.wrap(sides[i]), sides[i], types[e]
+                    return Peripheral.wrap(sides[i]), sides[i], types[e]
                 end
             end
         end
     end
 end
 
-function KiwiPeripheral.wrap(side)
+function Peripheral.wrap(side)
     return native.wrap(Side.getName(side))
 end
 
-function KiwiPeripheral.isPresent(side)
+function Peripheral.isPresent(side)
     return native.isPresent(Side.getName(side))
 end
 
-function KiwiPeripheral.getType(side)
+function Peripheral.getType(side)
     return native.getType(Side.getName(side))
 end
 
-function KiwiPeripheral.call(side, ...)
+function Peripheral.call(side, ...)
     return native.call(Side.getName(side), ...)
 end
 
-function KiwiPeripheral.wrapOneContainer(sides)
+function Peripheral.wrapOneContainer(sides)
     sides = sides or Side.all()
 
     for i = 1, #sides do
         local candidate = native.wrap(sides[i])
 
-        if candidate ~= nil and KiwiPeripheral.isContainer(candidate) then
-            return KiwiPeripheral.wrap(sides[i]), sides[i]
+        if candidate ~= nil and Peripheral.isContainer(candidate) then
+            return Peripheral.wrap(sides[i]), sides[i]
         end
     end
 end
 
-function KiwiPeripheral.isContainer(peripheral)
+function Peripheral.isContainer(peripheral)
     return type(peripheral.getItemDetail) == "function"
 end
 
-function KiwiPeripheral.isContainerPresent(side)
-    return KiwiPeripheral.isPresent(side) and KiwiPeripheral.isContainer(KiwiPeripheral.wrap(side))
+function Peripheral.isContainerPresent(side)
+    return Peripheral.isPresent(side) and Peripheral.isContainer(Peripheral.wrap(side))
 end
 
-return KiwiPeripheral
+return Peripheral

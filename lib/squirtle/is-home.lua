@@ -1,5 +1,5 @@
-local Side = require "kiwi.core.side"
-local inspect = require "kiwi.turtle.inspect"
+local Side = require "elements.side"
+local inspect = require "squirtle.inspect"
 
 ---@return boolean
 return function()

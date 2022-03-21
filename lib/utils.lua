@@ -1,5 +1,4 @@
 local Pretty = require "cc.pretty"
-local Vector = require "squirtle.libs.vector"
 local Utils = {}
 
 function Utils.concat(a, b)
@@ -114,16 +113,6 @@ function Utils.loadAppState(appName, defaultState)
     end
 
     return state
-end
-
----@param data table
----@param property? string
-function Utils.parseVector(data, property)
-    if type(data) ~= "table" or type(data.x) ~= "number" or type(data.y) ~= "number" or type(data.z) ~= "number" then
-        error(string.format("%s is not a valid vector", property))
-    end
-
-    return Vector.cast(data)
 end
 
 ---@param appName string

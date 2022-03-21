@@ -1,13 +1,13 @@
-local Fuel = require "kiwi.core.fuel"
-local Inventory = require "kiwi.turtle.inventory"
+local Fuel = require "squirtle.fuel"
+local Inventory = require "squirtle.inventory"
 
 local bucket = "minecraft:bucket"
 
+---@param fuel? integer
 return function(fuel)
     fuel = fuel or Fuel.getMissingFuel()
     local fuelStacks = Fuel.pickStacks(Inventory.list(), fuel)
     local emptyBucketSlot = Inventory.find(bucket)
-    local fuelAtStart = Fuel.getFuelLevel()
 
     for slot, stack in pairs(fuelStacks) do
         Inventory.selectSlot(slot)
@@ -21,6 +21,4 @@ return function(fuel)
             end
         end
     end
-
-    return math.max(0, fuel - (Fuel.getFuelLevel() - fuelAtStart))
 end

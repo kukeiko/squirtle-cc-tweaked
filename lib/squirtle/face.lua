@@ -1,6 +1,6 @@
-local Side = require "kiwi.core.side"
-local getState = require "kiwi.core.get-state"
-local turn = require "kiwi.turtle.turn"
+local Side = require "elements.side"
+local getState = require "squirtle.get-state"
+local turn = require "squirtle.turn"
 
 ---@param target integer
 ---@param current? integer

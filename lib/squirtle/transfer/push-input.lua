@@ -1,5 +1,5 @@
----@param source KiwiChest
----@param target KiwiChest
+---@param source Chest
+---@param target Chest
 return function(source, target)
     local sourceItems = source:getDetailedItemList()
     local targetItems = target:getDetailedItemList()
