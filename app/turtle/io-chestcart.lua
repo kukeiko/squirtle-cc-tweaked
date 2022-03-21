@@ -1,15 +1,16 @@
 package.path = package.path .. ";/lib/?.lua"
 
+local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
+local Inventory = require "squirtle.inventory"
 local pushInput = require "squirtle.transfer.push-input"
 local takeOutput = require "squirtle.transfer.take-output"
 local takeInputAndPushOutput = require "squirtle.transfer.take-input-and-push-output"
 local turn = require "squirtle.turn"
 local suck = require "squirtle.suck"
-local Inventory = require "squirtle.inventory"
 local drop = require "squirtle.drop"
-local Side = require "elements.side"
+local dump = require "squirtle.dump"
 
 local function facePistonPedestal()
     local chestSide = Peripheral.findSide("minecraft:chest")
@@ -23,12 +24,32 @@ local function facePistonPedestal()
     end
 end
 
-local function dumpInventoryToBarrel()
-    -- [todo] list() might return an array with all slots set in the future
-    for slot in pairs(Inventory.list()) do
-        Inventory.selectSlot(slot)
-        -- [todo] hardcoded side & using native directly
-        turtle.dropDown()
+local function dumpChestcartToBarrel()
+    while suck() do
+    end
+
+    if not dump(Side.bottom) then
+        -- [todo] recover from this error.
+        error("buffer barrel full")
+    end
+
+    if suck() then
+        dumpChestcartToBarrel()
+    end
+end
+
+local function dumpBarrelToChest()
+    while suck(Side.bottom) do
+    end
+
+    if not dump(Side.front) then
+        -- [todo] recover from error. this should only happen when buffer already had items in it
+        -- before chestcart arrived 
+        error("chestcart full")
+    end
+
+    if suck(Side.bottom) then
+        dumpBarrelToChest()
     end
 end
 
@@ -82,29 +103,7 @@ local function main(args)
             local pistonSignalSide = Side.rotateAround(signalSide)
             redstone.setOutput(Side.getName(pistonSignalSide), true)
             turn(signalSide)
-
-            while suck() do
-            end
-
-            if not Inventory.isEmpty() then
-                dumpInventoryToBarrel()
-            end
-
-            if not Inventory.isEmpty() then
-                error("buffer full")
-            end
-
-            while suck() do
-            end
-
-            if not Inventory.isEmpty() then
-                dumpInventoryToBarrel()
-            end
-
-            if not Inventory.isEmpty() then
-                error("buffer full")
-            end
-
+            dumpChestcartToBarrel()
             redstone.setOutput(Side.getName(Side.back), true)
             turn(signalSide) -- turning to chest
 
@@ -121,26 +120,7 @@ local function main(args)
 
             turn(pistonSignalSide)
             redstone.setOutput(Side.getName(Side.back), false)
-            while suck(Side.bottom) do
-            end
-
-            if not Inventory.isEmpty() then
-                for slot in pairs(Inventory.list()) do
-                    Inventory.selectSlot(slot)
-                    drop()
-                end
-            end
-
-            while suck(Side.bottom) do
-            end
-
-            if not Inventory.isEmpty() then
-                for slot in pairs(Inventory.list()) do
-                    Inventory.selectSlot(slot)
-                    drop()
-                end
-            end
-
+            dumpBarrelToChest()
             turn(pistonSignalSide)
             redstone.setOutput(Side.getName(pistonSignalSide), false)
             os.sleep(1)

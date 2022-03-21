@@ -50,6 +50,7 @@ function Side.fromString(str)
 end
 
 ---@param arg string|number
+---@return integer
 function Side.fromArg(arg)
     local type = type(arg)
 
