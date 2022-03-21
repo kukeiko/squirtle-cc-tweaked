@@ -5,7 +5,7 @@
 -- or if it should supply output & take input from the io-chest
 -- each chestchart-io setup requires two such turtles with same block layout
 -- or, alternatively, we could make two separate programs
-package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/lib/?.lua"
 
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"

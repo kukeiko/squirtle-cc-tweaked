@@ -1,4 +1,4 @@
-package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/lib/?.lua"
 
 local Chest = require "world.chest"
 local Peripheral = require "world.peripheral"

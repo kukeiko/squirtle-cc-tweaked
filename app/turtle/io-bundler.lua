@@ -1,7 +1,7 @@
 -- app for a turtle that has a home base with an io-chest attached to put output in
 -- and take input out. it will then follow a path and look for other io-chests (e.g. a farm of a lumberjack)
 -- and put input in and take output out.
-package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/lib/?.lua"
 
 local Utils = require "utils"
 local Peripheral = require "world.peripheral"

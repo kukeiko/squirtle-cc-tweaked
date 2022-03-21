@@ -1,4 +1,4 @@
-package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/lib/?.lua"
 
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"

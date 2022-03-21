@@ -1,4 +1,4 @@
-package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/lib/?.lua"
 
 local Utils = require "squirtle.libs.utils"
 local Turtle = require "squirtle.libs.turtle"
