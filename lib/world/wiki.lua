@@ -1,0 +1,3 @@
+-- [todo] want this to be a collection of methods that help identify items and blocks,
+-- i.e. "is this fuel? if yes, how much?"
+-- and "is this a chest? or a barrel?"

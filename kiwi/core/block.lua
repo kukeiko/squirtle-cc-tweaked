@@ -1,5 +1,0 @@
----@class KiwiBlock
----@field name string
----@field state table
----@field tags table
--- [todo] maybe we want to also implement a class w/ cast and utility methods?
