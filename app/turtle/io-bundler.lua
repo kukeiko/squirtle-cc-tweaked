@@ -54,18 +54,6 @@ local function getOutputStacks(chest)
     return outputStacks
 end
 
----@param side integer
----@return table<string, integer>
-local function getMaxStock(side)
-    local maxStock = Chest.getInputMaxStock(side)
-
-    for item, count in pairs(Chest.getOutputMissingStock(side)) do
-        maxStock[item] = (maxStock[item] or 0) + count
-    end
-
-    return maxStock
-end
-
 ---@param stacks DetailedItemStack[]
 ---@param barrel Chest
 local function suckStacksFromBarrel(stacks, barrel)
