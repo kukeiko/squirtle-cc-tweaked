@@ -59,7 +59,7 @@ function Side.fromArg(arg)
         if arg >= 0 and arg <= 5 then
             return arg
         else
-            error("Side out of range: " .. arg)
+            error("side out of range: " .. arg)
         end
     elseif type == "string" then
         return Side.fromString(arg)

@@ -4,6 +4,7 @@ local native = peripheral
 local Peripheral = {}
 
 ---@param types string[]|string
+---@param sides? string[]
 ---@return integer
 function Peripheral.findSide(types, sides)
     if type(types) == "string" then
@@ -65,8 +66,13 @@ function Peripheral.getType(side)
     return native.getType(Side.getName(side))
 end
 
+---@param side string|integer
 function Peripheral.call(side, ...)
-    return native.call(Side.getName(side), ...)
+    if type(side) == "number" then
+        side = Side.getName(side)
+    end
+
+    return native.call(side, ...)
 end
 
 function Peripheral.wrapOneContainer(sides)

@@ -16,6 +16,7 @@ function Fuel.hasFuel(fuel)
     return level == "unlimited" or level >= fuel
 end
 
+---@param count? integer
 function Fuel.refuel(count)
     return native.refuel(count)
 end

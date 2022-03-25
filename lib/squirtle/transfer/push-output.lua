@@ -2,10 +2,11 @@ local Chest = require "world.chest"
 
 ---@param from integer
 ---@param to integer
----@param minStock table<string, integer>
-return function(from, to, minStock)
+---@param keepStock? table<string, integer>
+return function(from, to, keepStock)
+    keepStock = keepStock or {}
     local missingStock = Chest.getOutputMissingStock(to)
-    local availableStock = Chest.subtractStock(Chest.getStock(from), minStock)
+    local availableStock = Chest.subtractStock(Chest.getStock(from), keepStock)
 
     ---@type table<string, integer>
     local pushableStock = {}

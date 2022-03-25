@@ -1,11 +1,7 @@
 local Side = require "elements.side"
 local native = turtle
 
-local natives = {
-    [Side.top] = native.digUp,
-    [Side.front] = native.dig,
-    [Side.bottom] = native.digDown
-}
+local natives = {[Side.top] = native.digUp, [Side.front] = native.dig, [Side.bottom] = native.digDown}
 
 ---@param side? integer
 ---@param toolSide? string
@@ -19,5 +15,6 @@ return function(side, toolSide)
     local success = handler(toolSide)
 
     -- omitting message on purpose
+    -- [todo] what is that purpose?
     return success
 end

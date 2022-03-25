@@ -149,4 +149,17 @@ function Utils.timestamp()
     return os.time() * 60 * 60 / 100
 end
 
+---@param tbl table
+---@param item unknown
+---@return integer
+function Utils.indexOf(tbl, item)
+    for i = 1, #tbl do
+        if (tbl[i] == item) then
+            return i
+        end
+    end
+
+    return -1
+end
+
 return Utils

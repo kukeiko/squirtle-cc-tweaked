@@ -50,8 +50,10 @@ local function turnBack()
     return turnFn()
 end
 
----@param side integer
+---@param side? integer|string defaults to Side.left
 return function(side)
+    side = Side.fromArg(side or Side.left)
+
     if side == Side.left then
         return turnLeft()
     elseif side == Side.right then
