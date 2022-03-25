@@ -29,7 +29,7 @@ end
 
 ---@param slot integer
 ---@param detailed? boolean
----@return ItemStack?
+---@return ItemStackV2?
 function Inventory.getStack(slot, detailed)
     return nativeTurtle.getItemDetail(slot, detailed)
 end
@@ -181,9 +181,9 @@ function Inventory.condense()
 
         if item then
             for targetSlot = 1, slot - 1 do
-                local candidate = Inventory.getStack(targetSlot)
+                local candidate = Inventory.getStack(targetSlot, true)
 
-                if candidate and candidate.name == item.name then
+                if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
                     Inventory.selectSlot(slot)
                     Inventory.transfer(targetSlot)
 

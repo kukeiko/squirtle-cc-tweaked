@@ -26,9 +26,10 @@ end
 --- [todo] not detailed. add flag?
 ---@param side integer
 ---@param slot integer
+---@param detailed? boolean
 ---@return ItemStackV2
-function Chest.getStack(side, slot)
-    return Peripheral.call(side, "getItemDetail", slot)
+function Chest.getStack(side, slot, detailed)
+    return Peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
 ---@param side integer
@@ -61,6 +62,29 @@ function Chest.getStock(side)
 
     for _, item in pairs(Chest.getStacks(side)) do
         stock[item.name] = (stock[item.name] or 0) + item.count
+    end
+
+    return stock
+end
+
+---@param side integer|string
+---@param predicate string|function<boolean, ItemStackV2>
+function Chest.getItemStock(side, predicate)
+    if type(predicate) == "string" then
+        local name = predicate
+
+        ---@param stack ItemStackV2
+        predicate = function(stack)
+            return stack.name == name
+        end
+    end
+
+    local stock = 0
+
+    for _, stack in pairs(Chest.getStacks(side)) do
+        if predicate(stack) then
+            stock = stock + stack.count
+        end
     end
 
     return stock
@@ -246,6 +270,17 @@ function Chest.getOutputMissingStock(side)
     end
 
     return maxStock
+end
+
+function Chest.countItems(side)
+    local stock = Chest.getStock(side)
+    local count = 0
+
+    for _, itemStock in pairs(stock) do
+        count = count + itemStock
+    end
+
+    return count
 end
 
 return Chest
