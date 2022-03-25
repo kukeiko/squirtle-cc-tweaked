@@ -86,38 +86,29 @@ local function topOffFurnaceInput(furnaceSide, bufferSide)
     end
 end
 
--- [todo] should run until all logs everywhere are inside the furnace. turtle should not go to work with logs in the inventory
-local function doFurnaceWork(furnaceSide, bufferSide)
-    print("topping off furnace input...")
-    topOffFurnaceInput(furnaceSide, bufferSide)
-
-    print("pushing furnace output into buffer...")
-    Furnace.pushOutput(furnaceSide, bufferSide)
-
-    print("topping off furnace fuel...")
-    topOffFurnaceFuel(furnaceSide, bufferSide)
-    -- [todo] handle case where furnace has no fuel
-
-    local fuelStack = Furnace.getFuelStack(furnaceSide)
+---@param furnace integer
+---@param count integer
+local function kickstartFurnaceFuel(furnace, count)
+    local fuelStack = Furnace.getFuelStack(furnace)
 
     if not fuelStack then
         print("furnace has no fuel, pushing 1x log from input to fuel")
-        Furnace.pullFuelFromInput(furnaceSide, 1)
+        Furnace.pullFuelFromInput(furnace, 1)
         print("waiting for log to be turned into charcoal")
 
-        while not Furnace.getOutputStack(furnaceSide) do
+        while not Furnace.getOutputStack(furnace) do
             os.sleep(1)
         end
 
         print("output ready! pushing to fuel...")
-        Furnace.pullFuelFromOutput(furnaceSide, 1)
+        Furnace.pullFuelFromOutput(furnace, 1)
     end
 
-    while Furnace.getFuelCount(furnaceSide) < 8 and Furnace.getInputStack(furnaceSide) do
-        print("trying to get", 8 - Furnace.getFuelCount(furnaceSide), "more coal into fuel slot...")
+    while Furnace.getFuelCount(furnace) < count and Furnace.getInputStack(furnace) do
+        print("trying to get", count - Furnace.getFuelCount(furnace), "more coal into fuel slot...")
 
-        while not Furnace.getOutputStack(furnaceSide) do
-            if not Furnace.getInputStack(furnaceSide) then
+        while not Furnace.getOutputStack(furnace) do
+            if not Furnace.getInputStack(furnace) then
                 print("no input to burn, exiting")
                 break
             end
@@ -125,7 +116,28 @@ local function doFurnaceWork(furnaceSide, bufferSide)
             os.sleep(1)
         end
 
-        Furnace.pullFuelFromOutput(furnaceSide)
+        Furnace.pullFuelFromOutput(furnace)
+    end
+end
+
+local function doFurnaceWork(furnace, buffer)
+    while Chest.getItemStock(buffer, "minecraft:birch_log") > 0 do
+        print("topping off furnace input...")
+        topOffFurnaceInput(furnace, buffer)
+
+        print("pushing furnace output into buffer...")
+        Furnace.pushOutput(furnace, buffer)
+
+        print("topping off furnace fuel...")
+        topOffFurnaceFuel(furnace, buffer)
+
+        print("warming up furnace...")
+        kickstartFurnaceFuel(furnace, 8)
+
+        if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
+            print("logs leftover, pausing for 30s")
+            os.sleep(30)
+        end
     end
 end
 
