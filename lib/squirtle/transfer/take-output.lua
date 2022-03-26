@@ -27,21 +27,13 @@ return function(source, target, maxStock)
         end
     end
 
-    -- and then take items from output
-    local sourceItems = Chest.getStacks(source, true)
-    local sourceInstance = Chest.new(source)
+    for slot, sourceItem in pairs(Chest.getOutputStacks(source, true)) do
+        local maxStockForItem = maxStock[sourceItem.name]
 
-    for slot = sourceInstance:getFirstOutputSlot(), sourceInstance:getLastOutputSlot() do
-        local sourceItem = sourceItems[slot]
-
-        if sourceItem ~= nil then
-            local maxStockForItem = maxStock[sourceItem.name]
-
-            if maxStockForItem ~= nil and maxStockForItem > 0 then
-                local numToTransfer = math.min(sourceItem.count - 1, maxStockForItem)
-                local numTransferred = Chest.pushItems(source, target, slot, numToTransfer)
-                maxStock[sourceItem.name] = maxStockForItem - numTransferred
-            end
+        if maxStockForItem ~= nil and maxStockForItem > 0 then
+            local numToTransfer = math.min(sourceItem.count - 1, maxStockForItem)
+            local numTransferred = Chest.pushItems(source, target, slot, numToTransfer)
+            maxStock[sourceItem.name] = maxStockForItem - numTransferred
         end
     end
 end
