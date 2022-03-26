@@ -1,14 +1,23 @@
 package.path = package.path .. ";/lib/?.lua"
 
+-- [todo] did some changes that might no longer make this app 100% crash safe
 local Inventory = require "squirtle.inventory"
 local Fuel = require "squirtle.fuel"
 local Peripheral = require "world.peripheral"
 local refuelFromInventory = require "squirtle.refuel.from-inventory"
 local Side = require "elements.side"
+local Chest = require "world.chest"
 local inspect = require "squirtle.inspect"
 local move = require "squirtle.move"
 local turn = require "squirtle.turn"
 local dig = require "squirtle.dig"
+local dump = require "squirtle.dump"
+local pushOutput = require "squirtle.transfer.push-output"
+local pullInput = require "squirtle.transfer.pull-input"
+local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
+local drop = require "squirtle.drop"
+local place = require "squirtle.place"
+local suck = require "squirtle.suck"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -101,37 +110,25 @@ local function faceFirstCrop()
     error("failed to find first crop")
 end
 
-local function faceOutputChest()
-    for _ = 1, 4 do
-        local chest = inspect(Side.front)
+---@param side integer
+local function isCropsReady(side)
+    local block = inspect(side)
 
-        if chest and chest.name == "minecraft:chest" then
-            return true
-        end
-
-        turn(Side.left)
+    if not block or not isCrops(block) then
+        error(string.format("expected block at %s to be crops", Side.getName(side)))
     end
 
-    error("could not find output chest")
-end
-
-local function faceInputBarrel()
-    for _ = 1, 4 do
-        local chest = inspect(Side.front)
-
-        if chest and chest.name == "minecraft:barrel" then
-            return true
-        end
-
-        turn(Side.left)
-    end
-
-    error("could not find input barrel")
+    return getCropsRemainingAge(block) == 0
 end
 
 ---@param side integer
 ---@param max? integer if supplied, only wait if age difference does not exceed max
 local function waitUntilCropReady(side, max)
+    while not isCropsReady(side) and Inventory.selectItem("minecraft:bone_meal") do
+        while place(side) do
+        end
+    end
+
     local block = inspect(side)
 
     if not block or not isCrops(block) then
@@ -159,28 +156,102 @@ local function waitUntilCropReady(side, max)
     return true
 end
 
-local function doHomeStuff()
-    print("i am home! doing home stuff...")
-    faceOutputChest()
-    print("dumping goodies...")
-    for slot = 1, 16 do
-        if Inventory.selectSlotIfNotEmpty(slot) then
-            if not Fuel.isFuel(Inventory.getStack(slot)) then
-                -- [todo] use squirtle
-                turtle.drop()
-            end
+---@param bufferSide integer
+---@param fuel integer
+local function refuelFromBuffer(bufferSide, fuel)
+    print("refueling, have", Fuel.getFuelLevel())
+    Inventory.selectFirstEmptySlot()
+
+    for slot, stack in pairs(Chest.getStacks(Side.bottom)) do
+        if stack.name == "minecraft:charcoal" then
+            suckSlotFromChest(Side.bottom, slot)
+            Fuel.refuel() -- [todo] should provide count to not consume a whole stack
+        end
+
+        if Fuel.getFuelLevel() >= fuel then
+            break
         end
     end
 
-    -- [todo] ensure minimal fuel level
-    print("refueling...")
-    faceInputBarrel()
-    while turtle.suck() do
-    end
-    refuelFromInventory()
+    print("refueled to", Fuel.getFuelLevel())
 
-    -- print("(sleep 3s to simulate home stuff)")
-    -- os.sleep(3)
+    -- in case we reached fuel limit and now have charcoal in the inventory
+    if not dump(bufferSide) then
+        error("buffer barrel full")
+    end
+end
+
+local function compostSeeds()
+    while Inventory.selectItem("seeds") do
+        drop(Side.bottom)
+    end
+end
+
+local function drainDropper()
+    repeat
+        local bufferCount = Chest.countItems(Side.bottom)
+        redstone.setOutput(Side.getName(Side.bottom), true)
+        os.sleep(.25)
+        redstone.setOutput(Side.getName(Side.bottom), false)
+    until Chest.countItems(Side.bottom) == bufferCount
+end
+
+local function doHomeStuff()
+    -- first we're gonna compost
+    move(Side.back)
+
+    -- [todo] possible optimization: only move to composter if we have seeds
+    if not inspect(Side.bottom, "minecraft:composter") then
+        print("no composter, going back to barrel")
+        move(Side.front)
+    else
+        print("composting seeds...")
+        compostSeeds()
+        move(Side.front)
+        print("draining dropper...")
+        drainDropper()
+    end
+
+    local minFuel = 512
+    print("i am home! doing home stuff...")
+
+    if not dump(Side.bottom) then
+        error("buffer barrel full :(")
+    end
+
+    local ioChest = Chest.findSide()
+
+    print("pushing output...")
+
+    while not pushOutput(Side.bottom, ioChest) do
+        os.sleep(3)
+    end
+
+    while Fuel.getFuelLevel() < minFuel do
+        print("trying to refuel to ", minFuel, ", have", Fuel.getFuelLevel())
+        pullInput(ioChest, Side.bottom)
+        refuelFromBuffer(Side.bottom, minFuel)
+
+        if Fuel.getFuelLevel() < minFuel then
+            os.sleep(3)
+        end
+    end
+
+    print("pulling input...")
+    pullInput(ioChest, Side.bottom)
+
+    print("sucking barrel...")
+    while suck(Side.bottom) do
+    end
+
+    -- [todo] hacky workaround to put back charcoal
+    for slot, stack in pairs(Inventory.list()) do
+        if stack.name == "minecraft:charcoal" then
+            Inventory.selectSlot(slot)
+            drop(Side.bottom)
+        end
+    end
+
     print("home stuff ready!")
     faceFirstCrop()
     waitUntilCropReady(Side.front)
@@ -197,17 +268,6 @@ local function moveNext()
         end
 
         turn(getBlockTurnSide(block))
-        -- if block and block.name == "minecraft:spruce_fence" then
-        --     turn(Side.left)
-        -- elseif block and block.name == "minecraft:oak_fence" then
-        --     turn(Side.right)
-        -- else
-        --     if math.random() < .5 then
-        --         turn(Side.left)
-        --     else
-        --         turn(Side.right)
-        --     end
-        -- end
     end
 end
 
@@ -238,6 +298,7 @@ local function main(args)
             -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
             -- so should just error out, complaining that there is no io-chest.
             if not chest then
+                -- [todo] there no longer is an input barrel
                 if not move(Side.back) then
                     error("could not back down from input barrel")
                 end
@@ -252,7 +313,13 @@ local function main(args)
                     error("expected to find home after backing down from input barrel")
                 end
             end
+
             doHomeStuff()
+        elseif block and block.name == "minecraft:composter" then
+            print("crashed while composting!")
+            -- [todo] moving to barrel cause im lazy right now,
+            -- the home routing will initiate composting
+            move()
         elseif block and block.name == "minecraft:spruce_fence" then
             turn(Side.left)
         elseif block and block.name == "minecraft:oak_fence" then
@@ -267,8 +334,10 @@ local function main(args)
                 end
 
                 dig(Side.bottom)
-                -- [todo] use squirtle
-                turtle.placeDown()
+
+                if not place(Side.bottom) then
+                    tryPlantAnything()
+                end
             end
         elseif not block then
             turtle.digDown()

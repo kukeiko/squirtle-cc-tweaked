@@ -13,6 +13,10 @@ local outputEnd = 18
 local inputStart = 19
 local inputEnd = 27
 
+function Chest.findSide()
+    return Peripheral.findSide("minecraft:chest")
+end
+
 ---@param side integer
 ---@return Chest
 function Chest.new(side)
@@ -257,19 +261,19 @@ end
 function Chest.getOutputMissingStock(side)
     local stacks = Chest.getStacks(side)
     ---@type table<string, integer>
-    local maxStock = {}
+    local stock = {}
 
     for slot = outputStart, outputEnd do
         if stacks[slot] ~= nil then
             local stack = Chest.getStack(side, slot)
 
-            if stack.count < stack.maxCount then
-                maxStock[stack.name] = (maxStock[stack.name] or 0) + stack.maxCount - stack.count
-            end
+            -- if stack.count < stack.maxCount then
+            stock[stack.name] = (stock[stack.name] or 0) + (stack.maxCount - stack.count)
+            -- end
         end
     end
 
-    return maxStock
+    return stock
 end
 
 function Chest.countItems(side)
