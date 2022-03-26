@@ -54,16 +54,31 @@ function Peripheral.wrapOne(types, sides)
     end
 end
 
+---@param side string|integer
 function Peripheral.wrap(side)
-    return native.wrap(Side.getName(side))
+    if type(side) == "number" then
+        side = Side.getName(side)
+    end
+
+    return native.wrap(side)
 end
 
+---@param side string|integer
 function Peripheral.isPresent(side)
-    return native.isPresent(Side.getName(side))
+    if type(side) == "number" then
+        side = Side.getName(side)
+    end
+
+    return native.isPresent(side)
 end
 
+---@param side string|integer
 function Peripheral.getType(side)
-    return native.getType(Side.getName(side))
+    if type(side) == "number" then
+        side = Side.getName(side)
+    end
+
+    return native.getType(side)
 end
 
 ---@param side string|integer

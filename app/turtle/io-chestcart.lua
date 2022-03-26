@@ -12,7 +12,7 @@ local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 
 local function facePistonPedestal()
-    local chestSide = Peripheral.findSide("minecraft:chest")
+    local chestSide = Peripheral.findSide("minecraft:trapped_chest")
 
     if chestSide == Side.left then
         turn(Side.right)
@@ -93,7 +93,7 @@ local function main(args)
             turn(signalSide) -- turning to chest
 
             local bufferBarrel = Chest.new(Peripheral.findSide("minecraft:barrel"))
-            local ioChest = Chest.new(Peripheral.findSide("minecraft:chest"))
+            local ioChest = Chest.new(Peripheral.findSide("minecraft:trapped_chest"))
 
             if sendOutput then
                 pushInput(bufferBarrel, ioChest)
