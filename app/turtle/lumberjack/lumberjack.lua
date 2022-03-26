@@ -142,11 +142,11 @@ local function doFurnaceWork(furnace, buffer)
 end
 
 local function doHomework()
-    local bufferSide = Side.bottom
+    local buffer = Side.bottom
     print("i am home!")
     print("dumping inventory...")
 
-    if not dump(bufferSide) then
+    if not dump(buffer) then
         error("buffer barrel full")
     end
 
@@ -156,7 +156,7 @@ local function doHomework()
         error("no furnace connected")
     end
 
-    doFurnaceWork(furnaceSide, bufferSide)
+    doFurnaceWork(furnaceSide, buffer)
 
     if Fuel.getFuelLevel() < (64 * 80) then
         print("refueling, have", Fuel.getFuelLevel())
@@ -176,21 +176,21 @@ local function doHomework()
         print("refueled to", Fuel.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not dump(bufferSide) then
+        if not dump(buffer) then
             error("buffer barrel full")
         end
     else
         print("have enough fuel:", Fuel.getFuelLevel())
     end
 
-    local ioChestSide = Peripheral.findSide("minecraft:trapped_chest")
+    local ioChest = Chest.findSide()
     print("pushing output...")
-    pushOutput(bufferSide, ioChestSide)
+    pushOutput(buffer, ioChest)
     print("pulling input...")
-    pullInput(ioChestSide, bufferSide)
+    pullInput(ioChest, buffer)
 
     local missingCharcoal = function()
-        return (Chest.getOutputMissingStock(ioChestSide)["minecraft:charcoal"] or 0)
+        return (Chest.getOutputMissingStock(ioChest)["minecraft:charcoal"] or 0)
     end
 
     if missingCharcoal() == 0 then
@@ -204,18 +204,18 @@ local function doHomework()
     print("output has space for charcoal, want to work now!")
     print("checking if we have enough input...")
 
-    if Chest.getItemStock(bufferSide, "minecraft:bone_meal") < 64 then
+    if Chest.getItemStock(buffer, "minecraft:bone_meal") < 64 then
         print("waiting for more bone meal...")
 
-        while Chest.getItemStock(bufferSide, "minecraft:bone_meal") < 64 do
+        while Chest.getItemStock(buffer, "minecraft:bone_meal") < 64 do
             os.sleep(3)
-            pullInput(ioChestSide, bufferSide)
+            pullInput(ioChest, buffer)
         end
     end
 
     print("input looks good! sucking from barrel...")
 
-    while suck(bufferSide) do
+    while suck(buffer) do
     end
 
     local backpackStock = Backpack.getStock()

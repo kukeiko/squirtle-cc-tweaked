@@ -6,6 +6,8 @@ local Side = require "elements.side"
 ---@field side integer
 local Chest = {}
 
+local chestTypes = {"minecraft:chest", "minecraft:trapped_chest"}
+
 ---@param name string|integer
 ---@param stacks table<integer, ItemStack>
 ---@return integer? slot
@@ -21,12 +23,23 @@ local function findInputOutputNameTagSlot(name, stacks)
     end
 end
 
-function Chest.findSide(trapped)
-    if trapped then
-        return Peripheral.findSide("minecraft:trapped_chest")
+function Chest.findSide()
+    return Peripheral.findSide(chestTypes)
+end
+
+---@param types string|string[]
+function Chest.isChestType(types)
+    if type(types) == "string" then
+        types = {types}
     end
 
-    return Peripheral.findSide("minecraft:chest")
+    for i = 1, #types do
+        if Utils.indexOf(chestTypes, types[i]) > 0 then
+            return true
+        end
+    end
+
+    return false
 end
 
 ---@param side integer
