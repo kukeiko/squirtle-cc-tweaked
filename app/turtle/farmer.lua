@@ -219,7 +219,7 @@ local function doHomeStuff()
         error("buffer barrel full :(")
     end
 
-    local ioChest = Chest.findSide()
+    local ioChest = Chest.findSide(true)
 
     print("pushing output...")
 
@@ -281,7 +281,7 @@ local function main(args)
     while true do
         local block = inspect(Side.bottom)
 
-        if block and block.name == "minecraft:chest" then
+        if block and block.name == "minecraft:trapped_chest" then
             move(Side.back)
             move(Side.bottom)
             local floor = inspect(Side.bottom)
@@ -293,7 +293,7 @@ local function main(args)
             doHomeStuff()
         elseif block and block.name == "minecraft:barrel" then
             -- [todo] should only check for horizontal sides
-            local chest = Peripheral.wrapOne({"minecraft:chest"})
+            local chest = Peripheral.wrapOne({"minecraft:trapped_chest"})
 
             -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
             -- so should just error out, complaining that there is no io-chest.

@@ -13,7 +13,11 @@ local outputEnd = 18
 local inputStart = 19
 local inputEnd = 27
 
-function Chest.findSide()
+function Chest.findSide(trapped)
+    if trapped then
+        return Peripheral.findSide("minecraft:trapped_chest")
+    end
+
     return Peripheral.findSide("minecraft:chest")
 end
 
@@ -28,7 +32,7 @@ function Chest.new(side)
 end
 
 --- [todo] not detailed. add flag?
----@param side integer
+---@param side string|integer
 ---@param slot integer
 ---@param detailed? boolean
 ---@return ItemStackV2
@@ -36,16 +40,30 @@ function Chest.getStack(side, slot, detailed)
     return Peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
----@param side integer
+---@param name string|integer
+---@param detailed? boolean
 ---@return table<integer, ItemStackV2>
-function Chest.getStacks(side)
-    return Peripheral.call(side, "list")
+function Chest.getStacks(name, detailed)
+
+    if not detailed then
+        return Peripheral.call(name, "list")
+    else
+        local stacks = Peripheral.call(name, "list")
+        ---@type table<integer, ItemStackV2>
+        local detailedStacks = {}
+
+        for slot, _ in pairs(stacks) do
+            detailedStacks[slot] = Peripheral.call(name, "getItemDetail", slot)
+        end
+
+        return detailedStacks
+    end
 end
 
---- [todo] not detailed. add flag?
----@param side integer
-function Chest.getInputStacks(side)
-    local stacks = Chest.getStacks(side)
+---@param name string|integer
+---@param detailed? boolean
+function Chest.getInputStacks(name, detailed)
+    local stacks = Chest.getStacks(name, detailed)
     ---@type table<integer, ItemStackV2>
     local inputStacks = {}
 
@@ -56,6 +74,22 @@ function Chest.getInputStacks(side)
     end
 
     return inputStacks
+end
+
+---@param name string|integer
+---@param detailed? boolean
+function Chest.getOutputStacks(name, detailed)
+    local stacks = Chest.getStacks(name, detailed)
+    ---@type table<integer, ItemStackV2>
+    local outputStacks = {}
+
+    for slot = outputStart, outputEnd do
+        if stacks[slot] ~= nil then
+            outputStacks[slot] = stacks[slot]
+        end
+    end
+
+    return outputStacks
 end
 
 ---@param side integer
@@ -162,7 +196,11 @@ end
 ---@param toSlot? integer
 ---@return integer
 function Chest.pushItems_V2(from, to, fromSlot, limit, toSlot)
-    return Peripheral.call(from, "pushItems", Side.getName(to), fromSlot, limit, toSlot)
+    if type(to) == "number" then
+        to = Side.getName(to)
+    end
+
+    return Peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
 ---@param target integer
@@ -181,7 +219,11 @@ end
 ---@param toSlot? integer
 ---@return integer
 function Chest.pullItems_V2(from, to, fromSlot, limit, toSlot)
-    return Peripheral.call(from, "pullItems", Side.getName(to), fromSlot, limit, toSlot)
+    if type(to) == "number" then
+        to = Side.getName(to)
+    end
+
+    return Peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
 end
 
 ---@return integer
@@ -259,6 +301,26 @@ end
 ---@param side integer
 ---@return table<string, integer>
 function Chest.getOutputMissingStock(side)
+    local stacks = Chest.getStacks(side)
+    ---@type table<string, integer>
+    local stock = {}
+
+    for slot = outputStart, outputEnd do
+        if stacks[slot] ~= nil then
+            local stack = Chest.getStack(side, slot)
+
+            -- if stack.count < stack.maxCount then
+            stock[stack.name] = (stock[stack.name] or 0) + (stack.maxCount - stack.count)
+            -- end
+        end
+    end
+
+    return stock
+end
+
+---@param side integer
+---@return table<string, integer>
+function Chest.getInputMissingStock(side)
     local stacks = Chest.getStacks(side)
     ---@type table<string, integer>
     local stock = {}

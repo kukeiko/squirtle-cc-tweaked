@@ -183,7 +183,7 @@ local function doHomework()
         print("have enough fuel:", Fuel.getFuelLevel())
     end
 
-    local ioChestSide = Peripheral.findSide("minecraft:chest")
+    local ioChestSide = Peripheral.findSide("minecraft:trapped_chest")
     print("pushing output...")
     pushOutput(bufferSide, ioChestSide)
     print("pulling input...")
