@@ -25,7 +25,7 @@ return function(from, to, keepStock)
         local stock = pushableStock[stack.name]
 
         if stock ~= nil and stock > 0 then
-            local transferred = Chest.pushItems_V2(from, to, slot, stock)
+            local transferred = Chest.pushItems(from, to, slot, stock)
             pushableStock[stack.name] = stock - transferred
 
             -- if pushableStock[stack.name] <= 0 then

@@ -12,7 +12,7 @@ function Inventory.size()
     return 16
 end
 
----@return ItemStackV2[]
+---@return ItemStack[]
 function Inventory.list()
     local list = {}
 
@@ -29,7 +29,7 @@ end
 
 ---@param slot integer
 ---@param detailed? boolean
----@return ItemStackV2?
+---@return ItemStack?
 function Inventory.getStack(slot, detailed)
     return nativeTurtle.getItemDetail(slot, detailed)
 end

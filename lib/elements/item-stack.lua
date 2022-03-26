@@ -1,4 +1,4 @@
----@class ItemStackV2
+---@class ItemStack
 ---@field name string
 ---@field count integer
 ---@field nbt? string

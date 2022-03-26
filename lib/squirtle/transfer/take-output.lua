@@ -1,3 +1,5 @@
+local Chest = require "world.chest"
+
 ---@param table table
 local function shallowCopyTable(table)
     local copy = {}
@@ -9,11 +11,11 @@ local function shallowCopyTable(table)
     return copy
 end
 
----@param source Chest
----@param target Chest
+---@param source integer
+---@param target integer
 ---@param maxStock table<string, integer>
 return function(source, target, maxStock)
-    local targetItems = target:getDetailedItemList()
+    local targetItems = Chest.getStacks(target, true)
 
     --- to prevent mutating input table
     maxStock = shallowCopyTable(maxStock)
@@ -26,8 +28,10 @@ return function(source, target, maxStock)
     end
 
     -- and then take items from output
-    local sourceItems = source:getDetailedItemList()
-    for slot = source:getFirstOutputSlot(), source:getLastOutputSlot() do
+    local sourceItems = Chest.getStacks(source, true)
+    local sourceInstance = Chest.new(source)
+
+    for slot = sourceInstance:getFirstOutputSlot(), sourceInstance:getLastOutputSlot() do
         local sourceItem = sourceItems[slot]
 
         if sourceItem ~= nil then
@@ -35,7 +39,7 @@ return function(source, target, maxStock)
 
             if maxStockForItem ~= nil and maxStockForItem > 0 then
                 local numToTransfer = math.min(sourceItem.count - 1, maxStockForItem)
-                local numTransferred = source:pushItems(target.side, slot, numToTransfer)
+                local numTransferred = Chest.pushItems(source, target, slot, numToTransfer)
                 maxStock[sourceItem.name] = maxStockForItem - numTransferred
             end
         end

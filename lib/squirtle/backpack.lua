@@ -4,7 +4,7 @@ local Backpack = {}
 
 ---@param slot integer
 ---@param detailed? boolean
----@return ItemStackV2?
+---@return ItemStack?
 function Backpack.getStack(slot, detailed)
     return native.getItemDetail(slot, detailed)
 end
@@ -38,12 +38,12 @@ function Backpack.getStock()
     return stock
 end
 
----@param predicate string|function<boolean, ItemStackV2>
+---@param predicate string|function<boolean, ItemStack>
 function Backpack.getItemStock(predicate)
     if type(predicate) == "string" then
         local name = predicate
 
-        ---@param stack ItemStackV2
+        ---@param stack ItemStack
         predicate = function(stack)
             return stack.name == name
         end

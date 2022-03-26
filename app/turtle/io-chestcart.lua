@@ -96,8 +96,8 @@ local function main(args)
             local ioChest = Chest.new(Peripheral.findSide("minecraft:trapped_chest"))
 
             if sendOutput then
-                pushInput(bufferBarrel, ioChest)
-                takeOutput(ioChest, bufferBarrel, Chest.getInputOutputMaxStock(ioChest.side))
+                pushInput(bufferBarrel.side, ioChest.side)
+                takeOutput(ioChest.side, bufferBarrel.side, Chest.getInputOutputMaxStock(ioChest.side))
             else
                 pullInput(ioChest.side, bufferBarrel.side)
                 pushOutput(bufferBarrel.side, ioChest.side, Chest.getInputMaxStock(ioChest.side))

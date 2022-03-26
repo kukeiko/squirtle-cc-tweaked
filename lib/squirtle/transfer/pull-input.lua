@@ -12,7 +12,7 @@ return function(from, to)
 
         if stock ~= nil and stock > 0 then
             local limit = math.min(stack.count - 1, stock)
-            local transferred = Chest.pullItems_V2(to, from, slot, limit)
+            local transferred = Chest.pullItems(to, from, slot, limit)
             missingStock[stack.name] = stock - transferred
         end
     end

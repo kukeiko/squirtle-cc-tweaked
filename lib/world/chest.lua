@@ -1,8 +1,6 @@
 local Utils = require "utils"
 local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
-local DetailedItemStack = require "world.detailed-item-stack"
-local ItemStack = require "world.item-stack"
 
 ---@class Chest
 ---@field side integer
@@ -35,21 +33,21 @@ end
 ---@param side string|integer
 ---@param slot integer
 ---@param detailed? boolean
----@return ItemStackV2
+---@return ItemStack
 function Chest.getStack(side, slot, detailed)
     return Peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
 ---@param name string|integer
 ---@param detailed? boolean
----@return table<integer, ItemStackV2>
+---@return table<integer, ItemStack>
 function Chest.getStacks(name, detailed)
 
     if not detailed then
         return Peripheral.call(name, "list")
     else
         local stacks = Peripheral.call(name, "list")
-        ---@type table<integer, ItemStackV2>
+        ---@type table<integer, ItemStack>
         local detailedStacks = {}
 
         for slot, _ in pairs(stacks) do
@@ -64,7 +62,7 @@ end
 ---@param detailed? boolean
 function Chest.getInputStacks(name, detailed)
     local stacks = Chest.getStacks(name, detailed)
-    ---@type table<integer, ItemStackV2>
+    ---@type table<integer, ItemStack>
     local inputStacks = {}
 
     for slot = inputStart, inputEnd do
@@ -80,7 +78,7 @@ end
 ---@param detailed? boolean
 function Chest.getOutputStacks(name, detailed)
     local stacks = Chest.getStacks(name, detailed)
-    ---@type table<integer, ItemStackV2>
+    ---@type table<integer, ItemStack>
     local outputStacks = {}
 
     for slot = outputStart, outputEnd do
@@ -106,12 +104,12 @@ function Chest.getStock(side)
 end
 
 ---@param side integer|string
----@param predicate string|function<boolean, ItemStackV2>
+---@param predicate string|function<boolean, ItemStack>
 function Chest.getItemStock(side, predicate)
     if type(predicate) == "string" then
         local name = predicate
 
-        ---@param stack ItemStackV2
+        ---@param stack ItemStack
         predicate = function(stack)
             return stack.name == name
         end
@@ -126,38 +124,6 @@ function Chest.getItemStock(side, predicate)
     end
 
     return stock
-end
-
----@return ItemStack[]
-function Chest:getItemList()
-    local nativeList = Peripheral.call(self.side, "list")
-    ---@type ItemStack[]
-    local list = {}
-
-    for slot, nativeItem in pairs(nativeList) do
-        list[slot] = ItemStack.cast(nativeItem)
-    end
-
-    return list
-end
-
----@return DetailedItemStack[]
-function Chest:getDetailedItemList()
-    local nativeList = Peripheral.call(self.side, "list")
-    ---@type DetailedItemStack[]
-    local list = {}
-
-    for slot, _ in pairs(nativeList) do
-        local nativeItem = Peripheral.call(self.side, "getItemDetail", slot);
-
-        if (nativeItem == nil) then
-            error("slot #" .. slot .. " unexpectedly empty")
-        end
-
-        list[slot] = DetailedItemStack.cast(nativeItem)
-    end
-
-    return list
 end
 
 function Chest:getFirstInputSlot()
@@ -180,22 +146,13 @@ function Chest:getLastOutputSlot()
     return 18
 end
 
----@param target integer
----@param fromSlot integer
----@param limit? integer
----@param toSlot? integer
----@return integer
-function Chest:pushItems(target, fromSlot, limit, toSlot)
-    return Peripheral.call(self.side, "pushItems", Side.getName(target), fromSlot, limit, toSlot)
-end
-
 ---@param from integer
 ---@param to integer
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
 ---@return integer
-function Chest.pushItems_V2(from, to, fromSlot, limit, toSlot)
+function Chest.pushItems(from, to, fromSlot, limit, toSlot)
     if type(to) == "number" then
         to = Side.getName(to)
     end
@@ -203,22 +160,13 @@ function Chest.pushItems_V2(from, to, fromSlot, limit, toSlot)
     return Peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
----@param target integer
----@param fromSlot integer
----@param limit? integer
----@param toSlot? integer
----@return integer
-function Chest:pullItems(target, fromSlot, limit, toSlot)
-    return Peripheral.call(self.side, "pullItems", Side.getName(target), fromSlot, limit, toSlot)
-end
-
 ---@param from integer
 ---@param to integer
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
 ---@return integer
-function Chest.pullItems_V2(from, to, fromSlot, limit, toSlot)
+function Chest.pullItems(from, to, fromSlot, limit, toSlot)
     if type(to) == "number" then
         to = Side.getName(to)
     end
@@ -226,9 +174,10 @@ function Chest.pullItems_V2(from, to, fromSlot, limit, toSlot)
     return Peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
 end
 
+---@param name string|integer
 ---@return integer
-function Chest:getSize()
-    return Peripheral.call(self.side, "size")
+function Chest.getSize(name)
+    return Peripheral.call(name, "size")
 end
 
 ---@param side integer

@@ -11,7 +11,7 @@ function Furnace.findSide()
 end
 
 ---@param side integer|string
----@return ItemStackV2
+---@return ItemStack
 function Furnace.getInputStack(side)
     return Peripheral.call(side, "getItemDetail", inputSlot)
 end
@@ -27,7 +27,7 @@ function Furnace.getMissingInputCount(side)
 end
 
 ---@param side integer|string
----@return ItemStackV2
+---@return ItemStack
 function Furnace.getFuelStack(side)
     return Peripheral.call(side, "getItemDetail", fuelSlot)
 end
@@ -43,7 +43,7 @@ function Furnace.getMissingFuelCount(side)
 end
 
 ---@param side integer|string
----@return ItemStackV2
+---@return ItemStack
 function Furnace.getOutputStack(side)
     return Peripheral.call(side, "getItemDetail", outputSlot)
 end

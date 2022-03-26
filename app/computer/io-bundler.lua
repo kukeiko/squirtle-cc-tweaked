@@ -10,6 +10,7 @@ local function printUsage()
     print("io-bundler <main-chest-name>")
 end
 
+-- [todo] crashes if player accidentally clicks modems
 local function main(args)
     local mainChest = args[1]
 
@@ -41,7 +42,7 @@ local function main(args)
 
     while true do
         for auxChest, chestType in pairs(auxChests) do
-            ---@type table<integer, ItemStackV2>
+            ---@type table<integer, ItemStack>
             local outputStacks
 
             if chestType == "minecraft:trapped_chest" then
@@ -64,7 +65,7 @@ local function main(args)
 
                                     print("move", auxChest, otherAuxChest, outputSlot, transfer, inputSlot)
                                     Utils.waitForUserToHitEnter()
-                                    local transferred = Chest.pushItems_V2(auxChest, otherAuxChest, outputSlot,
+                                    local transferred = Chest.pushItems(auxChest, otherAuxChest, outputSlot,
                                                                            transfer, inputSlot)
 
                                     inputStack.count = inputStack.count + transferred
@@ -89,7 +90,7 @@ local function main(args)
 
                             print("move", auxChest, mainChest, outputSlot, transfer, inputSlot)
                             Utils.waitForUserToHitEnter()
-                            local transferred = Chest.pushItems_V2(auxChest, mainChest, outputSlot, transfer, inputSlot)
+                            local transferred = Chest.pushItems(auxChest, mainChest, outputSlot, transfer, inputSlot)
 
                             inputStack.count = inputStack.count + transferred
                             outputStack.count = outputStack.count - transferred
@@ -116,7 +117,7 @@ local function main(args)
 
                                 print("move", mainChest, auxChest, outputSlot, transfer, inputSlot)
                                 Utils.waitForUserToHitEnter()
-                                local transferred = Chest.pushItems_V2(mainChest, auxChest, outputSlot, transfer,
+                                local transferred = Chest.pushItems(mainChest, auxChest, outputSlot, transfer,
                                                                        inputSlot)
 
                                 inputStack.count = inputStack.count + transferred
