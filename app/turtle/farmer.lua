@@ -1,5 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
+-- [todo] did some changes that might no longer make this app 100% crash safe
 local Inventory = require "squirtle.inventory"
 local Fuel = require "squirtle.fuel"
 local Peripheral = require "world.peripheral"
@@ -14,6 +15,9 @@ local dump = require "squirtle.dump"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
+local drop = require "squirtle.drop"
+local place = require "squirtle.place"
+local suck = require "squirtle.suck"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -107,8 +111,24 @@ local function faceFirstCrop()
 end
 
 ---@param side integer
+local function isCropsReady(side)
+    local block = inspect(side)
+
+    if not block or not isCrops(block) then
+        error(string.format("expected block at %s to be crops", Side.getName(side)))
+    end
+
+    return getCropsRemainingAge(block) == 0
+end
+
+---@param side integer
 ---@param max? integer if supplied, only wait if age difference does not exceed max
 local function waitUntilCropReady(side, max)
+    while not isCropsReady(side) and Inventory.selectItem("minecraft:bone_meal") do
+        while place(side) do
+        end
+    end
+
     local block = inspect(side)
 
     if not block or not isCrops(block) then
@@ -161,7 +181,37 @@ local function refuelFromBuffer(bufferSide, fuel)
     end
 end
 
+local function compostSeeds()
+    while Inventory.selectItem("seeds") do
+        drop(Side.bottom)
+    end
+end
+
+local function drainDropper()
+    repeat
+        local bufferCount = Chest.countItems(Side.bottom)
+        redstone.setOutput(Side.getName(Side.bottom), true)
+        os.sleep(.25)
+        redstone.setOutput(Side.getName(Side.bottom), false)
+    until Chest.countItems(Side.bottom) == bufferCount
+end
+
 local function doHomeStuff()
+    -- first we're gonna compost
+    move(Side.back)
+
+    -- [todo] possible optimization: only move to composter if we have seeds
+    if not inspect(Side.bottom, "minecraft:composter") then
+        print("no composter, going back to barrel")
+        move(Side.front)
+    else
+        print("composting seeds...")
+        compostSeeds()
+        move(Side.front)
+        print("draining dropper...")
+        drainDropper()
+    end
+
     local minFuel = 512
     print("i am home! doing home stuff...")
 
@@ -187,8 +237,13 @@ local function doHomeStuff()
         end
     end
 
-    -- print("(sleep 3s to simulate home stuff)")
-    -- os.sleep(3)
+    print("pulling input...")
+    pullInput(ioChest, Side.bottom)
+
+    print("sucking barrel...")
+    while suck(Side.bottom) do
+    end
+
     print("home stuff ready!")
     faceFirstCrop()
     waitUntilCropReady(Side.front)
@@ -235,6 +290,7 @@ local function main(args)
             -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
             -- so should just error out, complaining that there is no io-chest.
             if not chest then
+                -- [todo] there no longer is an input barrel
                 if not move(Side.back) then
                     error("could not back down from input barrel")
                 end
@@ -249,7 +305,13 @@ local function main(args)
                     error("expected to find home after backing down from input barrel")
                 end
             end
+
             doHomeStuff()
+        elseif block and block.name == "minecraft:composter" then
+            print("crashed while composting!")
+            -- [todo] moving to barrel cause im lazy right now,
+            -- the home routing will initiate composting
+            move()
         elseif block and block.name == "minecraft:spruce_fence" then
             turn(Side.left)
         elseif block and block.name == "minecraft:oak_fence" then
@@ -264,8 +326,10 @@ local function main(args)
                 end
 
                 dig(Side.bottom)
-                -- [todo] use squirtle
-                turtle.placeDown()
+
+                if not place(Side.bottom) then
+                    tryPlantAnything()
+                end
             end
         elseif not block then
             turtle.digDown()

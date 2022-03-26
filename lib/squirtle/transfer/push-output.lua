@@ -1,7 +1,6 @@
 local Utils = require "utils"
 local Chest = require "world.chest"
 
--- [todo] not a huge fan of how we're determining if everything was pushed.
 ---@param from integer
 ---@param to integer
 ---@param keepStock? table<string, integer>
@@ -29,11 +28,19 @@ return function(from, to, keepStock)
             local transferred = Chest.pushItems_V2(from, to, slot, stock)
             pushableStock[stack.name] = stock - transferred
 
-            if pushableStock[stack.name] <= 0 then
-                pushableStock[stack.name] = nil
-            end
+            -- if pushableStock[stack.name] <= 0 then
+            --     pushableStock[stack.name] = nil
+            -- end
         end
     end
 
-    return Utils.isEmpty(pushableStock)
+    local remainingStock = Chest.subtractStock(Chest.getStock(from), keepStock)
+
+    for item, stock in pairs(remainingStock) do
+        if missingStock[item] and stock > 0 then
+            return false
+        end
+    end
+
+    return true
 end
