@@ -244,6 +244,14 @@ local function doHomeStuff()
     while suck(Side.bottom) do
     end
 
+    -- [todo] hacky workaround to put back charcoal
+    for slot, stack in pairs(Inventory.list()) do
+        if stack.name == "minecraft:charcoal" then
+            Inventory.selectSlot(slot)
+            drop(Side.bottom)
+        end
+    end
+
     print("home stuff ready!")
     faceFirstCrop()
     waitUntilCropReady(Side.front)
