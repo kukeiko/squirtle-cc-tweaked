@@ -12,7 +12,7 @@ function Inventory.size()
     return 16
 end
 
----@return ItemStack[]
+---@return ItemStackV2[]
 function Inventory.list()
     local list = {}
 

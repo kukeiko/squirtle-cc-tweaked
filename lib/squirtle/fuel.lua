@@ -78,7 +78,7 @@ end
 ---@param stacks ItemStack[]
 ---@param fuel number
 ---@param allowedOverFlow? number
----@return ItemStack[] fuelStacks, number openFuel
+---@return ItemStackV2[] fuelStacks, number openFuel
 function Fuel.pickStacks(stacks, fuel, allowedOverFlow)
     allowedOverFlow = math.max(allowedOverFlow or 1000, 0)
     local pickedStacks = {}
