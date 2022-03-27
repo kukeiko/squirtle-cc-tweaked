@@ -13,8 +13,9 @@ end
 
 ---@param source integer
 ---@param target integer
----@param maxStock table<string, integer>
+---@param maxStock? table<string, integer>
 return function(source, target, maxStock)
+    maxStock = maxStock or {}
     local targetItems = Chest.getStacks(target, true)
 
     --- to prevent mutating input table

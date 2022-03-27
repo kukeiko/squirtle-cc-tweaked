@@ -1,4 +1,3 @@
-local Utils = require "utils"
 local Chest = require "world.chest"
 
 ---@param from integer
@@ -21,16 +20,22 @@ return function(from, to, keepStock)
         end
     end
 
+    local outputStacks = Chest.getOutputStacks(to, true)
+
     for slot, stack in pairs(Chest.getStacks(from)) do
         local stock = pushableStock[stack.name]
 
         if stock ~= nil and stock > 0 then
-            local transferred = Chest.pushItems(from, to, slot, stock)
-            pushableStock[stack.name] = stock - transferred
-
-            -- if pushableStock[stack.name] <= 0 then
-            --     pushableStock[stack.name] = nil
-            -- end
+            for outputSlot, outputStack in pairs(outputStacks) do
+                if outputStack.name == stack.name and outputStack.count < outputStack.maxCount and stack.count > 0 and
+                    pushableStock[stack.name] > 0 then
+                    local transfer = math.min(pushableStock[stack.name], outputStack.maxCount - outputStack.count)
+                    local transferred = Chest.pushItems(from, to, slot, transfer, outputSlot)
+                    outputStack.count = outputStack.count + transferred
+                    stack.count = stack.count - transferred
+                    pushableStock[stack.name] = pushableStock[stack.name] - transferred
+                end
+            end
         end
     end
 

@@ -5,14 +5,14 @@ local Chest = require "world.chest"
 return function(source, target)
     local sourceItems = Chest.getStacks(source, true)
 
-    for targetSlot, targetItem in pairs(Chest.getInputStacks(target, true)) do
-        if targetItem.count < targetItem.maxCount then
-            local numMissing = targetItem.maxCount - targetItem.count
+    for inputSlot, inputStack in pairs(Chest.getInputStacks(target, true)) do
+        if inputStack.count < inputStack.maxCount then
+            local numMissing = inputStack.maxCount - inputStack.count
 
             for sourceSlot, sourceItem in pairs(sourceItems) do
-                if sourceItem.count > 0 and sourceItem.name == targetItem.name then
+                if sourceItem.count > 0 and sourceItem.name == inputStack.name then
                     local transfer = math.min(sourceItem.count, numMissing)
-                    local transferred = Chest.pushItems(source, target, sourceSlot, transfer, targetSlot)
+                    local transferred = Chest.pushItems(source, target, sourceSlot, transfer, inputSlot)
                     sourceItem.count = sourceItem.count - transferred
                     numMissing = numMissing - transferred
                 end
