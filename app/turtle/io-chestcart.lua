@@ -97,6 +97,7 @@ local function main(args)
             local buffer = Peripheral.findSide("minecraft:barrel")
             local io = Chest.findSide()
 
+            -- [todo] need to somehow support 27+ slot chests
             if sendOutput then
                 pushInput(buffer, io)
                 pullOutput(io, buffer, Chest.getInputOutputMaxStock(io))

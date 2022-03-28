@@ -4,6 +4,9 @@
 ---@field height? integer
 ---@field depth? integer
 ---@field data table
+---@field x integer
+---@field y integer
+---@field z integer
 local World = {}
 
 local function swap(a, b)
@@ -12,7 +15,7 @@ end
 
 ---@param value integer
 ---@param from integer
----@param length integer
+---@param length? integer
 ---@return boolean
 local function isInRange(value, from, length)
     if length == nil then
@@ -39,7 +42,18 @@ end
 function World.new(transform, width, height, depth, data)
     -- [todo] we have a transform, but we're never using its facing. a bit confusing
     ---@type World
-    local instance = {transform = transform, width = width, height = height, depth = depth, data = data or {}}
+    local instance = {
+        transform = transform,
+        width = width,
+        height = height,
+        depth = depth,
+        data = data or {},
+        -- [todo] i am sick of writing "world.transform.position.x", so i did this here.
+        -- if convenient, keep and remove transform
+        x = transform.position.x,
+        y = transform.position.y,
+        z = transform.position.z
+    }
 
     setmetatable(instance, {__index = World})
 

@@ -1,6 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local Vector = require "elements.vector"
+local Utils = require "utils"
+local Vectors = require "elements.vector"
 local Side = require "elements.vector"
 local World = require "scout.world"
 local Transform = require "scout.transform"
@@ -16,76 +17,118 @@ end
 
 ---@param point Vector
 ---@param world World
-local function nextPoint(point, world)
-    local relative = point:minus(world.transform.position)
+---@param start Vector
+local function nextPoint(point, world, start)
+    local delta = Vectors.new(0, 0, 0)
+    local worldPos = world.transform.position
 
-    if relative.z % 2 == 0 then
-        if relative.x + 1 < world.width then
-            return point + Vector.new(1, 0, 0)
-        elseif relative.z + 1 < world.depth then
-            return point + Vector.new(0, 0, 1)
-        else
-            return false
-        end
+    if start.x == worldPos.x then
+        delta.x = 1
+    elseif start.x == worldPos.x + world.width - 1 then
+        delta.x = -1
+    end
+
+    if start.z == worldPos.z then
+        delta.z = 1
+    elseif start.z == worldPos.z + world.depth - 1 then
+        delta.z = -1
+    end
+
+    if start.y == worldPos.y then
+        delta.y = 1
+    elseif start.y == worldPos.y + world.height - 1 then
+        delta.y = -1
+    end
+
+    local relative = Vectors.minus(point, start)
+
+    if relative.z % 2 == 1 then
+        delta.x = delta.x * -1
+    end
+
+    if relative.y % 2 == 1 then
+        delta.x = delta.x * -1
+        delta.z = delta.z * -1
+    end
+
+    if world:isInBoundsX(point.x + delta.x) then
+        return Vectors.plus(point, Vectors.new(delta.x, 0, 0))
+    elseif world:isInBoundsZ(point.z + delta.z) then
+        return Vectors.plus(point, Vectors.new(0, 0, delta.z))
+    elseif world:isInBoundsY(point.y + delta.y) then
+        return Vectors.plus(point, Vectors.new(0, delta.y, 0))
     else
-        if relative.x - 1 >= 0 then
-            return point + Vector.new(-1, 0, 0)
-        elseif relative.z + 1 < world.depth then
-            return point + Vector.new(0, 0, 1)
-        else
-            return false
-        end
+        Utils.prettyPrint(delta)
+        print("reached the end")
+        return false -- reached the end
     end
 end
 
-local function breakable(block)
+local function isBreakable(block)
     return not string.find(block.name, "ore")
 end
 
----@param layer integer
+---@param home Vector
 ---@param world World
-local function moveToLayer(layer, world)
-    local goal = world.transform.position:plus(Vector.new(0, layer, 0))
+---@return Vector
+local function determineStart(home, world)
 
-    while goal do
-        if navigate(goal, world, breakable) then
-            return true
+    local corners = {
+        Vectors.new(world.x, world.y, world.z),
+        Vectors.new(world.x + world.width - 1, world.y, world.z),
+        Vectors.new(world.x, world.y + world.height - 1, world.z),
+        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z),
+        --
+        Vectors.new(world.x, world.y, world.z + world.depth - 1),
+        Vectors.new(world.x + world.width - 1, world.y, world.z + world.depth - 1),
+        Vectors.new(world.x, world.y + world.height - 1, world.z + world.depth - 1),
+        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
+    }
+
+    ---@type Vector
+    local best
+
+    for i = 1, #corners do
+        if best == nil or Vectors.length(best - home) > Vectors.length(corners[i] - home) then
+            best = corners[i]
         end
-
-        goal = nextPoint(goal, world)
     end
 
-    error(string.format("no entry to layer %d found", layer))
-end
-
----@param layer integer
----@param world World
-local function exposeLayer(layer, world)
-    local goal = world.transform.position:plus(Vector.new(0, layer, 0))
-
-    while goal do
-        navigate(goal, world, breakable)
-        goal = nextPoint(goal, world)
-    end
+    return best
 end
 
 local function main(args)
-    if not isHome() then
-        error("expected to be home")
+    -- if not isHome() then
+    --     error("expected to be home")
+    -- end
+
+    local home, facing = orientate()
+    -- local world = World.new(Transform.new(position + Vectors.new(7, 0, 7)), 6, 3, 4)
+    local world = World.new(Transform.new(Vectors.new(-11, 200, 19)), 6, 7, 5)
+    local start = determineStart(home, world)
+    Utils.prettyPrint(nextPoint(start, world, start))
+
+    if not navigate(start) then
+        error("path to entry must be free")
     end
 
-    local position, facing = orientate()
-    local world = World.new(Transform.new(position), 3, 2, 3)
-    local layer = 0
+    local point = start
 
-    while layer < world.height do
-        moveToLayer(layer, world)
-        exposeLayer(layer, world)
-        layer = layer + 1
+    while point do
+        local moved, msg = navigate(point, world, isBreakable)
+
+        if not moved then
+            print(msg)
+        end
+
+        
+        point = nextPoint(point, world, start)
+        Utils.prettyPrint(point)
     end
 
-    navigate(world.transform.position, world, breakable)
-    print("all done!")
+    print("all done! going home...")
+    navigate(home, world, isBreakable)
+    print("done & home <3")
 end
 
 main(arg)
