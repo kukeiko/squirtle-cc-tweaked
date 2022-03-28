@@ -3,8 +3,9 @@ package.path = package.path .. ";/lib/?.lua"
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
+local Redstone = require "world.redstone"
 local pushInput = require "squirtle.transfer.push-input"
-local takeOutput = require "squirtle.transfer.take-output"
+local pullOutput = require "squirtle.transfer.pull-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local pushOutput = require "squirtle.transfer.push-output"
 local turn = require "squirtle.turn"
@@ -12,7 +13,7 @@ local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 
 local function facePistonPedestal()
-    local chestSide = Peripheral.findSide("minecraft:trapped_chest")
+    local chestSide = Chest.findSide()
 
     if chestSide == Side.left then
         turn(Side.right)
@@ -43,7 +44,7 @@ local function dumpBarrelToChest()
 
     if not dump(Side.front) then
         -- [todo] recover from error. this should only happen when buffer already had items in it
-        -- before chestcart arrived 
+        -- before chestcart arrived
         error("chestcart full")
     end
 
@@ -76,38 +77,39 @@ local function main(args)
     while true do
         os.pullEvent("redstone")
 
-        local signalSide
+        local signal
 
-        if redstone.getInput(Side.getName(Side.left)) then
-            signalSide = Side.left
-        elseif redstone.getInput(Side.getName(Side.right)) then
-            signalSide = Side.right
+        if Redstone.getInput(Side.left) then
+            signal = Side.left
+        elseif Redstone.getInput(Side.right) then
+            signal = Side.right
         end
 
-        if signalSide then
-            local pistonSignalSide = Side.rotateAround(signalSide)
-            redstone.setOutput(Side.getName(pistonSignalSide), true)
-            turn(signalSide)
+        if signal then
+            -- side we need to turn to to face piston after turning towards the signal
+            local piston = Side.rotateAround(signal)
+            Redstone.setOutput(piston, true)
+            turn(signal)
             dumpChestcartToBarrel()
-            redstone.setOutput(Side.getName(Side.back), true)
-            turn(signalSide) -- turning to chest
+            Redstone.setOutput(Side.back, true)
+            turn(signal) -- turning to chest
 
-            local bufferBarrel = Chest.new(Peripheral.findSide("minecraft:barrel"))
-            local ioChest = Chest.new(Peripheral.findSide("minecraft:trapped_chest"))
+            local buffer = Peripheral.findSide("minecraft:barrel")
+            local io = Chest.findSide()
 
             if sendOutput then
-                pushInput(bufferBarrel.side, ioChest.side)
-                takeOutput(ioChest.side, bufferBarrel.side, Chest.getInputOutputMaxStock(ioChest.side))
+                pushInput(buffer, io)
+                pullOutput(io, buffer, Chest.getInputOutputMaxStock(io))
             else
-                pullInput(ioChest.side, bufferBarrel.side)
-                pushOutput(bufferBarrel.side, ioChest.side, Chest.getInputMaxStock(ioChest.side))
+                pushOutput(buffer, io)
+                pullInput(io, buffer)
             end
 
-            turn(pistonSignalSide)
-            redstone.setOutput(Side.getName(Side.back), false)
+            turn(piston)
+            Redstone.setOutput(Side.back, false)
             dumpBarrelToChest()
-            turn(pistonSignalSide)
-            redstone.setOutput(Side.getName(pistonSignalSide), false)
+            turn(piston)
+            Redstone.setOutput(piston, false)
             os.sleep(1)
         else
             -- ignore, and maybe print warning?
