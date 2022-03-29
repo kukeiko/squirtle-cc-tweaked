@@ -1,13 +1,23 @@
 package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
 local Vectors = require "elements.vector"
 local Side = require "elements.vector"
 local World = require "scout.world"
+local Chest = require "world.chest"
 local Transform = require "scout.transform"
 local inspect = require "squirtle.inspect"
 local navigate = require "squirtle.navigate"
 local orientate = require "squirtle.orientate"
+local locate = require "squirtle.locate"
+local setup = require "expose-ores.setup"
+
+---@class ExposeOresAppState
+---@field home Vector
+---@field world World
+---@field start Vector
+---@field checkpoint Vector
 
 local function isHome()
     local inspected = inspect(Side.bottom)
@@ -65,69 +75,63 @@ local function nextPoint(point, world, start)
 end
 
 local function isBreakable(block)
-    return not string.find(block.name, "ore")
-end
+    local isOre = string.find(block.name, "ore")
+    local isChest = string.find(block.name, "chest")
+    local isBarrel = string.find(block.name, "barrel")
 
----@param home Vector
----@param world World
----@return Vector
-local function determineStart(home, world)
-
-    local corners = {
-        Vectors.new(world.x, world.y, world.z),
-        Vectors.new(world.x + world.width - 1, world.y, world.z),
-        Vectors.new(world.x, world.y + world.height - 1, world.z),
-        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z),
-        --
-        Vectors.new(world.x, world.y, world.z + world.depth - 1),
-        Vectors.new(world.x + world.width - 1, world.y, world.z + world.depth - 1),
-        Vectors.new(world.x, world.y + world.height - 1, world.z + world.depth - 1),
-        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
-    }
-
-    ---@type Vector
-    local best
-
-    for i = 1, #corners do
-        if best == nil or Vectors.length(best - home) > Vectors.length(corners[i] - home) then
-            best = corners[i]
-        end
-    end
-
-    return best
+    return not isOre and not isChest and not isBarrel
 end
 
 local function main(args)
-    -- if not isHome() then
-    --     error("expected to be home")
-    -- end
+    ---@type ExposeOresAppState
+    local state = Utils.loadAppState("expose-ores", {})
 
-    local home, facing = orientate()
-    -- local world = World.new(Transform.new(position + Vectors.new(7, 0, 7)), 6, 3, 4)
-    local world = World.new(Transform.new(Vectors.new(-11, 200, 19)), 6, 7, 5)
-    local start = determineStart(home, world)
-    Utils.prettyPrint(nextPoint(start, world, start))
-
-    if not navigate(start) then
-        error("path to entry must be free")
+    if not state.home then
+        state = setup()
     end
 
-    local point = start
+    if not state.checkpoint then
+        print("no checkpoint, assuming digging is finished, going home ...")
+        navigate(state.home, nil, isBreakable)
+        print("done & home <3")
+        return
+    end
+
+    local position = locate()
+    state.world = World.new(Transform.new(Vectors.new(state.world.x, state.world.y, state.world.z)), state.world.width,
+                            state.world.height, state.world.depth)
+    state.checkpoint = Vectors.cast(state.checkpoint)
+
+    if not state.world:isInBounds(position) then
+        print("not inside digging area, going there now...")
+        navigate(state.checkpoint, nil, isBreakable)
+        print("should be inside digging area again!")
+    end
+
+    local point = state.checkpoint
+    local previous = point
 
     while point do
-        local moved, msg = navigate(point, world, isBreakable)
+        if previous.y ~= point.y then
+            print("saving checkpoint at", point)
+            state.checkpoint = point
+            Utils.saveAppState(state, "expose-ores")
+        end
+
+        local moved, msg = navigate(point, state.world, isBreakable)
 
         if not moved then
             print(msg)
         end
 
-        
-        point = nextPoint(point, world, start)
-        Utils.prettyPrint(point)
+        previous = point
+        point = nextPoint(point, state.world, state.start)
     end
 
     print("all done! going home...")
-    navigate(home, world, isBreakable)
+    state.checkpoint = nil
+    Utils.saveAppState(state, "expose-ores")
+    navigate(state.home)
     print("done & home <3")
 end
 
