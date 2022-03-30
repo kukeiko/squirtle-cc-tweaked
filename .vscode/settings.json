@@ -14,7 +14,8 @@
         "bit",
         "window",
         "term",
-        "rednet"
+        "rednet",
+        "read"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global",

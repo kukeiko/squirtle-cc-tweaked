@@ -35,17 +35,17 @@ end
 ---@param cardinal number
 function Cardinal.toVector(cardinal)
     if cardinal == Cardinal.south then
-        return Vector.new(0, 0, 1)
+        return Vector.create(0, 0, 1)
     elseif cardinal == Cardinal.west then
-        return Vector.new(-1, 0, 0)
+        return Vector.create(-1, 0, 0)
     elseif cardinal == Cardinal.north then
-        return Vector.new(0, 0, -1)
+        return Vector.create(0, 0, -1)
     elseif cardinal == Cardinal.east then
-        return Vector.new(1, 0, 0)
+        return Vector.create(1, 0, 0)
     elseif cardinal == Cardinal.up then
-        return Vector.new(0, 1, 0)
+        return Vector.create(0, 1, 0)
     elseif cardinal == Cardinal.down then
-        return Vector.new(0, -1, 0)
+        return Vector.create(0, -1, 0)
     end
 end
 

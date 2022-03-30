@@ -1,3 +1,4 @@
+local Vector = require "elements.vector"
 local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local getState = require "squirtle.get-state"
@@ -5,10 +6,6 @@ local changeState = require "squirtle.change-state"
 local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local native = turtle
-
----@class SquirtleMoveOptions
----@field attack? boolean
----@field dig? boolean|function
 
 local natives = {
     [Side.top] = native.up,
@@ -19,8 +16,7 @@ local natives = {
 
 ---@param side? integer|string
 ---@param times? integer
----@param options? SquirtleMoveOptions
-return function(side, times, options)
+return function(side, times)
     local handler = natives[Side.fromArg(side or Side.front)]
 
     if not handler then
@@ -49,7 +45,7 @@ return function(side, times, options)
         end
 
         if delta then
-            position = position + delta
+            position = Vector.plus(position, delta)
             changeState({position = position})
         end
     end

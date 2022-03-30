@@ -1,8 +1,8 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local Vector = require "elements.vector"
-local World = require "scout.world"
-local Transform = require "scout.transform"
+local World = require "geo.world"
+local locate = require "squirtle.locate"
 local navigate = require "squirtle.navigate"
 
 local function printUsage()
@@ -21,12 +21,11 @@ local function main(args)
         return printUsage()
     end
 
-    local goal = Vector.new(x, y, z)
-    local startX, startY, startZ = gps.locate()
-    local start = Vector.new(startX, startY, startZ)
-    -- local world = {}
-    local world = World.new(Transform.new(start))
-    -- local world = World.new(Transform.new(start), 16, 1, 16)
+    ---@type Vector
+    local goal = {x = x, y = y, z = z}
+    local start = locate()
+    ---@type World
+    local world = World.create(start.x, start.y, start.z)
 
     while true do
         local reachedGoal, msg = navigate(goal, world, function(block)

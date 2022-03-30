@@ -1,8 +1,9 @@
 local Cardinal = require "elements.cardinal"
-local PathFinding = require "scout.path-finding"
+local Vector = require "elements.vector"
+local findPath = require "geo.find-path"
+local locate = require "squirtle.locate"
 local orientate = require "squirtle.orientate"
-local World = require "scout.world"
-local Transform = require "scout.transform"
+local World = require "geo.world"
 local inspect = require "squirtle.inspect"
 local dig = require "squirtle.dig"
 local refuel = require "squirtle.refuel"
@@ -24,8 +25,7 @@ end
 ---@param to Vector
 ---@param world? World
 ---@param breakable? function
----@param options? SquirtleMoveOptions
-return function(to, world, breakable, options)
+return function(to, world, breakable)
     -- [todo] remove breakable() in favor of options;
     -- also we could pass them along to walkPath(),
     -- which then could progress further before failing
@@ -34,17 +34,21 @@ return function(to, world, breakable, options)
         return false
     end
 
-    world = world or World.new(Transform.new(orientate()))
+    if not world then
+        local position = locate()
+        world = World.create(position.x, position.y, position.z)
+    end
+
     local from, facing = orientate()
 
     while true do
-        local path, msg = PathFinding.findPath(world, from, to, facing)
+        local path, msg = findPath(from, to, facing, world)
 
         if not path then
             return false, msg
         end
 
-        local distance = PathFinding.manhattan(from, to)
+        local distance = Vector.manhattan(from, to)
         refuel(distance)
         local success, failedSide = walkPath(path)
 
@@ -55,12 +59,12 @@ return function(to, world, breakable, options)
             from, facing = orientate()
             -- print(string.format("hit a block @ %s, scanning...", Side.getName(failedSide)))
             local block = inspect(failedSide)
-            local scannedLocation = from + Cardinal.toVector(Cardinal.fromSide(failedSide, facing))
+            local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
             if block and breakable(block) then
                 dig(failedSide)
             elseif block then
-                world:setBlock(scannedLocation)
+                World.setBlock(world, scannedLocation)
             else
                 error("could not move, not sure why")
             end

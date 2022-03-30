@@ -162,9 +162,9 @@ local function refuelFromBuffer(bufferSide, fuel)
     print("refueling, have", Fuel.getFuelLevel())
     Inventory.selectFirstEmptySlot()
 
-    for slot, stack in pairs(Chest.getStacks(Side.bottom)) do
+    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
         if stack.name == "minecraft:charcoal" then
-            suckSlotFromChest(Side.bottom, slot)
+            suckSlotFromChest(bufferSide, slot)
             Fuel.refuel() -- [todo] should provide count to not consume a whole stack
         end
 
