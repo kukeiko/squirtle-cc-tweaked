@@ -114,14 +114,14 @@ return function(start, goal, orientation, world)
         numOpen = numOpen - 1
 
         if reverseMap[currentKey] then
-            local delta = current - reverseMap[currentKey]
+            local delta = Vector.minus(current, reverseMap[currentKey])
             orientation = Cardinal.fromVector(delta)
         end
 
         local neighbours = {}
 
         for i = 0, 5 do
-            local neighbour = current + Cardinal.toVector(i)
+            local neighbour = Vector.plus(current, Cardinal.toVector(i))
             local neighbourKey = Vector.toString(neighbour)
             local requiresTurn = false
 
@@ -175,8 +175,9 @@ return function(start, goal, orientation, world)
                     naturals[neighbourKey] = neighbour
                 else
                     -- check blockade
-                    local check = reverseMap[currentKey] + Cardinal.toVector(neighbourOrientation) -
-                                      Cardinal.toVector(orientation)
+                    local check = Vector.plus(reverseMap[currentKey], Vector.minus(
+                                                  Cardinal.toVector(neighbourOrientation),
+                                                  Cardinal.toVector(orientation)))
 
                     -- if (world[checkKey] == nil) then
                     if not World.isBlocked(world, check) then

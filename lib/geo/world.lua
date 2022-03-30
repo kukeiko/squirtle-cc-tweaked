@@ -98,15 +98,15 @@ end
 ---@param world World
 function getCorners(world)
     return {
-        Vector.new(world.x, world.y, world.z),
-        Vector.new(world.x + world.width - 1, world.y, world.z),
-        Vector.new(world.x, world.y + world.height - 1, world.z),
-        Vector.new(world.x + world.width - 1, world.y + world.height - 1, world.z),
+        Vector.create(world.x, world.y, world.z),
+        Vector.create(world.x + world.width - 1, world.y, world.z),
+        Vector.create(world.x, world.y + world.height - 1, world.z),
+        Vector.create(world.x + world.width - 1, world.y + world.height - 1, world.z),
         --
-        Vector.new(world.x, world.y, world.z + world.depth - 1),
-        Vector.new(world.x + world.width - 1, world.y, world.z + world.depth - 1),
-        Vector.new(world.x, world.y + world.height - 1, world.z + world.depth - 1),
-        Vector.new(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
+        Vector.create(world.x, world.y, world.z + world.depth - 1),
+        Vector.create(world.x + world.width - 1, world.y, world.z + world.depth - 1),
+        Vector.create(world.x, world.y + world.height - 1, world.z + world.depth - 1),
+        Vector.create(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
     }
 end
 
@@ -119,7 +119,7 @@ function getClosestCorner(world, point)
     local best
 
     for i = 1, #corners do
-        if best == nil or Vector.length(best - point) > Vector.length(corners[i] - point) then
+        if best == nil or Vector.distance(best, point) > Vector.distance(corners[i], point) then
             best = corners[i]
         end
     end

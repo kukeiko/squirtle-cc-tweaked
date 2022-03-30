@@ -126,7 +126,7 @@ return function()
         world = world,
         home = position,
         start = start,
-        checkpoint = Vector.new(start.x, start.y, start.z),
+        checkpoint = Vector.create(start.x, start.y, start.z),
         mineable = mineable
     }
 

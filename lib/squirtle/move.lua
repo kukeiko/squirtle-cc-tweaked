@@ -1,3 +1,4 @@
+local Vector = require "elements.vector"
 local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local getState = require "squirtle.get-state"
@@ -44,7 +45,7 @@ return function(side, times)
         end
 
         if delta then
-            position = position + delta
+            position = Vector.plus(position, delta)
             changeState({position = position})
         end
     end

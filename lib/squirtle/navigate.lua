@@ -59,7 +59,7 @@ return function(to, world, breakable)
             from, facing = orientate()
             -- print(string.format("hit a block @ %s, scanning...", Side.getName(failedSide)))
             local block = inspect(failedSide)
-            local scannedLocation = from + Cardinal.toVector(Cardinal.fromSide(failedSide, facing))
+            local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
             if block and breakable(block) then
                 dig(failedSide)

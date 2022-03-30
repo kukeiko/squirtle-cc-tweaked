@@ -14,7 +14,7 @@ return function(refresh)
             error({code = 0, message = "no gps available"})
         end
 
-        position = Vector.new(x, y, z)
+        position = Vector.create(x, y, z)
         changeState({position = position})
     end
 

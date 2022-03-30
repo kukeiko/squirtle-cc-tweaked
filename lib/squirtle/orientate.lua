@@ -1,3 +1,4 @@
+local Vector = require "elements.vector"
 local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local getState = require "squirtle.get-state"
@@ -17,7 +18,7 @@ local function stepOut(side, position)
     end
 
     local now = locate(true)
-    local cardinal = Cardinal.fromVector(now:minus(position))
+    local cardinal = Cardinal.fromVector(Vector.minus(now, position))
     local facing = Cardinal.rotate(cardinal, side)
 
     changeState({facing = facing})

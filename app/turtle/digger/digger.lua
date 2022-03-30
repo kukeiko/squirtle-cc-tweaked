@@ -28,7 +28,7 @@ local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 ---@param world World
 ---@param start Vector
 local function nextPoint(point, world, start)
-    local delta = Vectors.new(0, 0, 0)
+    local delta = Vectors.create(0, 0, 0)
 
     if start.x == world.x then
         delta.x = 1
@@ -60,11 +60,11 @@ local function nextPoint(point, world, start)
     end
 
     if World.isInBoundsX(world, point.x + delta.x) then
-        return Vectors.plus(point, Vectors.new(delta.x, 0, 0))
+        return Vectors.plus(point, Vectors.create(delta.x, 0, 0))
     elseif World.isInBoundsZ(world, point.z + delta.z) then
-        return Vectors.plus(point, Vectors.new(0, 0, delta.z))
+        return Vectors.plus(point, Vectors.create(0, 0, delta.z))
     elseif World.isInBoundsY(world, point.y + delta.y) then
-        return Vectors.plus(point, Vectors.new(0, delta.y, 0))
+        return Vectors.plus(point, Vectors.create(0, delta.y, 0))
     else
         Utils.prettyPrint(delta)
         print("reached the end")
