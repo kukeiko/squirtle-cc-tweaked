@@ -1,5 +1,6 @@
 local Utils = require "utils"
 local Vectors = require "elements.vector"
+local Chest = require "world.chest"
 local World = require "scout.world"
 local Transform = require "scout.transform"
 local Side = require "elements.side"
@@ -25,15 +26,19 @@ local function getDirection()
     return direction
 end
 
-local function readNumber(msg)
+local function readNumber(msg, min)
     print(msg)
-    local width = 0
+    local value
 
-    while not width or width < 1 do
-        width = tonumber(read())
+    while not value do
+        value = tonumber(read())
+
+        if min and value < min then
+            value = nil
+        end
     end
 
-    return width
+    return value
 end
 
 ---@param home Vector
@@ -64,6 +69,17 @@ local function determineStart(home, world)
     return best
 end
 
+local function readMineableBlocks()
+    ---@type table<string, unknown>
+    local mineable = {}
+
+    for _, stack in pairs(Chest.getOutputStacks(Chest.findSide())) do
+        mineable[stack.name] = true -- [todo] value doesn't matter (typed it to unknown) - can we find a use?
+    end
+
+    return mineable
+end
+
 return function()
     print("setup!")
     local position = orientate()
@@ -71,7 +87,9 @@ return function()
 
     print("use a/d keys to let me look towards 1st digging direction, then hit enter")
     local firstDirection = getDirection()
-    local firstLength = readNumber("how far should I dig towards that direction?")
+    local firstLength = readNumber("how far should I dig towards " .. Cardinal.getName(firstDirection), 1)
+    local firstOffset = readNumber("how many steps should i take towards " .. Cardinal.getName(firstDirection) ..
+                                       " before I start digging?")
 
     print("now towards the 2nd digging direction")
     local secondDirection = getDirection()
@@ -86,59 +104,52 @@ return function()
         secondDirection = getDirection()
     end
 
-    local secondLength = readNumber("how far should I dig towards that direction?")
-
-    print(Cardinal.getName(firstDirection), Cardinal.getName(secondDirection), firstLength, secondLength)
+    local secondLength = readNumber("how far should I dig towards that direction?", 1)
+    local secondOffset = readNumber("how many steps should i take towards " .. Cardinal.getName(secondDirection) ..
+                                        " before I start digging?")
 
     local x, y, z, width, depth, height
 
     if firstDirection == Cardinal.north then
         depth = firstLength
-        z = position.z - (depth - 1)
+        z = position.z - firstOffset - (depth - 1)
     elseif firstDirection == Cardinal.south then
-        z = position.z
+        z = position.z + firstOffset
         depth = firstLength
     elseif firstDirection == Cardinal.east then
         width = firstLength
-        x = position.x
+        x = position.x + firstOffset
     elseif firstDirection == Cardinal.west then
         width = firstLength
-        x = position.x - (width - 1)
+        x = position.x - firstOffset - (width - 1)
     end
 
     if secondDirection == Cardinal.north then
         depth = secondLength
-        z = position.z - (depth - 1)
+        z = position.z - secondOffset - (depth - 1)
     elseif secondDirection == Cardinal.south then
-        z = position.z
+        z = position.z + secondOffset
         depth = secondLength
     elseif secondDirection == Cardinal.east then
         width = secondLength
-        x = position.x
+        x = position.x + secondOffset
     elseif secondDirection == Cardinal.west then
         width = secondLength
-        x = position.x - (width - 1)
+        x = position.x - secondOffset - (width - 1)
     end
 
+    -- [todo] allow user to specify up/down + height (with "0" or empty being "until limit")
+    -- [todo] update for 1.18
     y = 5
     height = position.y - y
-    -- y = -60 -- todo: for 1.18
 
     local world = World.new(Transform.new(Vectors.new(x, y, z)), width, height, depth)
-    Utils.prettyPrint(world)
-
     local start = determineStart(position, world)
-    ---@type ExposeOresAppState
-    local appState = {world = world, home = position, start = start, checkpoint = determineStart(position, world)}
-    Utils.saveAppState(appState, "expose-ores")
 
     ---@type ExposeOresAppState
-    local reloadedState = Utils.loadAppState("expose-ores", {})
+    local state = {world = world, home = position, start = start, checkpoint = Vectors.new(start.x, start.y, start.z)}
 
-    reloadedState.world = World.new(Transform.new(Vectors.new(reloadedState.world.x, reloadedState.world.y,
-                                                              reloadedState.world.z)), reloadedState.world.width,
-                                    reloadedState.world.height, reloadedState.world.depth)
-    reloadedState.checkpoint = Vectors.cast(reloadedState.checkpoint)
-
-    return reloadedState
+    print("reading output stacks to see what i'm allowed to mine...")
+    state.mineable = readMineableBlocks()
+    Utils.saveAppState(state, "expose-ores")
 end

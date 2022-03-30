@@ -2,28 +2,27 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
+local Side = require "elements.side"
 local Vectors = require "elements.vector"
-local Side = require "elements.vector"
-local World = require "scout.world"
 local Chest = require "world.chest"
+local Backpack = require "squirtle.backpack"
 local Transform = require "scout.transform"
-local inspect = require "squirtle.inspect"
 local navigate = require "squirtle.navigate"
-local orientate = require "squirtle.orientate"
 local locate = require "squirtle.locate"
-local setup = require "expose-ores.setup"
+local boot = require "expose-ores.boot"
+local pushOutput = require "squirtle.transfer.push-output"
+local pullInput = require "squirtle.transfer.pull-input"
+local dump = require "squirtle.dump"
+local Inventory = require "squirtle.inventory"
+local Fuel = require "squirtle.fuel"
+local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 
 ---@class ExposeOresAppState
 ---@field home Vector
 ---@field world World
 ---@field start Vector
 ---@field checkpoint Vector
-
-local function isHome()
-    local inspected = inspect(Side.bottom)
-
-    return inspected and inspected.name == "minecraft:barrel"
-end
+---@field mineable table<string, unknown>
 
 ---@param point Vector
 ---@param world World
@@ -74,42 +73,74 @@ local function nextPoint(point, world, start)
     end
 end
 
-local function isBreakable(block)
-    local isOre = string.find(block.name, "ore")
-    local isChest = string.find(block.name, "chest")
-    local isBarrel = string.find(block.name, "barrel")
+-- [todo] copied from farmer.lua
+---@param bufferSide integer
+---@param fuel integer
+local function refuelFromBuffer(bufferSide, fuel)
+    print("refueling, have", Fuel.getFuelLevel())
+    Inventory.selectFirstEmptySlot()
 
-    return not isOre and not isChest and not isBarrel
+    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
+        if stack.name == "minecraft:charcoal" then
+            suckSlotFromChest(bufferSide, slot)
+            Fuel.refuel() -- [todo] should provide count to not consume a whole stack
+        end
+
+        if Fuel.getFuelLevel() >= fuel then
+            break
+        end
+    end
+
+    print("refueled to", Fuel.getFuelLevel())
+
+    -- in case we reached fuel limit and now have charcoal in the inventory
+    if not dump(bufferSide) then
+        error("buffer barrel full")
+    end
 end
 
+-- [todo] idea: use output stacks of i/o chest to program which blocks are allowed to be mined.
+-- (need to consider special case of stone => cobblestone)
+-- for the non io version of this app (which should be a version i should build to make it easier
+-- for others to use this app), we could let the player program blocks to mine via placing
+-- them into inventory
 local function main(args)
-    ---@type ExposeOresAppState
-    local state = Utils.loadAppState("expose-ores", {})
+    print("booting...")
+    local state = boot()
+    print("booted!")
 
-    if not state.home then
-        state = setup()
+    local function isBreakable(block)
+        return state.mineable[block.name]
     end
 
     if not state.checkpoint then
         print("no checkpoint, assuming digging is finished, going home ...")
         navigate(state.home, nil, isBreakable)
         print("done & home <3")
+
         return
     end
 
     local position = locate()
-    state.world = World.new(Transform.new(Vectors.new(state.world.x, state.world.y, state.world.z)), state.world.width,
-                            state.world.height, state.world.depth)
-    state.checkpoint = Vectors.cast(state.checkpoint)
+    -- state.world = World.new(Transform.new(Vectors.new(state.world.x, state.world.y, state.world.z)), state.world.width,
+    --                         state.world.height, state.world.depth)
+    -- state.checkpoint = Vectors.cast(state.checkpoint)
+    -- state.home = Vectors.cast(state.home)
 
     if not state.world:isInBounds(position) then
         print("not inside digging area, going there now...")
+        -- [todo] goto start first instead (and then to checkpoint) - if digging area is further away the turtle might otherwise
+        -- start making new tunnels to get to checkpoint
+        navigate(state.start, nil, isBreakable)
+        print("at start! going to checkpoint...")
         navigate(state.checkpoint, nil, isBreakable)
         print("should be inside digging area again!")
     end
 
     local point = state.checkpoint
     local previous = point
+    local maxFailedNavigates = state.world.width * state.world.depth
+    local numFailedNavigates = 0
 
     while point do
         if previous.y ~= point.y then
@@ -121,11 +152,66 @@ local function main(args)
         local moved, msg = navigate(point, state.world, isBreakable)
 
         if not moved then
-            print(msg)
+            numFailedNavigates = numFailedNavigates + 1
+            print(msg, numFailedNavigates)
+
+            if numFailedNavigates >= maxFailedNavigates then
+                print("can't dig further, going home")
+                navigate(state.home, nil, isBreakable)
+                error(
+                    "todo: implement 'blocked to dig further' case, which should allow for reprogramming minable blocks")
+            end
+        else
+            numFailedNavigates = 0
         end
 
         previous = point
         point = nextPoint(point, state.world, state.start)
+
+        local gettingFull = Backpack.getStack(16) ~= nil
+        local lowFuel = Fuel.getFuelLevel() < 1000
+        local minFuel = 1200
+        local buffer = Side.top
+
+        if gettingFull or lowFuel then
+            if gettingFull then
+                print("getting full! going going home to dump inventory")
+            elseif lowFuel then
+                print("low on fuel! going home to get some")
+            end
+
+            print("saving checkpoint at", point)
+            state.checkpoint = point
+            Utils.saveAppState(state, "expose-ores")
+            navigate(state.home, nil, isBreakable)
+
+            if not dump(buffer) then
+                error("buffer full")
+            end
+
+            local io = Chest.findSide()
+
+            if not pushOutput(buffer, io) then
+                print("output full, waiting for it to drain...")
+
+                repeat
+                    os.sleep(7)
+                until pushOutput(buffer, io)
+            end
+
+            while Fuel.getFuelLevel() < minFuel do
+                print("trying to refuel to ", minFuel, ", have", Fuel.getFuelLevel())
+                pullInput(io, buffer)
+                refuelFromBuffer(buffer, minFuel)
+
+                if Fuel.getFuelLevel() < minFuel then
+                    os.sleep(3)
+                end
+            end
+
+            print("unloaded all and have enough fuel - back to work!")
+            navigate(state.checkpoint, nil, isBreakable)
+        end
     end
 
     print("all done! going home...")
