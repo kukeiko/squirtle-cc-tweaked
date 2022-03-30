@@ -121,7 +121,7 @@ return function()
     print("reading output stacks to see what i'm allowed to mine...")
     local mineable = readMineableBlocks()
 
-    ---@type ExposeOresAppState
+    ---@type DiggerAppState
     local state = {
         world = world,
         home = position,
@@ -131,5 +131,5 @@ return function()
     }
 
     print("saving app state")
-    Utils.saveAppState(state, "expose-ores")
+    Utils.saveAppState(state, "digger")
 end

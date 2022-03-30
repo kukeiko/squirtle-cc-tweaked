@@ -9,7 +9,7 @@ local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
 local navigate = require "squirtle.navigate"
 local locate = require "squirtle.locate"
-local boot = require "expose-ores.boot"
+local boot = require "digger.boot"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local dump = require "squirtle.dump"
@@ -17,7 +17,7 @@ local Inventory = require "squirtle.inventory"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 
----@class ExposeOresAppState
+---@class DiggerAppState
 ---@field home Vector
 ---@field world World
 ---@field start Vector
@@ -142,7 +142,7 @@ local function main(args)
         if previous.y ~= point.y then
             print("saving checkpoint at", point)
             state.checkpoint = point
-            Utils.saveAppState(state, "expose-ores")
+            Utils.saveAppState(state, "digger")
         end
 
         local moved, msg = navigate(point, state.world, isBreakable)
@@ -180,7 +180,7 @@ local function main(args)
 
             print("saving checkpoint at", point)
             state.checkpoint = point
-            Utils.saveAppState(state, "expose-ores")
+            Utils.saveAppState(state, "digger")
             navigate(state.home, nil, isBreakable)
 
             if not dump(buffer) then
@@ -215,7 +215,7 @@ local function main(args)
 
     print("all done! going home...")
     state.checkpoint = nil
-    Utils.saveAppState(state, "expose-ores")
+    Utils.saveAppState(state, "digger")
     navigate(state.home)
     print("done & home <3")
 end
