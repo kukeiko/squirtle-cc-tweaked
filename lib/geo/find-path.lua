@@ -1,14 +1,6 @@
+local World = require "geo.world"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
-
----@class PathFinding
-local PathFinding = {}
-
----@param a Vector
----@param b Vector
-function PathFinding.manhattan(a, b)
-    return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
-end
 
 ---@param hierarchy Vector[]
 ---@param start Vector
@@ -17,9 +9,9 @@ local function toPath(hierarchy, start, goal)
     local path = {}
     local next = goal
 
-    while not next:equals(start) do
+    while not Vector.equals(next, start) do
         table.insert(path, 1, next)
-        next = hierarchy[next:toString()]
+        next = hierarchy[Vector.toString(next)]
     end
 
     return path
@@ -58,13 +50,17 @@ local function findBest(open, naturals, forced, pruned, totalCost)
     return best
 end
 
----@param world World
 ---@param start Vector
 ---@param goal Vector
 ---@param orientation integer
-function PathFinding.findPath(world, start, goal, orientation)
-    if world:isBlocked(goal) then
-        return false, "target is blocked"
+---@param world? World
+return function(start, goal, orientation, world)
+    if not world then
+        world = World.create(start.x, start.y, start.z)
+    end
+
+    if World.isBlocked(world, goal) then
+        return false, "goal is blocked"
     end
 
     ---@type Vector[]
@@ -77,14 +73,14 @@ function PathFinding.findPath(world, start, goal, orientation)
     local pastCost = {}
     local futureCost = {}
     local totalCost = {}
-    local startKey = start:toString()
+    local startKey = Vector.toString(start)
     local naturals = {}
     local forced = {}
     local pruned = {}
 
     open[startKey] = start
     pastCost[startKey] = 0
-    futureCost[startKey] = PathFinding.manhattan(start, goal)
+    futureCost[startKey] = Vector.manhattan(start, goal)
     totalCost[startKey] = pastCost[startKey] + futureCost[startKey]
     numOpen = numOpen + 1
 
@@ -111,7 +107,7 @@ function PathFinding.findPath(world, start, goal, orientation)
             return toPath(reverseMap, start, goal)
         end
 
-        local currentKey = current:toString()
+        local currentKey = Vector.toString(current)
 
         open[currentKey] = nil
         closed[currentKey] = current
@@ -126,14 +122,15 @@ function PathFinding.findPath(world, start, goal, orientation)
 
         for i = 0, 5 do
             local neighbour = current + Cardinal.toVector(i)
-            local neighbourKey = neighbour:toString()
+            local neighbourKey = Vector.toString(neighbour)
             local requiresTurn = false
 
             if i ~= orientation and not Cardinal.isVertical(i) then
                 requiresTurn = true
             end
 
-            if closed[neighbourKey] == nil and world:isInBounds(neighbour) and not world:isBlocked(neighbour) then
+            if closed[neighbourKey] == nil and World.isInBounds(world, neighbour) and
+                not World.isBlocked(world, neighbour) then
                 local tentativePastCost = pastCost[currentKey] + 1
 
                 if (requiresTurn) then
@@ -143,7 +140,7 @@ function PathFinding.findPath(world, start, goal, orientation)
                 if open[neighbourKey] == nil or tentativePastCost < pastCost[neighbourKey] then
                     pastCost[neighbourKey] = tentativePastCost
 
-                    local neighbourFutureCost = PathFinding.manhattan(neighbour, goal)
+                    local neighbourFutureCost = Vector.manhattan(neighbour, goal)
 
                     if (neighbour.x ~= goal.x) then
                         neighbourFutureCost = neighbourFutureCost + 1
@@ -171,7 +168,7 @@ function PathFinding.findPath(world, start, goal, orientation)
         -- pruning
         if (reverseMap[currentKey] ~= nil) then
             for neighbourOrientation, neighbour in pairs(neighbours) do
-                local neighbourKey = neighbour:toString()
+                local neighbourKey = Vector.toString(neighbour)
 
                 if (neighbourOrientation == orientation) then
                     -- add natural neighbour
@@ -182,7 +179,7 @@ function PathFinding.findPath(world, start, goal, orientation)
                                       Cardinal.toVector(orientation)
 
                     -- if (world[checkKey] == nil) then
-                    if not world:isBlocked(check) then
+                    if not World.isBlocked(world, check) then
                         -- add neighbour to prune
                         pruned[neighbourKey] = neighbour
                     else
@@ -196,5 +193,3 @@ function PathFinding.findPath(world, start, goal, orientation)
 
     return false, "no path available"
 end
-
-return PathFinding

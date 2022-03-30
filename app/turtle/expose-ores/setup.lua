@@ -1,8 +1,7 @@
 local Utils = require "utils"
-local Vectors = require "elements.vector"
+local Vector = require "elements.vector"
 local Chest = require "world.chest"
-local World = require "scout.world"
-local Transform = require "scout.transform"
+local World = require "geo.world"
 local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local orientate = require "squirtle.orientate"
@@ -39,34 +38,6 @@ local function readNumber(msg, min)
     end
 
     return value
-end
-
----@param home Vector
----@param world World
----@return Vector
-local function determineStart(home, world)
-    local corners = {
-        Vectors.new(world.x, world.y, world.z),
-        Vectors.new(world.x + world.width - 1, world.y, world.z),
-        Vectors.new(world.x, world.y + world.height - 1, world.z),
-        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z),
-        --
-        Vectors.new(world.x, world.y, world.z + world.depth - 1),
-        Vectors.new(world.x + world.width - 1, world.y, world.z + world.depth - 1),
-        Vectors.new(world.x, world.y + world.height - 1, world.z + world.depth - 1),
-        Vectors.new(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
-    }
-
-    ---@type Vector
-    local best
-
-    for i = 1, #corners do
-        if best == nil or Vectors.length(best - home) > Vectors.length(corners[i] - home) then
-            best = corners[i]
-        end
-    end
-
-    return best
 end
 
 local function readMineableBlocks()
@@ -143,13 +114,22 @@ return function()
     y = 5
     height = position.y - y
 
-    local world = World.new(Transform.new(Vectors.new(x, y, z)), width, height, depth)
-    local start = determineStart(position, world)
-
-    ---@type ExposeOresAppState
-    local state = {world = world, home = position, start = start, checkpoint = Vectors.new(start.x, start.y, start.z)}
+    ---@type World
+    local world = World.create(x, y, z, width, height, depth)
+    local start = World.getClosestCorner(world, position)
 
     print("reading output stacks to see what i'm allowed to mine...")
-    state.mineable = readMineableBlocks()
+    local mineable = readMineableBlocks()
+
+    ---@type ExposeOresAppState
+    local state = {
+        world = world,
+        home = position,
+        start = start,
+        checkpoint = Vector.new(start.x, start.y, start.z),
+        mineable = mineable
+    }
+
+    print("saving app state")
     Utils.saveAppState(state, "expose-ores")
 end

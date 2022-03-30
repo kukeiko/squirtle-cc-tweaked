@@ -6,10 +6,6 @@ local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local native = turtle
 
----@class SquirtleMoveOptions
----@field attack? boolean
----@field dig? boolean|function
-
 local natives = {
     [Side.top] = native.up,
     [Side.front] = native.forward,
@@ -19,8 +15,7 @@ local natives = {
 
 ---@param side? integer|string
 ---@param times? integer
----@param options? SquirtleMoveOptions
-return function(side, times, options)
+return function(side, times)
     local handler = natives[Side.fromArg(side or Side.front)]
 
     if not handler then

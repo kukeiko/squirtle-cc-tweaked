@@ -214,4 +214,11 @@ function Vector:copy()
     return Vector.new(self.x, self.y, self.z)
 end
 
+---@param a Vector
+---@param b Vector
+---@return number
+function Vector.manhattan(a, b)
+    return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
+end
+
 return Vector

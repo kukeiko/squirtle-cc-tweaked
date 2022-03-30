@@ -4,9 +4,9 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "utils"
 local Side = require "elements.side"
 local Vectors = require "elements.vector"
+local World = require "geo.world"
 local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
-local Transform = require "scout.transform"
 local navigate = require "squirtle.navigate"
 local locate = require "squirtle.locate"
 local boot = require "expose-ores.boot"
@@ -29,23 +29,22 @@ local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 ---@param start Vector
 local function nextPoint(point, world, start)
     local delta = Vectors.new(0, 0, 0)
-    local worldPos = world.transform.position
 
-    if start.x == worldPos.x then
+    if start.x == world.x then
         delta.x = 1
-    elseif start.x == worldPos.x + world.width - 1 then
+    elseif start.x == world.x + world.width - 1 then
         delta.x = -1
     end
 
-    if start.z == worldPos.z then
+    if start.z == world.z then
         delta.z = 1
-    elseif start.z == worldPos.z + world.depth - 1 then
+    elseif start.z == world.z + world.depth - 1 then
         delta.z = -1
     end
 
-    if start.y == worldPos.y then
+    if start.y == world.y then
         delta.y = 1
-    elseif start.y == worldPos.y + world.height - 1 then
+    elseif start.y == world.y + world.height - 1 then
         delta.y = -1
     end
 
@@ -60,11 +59,11 @@ local function nextPoint(point, world, start)
         delta.z = delta.z * -1
     end
 
-    if world:isInBoundsX(point.x + delta.x) then
+    if World.isInBoundsX(world, point.x + delta.x) then
         return Vectors.plus(point, Vectors.new(delta.x, 0, 0))
-    elseif world:isInBoundsZ(point.z + delta.z) then
+    elseif World.isInBoundsZ(world, point.z + delta.z) then
         return Vectors.plus(point, Vectors.new(0, 0, delta.z))
-    elseif world:isInBoundsY(point.y + delta.y) then
+    elseif World.isInBoundsY(world, point.y + delta.y) then
         return Vectors.plus(point, Vectors.new(0, delta.y, 0))
     else
         Utils.prettyPrint(delta)
@@ -122,12 +121,8 @@ local function main(args)
     end
 
     local position = locate()
-    -- state.world = World.new(Transform.new(Vectors.new(state.world.x, state.world.y, state.world.z)), state.world.width,
-    --                         state.world.height, state.world.depth)
-    -- state.checkpoint = Vectors.cast(state.checkpoint)
-    -- state.home = Vectors.cast(state.home)
 
-    if not state.world:isInBounds(position) then
+    if not World.isInBounds(state.world, position) then
         print("not inside digging area, going there now...")
         -- [todo] goto start first instead (and then to checkpoint) - if digging area is further away the turtle might otherwise
         -- start making new tunnels to get to checkpoint
@@ -141,6 +136,7 @@ local function main(args)
     local previous = point
     local maxFailedNavigates = state.world.width * state.world.depth
     local numFailedNavigates = 0
+    Inventory.selectSlot(1)
 
     while point do
         if previous.y ~= point.y then
@@ -155,6 +151,8 @@ local function main(args)
             numFailedNavigates = numFailedNavigates + 1
             print(msg, numFailedNavigates)
 
+            -- [todo] for this to work reliably, we would need to save numFailedNavigates
+            -- to disk after each step, which is not something i want to do
             if numFailedNavigates >= maxFailedNavigates then
                 print("can't dig further, going home")
                 navigate(state.home, nil, isBreakable)
@@ -210,6 +208,7 @@ local function main(args)
             end
 
             print("unloaded all and have enough fuel - back to work!")
+            Inventory.selectSlot(1)
             navigate(state.checkpoint, nil, isBreakable)
         end
     end
