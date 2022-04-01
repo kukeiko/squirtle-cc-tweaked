@@ -53,9 +53,6 @@ local function digAllSides()
 end
 
 return function()
-    dig()
-    move()
-
     while inspect(Side.top, "minecraft:birch_log") do
         dig(Side.top)
         move(Side.top)

@@ -23,6 +23,11 @@ local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 
 local harvestTree = require "lumberjack.harvest-tree"
+local doFurnaceWork = require "lumberjack.do-furnace-work"
+
+-- local maxLogs = 64
+local maxLogs = 11
+local minBonemeal = 1
 
 ---@param block Block
 local function getBlockTurnSide(block)
@@ -36,7 +41,6 @@ local function getBlockTurnSide(block)
 end
 
 local function isHome()
-    -- return inspect(Side.bottom, "minecraft:barrel") ~= nil and isHomeBarrel(Side.bottom)
     return inspect(Side.bottom, "minecraft:barrel") ~= nil
 end
 
@@ -56,89 +60,6 @@ local function faceHomeExit()
     end
 
     error("could not face exit: no furnace found")
-end
-
-local function topOffFurnaceFuel(furnaceSide, bufferSide)
-    local missing = Furnace.getMissingFuelCount(furnaceSide)
-
-    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
-        if stack.name == "minecraft:charcoal" then
-            missing = missing - Furnace.pullFuel(furnaceSide, bufferSide, slot)
-
-            if missing <= 0 then
-                break
-            end
-        end
-    end
-end
-
-local function topOffFurnaceInput(furnaceSide, bufferSide)
-    local missing = Furnace.getMissingInputCount(furnaceSide)
-
-    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
-        if stack.name == "minecraft:birch_log" then
-            missing = missing - Furnace.pullInput(furnaceSide, bufferSide, slot)
-
-            if missing <= 0 then
-                break
-            end
-        end
-    end
-end
-
----@param furnace integer
----@param count integer
-local function kickstartFurnaceFuel(furnace, count)
-    local fuelStack = Furnace.getFuelStack(furnace)
-
-    if not fuelStack then
-        print("furnace has no fuel, pushing 1x log from input to fuel")
-        Furnace.pullFuelFromInput(furnace, 1)
-        print("waiting for log to be turned into charcoal")
-
-        while not Furnace.getOutputStack(furnace) do
-            os.sleep(1)
-        end
-
-        print("output ready! pushing to fuel...")
-        Furnace.pullFuelFromOutput(furnace, 1)
-    end
-
-    while Furnace.getFuelCount(furnace) < count and Furnace.getInputStack(furnace) do
-        print("trying to get", count - Furnace.getFuelCount(furnace), "more coal into fuel slot...")
-
-        while not Furnace.getOutputStack(furnace) do
-            if not Furnace.getInputStack(furnace) then
-                print("no input to burn, exiting")
-                break
-            end
-
-            os.sleep(1)
-        end
-
-        Furnace.pullFuelFromOutput(furnace)
-    end
-end
-
-local function doFurnaceWork(furnace, buffer)
-    while Chest.getItemStock(buffer, "minecraft:birch_log") > 0 do
-        print("topping off furnace input...")
-        topOffFurnaceInput(furnace, buffer)
-
-        print("pushing furnace output into buffer...")
-        Furnace.pushOutput(furnace, buffer)
-
-        print("topping off furnace fuel...")
-        topOffFurnaceFuel(furnace, buffer)
-
-        print("warming up furnace...")
-        kickstartFurnaceFuel(furnace, 8)
-
-        if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
-            print("logs leftover, pausing for 30s")
-            os.sleep(30)
-        end
-    end
 end
 
 local function doHomework()
@@ -251,8 +172,8 @@ end
 
 local function shouldPlantTree()
     local stock = Backpack.getStock()
-    local needsMoreLogs = (stock["minecraft:birch_log"] or 0) < 64
-    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) > 4
+    local needsMoreLogs = (stock["minecraft:birch_log"] or 0) < maxLogs
+    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) > minBonemeal
     local hasSaplings = (stock["minecraft:birch_sapling"] or 0) > 0
 
     return hasSaplings and needsMoreLogs and hasBoneMeal
@@ -279,15 +200,18 @@ end
 
 local function doWork()
     print("doing work!")
+    assert(inspect(Side.bottom, "minecraft:dirt"), "expected to sit on top of dirt")
 
     while shouldPlantTree() do
         if plantTree() then
             Inventory.selectSlot(1)
+            dig()
+            move()
             harvestTree()
             refuelFromBackpack()
         else
+            -- this case should only happen when bone meal ran out before sapling could be grown
             move()
-            -- this case can only hit if bone meal ran out before sapling could be grown
             break
         end
     end
@@ -317,6 +241,7 @@ local function moveNext()
 end
 
 local function main(args)
+    --- if has birch on top, crashed during felling - continue work
     while true do
         if isHome() then
             doHomework()
