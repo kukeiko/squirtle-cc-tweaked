@@ -1,8 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
--- [todo] make the whole app crash safe
-
 local Utils = require "utils"
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
@@ -46,6 +44,14 @@ end
 
 local function isAtWork()
     return inspect(Side.bottom, "minecraft:dirt") ~= nil
+end
+
+local function isAtStash()
+    return inspect(Side.bottom, "minecraft:chest") ~= nil
+end
+
+local function isLookingAtTree()
+    return inspect(Side.front, {"minecraft:birch_sapling", "minecraft:birch_log"})
 end
 
 local function faceHomeExit()
@@ -198,9 +204,29 @@ local function refuelFromBackpack()
     Inventory.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
 end
 
+local function doStashWork()
+    if inspect(Side.bottom, "minecraft:dirt") then
+        dig(Side.bottom)
+        move(Side.bottom)
+    end
+
+    assert(inspect(Side.bottom, "minecraft:chest"))
+    while suck(Side.bottom) do
+    end
+    refuelFromBackpack()
+    move(Side.top)
+    Inventory.selectItem("minecraft:dirt")
+    place(Side.bottom)
+end
+
 local function doWork()
     print("doing work!")
     assert(inspect(Side.bottom, "minecraft:dirt"), "expected to sit on top of dirt")
+
+    if inspect(Side.top, "minecraft:birch_log") then
+        -- should only happen if turtle crashed while planting a tree
+        harvestTree()
+    end
 
     while shouldPlantTree() do
         if plantTree() then
@@ -216,14 +242,7 @@ local function doWork()
         end
     end
 
-    dig(Side.bottom)
-    move(Side.bottom)
-    while suck(Side.bottom) do
-    end
-    refuelFromBackpack()
-    move(Side.top)
-    Inventory.selectItem("minecraft:dirt")
-    place(Side.bottom)
+    doStashWork()
     print("work finished! going home")
 end
 
@@ -236,12 +255,43 @@ local function moveNext()
             os.sleep(1)
         end
 
-        turn(getBlockTurnSide(block))
+        if isLookingAtTree() then
+            -- should only happen if sapling got placed by player
+            dig(Side.front)
+        else
+            turn(getBlockTurnSide(block))
+        end
+    end
+end
+
+local function boot()
+    if not isHome() and not isAtWork() then
+        print("rebooted while not at home or work")
+        if inspect(Side.top, "minecraft:birch_log") then
+            harvestTree()
+        elseif isLookingAtTree() then
+            dig(Side.front)
+        elseif isAtStash() or (move(Side.bottom) and isAtStash()) then
+            doStashWork()
+        else
+            while inspect(Side.bottom, "minecraft:birch_leaves") do
+                dig(Side.bottom)
+                move(Side.bottom)
+            end
+
+            while move(Side.bottom) do
+            end
+
+            if not (isHome() or isAtWork()) then
+                move(Side.top)
+            end
+        end
     end
 end
 
 local function main(args)
-    --- if has birch on top, crashed during felling - continue work
+    boot()
+
     while true do
         if isHome() then
             doHomework()
