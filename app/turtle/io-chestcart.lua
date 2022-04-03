@@ -4,25 +4,17 @@ local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
 local Redstone = require "world.redstone"
+local Inventory = require "squirtle.inventory"
 local pushInput = require "squirtle.transfer.push-input"
 local pullOutput = require "squirtle.transfer.pull-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local pushOutput = require "squirtle.transfer.push-output"
 local turn = require "squirtle.turn"
+local inspect = require "squirtle.inspect"
 local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
-
-local function facePistonPedestal()
-    local chestSide = Chest.findSide()
-
-    if chestSide == Side.left then
-        turn(Side.right)
-    elseif chestSide == Side.right then
-        turn(Side.left)
-    elseif chestSide == Side.front then
-        turn(Side.back)
-    end
-end
+local place = require "squirtle.place"
+local dig = require "squirtle.dig"
 
 local function dumpChestcartToBarrel()
     while suck() do
@@ -38,7 +30,7 @@ local function dumpChestcartToBarrel()
     end
 end
 
-local function dumpBarrelToChest()
+local function dumpBarrelToChestcart()
     while suck(Side.bottom) do
     end
 
@@ -49,7 +41,7 @@ local function dumpBarrelToChest()
     end
 
     if suck(Side.bottom) then
-        dumpBarrelToChest()
+        dumpBarrelToChestcart()
     end
 end
 
@@ -61,8 +53,6 @@ end
 ---@param args table
 ---@return boolean success
 local function main(args)
-    local sendOutput
-
     if args[1] == "send-output" then
         sendOutput = true
     elseif args[1] == "send-input" then
@@ -72,28 +62,24 @@ local function main(args)
         return false
     end
 
-    facePistonPedestal()
-
     while true do
-        os.pullEvent("redstone")
+        local front = inspect(Side.front)
 
-        local signal
-
-        if Redstone.getInput(Side.left) then
-            signal = Side.left
-        elseif Redstone.getInput(Side.right) then
-            signal = Side.right
-        end
-
-        if signal then
-            -- side we need to turn to to face piston after turning towards the signal
-            local piston = Side.rotateAround(signal)
-            Redstone.setOutput(piston, true)
+        if front and front.name == "minecraft:redstone_block" then
+            local signal = Redstone.getInput({Side.left, Side.right})
             turn(signal)
-            dumpChestcartToBarrel()
-            Redstone.setOutput(Side.back, true)
-            turn(signal) -- turning to chest
-
+        elseif front and front.name == "minecraft:detector_rail" then
+            if not Redstone.getInput(Side.front) then
+                print("looking at rail, but no chestcart here. turning towards piston")
+                local chest = Chest.findSide()
+                turn(Side.rotateAround(chest))
+            else
+                dumpChestcartToBarrel()
+                local chest = Chest.findSide()
+                turn(chest)
+            end
+        elseif front and front.name == "minecraft:chest" then
+            print("doing I/O...")
             local buffer = Peripheral.findSide("minecraft:barrel")
             local io = Chest.findSide()
 
@@ -106,19 +92,36 @@ local function main(args)
                 pullInput(io, buffer)
             end
 
-            turn(piston)
-            Redstone.setOutput(Side.back, false)
-            dumpBarrelToChest()
-            turn(piston)
-            Redstone.setOutput(piston, false)
-            os.sleep(1)
-        else
-            -- ignore, and maybe print warning?
+            local signal = Redstone.getInput({Side.left, Side.right})
+            turn(signal)
+            print("dumping barrel to chestcart...")
+            dumpBarrelToChestcart()
+            print("unlocking piston...")
+            turn(signal)
+            dig()
+            os.sleep(3)
+        elseif not front and Chest.findSide() == Side.back then
+            os.sleep(3)
+            if not Inventory.selectItem("minecraft:redstone_block") then
+                error("my redstone block went missing :(")
+            end
+
+            print("waiting for chestcart...")
+            os.pullEvent("redstone")
+
+            local signal = Redstone.getInput({Side.left, Side.right})
+
+            print("signal:", signal)
+
+            print("locking piston...")
+            if not place() then
+                error("could not place redstone block to lock piston")
+            end
+
+            turn(signal)
         end
 
     end
-
-    return true
 end
 
 return main(arg)
