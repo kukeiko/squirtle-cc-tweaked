@@ -67,7 +67,9 @@ local function main(args)
 
         if front and front.name == "minecraft:redstone_block" then
             local signal = Redstone.getInput({Side.left, Side.right})
-            turn(signal)
+            if signal then
+                turn(signal)
+            end
         elseif front and front.name == "minecraft:detector_rail" then
             if not Redstone.getInput(Side.front) then
                 print("looking at rail, but no chestcart here. turning towards piston")
