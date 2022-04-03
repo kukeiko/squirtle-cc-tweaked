@@ -68,7 +68,6 @@ local function getRemoteChestNames(modem)
     return chests
 end
 
--- [todo] crashes if player accidentally clicks modems
 local function main(args)
     local modem = Peripheral.findSide("modem")
 
@@ -76,12 +75,21 @@ local function main(args)
         error("no modem found")
     end
 
-    local chests = getRemoteChestNames(modem)
-    Utils.prettyPrint(chests)
-
     while true do
-        transferBetweenChests(chests)
-        print("sleepy 3s...")
+        local modem = Peripheral.findSide("modem")
+
+        if modem then
+            local success, msg = pcall(function()
+                local chests = getRemoteChestNames(modem)
+                Utils.prettyPrint(chests)
+                transferBetweenChests(chests)
+            end)
+
+            if not success then
+                print(msg)
+            end
+        end
+
         os.sleep(3)
     end
 end
