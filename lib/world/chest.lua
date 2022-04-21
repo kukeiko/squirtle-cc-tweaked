@@ -8,6 +8,25 @@ local Chest = {}
 
 local chestTypes = {"minecraft:chest", "minecraft:trapped_chest"}
 
+---@type table<string, integer>
+local itemMaxCounts = {}
+
+---@param item string
+---@param chest string
+---@param slot integer
+local function getMaxCount(item, chest, slot)
+    if not itemMaxCounts[item] then
+        ---@type ItemStack|nil
+        local detailedStack = Peripheral.call(chest, "getItemDetail", slot)
+
+        if detailedStack then
+            itemMaxCounts[item] = detailedStack.maxCount
+        end
+    end
+
+    return itemMaxCounts[item]
+end
+
 ---@param name string|integer
 ---@param stacks table<integer, ItemStack>
 ---@return integer? slot
@@ -58,7 +77,6 @@ function Chest.getSize(name)
     return Peripheral.call(name, "size")
 end
 
---- [todo] not detailed. add flag?
 ---@param side string|integer
 ---@param slot integer
 ---@param detailed? boolean
@@ -72,7 +90,14 @@ end
 ---@return table<integer, ItemStack>
 function Chest.getStacks(name, detailed)
     if not detailed then
-        return Peripheral.call(name, "list")
+        ---@type table<integer, ItemStack>
+        local stacks = Peripheral.call(name, "list")
+
+        for slot, stack in pairs(stacks) do
+            stack.maxCount = getMaxCount(stack.name, name, slot)
+        end
+
+        return stacks
     else
         local stacks = Peripheral.call(name, "list")
         ---@type table<integer, ItemStack>
