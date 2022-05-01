@@ -23,6 +23,17 @@ function Side.all()
     return sides
 end
 
+---@return string[]
+function Side.allNames()
+    local sides = {}
+
+    for i = 0, 5 do
+        table.insert(sides, Side.getName(i))
+    end
+
+    return sides
+end
+
 function Side.horizontal()
     local sides = {}
 
@@ -82,10 +93,10 @@ function Side.rotateRight(side, times)
     return (side + (times or 1)) % 4
 end
 
----@param side integer
+---@param side string|integer
 ---@return integer
 function Side.rotateAround(side)
-    return (side + 2) % 4
+    return (Side.fromArg(side) + 2) % 4
 end
 
 return Side

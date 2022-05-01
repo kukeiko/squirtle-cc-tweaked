@@ -1,5 +1,8 @@
-local Pretty = require "cc.pretty"
-local Utils = {}
+local ccPretty = "cc.pretty"
+local Pretty = require(ccPretty)
+local copy = require "utils.copy"
+local indexOf = require "utils.index-of"
+local Utils = {copy = copy, indexOf = indexOf}
 
 function Utils.concat(a, b)
     for i = 1, #b do
@@ -25,17 +28,6 @@ function Utils.clone(tbl, seen)
     end
 
     return res
-end
-
----@param tbl table
-function Utils.copy(tbl)
-    local copy = {}
-
-    for k, v in pairs(tbl) do
-        copy[k] = v
-    end
-
-    return copy
 end
 
 function Utils.isEmpty(t)
@@ -147,19 +139,6 @@ end
 
 function Utils.timestamp()
     return os.time() * 60 * 60 / 100
-end
-
----@param tbl table
----@param item unknown
----@return integer
-function Utils.indexOf(tbl, item)
-    for i = 1, #tbl do
-        if (tbl[i] == item) then
-            return i
-        end
-    end
-
-    return -1
 end
 
 return Utils

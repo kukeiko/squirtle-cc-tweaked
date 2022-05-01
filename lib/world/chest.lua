@@ -1,4 +1,5 @@
-local Utils = require "utils"
+local copy = require "utils.copy"
+local indexOf = require "utils.index-of"
 local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
 
@@ -42,6 +43,13 @@ local function findInputOutputNameTagSlot(name, stacks)
     end
 end
 
+---@param name string|integer
+---@param stacks table<integer, ItemStack>
+---@return integer? slot
+function Chest.findInputOutputNameTagSlot(name, stacks)
+    return findInputOutputNameTagSlot(name, stacks)
+end
+
 function Chest.findSide()
     return Peripheral.findSide(chestTypes)
 end
@@ -53,7 +61,7 @@ function Chest.isChestType(types)
     end
 
     for i = 1, #types do
-        if Utils.indexOf(chestTypes, types[i]) > 0 then
+        if indexOf(chestTypes, types[i]) > 0 then
             return true
         end
     end
@@ -163,6 +171,14 @@ function Chest.getOutputStacks(name, detailed)
     end
 
     return outputStacks
+end
+
+---@param name string
+function Chest.getInputOutputStacks(name)
+    -- [todo] optimize to only call chest.list() once
+    local input = Chest.getInputStacks(name)
+    local output = Chest.getOutputStacks(name)
+    return input, output
 end
 
 ---@param name string|integer
@@ -299,7 +315,7 @@ end
 ---@param b table<string, integer>
 ---@return table<string, integer>
 function Chest.addStock(a, b)
-    local result = Utils.copy(a)
+    local result = copy(a)
 
     for item, stock in pairs(b) do
         result[item] = (result[item] or 0) + stock
@@ -313,7 +329,7 @@ end
 ---@param b table<string, integer>
 ---@return table<string, integer>
 function Chest.subtractStock(a, b)
-    local result = Utils.copy(a)
+    local result = copy(a)
 
     for item, stock in pairs(b) do
         result[item] = (result[item] or 0) - stock
