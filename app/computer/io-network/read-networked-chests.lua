@@ -12,7 +12,7 @@ local function stacksToStock(stacks, keepCount)
     ---@type table<string, ItemStack>
     local stock = {}
 
-    for slot, stack in pairs(stacks) do
+    for _, stack in pairs(stacks) do
         if not stock[stack.name] then
             stock[stack.name] = copy(stack)
             stock[stack.name].count = 0
@@ -36,7 +36,7 @@ local function readOutputDumpChest(chest)
         name = chest,
         type = "output-dump",
         outputStacks = stacks,
-        outputStock = stacksToStock(stacks, 0)
+        outputStock = stacksToStock(stacks)
     }
 
     return outputDumpChest
