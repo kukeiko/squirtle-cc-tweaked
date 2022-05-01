@@ -4,6 +4,7 @@ local Utils = require "utils"
 local Peripheral = require "world.peripheral"
 local Modem = require "world.modem"
 local Chest = require "world.chest"
+local timeout = 7
 
 ---@param self string
 ---@param all string[]
@@ -24,31 +25,49 @@ end
 ---@param from string|integer
 ---@param to string|integer
 ---@param fromOutputStacks table<integer, ItemStack>
-local function transferToOtherChest(from, to, fromOutputStacks)
-    local inputStacks = Chest.getInputStacks(to, true)
+local function transferToOtherChest(from, to, fromOutputStacks, transferAll)
+    transferAll = transferAll or false
+
+    -- local inputStacks = Chest.getInputStacks(to, true)
+    local inputStacks = Chest.getInputStacks(to)
 
     for inputSlot, inputStack in pairs(inputStacks) do
         for outputSlot, outputStack in pairs(fromOutputStacks) do
-            if outputStack.name == inputStack.name and outputStack.count > 1 and inputStack.count < inputStack.maxCount then
-                local transfer = math.min(outputStack.count - 1, inputStack.maxCount - inputStack.count)
+            -- if outputStack.name == inputStack.name and outputStack.count > 1 and inputStack.count < inputStack.maxCount then
+            if outputStack.name == inputStack.name and outputStack.count > 0 and inputStack.count <
+                (inputStack.maxCount or 64) then
+                local outputTransfer = outputStack.count - 1
 
-                print("move", from, to, outputSlot, transfer, inputSlot)
-                local transferred = Chest.pushItems(from, to, outputSlot, transfer, inputSlot)
+                if transferAll then
+                    outputTransfer = outputStack.count
+                end
 
-                inputStack.count = inputStack.count + transferred
-                outputStack.count = outputStack.count - transferred
+                if outputTransfer > 0 then
+                    local transfer = math.min(outputTransfer, (inputStack.maxCount or 64) - inputStack.count)
+                    print("move", from, to, outputSlot, transfer, inputSlot)
+                    local transferred = Chest.pushItems(from, to, outputSlot, transfer, inputSlot)
+
+                    inputStack.count = inputStack.count + transferred
+                    outputStack.count = outputStack.count - transferred
+                end
             end
         end
     end
 end
 
 ---@param chests string[]
-local function transferBetweenChests(chests)
+---@param dumpingChests table<string, unknown>
+local function transferBetweenChests(chests, dumpingChests)
     for _, chest in pairs(chests) do
-        local outputStacks = Chest.getOutputStacks(chest)
+        if not dumpingChests[chest] then
+            local outputStacks = Chest.getOutputStacks(chest)
 
-        for _, otherChest in pairs(otherChests(chest, chests)) do
-            transferToOtherChest(chest, otherChest, outputStacks)
+            if not Utils.isEmpty(outputStacks) then
+                print("spread output of", chest)
+                for _, otherChest in pairs(otherChests(chest, chests)) do
+                    transferToOtherChest(chest, otherChest, outputStacks)
+                end
+            end
         end
     end
 end
@@ -69,10 +88,18 @@ local function getRemoteChestNames(modem)
 end
 
 local function main(args)
+    print("[io-bundler v1.5.0] booting...")
     local modem = Peripheral.findSide("modem")
 
     if not modem then
         error("no modem found")
+    end
+
+    ---@type table<string, unknown>
+    local dumpingChests = {}
+
+    for i = 1, #args do
+        dumpingChests[args[i]] = true
     end
 
     while true do
@@ -81,8 +108,20 @@ local function main(args)
         if modem then
             local success, msg = pcall(function()
                 local chests = getRemoteChestNames(modem)
-                Utils.prettyPrint(chests)
-                transferBetweenChests(chests)
+                table.sort(chests)
+                print("syncing", #chests, "connected chests")
+                transferBetweenChests(chests, dumpingChests)
+
+                for chest in pairs(dumpingChests) do
+                    local outputDumpStacks = Chest.getOutputStacks(chest)
+
+                    if not Utils.isEmpty(outputDumpStacks) then
+                        print("spreading player input dump", chest)
+                        for _, otherChest in pairs(otherChests(chest, chests)) do
+                            transferToOtherChest(chest, otherChest, outputDumpStacks, true)
+                        end
+                    end
+                end
             end)
 
             if not success then
@@ -90,7 +129,7 @@ local function main(args)
             end
         end
 
-        os.sleep(3)
+        os.sleep(timeout)
     end
 end
 
