@@ -1,4 +1,4 @@
-local Chest = require "world.chest"
+local pushItems = require "world.chest.push-items"
 
 ---@param stacks table<integer, ItemStack>
 ---@param item string
@@ -38,9 +38,8 @@ return function(from, to, item, total, rate)
         local stock = fromStack.count
         local open = total - transferredTotal
         local transfer = math.min(space, open, rate, stock)
-        local transferred = Chest.pushItems(from.name, to.name, fromSlot, transfer, toSlot)
+        local transferred = pushItems(from.name, to.name, fromSlot, transfer, toSlot)
         os.sleep(.5)
-        -- print(from.name, to.name, fromSlot, transfer, toSlot, transferred)
 
         if transferred ~= transfer then
             -- [todo] if i ever decide to not abort, but continue, then i need to flag the current toSlot

@@ -1,88 +1,23 @@
 local copy = require "utils.copy"
-local indexOf = require "utils.index-of"
 local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
+local findSide = require "world.chest.find-side"
+local findInputOutputNameTagSlot = require "world.chest.find-io-name-tag-slot"
+local getStacks = require "world.chest.get-stacks"
+local getSize = require "world.chest.get-size"
 
 ---@class Chest
 ---@field side integer
 local Chest = {}
 
-local chestTypes = {"minecraft:chest", "minecraft:trapped_chest"}
-
----@type table<string, integer>
-local itemMaxCounts = {}
-
----@param item string
----@param chest string
----@param slot integer
-local function getMaxCount(item, chest, slot)
-    if not itemMaxCounts[item] then
-        ---@type ItemStack|nil
-        local detailedStack = Peripheral.call(chest, "getItemDetail", slot)
-
-        if detailedStack then
-            itemMaxCounts[item] = detailedStack.maxCount
-        end
-    end
-
-    return itemMaxCounts[item]
-end
-
----@param name string|integer
----@param stacks table<integer, ItemStack>
----@return integer? slot
-local function findInputOutputNameTagSlot(name, stacks)
-    for slot, stack in pairs(stacks) do
-        if stack.name == "minecraft:name_tag" then
-            local stack = Chest.getStack(name, slot, true)
-
-            if stack.displayName == "I/O" then
-                return slot
-            end
-        end
-    end
-end
-
----@param name string|integer
----@param stacks table<integer, ItemStack>
----@return integer? slot
-function Chest.findInputOutputNameTagSlot(name, stacks)
-    return findInputOutputNameTagSlot(name, stacks)
-end
-
 function Chest.findSide()
-    return Peripheral.findSide(chestTypes)
-end
-
----@param types string|string[]
-function Chest.isChestType(types)
-    if type(types) == "string" then
-        types = {types}
-    end
-
-    for i = 1, #types do
-        if indexOf(chestTypes, types[i]) > 0 then
-            return true
-        end
-    end
-
-    return false
-end
-
----@param side integer
----@return Chest
-function Chest.new(side)
-    side = Side.fromArg(side)
-    ---@type Chest
-    local instance = {side = side}
-    setmetatable(instance, {__index = Chest})
-    return instance
+    return findSide()
 end
 
 ---@param name string|integer
 ---@return integer
 function Chest.getSize(name)
-    return Peripheral.call(name, "size")
+    return getSize(Side.fromArg(name))
 end
 
 ---@param side string|integer
@@ -97,26 +32,7 @@ end
 ---@param detailed? boolean
 ---@return table<integer, ItemStack>
 function Chest.getStacks(name, detailed)
-    if not detailed then
-        ---@type table<integer, ItemStack>
-        local stacks = Peripheral.call(name, "list")
-
-        for slot, stack in pairs(stacks) do
-            stack.maxCount = getMaxCount(stack.name, name, slot)
-        end
-
-        return stacks
-    else
-        local stacks = Peripheral.call(name, "list")
-        ---@type table<integer, ItemStack>
-        local detailedStacks = {}
-
-        for slot, _ in pairs(stacks) do
-            detailedStacks[slot] = Peripheral.call(name, "getItemDetail", slot)
-        end
-
-        return detailedStacks
-    end
+    return getStacks(name, detailed)
 end
 
 ---@param name string|integer

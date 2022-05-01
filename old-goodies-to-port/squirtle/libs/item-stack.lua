@@ -1,4 +1,4 @@
----@class ItemStack
+---@class ItemStack_Old
 ---@field count integer
 ---@field name string
 local ItemStack = {

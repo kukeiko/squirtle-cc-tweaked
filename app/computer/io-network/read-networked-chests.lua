@@ -1,6 +1,8 @@
 local copy = require "utils.copy"
 local count = require "utils.count"
-local Chest = require "world.chest"
+local getSize = require "world.chest.get-size"
+local getStacks = require "world.chest.get-stacks"
+local findInputOutputNameTagSlot = require "world.chest.find-io-name-tag-slot"
 
 ---@param stacks ItemStack[]
 ---@param keepCount? integer
@@ -27,7 +29,7 @@ end
 ---@param chest string
 ---@return NetworkedChest
 local function readOutputDumpChest(chest)
-    local stacks = Chest.getStacks(chest)
+    local stacks = getStacks(chest)
 
     ---@type NetworkedChest
     local outputDumpChest = {
@@ -104,7 +106,7 @@ local function readNetworkedStorageChest(chest, stacks)
             item = foo
         end
 
-        for slot = 1, Chest.getSize(chest) do
+        for slot = 1, getSize(chest) do
             local stack = stacks[slot]
 
             if not stack then
@@ -146,9 +148,9 @@ end
 ---@param chest string
 ---@param assignedItems ItemStack[]
 local function readAssignedChest(chest, assignedItems)
-    local stacks = Chest.getStacks(chest)
+    local stacks = getStacks(chest)
     local stock = stacksToStock(stacks)
-    local size = Chest.getSize(chest)
+    local size = getSize(chest)
     ---@type table<string, ItemStack>
     local targetStock = {}
 
@@ -212,7 +214,7 @@ end
 ---@param chests string[]
 ---@param barrel string
 return function(chests, barrel)
-    local barrelStacks = Chest.getStacks(barrel, true)
+    local barrelStacks = getStacks(barrel, true)
     ---@type table<string, ItemStack[]>
     local assigned = {}
     ---@type table<string, string>
@@ -249,8 +251,8 @@ return function(chests, barrel)
             -- if chest name is found in barrel, it is an assigned one, and I/O nametags are ignored.
             table.insert(networkedChests, readAssignedChest(chest, assigned[chest]))
         else
-            local stacks = Chest.getStacks(chest)
-            local nameTagSlot = Chest.findInputOutputNameTagSlot(chest, stacks)
+            local stacks = getStacks(chest)
+            local nameTagSlot = findInputOutputNameTagSlot(chest, stacks)
 
             if nameTagSlot then
                 -- if chest has I/O nametag, is io chest.

@@ -4,8 +4,6 @@ package.path = package.path .. ";/app/computer/?.lua"
 local copy = require "utils.copy"
 local indexOf = require "utils.index-of"
 local findPeripheralSide = require "world.peripheral.find-side"
-local Modem = require "world.modem"
-local Chest = require "world.chest"
 local readNetworkedChests = require "io-network.read-networked-chests"
 local transferItem = require "io-network.transfer-item"
 
@@ -23,14 +21,14 @@ local transferItem = require "io-network.transfer-item"
 ---@field assigned NetworkedChest[]
 ---@field ["output-dump"] NetworkedChest[]
 
----@param modem string|integer
+---@param modem string
 ---@return string[]
 local function findNetworkedChests(modem)
     ---@type string[]
     local chests = {}
 
-    for _, name in pairs(Modem.getNamesRemote(modem) or {}) do
-        if Chest.isChestType(Modem.getTypeRemote(modem, name)) then
+    for _, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
+        if peripheral.hasType(name, "minecraft:chest") then
             table.insert(chests, name)
         end
     end
@@ -60,6 +58,7 @@ end
 ---@param chestsByType NetworkedChestsByType
 local function spreadChestOutput(chest, chestsByType)
     print("working on", chest.name, "(" .. chest.type .. ")")
+
     for item, stock in pairs(chest.outputStock) do
         local ignore = {chest.name}
 
@@ -175,11 +174,6 @@ end
 local function main(args)
     print("[io-network v2.0.0] booting...")
     local timeout = tonumber(args[1] or 30)
-    -- local modem = findPeripheralSide("modem")
-
-    -- if not modem then
-    --     error("no modem found")
-    -- end
 
     while true do
         local modem = findPeripheralSide("modem")
@@ -188,9 +182,6 @@ local function main(args)
             local success, msg = pcall(function()
                 local chestNames = findNetworkedChests(modem)
                 local networkedChests = readNetworkedChests(chestNames, findPeripheralSide("minecraft:barrel"))
-                -- local file = fs.open("./networked-chests.json", "w")
-                -- file.write(textutils.serializeJSON(networkedChests))
-                -- file.close()
 
                 doTheThing(networkedChests)
             end)

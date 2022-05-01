@@ -1,4 +1,5 @@
-local Side = require "elements.side"
+local indexOf = require "utils.index-of"
+local allSideNames = require "elements.side.all-names"
 
 ---@param types string[]|string
 ---@param sides? string[]
@@ -8,14 +9,14 @@ return function(types, sides)
         types = {types}
     end
 
-    sides = sides or Side.allNames()
+    sides = sides or allSideNames()
 
     for i = 1, #sides do
-        local foundType = peripheral.getType(sides[i])
+        local foundTypes = {peripheral.getType(sides[i])}
 
-        if foundType ~= nil then
+        if foundTypes ~= nil then
             for e = 1, #types do
-                if foundType == types[e] then
+                if indexOf(foundTypes, types[e]) > 0 then
                     return sides[i], types[e]
                 end
             end
