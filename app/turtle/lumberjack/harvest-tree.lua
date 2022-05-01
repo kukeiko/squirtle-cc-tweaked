@@ -52,7 +52,10 @@ local function digAllSides()
     end
 end
 
-return function()
+---@param minSaplings integer
+return function(minSaplings)
+    minSaplings = minSaplings or 32
+
     while inspect(Side.top, "minecraft:birch_log") do
         dig(Side.top)
         move(Side.top)
@@ -67,7 +70,7 @@ return function()
     move(Side.bottom)
     move(Side.bottom)
 
-    if Backpack.getItemStock("minecraft:birch_sapling") < 32 then
+    if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
         for i = 1, 4 do
             moveOutAndCutLeaves(i % 2 == 1)
             turn()
@@ -76,7 +79,7 @@ return function()
 
     move(Side.bottom)
 
-    if Backpack.getItemStock("minecraft:birch_sapling") < 32 then
+    if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
         for i = 1, 4 do
             moveOutAndCutLeaves(i % 2 == 1)
             turn()

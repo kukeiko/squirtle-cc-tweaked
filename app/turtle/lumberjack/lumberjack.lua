@@ -23,8 +23,7 @@ local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
 
--- local maxLogs = 64
-local maxLogs = 11
+local maxLogs = 64
 local minBonemeal = 1
 
 ---@param block Block
@@ -242,7 +241,8 @@ local function doWork()
         end
     end
 
-    doStashWork()
+    -- [todo] make configurable, only relevant if water based layout
+    -- doStashWork()
     print("work finished! going home")
 end
 
@@ -265,6 +265,8 @@ local function moveNext()
 end
 
 local function boot()
+    print("[lumberjack v1.1.0] booting...")
+
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
         if inspect(Side.top, "minecraft:birch_log") then
@@ -272,6 +274,7 @@ local function boot()
         elseif isLookingAtTree() then
             dig(Side.front)
         elseif isAtStash() or (move(Side.bottom) and isAtStash()) then
+            -- [todo] only relevant for water based layout
             doStashWork()
         else
             while inspect(Side.bottom, "minecraft:birch_leaves") do
@@ -283,7 +286,8 @@ local function boot()
             end
 
             if not (isHome() or isAtWork()) then
-                move(Side.top)
+                -- [todo] only relevant for water based layout
+                -- move(Side.top)
             end
         end
     end
