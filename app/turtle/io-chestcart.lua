@@ -1,7 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local Side = require "elements.side"
-local Peripheral = require "world.peripheral"
+local findPeripheralSide = require "world.peripheral.find-side"
 local Chest = require "world.chest"
 local Redstone = require "world.redstone"
 local Inventory = require "squirtle.inventory"
@@ -16,12 +15,15 @@ local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
 
+local function findChestSide()
+    return findPeripheralSide("minecraft:chest")
+end
+
 local function dumpChestcartToBarrel()
     while suck() do
     end
 
-    if not dump(Side.bottom) then
-        -- [todo] recover from this error.
+    if not dump("bottom") then
         error("buffer barrel full")
     end
 
@@ -31,16 +33,16 @@ local function dumpChestcartToBarrel()
 end
 
 local function dumpBarrelToChestcart()
-    while suck(Side.bottom) do
+    while suck("bottom") do
     end
 
-    if not dump(Side.front) then
+    if not dump("front") then
         -- [todo] recover from error. this should only happen when buffer already had items in it
         -- before chestcart arrived
         error("chestcart full")
     end
 
-    if suck(Side.bottom) then
+    if suck("bottom") then
         dumpBarrelToChestcart()
     end
 end
@@ -53,6 +55,12 @@ end
 ---@param args table
 ---@return boolean success
 local function main(args)
+    print("[io-chestcart v1.2.0] booting...")
+
+    if not inspect("bottom", "minecraft:barrel") then
+        error("no barrel at bottom")
+    end
+
     if args[1] == "send-output" then
         sendOutput = true
     elseif args[1] == "send-input" then
@@ -63,38 +71,46 @@ local function main(args)
     end
 
     while true do
-        local front = inspect(Side.front)
+        local front = inspect()
 
         if front and front.name == "minecraft:redstone_block" then
-            local signal = Redstone.getInput({Side.left, Side.right})
+            local signal = Redstone.getInput({"left", "right"})
+
             if signal then
                 turn(signal)
+            else
+                -- unlock piston in case there is no chestcart
+                dig()
             end
         elseif front and front.name == "minecraft:detector_rail" then
-            if not Redstone.getInput(Side.front) then
+            if not Redstone.getInput("front") then
                 print("looking at rail, but no chestcart here. turning towards piston")
-                local chest = Chest.findSide()
-                turn(Side.rotateAround(chest))
+                local chest = findChestSide()
+
+                if chest == "left" then
+                    turn("right")
+                else
+                    turn("left")
+                end
             else
                 dumpChestcartToBarrel()
-                local chest = Chest.findSide()
+                local chest = findChestSide()
                 turn(chest)
             end
         elseif front and front.name == "minecraft:chest" then
             print("doing I/O...")
-            local buffer = Peripheral.findSide("minecraft:barrel")
-            local io = Chest.findSide()
+            local io = findChestSide()
 
             -- [todo] need to somehow support 27+ slot chests
             if sendOutput then
-                pushInput(buffer, io)
-                pullOutput(io, buffer, Chest.getInputOutputMaxStock(io))
+                pushInput("bottom", io)
+                pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
             else
-                pushOutput(buffer, io)
-                pullInput(io, buffer)
+                pushOutput("bottom", io)
+                pullInput(io, "bottom")
             end
 
-            local signal = Redstone.getInput({Side.left, Side.right})
+            local signal = Redstone.getInput({"left", "right"})
             turn(signal)
             print("dumping barrel to chestcart...")
             dumpBarrelToChestcart()
@@ -102,27 +118,20 @@ local function main(args)
             turn(signal)
             dig()
             os.sleep(3)
-        elseif not front and Chest.findSide() == Side.back then
-            os.sleep(3)
+        elseif not front and findChestSide() == "back" then
+            os.sleep(1)
             if not Inventory.selectItem("minecraft:redstone_block") then
                 error("my redstone block went missing :(")
             end
 
             print("waiting for chestcart...")
             os.pullEvent("redstone")
+            print("chestcart is here! locking piston")
 
-            local signal = Redstone.getInput({Side.left, Side.right})
-
-            print("signal:", signal)
-
-            print("locking piston...")
             if not place() then
                 error("could not place redstone block to lock piston")
             end
-
-            turn(signal)
         end
-
     end
 end
 
