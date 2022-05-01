@@ -111,7 +111,7 @@ return function()
 
     -- [todo] allow user to specify up/down + height (with "0" or empty being "until limit")
     -- [todo] update for 1.18
-    y = 5
+    y = -59
     height = position.y - y
 
     ---@type World
