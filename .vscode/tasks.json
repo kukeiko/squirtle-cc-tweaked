@@ -1,0 +1,22 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build io-chestcart",
+            "type": "shell",
+            "command": "luabundler bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p lib/?.lua -o dist/io-chestcart"
+        },
+        {
+            "label": "build io-network",
+            "type": "shell",
+            "command": "luabundler bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p lib/?.lua -o dist/io-network"
+        },
+        {
+            "label": "build io-bundler",
+            "type": "shell",
+            "command": "luabundler bundle app/computer/io-bundler.lua -p app/computer/?.lua -p lib/?.lua -o dist/io-bundler"
+        }
+    ]
+}
