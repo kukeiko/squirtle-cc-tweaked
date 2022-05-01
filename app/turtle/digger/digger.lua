@@ -16,6 +16,8 @@ local dump = require "squirtle.dump"
 local Inventory = require "squirtle.inventory"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
+local inspect = require "squirtle.inspect"
+local dig = require "squirtle.dig"
 
 ---@class DiggerAppState
 ---@field home Vector
@@ -43,9 +45,18 @@ local function nextPoint(point, world, start)
     end
 
     if start.y == world.y then
-        delta.y = 1
+        -- delta.y = 1
+        -- delta.y = 3
+        delta.y = 5
     elseif start.y == world.y + world.height - 1 then
-        delta.y = -1
+        -- delta.y = -1
+        -- delta.y = -3
+        delta.y = -5
+    end
+
+    if not World.isInBoundsY(world, point.y + delta.y) then
+        -- delta.y = delta.y / 3
+        delta.y = delta.y / 5
     end
 
     local relative = Vectors.minus(point, start)
@@ -98,17 +109,29 @@ local function refuelFromBuffer(bufferSide, fuel)
     end
 end
 
+---@param state DiggerAppState
+local function saveState(state)
+    local blocks = state.world.blocked
+    state.world.blocked = {}
+    Utils.saveAppState(state, "digger")
+    state.world.blocked = blocks
+end
+
 -- [todo] idea: use output stacks of i/o chest to program which blocks are allowed to be mined.
 -- (need to consider special case of stone => cobblestone)
 -- for the non io version of this app (which should be a version i should build to make it easier
 -- for others to use this app), we could let the player program blocks to mine via placing
 -- them into inventory
 local function main(args)
-    print("booting...")
+    print("[digger v1.2.0] booting...")
     local state = boot()
     print("booted!")
 
     local function isBreakable(block)
+        if not block then
+            return false
+        end
+
         return state.mineable[block.name]
     end
 
@@ -142,7 +165,8 @@ local function main(args)
         if previous.y ~= point.y then
             print("saving checkpoint at", point)
             state.checkpoint = point
-            Utils.saveAppState(state, "digger")
+            saveState(state)
+            -- Utils.saveAppState(state, "digger")
         end
 
         local moved, msg = navigate(point, state.world, isBreakable)
@@ -161,6 +185,14 @@ local function main(args)
             end
         else
             numFailedNavigates = 0
+
+            if isBreakable(inspect("top")) then
+                dig("top")
+            end
+
+            if isBreakable(inspect("bottom")) then
+                dig("bottom")
+            end
         end
 
         previous = point
@@ -180,30 +212,40 @@ local function main(args)
 
             print("saving checkpoint at", point)
             state.checkpoint = point
-            Utils.saveAppState(state, "digger")
+            saveState(state)
+            -- Utils.saveAppState(state, "digger")
             navigate(state.home, nil, isBreakable)
 
-            if not dump(buffer) then
-                error("buffer full")
-            end
-
-            local io = Chest.findSide()
-
-            if not pushOutput(buffer, io) then
-                print("output full, waiting for it to drain...")
-
-                repeat
+            if args[1] == "io" then
+                if not dump(buffer) then
+                    error("buffer full")
+                end
+            else
+                while not dump(buffer) do
+                    print("chest full, sleeping 7s...")
                     os.sleep(7)
-                until pushOutput(buffer, io)
+                end
             end
 
-            while Fuel.getFuelLevel() < minFuel do
-                print("trying to refuel to ", minFuel, ", have", Fuel.getFuelLevel())
-                pullInput(io, buffer)
-                refuelFromBuffer(buffer, minFuel)
+            if args[1] == "io" then
+                local io = Chest.findSide()
 
-                if Fuel.getFuelLevel() < minFuel then
-                    os.sleep(3)
+                if not pushOutput(buffer, io) then
+                    print("output full, waiting for it to drain...")
+
+                    repeat
+                        os.sleep(7)
+                    until pushOutput(buffer, io)
+                end
+
+                while Fuel.getFuelLevel() < minFuel do
+                    print("trying to refuel to ", minFuel, ", have", Fuel.getFuelLevel())
+                    pullInput(io, buffer)
+                    refuelFromBuffer(buffer, minFuel)
+
+                    if Fuel.getFuelLevel() < minFuel then
+                        os.sleep(3)
+                    end
                 end
             end
 
@@ -215,7 +257,8 @@ local function main(args)
 
     print("all done! going home...")
     state.checkpoint = nil
-    Utils.saveAppState(state, "digger")
+    saveState(state)
+    -- Utils.saveAppState(state, "digger")
     navigate(state.home)
     print("done & home <3")
 end
