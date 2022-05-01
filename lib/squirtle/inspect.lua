@@ -1,4 +1,4 @@
-local Utils = require "utils"
+local indexOf = require "utils.index-of"
 local Side = require "elements.side"
 local native = turtle
 
@@ -20,7 +20,7 @@ return function(side, name)
         if name then
             if type(name) == "string" and block.name == name then
                 return block
-            elseif type(name) == "table" and Utils.indexOf(name, block.name) > 0 then
+            elseif type(name) == "table" and indexOf(name, block.name) > 0 then
                 return block
             else
                 return nil

@@ -11,7 +11,7 @@ return function(refresh)
         local x, y, z = gps.locate()
 
         if not x then
-            error({code = 0, message = "no gps available"})
+            error("no gps available")
         end
 
         position = Vector.create(x, y, z)

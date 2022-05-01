@@ -1,6 +1,7 @@
 local native = turtle
 
 local Backpack = {}
+local backpackSize = 16
 
 ---@param slot integer
 ---@param detailed? boolean
@@ -15,7 +16,7 @@ end
 function Backpack.getStacks()
     local stacks = {}
 
-    for slot = 1, 16 do
+    for slot = 1, backpackSize do
         local item = Backpack.getStack(slot)
 
         if item then

@@ -3,7 +3,7 @@ local native = turtle
 
 local natives = {[Side.top] = native.digUp, [Side.front] = native.dig, [Side.bottom] = native.digDown}
 
----@param side? integer
+---@param side? string|integer
 ---@param toolSide? string
 return function(side, toolSide)
     local handler = natives[Side.fromArg(side or Side.front)]
