@@ -143,7 +143,7 @@ local function waitUntilCropReady(side, max)
 
     while remainingAge > 0 do
         print(string.format("waiting for crop to grow, current: %d", remainingAge))
-        os.sleep(3)
+        os.sleep(30)
         block = inspect(side)
 
         if not block or not isCrops(block) then
@@ -197,7 +197,23 @@ local function drainDropper()
 end
 
 local function doHomeStuff()
-    -- first we're gonna compost
+    print("i am home! doing home stuff")
+
+    while Inventory.selectItem("minecraft:poisonous_potato") do
+        print("discarding poisonous potatoes")
+        drop(Side.top)
+    end
+
+    if not dump(Side.bottom) then
+        error("buffer barrel full :(")
+    end
+
+    -- first we make a single pushOutput() in case output wants seeds
+    local ioChest = Chest.findSide()
+    print("pushing output once")
+    pushOutput(Side.bottom, ioChest)
+
+    -- then we're gonna compost
     move(Side.back)
 
     -- [todo] possible optimization: only move to composter if we have seeds
@@ -205,19 +221,14 @@ local function doHomeStuff()
         print("no composter, going back to barrel")
         move(Side.front)
     else
-        print("composting seeds...")
+        print("composting seeds")
         compostSeeds()
         move(Side.front)
-        print("draining dropper...")
+        print("draining dropper")
         drainDropper()
     end
 
     local minFuel = 512
-    print("i am home! doing home stuff...")
-
-    if not dump(Side.bottom) then
-        error("buffer barrel full :(")
-    end
 
     local ioChest = Chest.findSide()
 
