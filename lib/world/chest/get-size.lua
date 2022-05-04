@@ -1,5 +1,5 @@
 ---@param chest string
 ---@return integer
 return function(chest)
-    return peripheral.call(chest, "getSize")
+    return peripheral.call(chest, "size")
 end
