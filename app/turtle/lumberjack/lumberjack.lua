@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "utils"
+local findChestSide = require "world.chest.find-side"
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
@@ -68,9 +68,8 @@ local function faceHomeExit()
 end
 
 local function doHomework()
-    local buffer = Side.bottom
-    print("i am home!")
-    print("dumping inventory...")
+    local buffer = "bottom"
+    print("i am home! dumping inventory...")
 
     if not dump(buffer) then
         error("buffer barrel full")
@@ -82,7 +81,9 @@ local function doHomework()
         error("no furnace connected")
     end
 
-    doFurnaceWork(furnaceSide, buffer)
+    local ioChest = findChestSide()
+
+    doFurnaceWork(furnaceSide, buffer, ioChest)
 
     if Fuel.getFuelLevel() < (64 * 80) then
         print("refueling, have", Fuel.getFuelLevel())
@@ -109,7 +110,6 @@ local function doHomework()
         print("have enough fuel:", Fuel.getFuelLevel())
     end
 
-    local ioChest = Chest.findSide()
     print("pushing output...")
     pushOutput(buffer, ioChest)
     print("pulling input...")
@@ -265,7 +265,7 @@ local function moveNext()
 end
 
 local function boot()
-    print("[lumberjack v1.1.0] booting...")
+    print("[lumberjack v1.2.0] booting...")
 
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")

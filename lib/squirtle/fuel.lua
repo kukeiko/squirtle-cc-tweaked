@@ -31,7 +31,7 @@ function Fuel.getFuelLimit()
     return native.getFuelLimit()
 end
 
----@param limit integer
+---@param limit? integer
 ---@return integer
 function Fuel.getMissingFuel(limit)
     local fuelLevel = Fuel.getFuelLevel()

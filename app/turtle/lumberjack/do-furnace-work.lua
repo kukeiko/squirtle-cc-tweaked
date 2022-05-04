@@ -1,5 +1,6 @@
 local Chest = require "world.chest"
 local Furnace = require "world.furnace"
+local pushOutput = require "squirtle.transfer.push-output"
 
 local function topOffFurnaceFuel(furnaceSide, bufferSide)
     local missing = Furnace.getMissingFuelCount(furnaceSide)
@@ -65,7 +66,8 @@ end
 
 ---@param furnace string|integer
 ---@param buffer string|integer
-return function(furnace, buffer)
+---@param io string
+return function(furnace, buffer, io)
     while Chest.getItemStock(buffer, "minecraft:birch_log") > 0 do
         print("topping off furnace input...")
         topOffFurnaceInput(furnace, buffer)
@@ -80,8 +82,12 @@ return function(furnace, buffer)
         kickstartFurnaceFuel(furnace, 8)
 
         if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
-            print("logs leftover, pausing for 30s")
-            os.sleep(30)
+            pushOutput(buffer, io)
+
+            if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
+                print("logs leftover, pausing for 30s")
+                os.sleep(30)
+            end
         end
     end
 end

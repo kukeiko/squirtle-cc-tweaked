@@ -52,7 +52,7 @@ local function digAllSides()
     end
 end
 
----@param minSaplings integer
+---@param minSaplings? integer
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
