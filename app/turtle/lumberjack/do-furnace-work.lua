@@ -30,7 +30,7 @@ local function topOffFurnaceInput(furnaceSide, bufferSide)
     end
 end
 
----@param furnace integer
+---@param furnace string
 ---@param count integer
 local function kickstartFurnaceFuel(furnace, count)
     local fuelStack = Furnace.getFuelStack(furnace)
@@ -64,8 +64,8 @@ local function kickstartFurnaceFuel(furnace, count)
     end
 end
 
----@param furnace string|integer
----@param buffer string|integer
+---@param furnace string
+---@param buffer string
 ---@param io string
 return function(furnace, buffer, io)
     while Chest.getItemStock(buffer, "minecraft:birch_log") > 0 do

@@ -1,11 +1,9 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local findChestSide = require "world.chest.find-side"
 local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
-local Furnace = require "world.furnace"
 local Backpack = require "squirtle.backpack"
 local Inventory = require "squirtle.inventory"
 local turn = require "squirtle.turn"
@@ -19,6 +17,7 @@ local pullInput = require "squirtle.transfer.pull-input"
 local suck = require "squirtle.suck"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
+local getStacks = require "world.chest.get-stacks"
 
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
@@ -27,6 +26,7 @@ local maxLogs = 64
 local minBonemeal = 1
 
 ---@param block Block
+---@return integer
 local function getBlockTurnSide(block)
     if block.name == "minecraft:spruce_fence" then
         return Side.left
@@ -42,11 +42,7 @@ local function isHome()
 end
 
 local function isAtWork()
-    return inspect(Side.bottom, "minecraft:dirt") ~= nil
-end
-
-local function isAtStash()
-    return inspect(Side.bottom, "minecraft:chest") ~= nil
+    return inspect(Side.bottom, {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
 
 local function isLookingAtTree()
@@ -61,62 +57,50 @@ local function faceHomeExit()
             return
         end
 
-        turn(Side.left)
+        turn("left")
     end
 
     error("could not face exit: no furnace found")
 end
 
-local function doHomework()
-    local buffer = "bottom"
-    print("i am home! dumping inventory...")
-
-    if not dump(buffer) then
-        error("buffer barrel full")
-    end
-
-    local furnaceSide = Furnace.findSide()
-
-    if not furnaceSide then
-        error("no furnace connected")
-    end
-
-    local ioChest = findChestSide()
-
-    doFurnaceWork(furnaceSide, buffer, ioChest)
-
-    if Fuel.getFuelLevel() < (64 * 80) then
-        print("refueling, have", Fuel.getFuelLevel())
+---@param stash string
+local function refuel(stash)
+    if turtle.getFuelLevel() < (64 * 80) then
+        print("refueling, have", turtle.getFuelLevel(), ", want " .. (64 * 80))
         Inventory.selectFirstEmptySlot()
 
-        for slot, stack in pairs(Chest.getStacks(Side.bottom)) do
+        for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
                 suckSlotFromChest(Side.bottom, slot)
-                Fuel.refuel() -- [todo] should provide count to not consume a whole stack
+                turtle.refuel() -- [todo] should provide count to not consume a whole stack
             end
 
-            if Fuel.getFuelLevel() >= (64 * 80) then
+            if turtle.getFuelLevel() >= (64 * 80) then
                 break
             end
         end
 
-        print("refueled to", Fuel.getFuelLevel())
+        print("refueled to", turtle.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not dump(buffer) then
-            error("buffer barrel full")
+        if not dump(stash) then
+            error("stash full")
         end
     else
-        print("have enough fuel:", Fuel.getFuelLevel())
+        print("have enough fuel:", turtle.getFuelLevel())
     end
+end
 
+---@param stash string
+---@param io string
+local function doInputOutput(stash, io)
     print("pushing output...")
-    pushOutput(buffer, ioChest)
+    pushOutput(stash, io)
     print("pulling input...")
-    pullInput(ioChest, buffer)
+    pullInput(io, stash)
 
     local missingCharcoal = function()
-        return (Chest.getOutputMissingStock(ioChest)["minecraft:charcoal"] or 0)
+        return (Chest.getOutputMissingStock(io)["minecraft:charcoal"] or 0)
     end
 
     if missingCharcoal() == 0 then
@@ -130,18 +114,33 @@ local function doHomework()
     print("output has space for charcoal, want to work now!")
     print("checking if we have enough input...")
 
-    if Chest.getItemStock(buffer, "minecraft:bone_meal") < 64 then
+    if Chest.getItemStock(stash, "minecraft:bone_meal") < 64 then
         print("waiting for more bone meal...")
 
-        while Chest.getItemStock(buffer, "minecraft:bone_meal") < 64 do
+        while Chest.getItemStock(stash, "minecraft:bone_meal") < 64 do
             os.sleep(3)
-            pullInput(ioChest, buffer)
+            pullInput(io, stash)
         end
     end
 
-    print("input looks good! sucking from barrel...")
+    print("input looks good!")
+end
 
-    while suck(buffer) do
+---@param stash string
+---@param io string
+---@param furnace string
+local function doHomework(stash, io, furnace)
+    print("i am home! dumping inventory to stash...")
+
+    if not dump(stash) then
+        error("stash is full :(")
+    end
+
+    doFurnaceWork(furnace, stash, io)
+    refuel(stash)
+    doInputOutput(stash, io)
+
+    while suck(stash) do
     end
 
     local backpackStock = Backpack.getStock()
@@ -203,24 +202,9 @@ local function refuelFromBackpack()
     Inventory.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
 end
 
-local function doStashWork()
-    if inspect(Side.bottom, "minecraft:dirt") then
-        dig(Side.bottom)
-        move(Side.bottom)
-    end
-
-    assert(inspect(Side.bottom, "minecraft:chest"))
-    while suck(Side.bottom) do
-    end
-    refuelFromBackpack()
-    move(Side.top)
-    Inventory.selectItem("minecraft:dirt")
-    place(Side.bottom)
-end
-
 local function doWork()
     print("doing work!")
-    assert(inspect(Side.bottom, "minecraft:dirt"), "expected to sit on top of dirt")
+    assert(isAtWork(), "expected to sit on top of dirt")
 
     if inspect(Side.top, "minecraft:birch_log") then
         -- should only happen if turtle crashed while planting a tree
@@ -241,8 +225,6 @@ local function doWork()
         end
     end
 
-    -- [todo] make configurable, only relevant if water based layout
-    -- doStashWork()
     print("work finished! going home")
 end
 
@@ -251,12 +233,11 @@ local function moveNext()
         local block = inspect()
 
         if not block then
-            print("could not move even though front seems to be free. sleeping 1s ...")
-            os.sleep(1)
+            error("could not move even though front seems to be free")
         end
 
         if isLookingAtTree() then
-            -- should only happen if sapling got placed by player
+            -- [todo] hack - should only happen if sapling got placed by player
             dig(Side.front)
         else
             turn(getBlockTurnSide(block))
@@ -265,7 +246,7 @@ local function moveNext()
 end
 
 local function boot()
-    print("[lumberjack v1.2.0] booting...")
+    print("[lumberjack v1.2.1] booting...")
 
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
@@ -273,9 +254,6 @@ local function boot()
             harvestTree()
         elseif isLookingAtTree() then
             dig(Side.front)
-        elseif isAtStash() or (move(Side.bottom) and isAtStash()) then
-            -- [todo] only relevant for water based layout
-            doStashWork()
         else
             while inspect(Side.bottom, "minecraft:birch_leaves") do
                 dig(Side.bottom)
@@ -284,13 +262,20 @@ local function boot()
 
             while move(Side.bottom) do
             end
-
-            if not (isHome() or isAtWork()) then
-                -- [todo] only relevant for water based layout
-                -- move(Side.top)
-            end
         end
     end
+end
+
+---@param type string
+---@return string
+local function requirePeripheral(type)
+    local p = peripheral.find(type)
+
+    if not p then
+        error("not found: " .. type)
+    end
+
+    return peripheral.getName(p)
 end
 
 local function main(args)
@@ -298,7 +283,11 @@ local function main(args)
 
     while true do
         if isHome() then
-            doHomework()
+            local stash = requirePeripheral("minecraft:barrel")
+            local io = requirePeripheral("minecraft:chest")
+            local furnace = requirePeripheral("minecraft:furnace")
+
+            doHomework(stash, io, furnace)
             faceHomeExit()
             move()
         elseif isAtWork() then
@@ -306,9 +295,9 @@ local function main(args)
             turn(Side.left)
             move()
         else
-            while not inspect(Side.bottom, {"minecraft:dirt", "minecraft:barrel"}) do
-                moveNext()
-            end
+            moveNext()
+            -- while not inspect(Side.bottom, {"minecraft:dirt", "minecraft:barrel"}) do
+            -- end
         end
     end
 end

@@ -1,7 +1,7 @@
 local Chest = require "world.chest"
 
----@param from integer
----@param to integer
+---@param from string|integer
+---@param to string|integer
 return function(from, to)
     local maxStock = Chest.getInputMaxStock(from)
     local currentStock = Chest.getStock(to)

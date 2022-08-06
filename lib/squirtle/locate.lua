@@ -2,7 +2,7 @@ local Vector = require "elements.vector"
 local getState = require "squirtle.get-state"
 local changeState = require "squirtle.change-state"
 
----@param refresh boolean
+---@param refresh? boolean
 return function(refresh)
     local state = getState()
     local position = state.position

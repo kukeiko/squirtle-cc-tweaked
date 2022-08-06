@@ -5,6 +5,8 @@ local findSide = require "world.chest.find-side"
 local findInputOutputNameTagSlot = require "world.chest.find-io-name-tag-slot"
 local getStacks = require "world.chest.get-stacks"
 local getSize = require "world.chest.get-size"
+local subtractStock = require "world.chest.subtract-stock"
+local getStock = require "world.chest.get-stock"
 
 ---@class Chest
 ---@field side integer
@@ -17,7 +19,13 @@ end
 ---@param name string|integer
 ---@return integer
 function Chest.getSize(name)
-    return getSize(Side.fromArg(name))
+    if type(name) == "number" then
+        return getSize(Side.getName(name))
+    elseif type(name) == "string" then
+        return getSize(name)
+    end
+
+    error("invalid arg")
 end
 
 ---@param side string|integer
@@ -100,14 +108,13 @@ end
 ---@param name string|integer
 ---@return table<string, integer>
 function Chest.getStock(name)
-    ---@type table<string, integer>
-    local stock = {}
-
-    for _, item in pairs(Chest.getStacks(name)) do
-        stock[item.name] = (stock[item.name] or 0) + item.count
+    if type(name) == "number" then
+        return getStock(Side.getName(name))
+    elseif type(name) == "string" then
+        return getStock(name)
     end
 
-    return stock
+    error("invalid arg")
 end
 
 ---@param side integer|string
@@ -133,8 +140,8 @@ function Chest.getItemStock(side, predicate)
     return stock
 end
 
----@param from integer
----@param to integer
+---@param from string|integer
+---@param to string|integer
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
@@ -147,8 +154,8 @@ function Chest.pushItems(from, to, fromSlot, limit, toSlot)
     return Peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
----@param from integer
----@param to integer
+---@param from string|integer
+---@param to string|integer
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
@@ -195,7 +202,7 @@ function Chest.getOutputMissingStock(name)
     ---@type table<string, integer>
     local stock = {}
 
-    for _, stack in pairs(Chest.getOutputStacks(name, true)) do
+    for _, stack in pairs(Chest.getOutputStacks(name)) do
         stock[stack.name] = (stock[stack.name] or 0) + (stack.maxCount - stack.count)
     end
 
@@ -245,13 +252,7 @@ end
 ---@param b table<string, integer>
 ---@return table<string, integer>
 function Chest.subtractStock(a, b)
-    local result = copy(a)
-
-    for item, stock in pairs(b) do
-        result[item] = (result[item] or 0) - stock
-    end
-
-    return result
+    return subtractStock(a, b)
 end
 
 return Chest

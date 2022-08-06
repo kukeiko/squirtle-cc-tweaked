@@ -1,16 +1,18 @@
-local Chest = require "world.chest"
+local getOutputMissingStock = require "world.chest.get-output-missing-stock"
+local getOutputStacks = require "world.chest.get-output-stacks"
+local getStacks = require "world.chest.get-stacks"
+local getStock = require "world.chest.get-stock"
+local pushItems = require "world.chest.push-items"
+local subtractStock = require "world.chest.subtract-stock"
 
----@param from integer
----@param to integer
+---@param stock table<string, integer>
+---@param missingStock table<string, integer>
 ---@param keepStock? table<string, integer>
----@return boolean pushedAll if everything could be pushed
-return function(from, to, keepStock)
+local function calculatePushableStock(stock, missingStock, keepStock)
     keepStock = keepStock or {}
-    local missingStock = Chest.getOutputMissingStock(to)
-    local availableStock = Chest.subtractStock(Chest.getStock(from), keepStock)
-
     ---@type table<string, integer>
     local pushableStock = {}
+    local availableStock = subtractStock(stock, keepStock)
 
     for item, missing in pairs(missingStock) do
         local available = availableStock[item]
@@ -20,9 +22,16 @@ return function(from, to, keepStock)
         end
     end
 
-    local outputStacks = Chest.getOutputStacks(to, true)
+    return pushableStock
+end
 
-    for slot, stack in pairs(Chest.getStacks(from)) do
+---@param from string
+---@param to string
+---@param stacks table<integer, ItemStack>
+---@param outputStacks table<integer, ItemStack>
+---@param pushableStock table<string, integer>
+local function transferPushableStock(from, to, stacks, outputStacks, pushableStock)
+    for slot, stack in pairs(stacks) do
         local stock = pushableStock[stack.name]
 
         if stock ~= nil and stock > 0 then
@@ -30,7 +39,7 @@ return function(from, to, keepStock)
                 if outputStack.name == stack.name and outputStack.count < outputStack.maxCount and stack.count > 0 and
                     pushableStock[stack.name] > 0 then
                     local transfer = math.min(pushableStock[stack.name], outputStack.maxCount - outputStack.count)
-                    local transferred = Chest.pushItems(from, to, slot, transfer, outputSlot)
+                    local transferred = pushItems(from, to, slot, transfer, outputSlot)
                     outputStack.count = outputStack.count + transferred
                     stack.count = stack.count - transferred
                     pushableStock[stack.name] = pushableStock[stack.name] - transferred
@@ -38,8 +47,21 @@ return function(from, to, keepStock)
             end
         end
     end
+end
 
-    local remainingStock = Chest.subtractStock(Chest.getStock(from), keepStock)
+-- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
+-- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32
+---@param from string
+---@param to string
+---@param keepStock? table<string, integer>
+---@return boolean pushedAll if everything could be pushed
+return function(from, to, keepStock)
+    keepStock = keepStock or {}
+    local missingStock = getOutputMissingStock(to)
+    local pushableStock = calculatePushableStock(getStock(from), missingStock, keepStock)
+    transferPushableStock(from, to, getStacks(from), getOutputStacks(to), pushableStock)
+
+    local remainingStock = subtractStock(getStock(from), keepStock)
 
     for item, stock in pairs(remainingStock) do
         if missingStock[item] and stock > 0 then
