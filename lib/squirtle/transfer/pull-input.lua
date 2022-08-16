@@ -2,8 +2,10 @@ local Chest = require "world.chest"
 
 ---@param from string|integer
 ---@param to string|integer
-return function(from, to)
-    local maxStock = Chest.getInputMaxStock(from)
+---@param maxStock? table<string,integer>
+return function(from, to, maxStock)
+    maxStock = maxStock or Chest.getInputMaxStock(from)
+    -- local maxStock = Chest.getInputOutputMaxStock(from)
     local currentStock = Chest.getStock(to)
     local missingStock = Chest.subtractStock(maxStock, currentStock)
 

@@ -14,6 +14,7 @@ local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
+local subtractStock = require "world.chest.subtract-stock"
 
 local function findChestSide()
     return findPeripheralSide("minecraft:chest")
@@ -55,7 +56,7 @@ end
 ---@param args table
 ---@return boolean success
 local function main(args)
-    print("[io-chestcart v1.2.0] booting...")
+    print("[io-chestcart v1.3.0] booting...")
 
     if not inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
@@ -106,15 +107,16 @@ local function main(args)
                 pushInput("bottom", io)
                 pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
             else
-                pushOutput("bottom", io)
-                pullInput(io, "bottom")
+                local _, transferredStock = pushOutput("bottom", io)
+                local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
+                pullInput(io, "bottom", maxStock)
             end
 
             local signal = Redstone.getInput({"left", "right"})
             turn(signal)
-            print("dumping barrel to chestcart...")
+            print("filling chestcart...")
             dumpBarrelToChestcart()
-            print("unlocking piston...")
+            print("sending off chestcart!")
             turn(signal)
             dig()
             os.sleep(3)
@@ -126,10 +128,10 @@ local function main(args)
 
             print("waiting for chestcart...")
             os.pullEvent("redstone")
-            print("chestcart is here! locking piston")
+            print("chestcart is here! locking it in place...")
 
             if not place() then
-                error("could not place redstone block to lock piston")
+                error("could not place redstone block to lock piston :(")
             end
         end
     end

@@ -31,6 +31,8 @@ end
 ---@param outputStacks table<integer, ItemStack>
 ---@param pushableStock table<string, integer>
 local function transferPushableStock(from, to, stacks, outputStacks, pushableStock)
+    local transferredStock = {}
+
     for slot, stack in pairs(stacks) do
         local stock = pushableStock[stack.name]
 
@@ -43,10 +45,13 @@ local function transferPushableStock(from, to, stacks, outputStacks, pushableSto
                     outputStack.count = outputStack.count + transferred
                     stack.count = stack.count - transferred
                     pushableStock[stack.name] = pushableStock[stack.name] - transferred
+                    transferredStock[stack.name] = (transferredStock[stack.name] or 0) + transferred
                 end
             end
         end
     end
+
+    return transferredStock
 end
 
 -- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
@@ -54,20 +59,19 @@ end
 ---@param from string
 ---@param to string
 ---@param keepStock? table<string, integer>
----@return boolean pushedAll if everything could be pushed
+---@return boolean, table<string, integer>
 return function(from, to, keepStock)
     keepStock = keepStock or {}
     local missingStock = getOutputMissingStock(to)
     local pushableStock = calculatePushableStock(getStock(from), missingStock, keepStock)
-    transferPushableStock(from, to, getStacks(from), getOutputStacks(to), pushableStock)
-
+    local transferred = transferPushableStock(from, to, getStacks(from), getOutputStacks(to), pushableStock)
     local remainingStock = subtractStock(getStock(from), keepStock)
 
     for item, stock in pairs(remainingStock) do
         if missingStock[item] and stock > 0 then
-            return false
+            return false, transferred
         end
     end
 
-    return true
+    return true, transferred
 end
