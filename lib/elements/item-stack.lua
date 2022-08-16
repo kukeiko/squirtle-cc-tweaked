@@ -1,0 +1,7 @@
+---@class ItemStack
+---@field name string
+---@field count integer
+---@field nbt? string
+---@field maxCount? integer
+---@field displayName? integer
+---@field tags? table<string, boolean>
