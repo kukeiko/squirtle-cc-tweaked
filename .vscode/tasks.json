@@ -14,9 +14,19 @@
             "command": "luabundler bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p lib/?.lua -o dist/io-network"
         },
         {
-            "label": "build io-bundler",
+            "label": "build lumberjack",
             "type": "shell",
-            "command": "luabundler bundle app/computer/io-bundler.lua -p app/computer/?.lua -p lib/?.lua -o dist/io-bundler"
-        }
+            "command": "luabundler bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p lib/?.lua -o dist/lumberjack"
+        },
+        {
+            "label": "build digger",
+            "type": "shell",
+            "command": "luabundler bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p lib/?.lua -o dist/digger"
+        },
+        {
+            "label": "build dig",
+            "type": "shell",
+            "command": "luabundler bundle app/turtle/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/dig"
+        },
     ]
 }
