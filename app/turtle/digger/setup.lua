@@ -1,4 +1,3 @@
-local Utils = require "utils"
 local Vector = require "elements.vector"
 local Chest = require "world.chest"
 local World = require "geo.world"
@@ -130,6 +129,5 @@ return function()
         mineable = mineable
     }
 
-    print("saving app state")
-    Utils.saveAppState(state, "digger")
+    return state
 end

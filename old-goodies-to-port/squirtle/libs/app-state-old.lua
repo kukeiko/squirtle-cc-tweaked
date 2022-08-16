@@ -1,6 +1,6 @@
 package.path = package.path .. ";/libs/?.lua"
 
----@class AppState
+---@class AppState_Old
 ---@field path string
 local AppState = {}
 

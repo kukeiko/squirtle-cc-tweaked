@@ -11,8 +11,8 @@ local function shallowCopyTable(table)
     return copy
 end
 
----@param source integer
----@param target integer
+---@param source string|integer
+---@param target string|integer
 ---@param maxStock? table<string, integer>
 return function(source, target, maxStock)
     maxStock = maxStock or {}

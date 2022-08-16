@@ -49,7 +49,7 @@ local function orientateSameLayer(position)
     return success
 end
 
----@param refresh boolean
+---@param refresh? boolean
 ---@return Vector position, integer facing
 return function(refresh)
     local state = getState()

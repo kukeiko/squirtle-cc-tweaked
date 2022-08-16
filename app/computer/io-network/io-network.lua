@@ -10,8 +10,10 @@ local transferItem = require "io-network.transfer-item"
 ---@class NetworkedChest
 ---@field name string
 ---@field type "storage" | "io" | "output-dump" | "assigned"
+-- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field inputStock table<string, ItemStack>
 ---@field inputStacks table<integer, ItemStack>
+-- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field outputStock table<string, ItemStack>
 ---@field outputStacks table<integer, ItemStack>
 
@@ -91,8 +93,10 @@ local function spreadChestOutput(chest, chestsByType)
 
             if #storageChests > 0 then
                 if #ioChests > 0 then
+                    -- only pick 1 storage chest in case we are spreading items across both I/O, assigned and storage chests.
                     table.insert(inputChests, storageChests[1])
                 else
+                    -- otherwise just spread all into storage
                     for i = 1, #storageChests do
                         table.insert(inputChests, storageChests[i])
                     end
@@ -150,7 +154,7 @@ local function doTheThing(networkedChests)
     local chestsByType = groupChestsByType(networkedChests)
 
     print("found", #chestsByType.io .. "x I/O,", #chestsByType.storage .. "x storage,",
-          #chestsByType.assigned .. "x assigned and ", #chestsByType["output-dump"] .. "x dumping chests")
+          #chestsByType.assigned .. "x assigned and", #chestsByType["output-dump"] .. "x dumping chests")
 
     os.sleep(1)
 

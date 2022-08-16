@@ -2,7 +2,6 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
-local Side = require "elements.side"
 local Vectors = require "elements.vector"
 local World = require "geo.world"
 local Chest = require "world.chest"
@@ -18,6 +17,7 @@ local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local inspect = require "squirtle.inspect"
 local dig = require "squirtle.dig"
+local AppState = require "app-state"
 
 ---@class DiggerAppState
 ---@field home Vector
@@ -84,7 +84,7 @@ local function nextPoint(point, world, start)
 end
 
 -- [todo] copied from farmer.lua
----@param bufferSide integer
+---@param bufferSide string|integer
 ---@param fuel integer
 local function refuelFromBuffer(bufferSide, fuel)
     print("refueling, have", Fuel.getFuelLevel())
@@ -112,8 +112,9 @@ end
 ---@param state DiggerAppState
 local function saveState(state)
     local blocks = state.world.blocked
+    -- need to clear all blocks, otherwise disk gets full
     state.world.blocked = {}
-    Utils.saveAppState(state, "digger")
+    AppState.save(state, "digger")
     state.world.blocked = blocks
 end
 
@@ -123,7 +124,12 @@ end
 -- for others to use this app), we could let the player program blocks to mine via placing
 -- them into inventory
 local function main(args)
-    print("[digger v1.2.0] booting...")
+    if args[1] == "io" then
+        print("[digger v1.3.0] booting in I/O mode...")
+    else
+        print("[digger v1.3.0] booting in simple mode...")
+    end
+
     local state = boot()
     print("booted!")
 
@@ -166,7 +172,6 @@ local function main(args)
             print("saving checkpoint at", point)
             state.checkpoint = point
             saveState(state)
-            -- Utils.saveAppState(state, "digger")
         end
 
         local moved, msg = navigate(point, state.world, isBreakable)
@@ -201,7 +206,7 @@ local function main(args)
         local gettingFull = Backpack.getStack(16) ~= nil
         local lowFuel = Fuel.getFuelLevel() < 1000
         local minFuel = 1200
-        local buffer = Side.top
+        local buffer = "top"
 
         if gettingFull or lowFuel then
             if gettingFull then
@@ -213,7 +218,6 @@ local function main(args)
             print("saving checkpoint at", point)
             state.checkpoint = point
             saveState(state)
-            -- Utils.saveAppState(state, "digger")
             navigate(state.home, nil, isBreakable)
 
             if args[1] == "io" then
@@ -258,9 +262,22 @@ local function main(args)
     print("all done! going home...")
     state.checkpoint = nil
     saveState(state)
-    -- Utils.saveAppState(state, "digger")
     navigate(state.home)
     print("done & home <3")
 end
 
-main(arg)
+rednet.open("right")
+
+while true do
+    local success, msg = pcall(function()
+        main(arg)
+    end)
+
+    if success then
+        break
+    end
+
+    print(msg)
+    rednet.broadcast(msg, "error")
+    os.sleep(30)
+end

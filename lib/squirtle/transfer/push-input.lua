@@ -1,9 +1,10 @@
 local Chest = require "world.chest"
 
----@param source integer
----@param target integer
+---@param source string|integer
+---@param target string|integer
 return function(source, target)
     local sourceItems = Chest.getStacks(source, true)
+    -- local transferredTotal = 0
 
     for inputSlot, inputStack in pairs(Chest.getInputStacks(target, true)) do
         if inputStack.count < inputStack.maxCount then

@@ -52,6 +52,8 @@ end
 
 ---@param side? integer|string defaults to Side.left
 return function(side)
+    -- [todo] turning to the left by default is not a good idea,
+    -- makes it harder to find bugs in case a bad side is given, e.g. "nil" 
     side = Side.fromArg(side or Side.left)
 
     if side == Side.left then

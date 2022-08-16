@@ -14,10 +14,13 @@ local natives = {
     [Side.back] = native.back
 }
 
+-- [todo] move() should not call refuel like this. instead, a refueler interface should be provided.
+-- if no fuel could be acquired via the refueler, and there is not enough fuel, error out.
 ---@param side? integer|string
 ---@param times? integer
 return function(side, times)
-    local handler = natives[Side.fromArg(side or Side.front)]
+    side = side or "front"
+    local handler = natives[Side.fromArg(side)]
 
     if not handler then
         error(string.format("move() does not support side %s", Side.getName(side)))

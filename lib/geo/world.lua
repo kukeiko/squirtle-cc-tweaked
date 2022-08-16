@@ -41,7 +41,7 @@ end
 ---@param height? integer
 ---@param depth? integer
 ---@return World
-function create(x, y, z, width, height, depth)
+local function create(x, y, z, width, height, depth)
     ---@type World
     local world = {x = x, y = y, z = z, width = width, height = height, depth = depth, blocked = {}}
 
@@ -50,34 +50,34 @@ end
 
 ---@param world World
 ---@param x integer
-function isInBoundsX(world, x)
+local function isInBoundsX(world, x)
     return isInRange(x, world.x, world.width)
 end
 
 ---@param world World
 ---@param y integer
-function isInBoundsY(world, y)
+local function isInBoundsY(world, y)
     return isInRange(y, world.y, world.height)
 end
 
 ---@param world World
 ---@param z integer
-function isInBoundsZ(world, z)
+local function isInBoundsZ(world, z)
     return isInRange(z, world.z, world.depth)
 end
 
 ---@param world World
 ---@param point Vector
-function isInBounds(world, point)
+local function isInBounds(world, point)
     return isInBoundsX(world, point.x) and isInBoundsY(world, point.y) and isInBoundsZ(world, point.z)
 end
 
 ---@param world World
 ---@param point Vector
 ---@return boolean
-function isBlocked(world, point)
+local function isBlocked(world, point)
     if not isInBounds(world, point) then
-        return nil
+        return false
     else
         return world.blocked[tostring(point)] ~= nil
     end
@@ -85,18 +85,18 @@ end
 
 ---@param world World
 ---@param point Vector
-function setBlock(world, point)
+local function setBlock(world, point)
     world.blocked[tostring(point)] = true
 end
 
 ---@param world World
 ---@param point Vector
-function clearBlock(world, point)
+local function clearBlock(world, point)
     world.blocked[tostring(point)] = nil
 end
 
 ---@param world World
-function getCorners(world)
+local function getCorners(world)
     return {
         Vector.create(world.x, world.y, world.z),
         Vector.create(world.x + world.width - 1, world.y, world.z),
@@ -112,7 +112,7 @@ end
 
 ---@param world World
 ---@param point Vector
-function getClosestCorner(world, point)
+local function getClosestCorner(world, point)
     local corners = getCorners(world)
 
     ---@type Vector

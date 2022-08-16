@@ -12,7 +12,7 @@ function Redstone.setOutput(side, flag)
 end
 
 ---@param side string|integer|string[]|integer[]
----@return boolean
+---@return integer
 function Redstone.getInput(side)
     if type(side) == "number" then
         side = {Side.getName(side)}

@@ -44,9 +44,13 @@ function Side.horizontal()
     return sides
 end
 
----@param side number
+---@param side string|integer
 function Side.getName(side)
-    return names[side] or tostring(side);
+    if type(side) == "string" then
+        return side
+    else
+        return names[side] or tostring(side);
+    end
 end
 
 ---@param str string
