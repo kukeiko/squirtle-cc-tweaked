@@ -26,7 +26,7 @@
         {
             "label": "build dig",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/dig"
+            "command": "luabundler bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/dig"
         },
     ]
 }
