@@ -1,5 +1,5 @@
 ---@class Side
-local Side = {front = 0, right = 1, back = 2, left = 3, top = 4, bottom = 5}
+local Side = {front = 0, right = 1, back = 2, left = 3, top = 4, bottom = 5, up = 4, down = 5}
 
 if not turtle then
     Side.right = 3

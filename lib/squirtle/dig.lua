@@ -6,7 +6,8 @@ local natives = {[Side.top] = native.digUp, [Side.front] = native.dig, [Side.bot
 ---@param side? string|integer
 ---@param toolSide? string
 return function(side, toolSide)
-    local handler = natives[Side.fromArg(side or Side.front)]
+    side = side or Side.front
+    local handler = natives[Side.fromArg(side)]
 
     if not handler then
         error(string.format("dig() does not support side %s", Side.getName(side)))

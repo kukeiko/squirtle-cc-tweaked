@@ -5,7 +5,8 @@ local natives = {[Side.top] = turtle.dropUp, [Side.front] = turtle.drop, [Side.b
 ---@param limit? integer
 ---@return boolean,string?
 return function(side, limit)
-    local handler = natives[Side.fromArg(side or Side.front)]
+    side = side or Side.front
+    local handler = natives[Side.fromArg(side)]
 
     if not handler then
         error(string.format("drop() does not support side %s", Side.getName(side)))
