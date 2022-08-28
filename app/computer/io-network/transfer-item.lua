@@ -2,7 +2,7 @@ local pushItems = require "world.chest.push-items"
 
 ---@param stacks table<integer, ItemStack>
 ---@param item string
----@return integer slot, ItemStack stack
+---@return integer? slot, ItemStack? stack
 local function nextOutputStack(stacks, item)
     for slot, stack in pairs(stacks) do
         if stack.count > 0 and stack.name == item then
@@ -13,7 +13,7 @@ end
 
 ---@param stacks table<integer, ItemStack>
 ---@param item string
----@return integer slot, ItemStack stack
+---@return integer? slot, ItemStack? stack
 local function nextInputStack(stacks, item)
     for slot, stack in pairs(stacks) do
         if stack.count < stack.maxCount and stack.name == item then
@@ -33,7 +33,7 @@ return function(from, to, item, total, rate)
     local fromSlot, fromStack = nextOutputStack(from.outputStacks, item)
     local toSlot, toStack = nextInputStack(to.inputStacks, item)
 
-    while transferredTotal < total and fromSlot and toSlot do
+    while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
         local space = toStack.maxCount - toStack.count
         local stock = fromStack.count
         local open = total - transferredTotal
