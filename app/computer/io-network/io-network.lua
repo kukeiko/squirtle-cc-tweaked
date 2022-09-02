@@ -2,9 +2,11 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/computer/?.lua"
 
 local copy = require "utils.copy"
-local indexOf = require "utils.index-of"
 local findPeripheralSide = require "world.peripheral.find-side"
+local findInventories = require "io-network.find-inventories"
 local readInventories = require "io-network.read-inventories"
+local getInventoriesAcceptingInput = require "io-network.get-inventories-accepting-input"
+local groupInventoriesByType = require "io-network.group-inventories-by-type"
 local transferItem = require "io-network.transfer-item"
 
 ---@class NetworkedInventory
@@ -22,39 +24,6 @@ local transferItem = require "io-network.transfer-item"
 ---@field io NetworkedInventory[]
 ---@field assigned NetworkedInventory[]
 ---@field ["output-dump"] NetworkedInventory[]
-
----@param modem string
----@return string[]
-local function findInventories(modem)
-    ---@type string[]
-    local chests = {}
-
-    for _, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
-        if peripheral.hasType(name, "minecraft:chest") then
-            table.insert(chests, name)
-        end
-    end
-
-    return chests
-end
-
----@param inventories NetworkedInventory[]
----@param ignore NetworkedInventory[]
----@param item string
----@return NetworkedInventory[]
-local function getInventoriesAcceptingInput(inventories, ignore, item)
-    local otherChests = {}
-
-    for _, candidate in ipairs(inventories) do
-        local stock = candidate.inputStock[item];
-
-        if stock and stock.count < stock.maxCount and indexOf(ignore, candidate.name) < 1 then
-            table.insert(otherChests, candidate)
-        end
-    end
-
-    return otherChests
-end
 
 ---@param chest NetworkedInventory
 ---@param chestsByType NetworkedInventoriesByType
@@ -130,19 +99,6 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
             end
         end
     end
-end
-
----@param inventories NetworkedInventory[]
----@return NetworkedInventoriesByType
-local function groupInventoriesByType(inventories)
-    ---@type NetworkedInventoriesByType
-    local inventoriesByType = {storage = {}, io = {}, ["output-dump"] = {}, assigned = {}}
-
-    for _, inventory in ipairs(inventories) do
-        table.insert(inventoriesByType[inventory.type], inventory)
-    end
-
-    return inventoriesByType
 end
 
 -- [todo] we should not only spread an item (e.g. charcoal) evenly amongst inputs,
