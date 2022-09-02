@@ -1,7 +1,7 @@
 local getItemMaxCount = require "world.chest.get-item-max-count"
 local Side = require "elements.side"
 
----@param name string|integer
+---@param name string
 ---@param detailed? boolean
 ---@return table<integer, ItemStack>
 return function(name, detailed)

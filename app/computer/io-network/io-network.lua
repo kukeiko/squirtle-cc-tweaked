@@ -11,7 +11,7 @@ local transferItem = require "io-network.transfer-item"
 
 ---@class NetworkedInventory
 ---@field name string
----@field type "storage" | "io" | "output-dump" | "assigned"
+---@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field inputStock table<string, ItemStack>
 ---@field inputStacks table<integer, ItemStack>
@@ -24,6 +24,11 @@ local transferItem = require "io-network.transfer-item"
 ---@field io NetworkedInventory[]
 ---@field assigned NetworkedInventory[]
 ---@field ["output-dump"] NetworkedInventory[]
+---@field furnace NetworkedInventory[]
+
+---@class FoundInventory
+---@field name string
+---@field type string
 
 ---@param chest NetworkedInventory
 ---@param chestsByType NetworkedInventoriesByType
@@ -37,6 +42,7 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
             local ioChests = getInventoriesAcceptingInput(chestsByType.io, ignore, stock.name)
             local storageChests = getInventoriesAcceptingInput(chestsByType.storage, ignore, stock.name)
             local assignedChests = getInventoriesAcceptingInput(chestsByType.assigned, ignore, stock.name)
+            local furnaces = getInventoriesAcceptingInput(chestsByType.furnace, ignore, stock.name)
 
             print(stock.count .. "x", item, "across:")
 
@@ -52,16 +58,23 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
                 print(" - ", #assignedChests .. "x assigned chests")
             end
 
-            local ioAndAssignedChests = copy(ioChests)
-
-            for i = 1, #assignedChests do
-                table.insert(ioAndAssignedChests, assignedChests[i])
+            if #furnaces > 0 then
+                print(" - ", #furnaces .. "x furnaces")
             end
 
-            local inputChests = ioAndAssignedChests
+            -- [todo] find or create some table concat function
+            local inputChests = copy(ioChests)
+
+            for i = 1, #assignedChests do
+                table.insert(inputChests, assignedChests[i])
+            end
+
+            for i = 1, #furnaces do
+                table.insert(inputChests, furnaces[i])
+            end
 
             if #storageChests > 0 then
-                if #ioChests > 0 then
+                if #ioChests > 0 or #furnaces > 0 then
                     -- only pick 1 storage chest in case we are spreading items across both I/O, assigned and storage chests.
                     table.insert(inputChests, storageChests[1])
                 else
@@ -109,8 +122,32 @@ end
 local function doTheThing(inventories)
     local inventoriesByType = groupInventoriesByType(inventories)
 
-    print("found", #inventoriesByType.io .. "x I/O,", #inventoriesByType.storage .. "x storage,",
-          #inventoriesByType.assigned .. "x assigned and", #inventoriesByType["output-dump"] .. "x dumping chests")
+    print("found:")
+    local numIo = #inventoriesByType.io
+    local numStorage = #inventoriesByType.storage
+    local numAssigned = #inventoriesByType.assigned
+    local numDumps = #inventoriesByType["output-dump"]
+    local numFurnaces = #inventoriesByType.furnace
+
+    if numIo > 0 then
+        print(" - " .. numIo .. "x I/O")
+    end
+
+    if numStorage > 0 then
+        print(" - " .. numStorage .. "x Storage")
+    end
+
+    if numAssigned > 0 then
+        print(" - " .. numAssigned .. "x Assigned")
+    end
+
+    if numDumps > 0 then
+        print(" - " .. numDumps .. "x Dump")
+    end
+
+    if numFurnaces > 0 then
+        print(" - " .. numFurnaces .. "x Furnace")
+    end
 
     os.sleep(1)
 
@@ -125,8 +162,16 @@ local function doTheThing(inventories)
     if #inventoriesByType.io > 0 then
         print("spreading I/O chests...")
 
-        for i, ioChest in ipairs(inventoriesByType.io) do
+        for _, ioChest in ipairs(inventoriesByType.io) do
             spreadOutputStacksOfInventory(ioChest, inventoriesByType)
+        end
+    end
+
+    if #inventoriesByType.furnace > 0 then
+        print("spreading furnaces...")
+
+        for _, furnace in ipairs(inventoriesByType.furnace) do
+            spreadOutputStacksOfInventory(furnace, inventoriesByType)
         end
     end
 end
@@ -140,10 +185,14 @@ local function main(args)
 
         if modem then
             local success, msg = pcall(function()
-                local chestNames = findInventories(modem)
-                local inventories = readInventories(chestNames, findPeripheralSide("minecraft:barrel"))
+                local found = findInventories(modem)
 
-                doTheThing(inventories)
+                if #found > 0 then
+                    local inventories = readInventories(found, findPeripheralSide("minecraft:barrel"))
+                    doTheThing(inventories)
+                else
+                    print("no inventories found")
+                end
             end)
 
             if not success then

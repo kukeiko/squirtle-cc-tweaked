@@ -1,12 +1,16 @@
 ---@param modem string
----@return string[]
+---@return FoundInventory[]
 return function(modem)
-    ---@type string[]
+    ---@type FoundInventory[]
     local inventories = {}
 
     for _, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
-        if peripheral.hasType(name, "minecraft:chest") then
-            table.insert(inventories, name)
+        local type = peripheral.getType(name)
+
+        if type == "minecraft:chest" or type == "minecraft:furnace" then
+            ---@type FoundInventory
+            local inventory = {name = name, type = type}
+            table.insert(inventories, inventory)
         end
     end
 
