@@ -22,8 +22,8 @@ local function nextInputStack(stacks, item)
     end
 end
 
----@param from NetworkedChest
----@param to NetworkedChest
+---@param from NetworkedInventory
+---@param to NetworkedInventory
 ---@param item string
 ---@param total integer
 ---@param rate integer

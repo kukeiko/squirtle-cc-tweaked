@@ -5,9 +5,9 @@ local stacksToStock = require "io-network.stacks-to-stock"
 
 ---@param chest string
 ---@param stacks table<integer, ItemStack>
----@return NetworkedChest
+---@return NetworkedInventory
 return function(chest, stacks)
-    ---@type NetworkedChest
+    ---@type NetworkedInventory
     local storageChest = {
         name = chest,
         type = "storage",

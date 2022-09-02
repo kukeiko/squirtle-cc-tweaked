@@ -3,7 +3,7 @@ local stacksToStock = require "io-network.stacks-to-stock"
 
 ---@param chest string
 ---@param ignoredSlots? table<integer>
----@return NetworkedChest
+---@return NetworkedInventory
 return function(chest, ignoredSlots)
     ignoredSlots = ignoredSlots or {}
     local stacks = getStacks(chest)
@@ -12,7 +12,7 @@ return function(chest, ignoredSlots)
         stacks[slot] = nil
     end
 
-    ---@type NetworkedChest
+    ---@type NetworkedInventory
     local outputDumpChest = {
         name = chest,
         type = "output-dump",

@@ -29,11 +29,11 @@ end
 ---@param chest string
 ---@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
----@return NetworkedChest
+---@return NetworkedInventory
 return function(chest, stacks, nameTagSlot)
     local inputStacks, outputStacks = toInputOutputStacks(stacks, nameTagSlot)
 
-    ---@type NetworkedChest
+    ---@type NetworkedInventory
     local ioChest = {
         name = chest,
         type = "io",

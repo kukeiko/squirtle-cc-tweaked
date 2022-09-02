@@ -55,7 +55,7 @@ return function(chest, assignedItems)
         end
     end
 
-    ---@type NetworkedChest
+    ---@type NetworkedInventory
     local assignedChest = {
         name = chest,
         type = "assigned",

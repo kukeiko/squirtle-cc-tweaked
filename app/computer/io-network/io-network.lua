@@ -4,10 +4,10 @@ package.path = package.path .. ";/app/computer/?.lua"
 local copy = require "utils.copy"
 local indexOf = require "utils.index-of"
 local findPeripheralSide = require "world.peripheral.find-side"
-local readNetworkedChests = require "io-network.read-networked-chests"
+local readInventories = require "io-network.read-inventories"
 local transferItem = require "io-network.transfer-item"
 
----@class NetworkedChest
+---@class NetworkedInventory
 ---@field name string
 ---@field type "storage" | "io" | "output-dump" | "assigned"
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
@@ -17,15 +17,15 @@ local transferItem = require "io-network.transfer-item"
 ---@field outputStock table<string, ItemStack>
 ---@field outputStacks table<integer, ItemStack>
 
----@class NetworkedChestsByType
----@field storage NetworkedChest[]
----@field io NetworkedChest[]
----@field assigned NetworkedChest[]
----@field ["output-dump"] NetworkedChest[]
+---@class NetworkedInventoriesByType
+---@field storage NetworkedInventory[]
+---@field io NetworkedInventory[]
+---@field assigned NetworkedInventory[]
+---@field ["output-dump"] NetworkedInventory[]
 
 ---@param modem string
 ---@return string[]
-local function findNetworkedChests(modem)
+local function findInventories(modem)
     ---@type string[]
     local chests = {}
 
@@ -38,14 +38,14 @@ local function findNetworkedChests(modem)
     return chests
 end
 
----@param chests NetworkedChest[]
----@param ignore NetworkedChest[]
+---@param inventories NetworkedInventory[]
+---@param ignore NetworkedInventory[]
 ---@param item string
----@return NetworkedChest[]
-local function getChestsAcceptingInput(chests, ignore, item)
+---@return NetworkedInventory[]
+local function getInventoriesAcceptingInput(inventories, ignore, item)
     local otherChests = {}
 
-    for _, candidate in ipairs(chests) do
+    for _, candidate in ipairs(inventories) do
         local stock = candidate.inputStock[item];
 
         if stock and stock.count < stock.maxCount and indexOf(ignore, candidate.name) < 1 then
@@ -56,18 +56,18 @@ local function getChestsAcceptingInput(chests, ignore, item)
     return otherChests
 end
 
----@param chest NetworkedChest
----@param chestsByType NetworkedChestsByType
-local function spreadChestOutput(chest, chestsByType)
+---@param chest NetworkedInventory
+---@param chestsByType NetworkedInventoriesByType
+local function spreadOutputStacksOfInventory(chest, chestsByType)
     print("working on", chest.name, "(" .. chest.type .. ")")
 
     for item, stock in pairs(chest.outputStock) do
         local ignore = {chest.name}
 
         while stock.count > 0 do
-            local ioChests = getChestsAcceptingInput(chestsByType.io, ignore, stock.name)
-            local storageChests = getChestsAcceptingInput(chestsByType.storage, ignore, stock.name)
-            local assignedChests = getChestsAcceptingInput(chestsByType.assigned, ignore, stock.name)
+            local ioChests = getInventoriesAcceptingInput(chestsByType.io, ignore, stock.name)
+            local storageChests = getInventoriesAcceptingInput(chestsByType.storage, ignore, stock.name)
+            local assignedChests = getInventoriesAcceptingInput(chestsByType.assigned, ignore, stock.name)
 
             print(stock.count .. "x", item, "across:")
 
@@ -132,45 +132,45 @@ local function spreadChestOutput(chest, chestsByType)
     end
 end
 
----@param chests NetworkedChest[]
----@return NetworkedChestsByType
-local function groupChestsByType(chests)
-    ---@type NetworkedChestsByType
-    local chestsByType = {storage = {}, io = {}, ["output-dump"] = {}, assigned = {}}
+---@param inventories NetworkedInventory[]
+---@return NetworkedInventoriesByType
+local function groupInventoriesByType(inventories)
+    ---@type NetworkedInventoriesByType
+    local inventoriesByType = {storage = {}, io = {}, ["output-dump"] = {}, assigned = {}}
 
-    for _, networkedChest in ipairs(chests) do
-        table.insert(chestsByType[networkedChest.type], networkedChest)
+    for _, inventory in ipairs(inventories) do
+        table.insert(inventoriesByType[inventory.type], inventory)
     end
 
-    return chestsByType
+    return inventoriesByType
 end
 
 -- [todo] we should not only spread an item (e.g. charcoal) evenly amongst inputs,
 -- but also evenly from outputs, so that e.g. the 4 lumberjack farms all start working
 -- at the same time whenever charcoal is being transported away (and their outputs were full)
 
----@param networkedChests NetworkedChest[]
-local function doTheThing(networkedChests)
-    local chestsByType = groupChestsByType(networkedChests)
+---@param inventories NetworkedInventory[]
+local function doTheThing(inventories)
+    local inventoriesByType = groupInventoriesByType(inventories)
 
-    print("found", #chestsByType.io .. "x I/O,", #chestsByType.storage .. "x storage,",
-          #chestsByType.assigned .. "x assigned and", #chestsByType["output-dump"] .. "x dumping chests")
+    print("found", #inventoriesByType.io .. "x I/O,", #inventoriesByType.storage .. "x storage,",
+          #inventoriesByType.assigned .. "x assigned and", #inventoriesByType["output-dump"] .. "x dumping chests")
 
     os.sleep(1)
 
-    if #chestsByType["output-dump"] > 0 then
+    if #inventoriesByType["output-dump"] > 0 then
         print("spreading dumps...")
 
-        for _, chest in ipairs(chestsByType["output-dump"]) do
-            spreadChestOutput(chest, chestsByType)
+        for _, chest in ipairs(inventoriesByType["output-dump"]) do
+            spreadOutputStacksOfInventory(chest, inventoriesByType)
         end
     end
 
-    if #chestsByType.io > 0 then
+    if #inventoriesByType.io > 0 then
         print("spreading I/O chests...")
 
-        for i, ioChest in ipairs(chestsByType.io) do
-            spreadChestOutput(ioChest, chestsByType)
+        for i, ioChest in ipairs(inventoriesByType.io) do
+            spreadOutputStacksOfInventory(ioChest, inventoriesByType)
         end
     end
 end
@@ -184,10 +184,10 @@ local function main(args)
 
         if modem then
             local success, msg = pcall(function()
-                local chestNames = findNetworkedChests(modem)
-                local networkedChests = readNetworkedChests(chestNames, findPeripheralSide("minecraft:barrel"))
+                local chestNames = findInventories(modem)
+                local inventories = readInventories(chestNames, findPeripheralSide("minecraft:barrel"))
 
-                doTheThing(networkedChests)
+                doTheThing(inventories)
             end)
 
             if not success then
