@@ -178,7 +178,7 @@ local function doTheThing(inventories)
 end
 
 local function main(args)
-    print("[io-network v2.2.0] booting...")
+    print("[io-network v2.3.0] booting...")
     local timeout = tonumber(args[1] or 30)
 
     while true do
