@@ -5,6 +5,7 @@ local stacksToStock = require "io-network.stacks-to-stock"
 ---@param ignoredSlots? table<integer>
 ---@return NetworkedChest
 return function(chest, ignoredSlots)
+    ignoredSlots = ignoredSlots or {}
     local stacks = getStacks(chest)
 
     for slot in pairs(ignoredSlots) do
