@@ -8,6 +8,7 @@ local readInventories = require "io-network.read-inventories"
 local getInventoriesAcceptingInput = require "io-network.get-inventories-accepting-input"
 local groupInventoriesByType = require "io-network.group-inventories-by-type"
 local transferItem = require "io-network.transfer-item"
+local printProgress = require "io-network.print-progress"
 
 ---@class NetworkedInventory
 ---@field name string
@@ -205,7 +206,20 @@ local function main(args)
         end
 
         print("done! sleeping for", timeout .. "s")
-        os.sleep(timeout)
+        local steps = 10
+        local x, y = printProgress(0, steps)
+
+        parallel.waitForAny(function()
+            local timeoutTick = timeout / steps
+
+            for i = 1, steps do
+                os.sleep(timeoutTick)
+                printProgress(i, steps, x, y)
+            end
+        end, function()
+            os.pullEvent("key")
+            printProgress(steps, steps, x, y)
+        end)
     end
 end
 
