@@ -15,6 +15,7 @@ local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
 local subtractStock = require "world.chest.subtract-stock"
+local count = require "utils.count"
 
 local function findChestSide()
     return findPeripheralSide("minecraft:chest")
@@ -48,11 +49,6 @@ local function dumpBarrelToChestcart()
     end
 end
 
-local function printUsage()
-    print("Usage:")
-    print("io-chestcart send-output|send-input")
-end
-
 ---@param args table
 ---@return boolean success
 local function main(args)
@@ -67,8 +63,7 @@ local function main(args)
     elseif args[1] == "send-input" then
         sendOutput = false
     else
-        printUsage()
-        return false
+        sendOutput = false
     end
 
     while true do
@@ -78,6 +73,7 @@ local function main(args)
             local signal = Redstone.getInput({"left", "right"})
 
             if signal then
+                -- turn towards the chestcart
                 turn(signal)
             else
                 -- unlock piston in case there is no chestcart
