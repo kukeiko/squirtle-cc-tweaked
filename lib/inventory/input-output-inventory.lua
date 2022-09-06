@@ -1,0 +1,4 @@
+---@class InputOutputInventory
+---@field name string
+---@field input Inventory
+---@field output Inventory

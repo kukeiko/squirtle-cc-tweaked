@@ -14,9 +14,11 @@ local printProgress = require "io-network.print-progress"
 ---@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 ---@field name string
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
+-- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
 ---@field inputStock table<string, ItemStack>
 ---@field inputStacks table<integer, ItemStack>
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
+-- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
 ---@field outputStock table<string, ItemStack>
 ---@field outputStacks table<integer, ItemStack>
 

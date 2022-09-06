@@ -1,58 +1,7 @@
-local getOutputMissingStock = require "world.chest.get-output-missing-stock"
-local getOutputStacks = require "world.chest.get-output-stacks"
 local getStacks = require "world.chest.get-stacks"
-local getStock = require "world.chest.get-stock"
-local pushItems = require "world.chest.push-items"
-local subtractStock = require "world.chest.subtract-stock"
-
----@param stock table<string, integer>
----@param missingStock table<string, integer>
----@param keepStock? table<string, integer>
-local function calculatePushableStock(stock, missingStock, keepStock)
-    keepStock = keepStock or {}
-    ---@type table<string, integer>
-    local pushableStock = {}
-    local availableStock = subtractStock(stock, keepStock)
-
-    for item, missing in pairs(missingStock) do
-        local available = availableStock[item]
-
-        if available ~= nil and available > 0 then
-            pushableStock[item] = math.min(missing, available)
-        end
-    end
-
-    return pushableStock
-end
-
----@param from string
----@param to string
----@param stacks table<integer, ItemStack>
----@param outputStacks table<integer, ItemStack>
----@param pushableStock table<string, integer>
-local function transferPushableStock(from, to, stacks, outputStacks, pushableStock)
-    local transferredStock = {}
-
-    for slot, stack in pairs(stacks) do
-        local stock = pushableStock[stack.name]
-
-        if stock ~= nil and stock > 0 then
-            for outputSlot, outputStack in pairs(outputStacks) do
-                if outputStack.name == stack.name and outputStack.count < outputStack.maxCount and stack.count > 0 and
-                    pushableStock[stack.name] > 0 then
-                    local transfer = math.min(pushableStock[stack.name], outputStack.maxCount - outputStack.count)
-                    local transferred = pushItems(from, to, slot, transfer, outputSlot)
-                    outputStack.count = outputStack.count + transferred
-                    stack.count = stack.count - transferred
-                    pushableStock[stack.name] = pushableStock[stack.name] - transferred
-                    transferredStock[stack.name] = (transferredStock[stack.name] or 0) + transferred
-                end
-            end
-        end
-    end
-
-    return transferredStock
-end
+local toIoInventory = require "inventory.to-io-inventory"
+local transferItem = require "inventory.transfer-item"
+local stacksToStock = require "inventory.stacks-to-stock"
 
 -- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
 -- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32
@@ -62,16 +11,40 @@ end
 ---@return boolean, table<string, integer>
 return function(from, to, keepStock)
     keepStock = keepStock or {}
-    local missingStock = getOutputMissingStock(to)
-    local pushableStock = calculatePushableStock(getStock(from), missingStock, keepStock)
-    local transferred = transferPushableStock(from, to, getStacks(from), getOutputStacks(to), pushableStock)
-    local remainingStock = subtractStock(getStock(from), keepStock)
 
-    for item, stock in pairs(remainingStock) do
-        if missingStock[item] and stock > 0 then
-            return false, transferred
+    ---@type  table<string, integer>
+    local transferredStock = {}
+    local fromStacks = getStacks(from)
+    ---@type Inventory
+    local fromInventory = {name = from, stacks = fromStacks, stock = stacksToStock(fromStacks)}
+
+    local toInventory = toIoInventory(to)
+    local transferredAll = true
+
+    for item, stock in pairs(toInventory.output.stock) do
+        local fromStock = fromInventory.stock[item]
+
+        if fromStock then
+            local pushable = math.max(fromStock.count - (keepStock[item] or 0), 0)
+            local open = stock.maxCount - stock.count
+            local transfer = math.min(open, pushable)
+
+            while stock.count < stock.maxCount do
+                local transferred = transferItem(fromInventory, toInventory.output, item, transfer, 16)
+                transferredStock[item] = (transferredStock[item] or 0) + transferred
+
+                if transferred ~= transfer then
+                    -- assuming chest is full or its state changed from an external source, in which case we just ignore it
+                    break
+                end
+            end
+
+            if fromStock.count - (keepStock[item] or 0) > 0 then
+                transferredAll = false
+            end
         end
     end
 
-    return true, transferred
+    return transferredAll, transferredStock
 end
+
