@@ -104,8 +104,15 @@ local function main(args)
                 pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
             else
                 local _, transferredStock = pushOutput("bottom", io)
+                local movedAnyOutput = count(transferredStock) > 0
                 local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
-                pullInput(io, "bottom", maxStock)
+                local transferredInputStock = pullInput(io, "bottom", maxStock)
+                local movedAnyInput = count(transferredInputStock) > 0
+
+                if not movedAnyInput and not movedAnyOutput then
+                    print("didn't transfer anything, sleeping 7s")
+                    os.sleep(7)
+                end
             end
 
             local signal = Redstone.getInput({"left", "right"})
