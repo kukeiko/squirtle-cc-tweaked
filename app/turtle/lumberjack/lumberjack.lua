@@ -5,7 +5,6 @@ local Side = require "elements.side"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
-local Inventory = require "squirtle.inventory"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
 local move = require "squirtle.move"
@@ -67,7 +66,7 @@ end
 local function refuel(stash)
     if turtle.getFuelLevel() < (64 * 80) then
         print("refueling, have", turtle.getFuelLevel(), ", want " .. (64 * 80))
-        Inventory.selectFirstEmptySlot()
+        Backpack.selectFirstEmptySlot()
 
         for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
@@ -157,11 +156,11 @@ end
 local function plantTree()
     print("planting tree...")
     move(Side.back)
-    Inventory.selectItem("minecraft:birch_sapling")
+    Backpack.selectItem("minecraft:birch_sapling")
     place()
 
     while not inspect(Side.front, "minecraft:birch_log") do
-        if Inventory.selectItem("minecraft:bone_meal") then
+        if Backpack.selectItem("minecraft:bone_meal") then
             while place() do
             end
         else
@@ -184,7 +183,7 @@ local function shouldPlantTree()
 end
 
 local function refuelFromBackpack()
-    while Fuel.getMissingFuel() > 0 and Inventory.selectItem("minecraft:stick") do
+    while Fuel.getMissingFuel() > 0 and Backpack.selectItem("minecraft:stick") do
         print("refueling from sticks...")
         Fuel.refuel()
     end
@@ -193,13 +192,13 @@ local function refuelFromBackpack()
 
     print("refueling from saplings...")
     while Fuel.getMissingFuel() > 0 and saplingStock > 64 do
-        Inventory.selectItem("minecraft:birch_sapling")
+        Backpack.selectItem("minecraft:birch_sapling")
         Fuel.refuel(saplingStock - 64)
         saplingStock = Backpack.getItemStock("minecraft:birch_sapling")
     end
 
     print("condensing backpack...")
-    Inventory.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
+    Backpack.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
 end
 
 local function doWork()
@@ -213,7 +212,7 @@ local function doWork()
 
     while shouldPlantTree() do
         if plantTree() then
-            Inventory.selectSlot(1)
+            Backpack.selectSlot(1)
             dig()
             move()
             harvestTree()

@@ -1,5 +1,5 @@
 local Fuel = require "squirtle.fuel"
-local refuelFromInventory = require "squirtle.refuel.from-inventory"
+local refuelFromBackpack = require "squirtle.refuel.from-backpack"
 local refuelWithHelpFromPlayer = require "squirtle.refuel.with-help-from-player"
 
 ---@param fuel integer
@@ -8,7 +8,7 @@ return function(fuel)
         return true
     end
 
-    refuelFromInventory(fuel)
+    refuelFromBackpack(fuel)
 
     if Fuel.getFuelLevel() < fuel then
         refuelWithHelpFromPlayer(fuel)

@@ -3,7 +3,7 @@ package.path = package.path .. ";/lib/?.lua"
 local findPeripheralSide = require "world.peripheral.find-side"
 local Chest = require "world.chest"
 local Redstone = require "world.redstone"
-local Inventory = require "squirtle.inventory"
+local Backpack = require "squirtle.backpack"
 local pushInput = require "squirtle.transfer.push-input"
 local pullOutput = require "squirtle.transfer.pull-output"
 local pullInput = require "squirtle.transfer.pull-input"
@@ -51,7 +51,7 @@ end
 
 local function waitForChestcart()
     os.sleep(1)
-    if not Inventory.selectItem("minecraft:redstone_block") then
+    if not Backpack.selectItem("minecraft:redstone_block") then
         error("my redstone block went missing :(")
     end
 

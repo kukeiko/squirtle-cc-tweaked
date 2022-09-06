@@ -1,5 +1,5 @@
 local Chest = require "world.chest"
-local Inventory = require "squirtle.inventory"
+local Backpack = require "squirtle.backpack"
 local suck = require "squirtle.suck"
 local drop = require "squirtle.drop"
 
@@ -25,7 +25,7 @@ return function(side, slot, limit)
     if items[1] ~= nil then
         local firstEmptySlot = firstEmptySlot(items, Chest.getSize(side))
 
-        if not firstEmptySlot and Inventory.isFull() then
+        if not firstEmptySlot and Backpack.isFull() then
             error("container full. turtle also full, so no temporary unloading possible.")
         elseif not firstEmptySlot then
             if limit ~= nil and limit ~= items[slot].count then
@@ -35,7 +35,7 @@ return function(side, slot, limit)
 
             print("temporarily load first container slot into turtle...")
             local initialSlot = turtle.getSelectedSlot()
-            Inventory.selectFirstEmptySlot()
+            Backpack.selectFirstEmptySlot()
             suck(side)
             Chest.pushItems(side, side, slot, limit, 1)
             -- [todo] if we want to be super strict, we would have to move the

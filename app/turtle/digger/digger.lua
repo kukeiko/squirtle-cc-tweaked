@@ -12,7 +12,6 @@ local boot = require "digger.boot"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local dump = require "squirtle.dump"
-local Inventory = require "squirtle.inventory"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local inspect = require "squirtle.inspect"
@@ -88,7 +87,7 @@ end
 ---@param fuel integer
 local function refuelFromBuffer(bufferSide, fuel)
     print("refueling, have", Fuel.getFuelLevel())
-    Inventory.selectFirstEmptySlot()
+    Backpack.selectFirstEmptySlot()
 
     for slot, stack in pairs(Chest.getStacks(bufferSide)) do
         if stack.name == "minecraft:charcoal" then
@@ -165,7 +164,7 @@ local function main(args)
     local previous = point
     local maxFailedNavigates = state.world.width * state.world.depth
     local numFailedNavigates = 0
-    Inventory.selectSlot(1)
+    Backpack.selectSlot(1)
 
     while point do
         if previous.y ~= point.y then
@@ -254,7 +253,7 @@ local function main(args)
             end
 
             print("unloaded all and have enough fuel - back to work!")
-            Inventory.selectSlot(1)
+            Backpack.selectSlot(1)
             navigate(state.checkpoint, nil, isBreakable)
         end
     end

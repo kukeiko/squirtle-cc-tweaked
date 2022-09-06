@@ -1,5 +1,5 @@
 local Fuel = require "squirtle.fuel"
-local refuelFromInventory = require "squirtle.refuel.from-inventory"
+local refuelFromBackpack = require "squirtle.refuel.from-backpack"
 
 ---@param fuel? integer
 return function(fuel)
@@ -10,6 +10,6 @@ return function(fuel)
         print(string.format("[help] not enough fuel, need %d more.", openFuel))
         print("please put some into inventory")
         os.pullEvent("turtle_inventory")
-        refuelFromInventory(openFuel)
+        refuelFromBackpack(openFuel)
     end
 end

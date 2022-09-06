@@ -7,7 +7,7 @@ package.path = package.path .. ";/?.lua"
     leafs to naturally decay, and goodies dropped are collected via water. app: lumberjack
 ]]
 
-local Inventory = require "squirtle.inventory"
+local Backpack = require "squirtle.backpack"
 local inspect = require "squirtle.inspect"
 local Side = require "elements.side"
 local turn = require "squirtle.turn"
@@ -32,7 +32,7 @@ local function readState()
         front = inspect(Side.front),
         bottom = inspect(Side.bottom),
         top = inspect(Side.top),
-        bits = Inventory.readBits()
+        bits = Backpack.readBits()
     }
 
     return state
@@ -45,7 +45,7 @@ local function suspend()
 end
 
 local function main(args)
-    Inventory.setBits(myBits.climbing)
+    Backpack.setBits(myBits.climbing)
 
     while true do
         local state = readState()
@@ -61,7 +61,7 @@ local function main(args)
         if lookingAtLog then
             if not isLeafLoop and not isSteppingOut then
                 print("begin 1st leaf loop")
-                Inventory.orBits(myBits.leafLoop)
+                Backpack.orBits(myBits.leafLoop)
             elseif isLeafLoop and not enteredLeafLoop then
                 print("1st loop turn")
                 turn(Side.left)
@@ -69,14 +69,14 @@ local function main(args)
                 print("leafs cut! set bits for stepping out...")
                 local bitsWithoutLeafLoop = bit.bxor(state.bits, bit.bor(myBits.leafLoop, myBits.leafLoopEntered))
                 local nextBits = bit.bor(myBits.steppingOut, bitsWithoutLeafLoop)
-                Inventory.setBits(nextBits)
+                Backpack.setBits(nextBits)
             elseif not isLeafLoop and not enteredLeafLoop and isSteppingOut then
                 print("stepping out!")
                 -- [todo] assert existance of planks block
                 move(Side.back)
             elseif not isLeafLoop and enteredLeafLoop and isSteppingOut then
                 -- settings bits first so that in case of a crash, we do not skip cutting leafs of the current layer
-                Inventory.setBits(bit.bxor(state.bits, bit.bor(myBits.leafLoopEntered, myBits.steppingOut)))
+                Backpack.setBits(bit.bxor(state.bits, bit.bor(myBits.leafLoopEntered, myBits.steppingOut)))
 
                 if isClimbing then
                     print("stepped back! going up...")
@@ -93,7 +93,7 @@ local function main(args)
         elseif isLeafLoop and (lookingAtLeafs or not state.front) then
             if not enteredLeafLoop then
                 print("1st turn done (entered leaf loop)")
-                Inventory.orBits(myBits.leafLoopEntered)
+                Backpack.orBits(myBits.leafLoopEntered)
             end
 
             if lookingAtLeafs then
@@ -110,7 +110,7 @@ local function main(args)
         elseif not state.front then
             if isSteppingOut and not isLeafLoop and not enteredLeafLoop then
                 -- [todo] support any type of planks
-                local slot = Inventory.selectItem("minecraft:birch_planks")
+                local slot = Backpack.selectItem("minecraft:birch_planks")
 
                 if not slot then
                     error("no planks found")
@@ -127,7 +127,7 @@ local function main(args)
                 move()
             elseif bottomIsLog then
                 print("sitting on top! climbing = false...")
-                Inventory.xorBits(myBits.climbing)
+                Backpack.xorBits(myBits.climbing)
                 print("... and moving forward")
                 move()
                 dig(Side.bottom)
@@ -140,13 +140,13 @@ local function main(args)
         elseif lookingAtPlanks then
             if not isLeafLoop and not enteredLeafLoop then
                 print("begin 2nd leaf loop")
-                Inventory.orBits(myBits.leafLoop)
+                Backpack.orBits(myBits.leafLoop)
             elseif isLeafLoop and not enteredLeafLoop then
                 print("1st loop turn")
                 turn(Side.left)
             elseif isLeafLoop and enteredLeafLoop then
                 print("leafs cut! set bits for stepping back...")
-                Inventory.setBits(bit.bxor(state.bits, myBits.leafLoop))
+                Backpack.setBits(bit.bxor(state.bits, myBits.leafLoop))
             elseif not isLeafLoop and enteredLeafLoop then
                 print("begin stepping back, digging planks...")
                 dig()

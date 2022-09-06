@@ -1,15 +1,15 @@
-local Inventory = require "squirtle.inventory"
+local Backpack = require "squirtle.backpack"
 local drop = require "squirtle.drop"
 
 ---@param side integer|string
 ---@return boolean success if everything could be dumped
 return function(side)
-    local items = Inventory.list()
+    local items = Backpack.getStacks()
 
     for slot in pairs(items) do
-        Inventory.selectSlot(slot)
+        Backpack.selectSlot(slot)
         drop(side)
     end
 
-    return Inventory.isEmpty()
+    return Backpack.isEmpty()
 end

@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 
 -- [todo] did some changes that might no longer make this app 100% crash safe
-local Inventory = require "squirtle.inventory"
+local Backpack = require "squirtle.backpack"
 local Fuel = require "squirtle.fuel"
 local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
@@ -47,8 +47,8 @@ local function getBlockTurnSide(block)
 end
 
 local function tryPlantAnything()
-    for slot = 1, Inventory.size() do
-        if Inventory.selectSlotIfNotEmpty(slot) then
+    for slot = 1, Backpack.size() do
+        if Backpack.selectSlotIfNotEmpty(slot) then
             if turtle.placeDown() then
                 return
             end
@@ -64,11 +64,11 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    for slot = 1, Inventory.size() do
-        local stack = Inventory.getStack(slot)
+    for slot = 1, Backpack.size() do
+        local stack = Backpack.getStack(slot)
 
         if stack and stack.name == seeds then
-            return Inventory.selectSlot(slot)
+            return Backpack.selectSlot(slot)
         end
     end
 
@@ -122,7 +122,7 @@ end
 ---@param side string
 ---@param max? integer if supplied, only wait if age difference does not exceed max
 local function waitUntilCropReady(side, max)
-    while not isCropsReady(side) and Inventory.selectItem("minecraft:bone_meal") do
+    while not isCropsReady(side) and Backpack.selectItem("minecraft:bone_meal") do
         while place(side) do
         end
     end
@@ -158,7 +158,7 @@ end
 ---@param fuel integer
 local function refuelFromBuffer(bufferSide, fuel)
     print("refueling, have", Fuel.getFuelLevel())
-    Inventory.selectFirstEmptySlot()
+    Backpack.selectFirstEmptySlot()
 
     for slot, stack in pairs(Chest.getStacks(bufferSide)) do
         if stack.name == "minecraft:charcoal" then
@@ -180,7 +180,7 @@ local function refuelFromBuffer(bufferSide, fuel)
 end
 
 local function compostSeeds()
-    while Inventory.selectItem("seeds") do
+    while Backpack.selectItem("seeds") do
         drop("bottom")
     end
 end
@@ -198,7 +198,7 @@ local function doHomeStuff()
     local barrel = "bottom"
     print("i am home! doing home stuff")
 
-    while Inventory.selectItem("minecraft:poisonous_potato") do
+    while Backpack.selectItem("minecraft:poisonous_potato") do
         print("discarding poisonous potatoes")
         drop("top")
     end
@@ -254,9 +254,9 @@ local function doHomeStuff()
     end
 
     -- [todo] hacky workaround to put back charcoal
-    for slot, stack in pairs(Inventory.list()) do
+    for slot, stack in pairs(Backpack.getStacks()) do
         if stack.name == "minecraft:charcoal" then
-            Inventory.selectSlot(slot)
+            Backpack.selectSlot(slot)
             drop(barrel)
         end
     end
@@ -338,7 +338,7 @@ local function main(args)
                 local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
 
                 if not selectedSeed then
-                    Inventory.selectFirstEmptySlot()
+                    Backpack.selectFirstEmptySlot()
                     -- [todo] error handling
                 end
 
