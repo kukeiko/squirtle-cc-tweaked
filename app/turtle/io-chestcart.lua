@@ -49,6 +49,81 @@ local function dumpBarrelToChestcart()
     end
 end
 
+local function waitForChestcart()
+    os.sleep(1)
+    if not Inventory.selectItem("minecraft:redstone_block") then
+        error("my redstone block went missing :(")
+    end
+
+    print("waiting for chestcart...")
+    os.pullEvent("redstone")
+    print("chestcart is here! locking it in place...")
+
+    if not place() then
+        error("could not place redstone block to lock piston :(")
+    end
+end
+
+local function lookAtChestcart()
+    local signal = Redstone.getInput({"left", "right"})
+
+    if signal then
+        -- turn towards the chestcart
+        turn(signal)
+    else
+        -- unlock piston in case there is no chestcart
+        dig()
+    end
+end
+
+local function emptyChestcart()
+    if not Redstone.getInput("front") then
+        print("looking at rail, but no chestcart here. turning towards piston")
+        local chest = findChestSide()
+
+        if chest == "left" then
+            turn("right")
+        else
+            turn("left")
+        end
+    else
+        dumpChestcartToBarrel()
+        local chest = findChestSide()
+        turn(chest)
+    end
+end
+
+local function doIO()
+    print("doing I/O...")
+    local io = findChestSide()
+
+    -- [todo] need to somehow support 27+ slot chests
+    if sendOutput then
+        pushInput("bottom", io)
+        pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
+    else
+        local _, transferredStock = pushOutput("bottom", io)
+        local movedAnyOutput = count(transferredStock) > 0
+        local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
+        local transferredInputStock = pullInput(io, "bottom", maxStock)
+        local movedAnyInput = count(transferredInputStock) > 0
+
+        if not movedAnyInput and not movedAnyOutput then
+            print("didn't transfer anything, sleeping 7s")
+            os.sleep(7)
+        end
+    end
+
+    local signal = Redstone.getInput({"left", "right"})
+    turn(signal)
+    print("filling chestcart...")
+    dumpBarrelToChestcart()
+    print("sending off chestcart!")
+    turn(signal)
+    dig()
+    os.sleep(3)
+end
+
 ---@param args table
 ---@return boolean success
 local function main(args)
@@ -70,72 +145,13 @@ local function main(args)
         local front = inspect()
 
         if front and front.name == "minecraft:redstone_block" then
-            local signal = Redstone.getInput({"left", "right"})
-
-            if signal then
-                -- turn towards the chestcart
-                turn(signal)
-            else
-                -- unlock piston in case there is no chestcart
-                dig()
-            end
+            lookAtChestcart();
         elseif front and front.name == "minecraft:detector_rail" then
-            if not Redstone.getInput("front") then
-                print("looking at rail, but no chestcart here. turning towards piston")
-                local chest = findChestSide()
-
-                if chest == "left" then
-                    turn("right")
-                else
-                    turn("left")
-                end
-            else
-                dumpChestcartToBarrel()
-                local chest = findChestSide()
-                turn(chest)
-            end
+            emptyChestcart()
         elseif front and front.name == "minecraft:chest" then
-            print("doing I/O...")
-            local io = findChestSide()
-
-            -- [todo] need to somehow support 27+ slot chests
-            if sendOutput then
-                pushInput("bottom", io)
-                pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
-            else
-                local _, transferredStock = pushOutput("bottom", io)
-                local movedAnyOutput = count(transferredStock) > 0
-                local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
-                local transferredInputStock = pullInput(io, "bottom", maxStock)
-                local movedAnyInput = count(transferredInputStock) > 0
-
-                if not movedAnyInput and not movedAnyOutput then
-                    print("didn't transfer anything, sleeping 7s")
-                    os.sleep(7)
-                end
-            end
-
-            local signal = Redstone.getInput({"left", "right"})
-            turn(signal)
-            print("filling chestcart...")
-            dumpBarrelToChestcart()
-            print("sending off chestcart!")
-            turn(signal)
-            dig()
-            os.sleep(3)
+            doIO();
         elseif not front and findChestSide() == "back" then
-            os.sleep(1)
-            if not Inventory.selectItem("minecraft:redstone_block") then
-                error("my redstone block went missing :(")
-            end
-
-            print("waiting for chestcart...")
-            os.pullEvent("redstone")
-            print("chestcart is here! locking it in place...")
-
-            if not place() then
-                error("could not place redstone block to lock piston :(")
-            end
+            waitForChestcart()
         end
     end
 end
