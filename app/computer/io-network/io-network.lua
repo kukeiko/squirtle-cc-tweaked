@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/computer/?.lua"
 
-local copy = require "utils.copy"
+local concatTables = require "utils.concat-tables"
 local findPeripheralSide = require "world.peripheral.find-side"
 local findInventories = require "io-network.find-inventories"
 local readInventories = require "io-network.read-inventories"
@@ -63,16 +63,7 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
                 print(" - ", #furnaces .. "x furnaces")
             end
 
-            -- [todo] find or create some table concat function
-            local inputChests = copy(ioChests)
-
-            for i = 1, #assignedChests do
-                table.insert(inputChests, assignedChests[i])
-            end
-
-            for i = 1, #furnaces do
-                table.insert(inputChests, furnaces[i])
-            end
+            local inputChests = concatTables(ioChests, assignedChests, furnaces)
 
             if #storageChests > 0 then
                 if #ioChests > 0 or #furnaces > 0 then
