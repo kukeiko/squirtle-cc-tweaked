@@ -1,3 +1,5 @@
+local typeLookup = {["minecraft:chest"] = "minecraft:chest", ["minecraft:furna"] = "minecraft:furnace"}
+
 ---@param modem string
 ---@return FoundInventory[]
 return function(modem)
@@ -5,11 +7,11 @@ return function(modem)
     local inventories = {}
 
     for _, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
-        local type = peripheral.getType(name)
+        local invType = typeLookup[string.sub(name, 1, 15)]
 
-        if type == "minecraft:chest" or type == "minecraft:furnace" then
+        if invType then
             ---@type FoundInventory
-            local inventory = {name = name, type = type}
+            local inventory = {name = name, type = invType}
             table.insert(inventories, inventory)
         end
     end
