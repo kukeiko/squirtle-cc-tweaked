@@ -1,4 +1,4 @@
-local stacksToStock = require "io-network.stacks-to-stock"
+local stacksToStock = require "inventory.stacks-to-stock"
 local copy = require "utils.copy"
 
 ---@param stacks table<integer, ItemStack>

@@ -1,7 +1,7 @@
 local copy = require "utils.copy"
 local count = require "utils.count"
 local getSize = require "world.chest.get-size"
-local stacksToStock = require "io-network.stacks-to-stock"
+local stacksToStock = require "inventory.stacks-to-stock"
 
 ---@param chest string
 ---@param stacks table<integer, ItemStack>

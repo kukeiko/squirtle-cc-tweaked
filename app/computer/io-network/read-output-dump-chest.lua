@@ -1,5 +1,5 @@
 local getStacks = require "world.chest.get-stacks"
-local stacksToStock = require "io-network.stacks-to-stock"
+local stacksToStock = require "inventory.stacks-to-stock"
 
 ---@param chest string
 ---@param ignoredSlots? table<integer>

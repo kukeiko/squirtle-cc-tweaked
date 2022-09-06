@@ -1,6 +1,6 @@
 local getSize = require "world.chest.get-size"
 local getStacks = require "world.chest.get-stacks"
-local stacksToStock = require "io-network.stacks-to-stock"
+local stacksToStock = require "inventory.stacks-to-stock"
 
 -- [todo] this method is dirtily written. i just wanted it to work
 ---@param chest string
