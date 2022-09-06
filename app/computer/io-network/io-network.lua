@@ -10,7 +10,8 @@ local groupInventoriesByType = require "io-network.group-inventories-by-type"
 local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
 
----@class InputOutputInventory
+---@class NetworkedInventory
+---@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 ---@field name string
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field inputStock table<string, ItemStack>
@@ -18,9 +19,6 @@ local printProgress = require "io-network.print-progress"
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field outputStock table<string, ItemStack>
 ---@field outputStacks table<integer, ItemStack>
-
----@class NetworkedInventory : InputOutputInventory
----@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 
 ---@class NetworkedInventoriesByType
 ---@field storage NetworkedInventory[]
