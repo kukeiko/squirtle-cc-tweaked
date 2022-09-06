@@ -1,0 +1,4 @@
+---@class Inventory
+---@field name string
+---@field stock table<string, ItemStack>
+---@field stacks table<integer, ItemStack>

@@ -3,7 +3,7 @@ local pushItems = require "world.chest.push-items"
 ---@param stacks table<integer, ItemStack>
 ---@param item string
 ---@return integer? slot, ItemStack? stack
-local function nextOutputStack(stacks, item)
+local function nextFromStack(stacks, item)
     for slot, stack in pairs(stacks) do
         if stack.count > 0 and stack.name == item then
             return slot, stack
@@ -14,7 +14,7 @@ end
 ---@param stacks table<integer, ItemStack>
 ---@param item string
 ---@return integer? slot, ItemStack? stack
-local function nextInputStack(stacks, item)
+local function nextToStack(stacks, item)
     for slot, stack in pairs(stacks) do
         if stack.count < stack.maxCount and stack.name == item then
             return slot, stack
@@ -22,18 +22,18 @@ local function nextInputStack(stacks, item)
     end
 end
 
----@param from InputOutputInventory
----@param to InputOutputInventory
+---@param from Inventory
+---@param to Inventory
 ---@param item string
 ---@param total integer
 ---@param rate integer
 ---@return integer transferredTotal
 return function(from, to, item, total, rate)
     local transferredTotal = 0
-    local fromSlot, fromStack = nextOutputStack(from.outputStacks, item)
-    local fromStock = from.outputStock[item]
-    local toSlot, toStack = nextInputStack(to.inputStacks, item)
-    local toStock = to.inputStock[item]
+    local fromSlot, fromStack = nextFromStack(from.stacks, item)
+    local fromStock = from.stock[item]
+    local toSlot, toStack = nextToStack(to.stacks, item)
+    local toStock = to.stock[item]
 
     while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
         local space = toStack.maxCount - toStack.count
@@ -58,8 +58,8 @@ return function(from, to, item, total, rate)
             return transferredTotal
         end
 
-        fromSlot, fromStack = nextOutputStack(from.outputStacks, item)
-        toSlot, toStack = nextInputStack(to.inputStacks, item)
+        fromSlot, fromStack = nextFromStack(from.stacks, item)
+        toSlot, toStack = nextToStack(to.stacks, item)
     end
 
     return transferredTotal

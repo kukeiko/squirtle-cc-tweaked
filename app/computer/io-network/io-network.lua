@@ -7,7 +7,7 @@ local findInventories = require "io-network.find-inventories"
 local readInventories = require "io-network.read-inventories"
 local getInventoriesAcceptingInput = require "io-network.get-inventories-accepting-input"
 local groupInventoriesByType = require "io-network.group-inventories-by-type"
-local transferItem = require "io-network.transfer-item"
+local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
 
 ---@class InputOutputInventory
@@ -65,6 +65,7 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
                 print(" - ", #furnaces .. "x furnaces")
             end
 
+            ---@type NetworkedInventory[]
             local inputChests = concatTables(ioChests, assignedChests, furnaces)
 
             if #storageChests > 0 then
@@ -94,7 +95,16 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
                     transfer = transfer + 1
                 end
 
-                local transferred = transferItem(chest, inputChest, item, transfer, 8)
+                ---@type Inventory
+                local fromInventory = {name = chest.name, stacks = chest.outputStacks, stock = chest.outputStock}
+                ---@type Inventory
+                local toInventory = {
+                    name = inputChest.name,
+                    stacks = inputChest.inputStacks,
+                    stock = inputChest.inputStock
+                }
+
+                local transferred = transferItem(fromInventory, toInventory, item, transfer, 8)
 
                 if transferred < transfer then
                     -- assuming chest is full or its state changed from an external source, in which case we just ignore it
