@@ -22,8 +22,8 @@ local function nextInputStack(stacks, item)
     end
 end
 
----@param from NetworkedInventory
----@param to NetworkedInventory
+---@param from InputOutputInventory
+---@param to InputOutputInventory
 ---@param item string
 ---@param total integer
 ---@param rate integer
@@ -31,7 +31,9 @@ end
 return function(from, to, item, total, rate)
     local transferredTotal = 0
     local fromSlot, fromStack = nextOutputStack(from.outputStacks, item)
+    local fromStock = from.outputStock[item]
     local toSlot, toStack = nextInputStack(to.inputStacks, item)
+    local toStock = to.inputStock[item]
 
     while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
         local space = toStack.maxCount - toStack.count
@@ -41,6 +43,14 @@ return function(from, to, item, total, rate)
         local transferred = pushItems(from.name, to.name, fromSlot, transfer, toSlot)
         os.sleep(.5)
 
+        fromStack.count = fromStack.count - transferred
+        fromStock.count = fromStock.count - transferred
+
+        toStack.count = toStack.count + transferred
+        toStock.count = toStock.count + transferred
+
+        transferredTotal = transferredTotal + transferred
+
         if transferred ~= transfer then
             -- [todo] if i ever decide to not abort, but continue, then i need to flag the current toSlot
             -- to be ignored, otherwise we'll have an endless loop
@@ -48,9 +58,6 @@ return function(from, to, item, total, rate)
             return transferredTotal
         end
 
-        fromStack.count = fromStack.count - transferred
-        toStack.count = toStack.count + transferred
-        transferredTotal = transferredTotal + transferred
         fromSlot, fromStack = nextOutputStack(from.outputStacks, item)
         toSlot, toStack = nextInputStack(to.inputStacks, item)
     end

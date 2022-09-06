@@ -10,15 +10,17 @@ local groupInventoriesByType = require "io-network.group-inventories-by-type"
 local transferItem = require "io-network.transfer-item"
 local printProgress = require "io-network.print-progress"
 
----@class NetworkedInventory
+---@class InputOutputInventory
 ---@field name string
----@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field inputStock table<string, ItemStack>
 ---@field inputStacks table<integer, ItemStack>
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 ---@field outputStock table<string, ItemStack>
 ---@field outputStacks table<integer, ItemStack>
+
+---@class NetworkedInventory : InputOutputInventory
+---@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
 
 ---@class NetworkedInventoriesByType
 ---@field storage NetworkedInventory[]
@@ -98,9 +100,6 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
                     -- assuming chest is full or its state changed from an external source, in which case we just ignore it
                     table.insert(ignore, inputChest.name)
                 end
-
-                stock.count = stock.count - transferred
-                inputChest.inputStock[item].count = inputChest.inputStock[item].count + transferred
             end
         end
     end
