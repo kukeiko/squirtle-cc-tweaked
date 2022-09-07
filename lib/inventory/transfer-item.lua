@@ -1,4 +1,5 @@
 local pushItems = require "world.chest.push-items"
+local getDefaultRate = require "inventory.get-default-rate"
 
 ---@param stacks table<integer, ItemStack>
 ---@param item string
@@ -26,9 +27,11 @@ end
 ---@param to Inventory
 ---@param item string
 ---@param total integer
----@param rate integer
+---@param rate? integer
 ---@return integer transferredTotal
 return function(from, to, item, total, rate)
+    rate = rate or getDefaultRate()
+
     local transferredTotal = 0
     local fromSlot, fromStack = nextFromStack(from.stacks, item)
     local fromStock = from.stock[item]
