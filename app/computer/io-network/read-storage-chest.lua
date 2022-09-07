@@ -41,7 +41,7 @@ return function(chest, stacks)
         end
 
         storageChest.inputStacks = stacks
-        storageChest.inputStock = stacksToStock(stacks, 0)
+        storageChest.inputStock = stacksToStock(stacks)
     else
         for slot, stack in pairs(stacks) do
             storageChest.inputStacks[slot] = stack

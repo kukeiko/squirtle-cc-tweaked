@@ -1,22 +1,23 @@
 local copy = require "utils.copy"
 
 ---@param stacks table<integer, ItemStack>
----@param keepCount? integer
 ---@return table<string, ItemStack>
-return function(stacks, keepCount)
-    keepCount = keepCount or 0
+return function(stacks)
     ---@type table<string, ItemStack>
     local stock = {}
 
     for _, stack in pairs(stacks) do
-        if not stock[stack.name] then
-            stock[stack.name] = copy(stack)
-            stock[stack.name].count = 0
-            stock[stack.name].maxCount = 0
+        local itemStock = stock[stack.name]
+
+        if not itemStock then
+            itemStock = copy(stack)
+            itemStock.count = 0
+            itemStock.maxCount = 0
+            stock[stack.name] = itemStock
         end
 
-        stock[stack.name].count = stock[stack.name].count + (stack.count - keepCount)
-        stock[stack.name].maxCount = stock[stack.name].maxCount + (stack.maxCount - keepCount)
+        itemStock.count = itemStock.count + stack.count
+        itemStock.maxCount = itemStock.maxCount + stack.maxCount
     end
 
     return stock
