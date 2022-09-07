@@ -3,7 +3,7 @@ local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
 local findSide = require "world.chest.find-side"
 local findInputOutputNameTagSlot = require "world.chest.find-io-name-tag-slot"
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local getSize = require "world.chest.get-size"
 local subtractStock = require "world.chest.subtract-stock"
 local getStock = require "world.chest.get-stock"
@@ -36,19 +36,12 @@ function Chest.getStack(side, slot, detailed)
     return Peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
----@param name string|integer
----@param detailed? boolean
----@return table<integer, ItemStack>
-function Chest.getStacks(name, detailed)
-    return getStacks(name, detailed)
-end
-
 ---@param name string
 ---@param detailed? boolean
 function Chest.getInputStacks(name, detailed)
     ---@type table<integer, ItemStack>
     local inputStacks = {}
-    local stacks = Chest.getStacks(name)
+    local stacks = getStacks(name)
     local nameTagSlot = findInputOutputNameTagSlot(name, stacks)
 
     if nameTagSlot then
@@ -75,7 +68,7 @@ end
 function Chest.getOutputStacks(name, detailed)
     ---@type table<integer, ItemStack>
     local outputStacks = {}
-    local stacks = Chest.getStacks(name)
+    local stacks = getStacks(name)
     local nameTagSlot = findInputOutputNameTagSlot(name, stacks)
 
     if nameTagSlot then
