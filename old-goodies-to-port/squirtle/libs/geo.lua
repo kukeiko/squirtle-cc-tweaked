@@ -1,2 +1,0 @@
--- [todo] to reduce number of "require" lines at start of libs,
--- i might want to group often used, small things together, such as Vector, Side, Cardinal
