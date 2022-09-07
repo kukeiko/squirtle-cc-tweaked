@@ -1,29 +1,30 @@
 local Vector = require "elements.vector"
-local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local getState = require "squirtle.get-state"
 local changeState = require "squirtle.change-state"
 local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
-local native = turtle
 
 local natives = {
-    [Side.top] = native.up,
-    [Side.front] = native.forward,
-    [Side.bottom] = native.down,
-    [Side.back] = native.back
+    top = turtle.up,
+    up = turtle.up,
+    front = turtle.forward,
+    forward = turtle.forward,
+    bottom = turtle.down,
+    down = turtle.down,
+    back = turtle.back
 }
 
 -- [todo] move() should not call refuel like this. instead, a refueler interface should be provided.
 -- if no fuel could be acquired via the refueler, and there is not enough fuel, error out.
----@param side? integer|string
+---@param side? string
 ---@param times? integer
 return function(side, times)
     side = side or "front"
-    local handler = natives[Side.fromArg(side)]
+    local handler = natives[side]
 
     if not handler then
-        error(string.format("move() does not support side %s", Side.getName(side)))
+        error(string.format("move() does not support side %s", side))
     end
 
     times = times or 1

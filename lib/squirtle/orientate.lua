@@ -8,7 +8,7 @@ local refuel = require "squirtle.refuel"
 local move = require "squirtle.move"
 local turn = require "squirtle.turn"
 
----@param side integer
+---@param side string
 ---@param position Vector
 local function stepOut(side, position)
     refuel(2)
@@ -23,7 +23,7 @@ local function stepOut(side, position)
 
     changeState({facing = facing})
 
-    while not move(Side.rotateAround(side)) do
+    while not move(Side.getName(Side.rotateAround(side))) do
         print("can't move back, something is blocking me. sleeping 1s...")
         os.sleep(1)
     end
@@ -39,11 +39,11 @@ local function orientateSameLayer(position)
     -- [todo#2] well, good i wrote this note. because i was surprised that the turtle
     -- doesn't first try simply moving forward, and i was wondering why.
     turn(Side.right)
-    local success = stepOut(Side.back, position) or stepOut(Side.front, position)
+    local success = stepOut("back", position) or stepOut("front", position)
     turn(Side.left)
 
     if not success then
-        success = stepOut(Side.back, position) or stepOut(Side.front, position)
+        success = stepOut("back", position) or stepOut("front", position)
     end
 
     return success

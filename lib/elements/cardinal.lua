@@ -85,14 +85,18 @@ function Cardinal.rotateAround(cardinal, times)
     return (cardinal + (2 * (times or 1))) % 4
 end
 
+---@param cardinal integer
+---@param side string|integer
+---@param times? integer
+---@return integer
 function Cardinal.rotate(cardinal, side, times)
-    if side == Side.left then
+    if side == Side.left or side == "left" then
         return Cardinal.rotateLeft(cardinal, times)
-    elseif side == Side.right then
+    elseif side == Side.right or side == "right" then
         return Cardinal.rotateRight(cardinal, times)
-    elseif side == Side.back then
+    elseif side == Side.back or side == "back" then
         return Cardinal.rotateAround(cardinal, times)
-    elseif side == Side.front then
+    elseif side == Side.front or side == "front" then
         return cardinal
     else
         error(string.format("rotate() doesn't support side %s", Side.getName(side)))
