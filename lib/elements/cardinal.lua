@@ -111,20 +111,25 @@ function Cardinal.isVertical(cardinal)
     return cardinal == Cardinal.up or cardinal == Cardinal.down
 end
 
+---@param side string|integer
+---@param facing integer
+---@return integer
 function Cardinal.fromSide(side, facing)
-    if side == Side.front then
+    if side == Side.front or side == "front" then
         return facing
-    elseif side == Side.top then
+    elseif side == Side.top or side == "top" then
         return Cardinal.up
-    elseif side == Side.bottom then
+    elseif side == Side.bottom or side == "bottom" then
         return Cardinal.down
-    elseif side == Side.left then
+    elseif side == Side.left or side == "left" then
         return Cardinal.rotateLeft(facing)
-    elseif side == Side.right then
+    elseif side == Side.right or side == "right" then
         return Cardinal.rotateRight(facing)
-    elseif side == Side.back then
+    elseif side == Side.back or side == "back" then
         return Cardinal.rotateAround(facing)
     end
+
+    error(("invalid side: %s"):format(side))
 end
 
 ---@param value integer

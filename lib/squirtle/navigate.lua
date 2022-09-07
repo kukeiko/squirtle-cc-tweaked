@@ -10,6 +10,7 @@ local refuel = require "squirtle.refuel"
 local moveToPoint = require "squirtle.move.to-point"
 
 ---@param path Vector[]
+---@return boolean, string?, integer?
 local function walkPath(path)
     for i, next in ipairs(path) do
         local success, failedSide = moveToPoint(next)
@@ -30,7 +31,7 @@ return function(to, world, breakable)
     -- also we could pass them along to walkPath(),
     -- which then could progress further before failing
     -- because it could now dig stuff
-    breakable = breakable or function()
+    breakable = breakable or function(...)
         return false
     end
 
@@ -53,11 +54,9 @@ return function(to, world, breakable)
         local success, failedSide = walkPath(path)
 
         if success then
-            -- print("[nav] success!")
             return true
-        else
+        elseif failedSide then
             from, facing = orientate()
-            -- print(string.format("hit a block @ %s, scanning...", Side.getName(failedSide)))
             local block = inspect(failedSide)
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
