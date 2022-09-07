@@ -1,4 +1,10 @@
-local natives = {top = turtle.digUp, front = turtle.dig, bottom = turtle.digDown}
+local natives = {
+    top = turtle.digUp,
+    up = turtle.digUp,
+    front = turtle.dig,
+    bottom = turtle.digDown,
+    down = turtle.digDown
+}
 
 ---@param side? string
 ---@param toolSide? string

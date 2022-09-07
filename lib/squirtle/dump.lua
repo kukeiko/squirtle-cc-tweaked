@@ -1,7 +1,7 @@
 local Backpack = require "squirtle.backpack"
 local drop = require "squirtle.drop"
 
----@param side integer|string
+---@param side string
 ---@return boolean success if everything could be dumped
 return function(side)
     local items = Backpack.getStacks()

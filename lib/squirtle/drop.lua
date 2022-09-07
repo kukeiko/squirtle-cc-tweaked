@@ -1,15 +1,20 @@
-local Side = require "elements.side"
-local natives = {[Side.top] = turtle.dropUp, [Side.front] = turtle.drop, [Side.bottom] = turtle.dropDown}
+local natives = {
+    top = turtle.dropUp,
+    up = turtle.dropUp,
+    front = turtle.drop,
+    bottom = turtle.dropDown,
+    down = turtle.dropDown
+}
 
----@param side? integer|string
+---@param side? string
 ---@param limit? integer
----@return boolean,string?
+---@return boolean, string?
 return function(side, limit)
-    side = side or Side.front
-    local handler = natives[Side.fromArg(side)]
+    side = side or "front"
+    local handler = natives[side]
 
     if not handler then
-        error(string.format("drop() does not support side %s", Side.getName(side)))
+        error(string.format("drop() does not support side %s", side))
     end
 
     return handler(limit)
