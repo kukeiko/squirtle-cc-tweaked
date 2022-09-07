@@ -3,6 +3,7 @@ local Backpack = require "squirtle.backpack"
 local suck = require "squirtle.suck"
 local drop = require "squirtle.drop"
 local getStacks = require "inventory.get-stacks"
+local getSize = require "inventory.get-size"
 
 local function firstEmptySlot(table, size)
     for index = 1, size do
@@ -24,7 +25,7 @@ return function(side, slot, limit)
     local items = getStacks(side)
 
     if items[1] ~= nil then
-        local firstEmptySlot = firstEmptySlot(items, Chest.getSize(side))
+        local firstEmptySlot = firstEmptySlot(items, getSize(side))
 
         if not firstEmptySlot and Backpack.isFull() then
             error("container full. turtle also full, so no temporary unloading possible.")

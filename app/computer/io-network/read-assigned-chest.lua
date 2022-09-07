@@ -1,4 +1,4 @@
-local getSize = require "world.chest.get-size"
+local getSize = require "inventory.get-size"
 local getStacks = require "inventory.get-stacks"
 local stacksToStock = require "inventory.stacks-to-stock"
 

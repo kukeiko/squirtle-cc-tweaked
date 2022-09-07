@@ -1,4 +1,5 @@
 local Chest = require "world.chest"
+local subtractStock = require "world.chest.subtract-stock"
 
 ---@param from string
 ---@param to string
@@ -8,7 +9,7 @@ return function(from, to, maxStock)
     maxStock = maxStock or Chest.getInputMaxStock(from)
     -- local maxStock = Chest.getInputOutputMaxStock(from)
     local currentStock = Chest.getStock(to)
-    local missingStock = Chest.subtractStock(maxStock, currentStock)
+    local missingStock = subtractStock(maxStock, currentStock)
     ---@type table<string, integer>
     local transferredStock = {}
 

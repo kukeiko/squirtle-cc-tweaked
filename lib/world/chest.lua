@@ -1,12 +1,10 @@
-local copy = require "utils.copy"
 local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
 local findSide = require "world.chest.find-side"
-local findInputOutputNameTagSlot = require "world.chest.find-io-name-tag-slot"
 local getStacks = require "inventory.get-stacks"
-local getSize = require "world.chest.get-size"
-local subtractStock = require "world.chest.subtract-stock"
+local getSize = require "inventory.get-size"
 local getStock = require "world.chest.get-stock"
+local findNameTag = require "inventory.find-name-tag"
 
 ---@class Chest
 ---@field side integer
@@ -16,19 +14,7 @@ function Chest.findSide()
     return findSide()
 end
 
----@param name string|integer
----@return integer
-function Chest.getSize(name)
-    if type(name) == "number" then
-        return getSize(Side.getName(name))
-    elseif type(name) == "string" then
-        return getSize(name)
-    end
-
-    error("invalid arg")
-end
-
----@param side string|integer
+---@param side string
 ---@param slot integer
 ---@param detailed? boolean
 ---@return ItemStack
@@ -42,7 +28,7 @@ function Chest.getInputStacks(name, detailed)
     ---@type table<integer, ItemStack>
     local inputStacks = {}
     local stacks = getStacks(name)
-    local nameTagSlot = findInputOutputNameTagSlot(name, stacks)
+    local nameTagSlot = findNameTag(name, {"I/O"}, stacks)
 
     if nameTagSlot then
         for slot, stack in pairs(stacks) do
@@ -50,7 +36,7 @@ function Chest.getInputStacks(name, detailed)
                 inputStacks[slot] = stack
             end
         end
-    elseif Chest.getSize(name) > 27 then -- 2+ wide - assumed to be a storage chest (=> input)
+    elseif getSize(name) > 27 then -- 2+ wide - assumed to be a storage chest (=> input)
         inputStacks = stacks
     end
 
@@ -69,7 +55,7 @@ function Chest.getOutputStacks(name, detailed)
     ---@type table<integer, ItemStack>
     local outputStacks = {}
     local stacks = getStacks(name)
-    local nameTagSlot = findInputOutputNameTagSlot(name, stacks)
+    local nameTagSlot = findNameTag(name, {"I/O"}, stacks)
 
     if nameTagSlot then
         for slot, stack in pairs(stacks) do
@@ -77,7 +63,7 @@ function Chest.getOutputStacks(name, detailed)
                 outputStacks[slot] = stack
             end
         end
-    elseif Chest.getSize(name) == 27 then -- 1 wide - assumed to be a autofarm chest (=> output)
+    elseif getSize(name) == 27 then -- 1 wide - assumed to be a autofarm chest (=> output)
         outputStacks = stacks
     end
 
@@ -203,19 +189,6 @@ function Chest.getOutputMissingStock(name)
     return stock
 end
 
----@param name string
----@return table<string, integer>
-function Chest.getInputMissingStock(name)
-    ---@type table<string, integer>
-    local stock = {}
-
-    for _, stack in pairs(Chest.getInputStacks(name, true)) do
-        stock[stack.name] = (stock[stack.name] or 0) + (stack.maxCount - stack.count)
-    end
-
-    return stock
-end
-
 ---@param side string
 function Chest.countItems(side)
     local stock = Chest.getStock(side)
@@ -226,28 +199,6 @@ function Chest.countItems(side)
     end
 
     return count
-end
-
--- [todo] i have no better place yet for this method other than here, at Chest.
----@param a table<string, integer>
----@param b table<string, integer>
----@return table<string, integer>
-function Chest.addStock(a, b)
-    local result = copy(a)
-
-    for item, stock in pairs(b) do
-        result[item] = (result[item] or 0) + stock
-    end
-
-    return result
-end
-
--- [todo] i have no better place yet for this method other than here, at Chest.
----@param a table<string, integer>
----@param b table<string, integer>
----@return table<string, integer>
-function Chest.subtractStock(a, b)
-    return subtractStock(a, b)
 end
 
 return Chest
