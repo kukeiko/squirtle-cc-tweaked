@@ -1,14 +1,21 @@
-local Side = require "elements.side"
-local natives = {[Side.top] = turtle.suckUp, [Side.front] = turtle.suck, [Side.bottom] = turtle.suckDown}
+local natives = {
+    top = turtle.suckUp,
+    up = turtle.suckUp,
+    front = turtle.suck,
+    forward = turtle.suck,
+    bottom = turtle.suckDown,
+    down = turtle.suckDown
+}
 
----@param side? string|integer
+---@param side? string
 ---@param limit? integer
 ---@return boolean,string?
 return function(side, limit)
-    local handler = natives[Side.fromArg(side or Side.front)]
+    side = side or "front"
+    local handler = natives[side]
 
     if not handler then
-        error(string.format("suck() does not support side %s", Side.getName(side)))
+        error(string.format("suck() does not support side %s", side))
     end
 
     return handler(limit)
