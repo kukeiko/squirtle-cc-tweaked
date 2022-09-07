@@ -1,4 +1,3 @@
-local Side = require "elements.side"
 local Backpack = require "squirtle.backpack"
 local dig = require "squirtle.dig"
 local move = require "squirtle.move"
@@ -7,26 +6,26 @@ local turn = require "squirtle.turn"
 local suck = require "squirtle.suck"
 
 local function digLeftAndRight()
-    turn(Side.left)
+    turn("left")
     dig()
     suck()
-    turn(Side.back)
+    turn("back")
     dig()
     suck()
-    turn(Side.left)
+    turn("left")
 end
 
 local function digUpAndDown()
-    dig(Side.top)
-    dig(Side.bottom)
+    dig("top")
+    dig("bottom")
 end
 
----@param side? integer
-local function digAndMove(side)
-    side = side or Side.front
-    dig(side)
+---@param direction? string
+local function digAndMove(direction)
+    direction = direction or "front"
+    dig(direction)
     suck()
-    move(side)
+    move(direction)
 end
 
 local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
@@ -41,14 +40,14 @@ local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
     digAndMove()
     digUpAndDown()
     digLeftAndRight()
-    move(Side.back)
-    move(Side.back)
+    move("back")
+    move("back")
 end
 
 local function digAllSides()
     for _ = 1, 4 do
         dig()
-        turn(Side.left)
+        turn("left")
     end
 end
 
@@ -56,19 +55,19 @@ end
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
-    while inspect(Side.top, "minecraft:birch_log") do
-        dig(Side.top)
-        move(Side.top)
+    while inspect("top", "minecraft:birch_log") do
+        dig("top")
+        move("top")
 
-        if inspect(Side.front, "minecraft:birch_leaves") then
+        if inspect("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    digAndMove(Side.top) -- goto peak
+    digAndMove("top") -- goto peak
     digAllSides() -- dig peak
-    move(Side.bottom)
-    move(Side.bottom)
+    move("bottom")
+    move("bottom")
 
     if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
         for i = 1, 4 do
@@ -77,7 +76,7 @@ return function(minSaplings)
         end
     end
 
-    move(Side.bottom)
+    move("bottom")
 
     if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
         for i = 1, 4 do
@@ -86,6 +85,6 @@ return function(minSaplings)
         end
     end
 
-    while move(Side.bottom) do
+    while move("bottom") do
     end
 end

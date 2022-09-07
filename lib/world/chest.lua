@@ -1,4 +1,3 @@
-local Peripheral = require "world.peripheral"
 local Side = require "elements.side"
 local findSide = require "world.chest.find-side"
 local getStacks = require "inventory.get-stacks"
@@ -19,7 +18,7 @@ end
 ---@param detailed? boolean
 ---@return ItemStack
 function Chest.getStack(side, slot, detailed)
-    return Peripheral.call(side, "getItemDetail", slot, detailed)
+    return peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
 ---@param name string
@@ -119,8 +118,8 @@ function Chest.getItemStock(side, predicate)
     return stock
 end
 
----@param from string|integer
----@param to string|integer
+---@param from string
+---@param to string
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
@@ -130,11 +129,11 @@ function Chest.pushItems(from, to, fromSlot, limit, toSlot)
         to = Side.getName(to)
     end
 
-    return Peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
+    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
----@param from string|integer
----@param to string|integer
+---@param from string
+---@param to string
 ---@param fromSlot integer
 ---@param limit? integer
 ---@param toSlot? integer
@@ -144,7 +143,7 @@ function Chest.pullItems(from, to, fromSlot, limit, toSlot)
         to = Side.getName(to)
     end
 
-    return Peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
+    return peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
 end
 
 ---@param name string

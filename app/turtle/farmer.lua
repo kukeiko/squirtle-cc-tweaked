@@ -304,7 +304,7 @@ local function main(args)
             doHomeStuff()
         elseif block and block.name == "minecraft:barrel" then
             -- [todo] should only check for horizontal sides
-            local chest = Peripheral.wrapOne({"minecraft:chest"})
+            local chest = peripheral.wrap("front")
 
             -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
             -- so should just error out, complaining that there is no io-chest.

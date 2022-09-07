@@ -1,8 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Side = require "elements.side"
-local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
 local turn = require "squirtle.turn"
@@ -25,34 +23,32 @@ local maxLogs = 64
 local minBonemeal = 1
 
 ---@param block Block
----@return integer
+---@return string
 local function getBlockTurnSide(block)
     if block.name == "minecraft:spruce_fence" then
-        return Side.left
+        return "left"
     elseif block.name == "minecraft:oak_fence" then
-        return Side.right
+        return "right"
     else
         error("block" .. block.name .. " is not a block that tells me how to turn")
     end
 end
 
 local function isHome()
-    return inspect(Side.bottom, "minecraft:barrel") ~= nil
+    return inspect("bottom", "minecraft:barrel") ~= nil
 end
 
 local function isAtWork()
-    return inspect(Side.bottom, {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
+    return inspect("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
 
 local function isLookingAtTree()
-    return inspect(Side.front, {"minecraft:birch_sapling", "minecraft:birch_log"})
+    return inspect("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
 end
 
 local function faceHomeExit()
     for _ = 1, 4 do
-        local back = Peripheral.getType(Side.back)
-
-        if back == "minecraft:furnace" then
+        if peripheral.hasType("back", "minecraft:furnace") then
             return
         end
 
@@ -155,17 +151,17 @@ end
 
 local function plantTree()
     print("planting tree...")
-    move(Side.back)
+    move("back")
     Backpack.selectItem("minecraft:birch_sapling")
     place()
 
-    while not inspect(Side.front, "minecraft:birch_log") do
+    while not inspect("front", "minecraft:birch_log") do
         if Backpack.selectItem("minecraft:bone_meal") then
             while place() do
             end
         else
             dig()
-            move(Side.front)
+            move("front")
             return false, "out of bone meal"
         end
     end
@@ -205,7 +201,7 @@ local function doWork()
     print("doing work!")
     assert(isAtWork(), "expected to sit on top of dirt")
 
-    if inspect(Side.top, "minecraft:birch_log") then
+    if inspect("top", "minecraft:birch_log") then
         -- should only happen if turtle crashed while planting a tree
         harvestTree()
     end
@@ -237,7 +233,7 @@ local function moveNext()
 
         if isLookingAtTree() then
             -- [todo] hack - should only happen if sapling got placed by player
-            dig(Side.front)
+            dig("front")
         else
             turn(getBlockTurnSide(block))
         end
@@ -249,17 +245,17 @@ local function boot()
 
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
-        if inspect(Side.top, "minecraft:birch_log") then
+        if inspect("top", "minecraft:birch_log") then
             harvestTree()
         elseif isLookingAtTree() then
-            dig(Side.front)
+            dig("front")
         else
-            while inspect(Side.bottom, "minecraft:birch_leaves") do
-                dig(Side.bottom)
-                move(Side.bottom)
+            while inspect("bottom", "minecraft:birch_leaves") do
+                dig("bottom")
+                move("bottom")
             end
 
-            while move(Side.bottom) do
+            while move("bottom") do
             end
         end
     end
@@ -291,7 +287,7 @@ local function main(args)
             move()
         elseif isAtWork() then
             doWork()
-            turn(Side.left)
+            turn("left")
             move()
         else
             moveNext()
