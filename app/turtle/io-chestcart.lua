@@ -7,7 +7,6 @@ local Backpack = require "squirtle.backpack"
 local pushInput = require "squirtle.transfer.push-input"
 local pullOutput = require "squirtle.transfer.pull-output"
 local pullInput = require "squirtle.transfer.pull-input"
-local pushOutput = require "squirtle.transfer.push-output"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
 local suck = require "squirtle.suck"
@@ -16,6 +15,28 @@ local place = require "squirtle.place"
 local dig = require "squirtle.dig"
 local subtractStock = require "world.chest.subtract-stock"
 local count = require "utils.count"
+local toInventory = require "inventory.to-inventory"
+local toIoInventory = require "inventory.to-io-inventory"
+local transferItems = require "inventory.transfer-items"
+
+---@param from Inventory
+---@param to InputOutputInventory
+---@param rate? integer
+---@return table<string, integer> transferred
+local function pushOutput(from, to, rate)
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, stock in pairs(to.output.stock) do
+        local fromStock = from.stock[item]
+
+        if stock.count < stock.maxCount and fromStock and fromStock.count > 0 then
+            transferrable[item] = math.min(stock.maxCount - stock.count, fromStock.count)
+        end
+    end
+
+    return transferItems(from, to.output, transferrable, rate)
+end
 
 local function findChestSide()
     return findPeripheralSide("minecraft:chest")
@@ -102,7 +123,10 @@ local function doIO()
         pushInput("bottom", io)
         pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
     else
-        local _, transferredStock = pushOutput("bottom", io)
+        local barrel = toInventory("bottom")
+        local ioChest = toIoInventory(io)
+
+        local transferredStock = pushOutput(barrel, ioChest)
         local movedAnyOutput = count(transferredStock) > 0
         local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
         local transferredInputStock = pullInput(io, "bottom", maxStock)
