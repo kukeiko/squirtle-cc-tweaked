@@ -1,7 +1,7 @@
 local Chest = require "world.chest"
 
----@param from string|integer
----@param to string|integer
+---@param from string
+---@param to string
 ---@param maxStock? table<string, integer>
 ---@return table<string, integer> transferredStock
 return function(from, to, maxStock)

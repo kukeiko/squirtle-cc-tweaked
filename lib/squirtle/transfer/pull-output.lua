@@ -1,4 +1,5 @@
 local Chest = require "world.chest"
+local getStacks = require "inventory.get-stacks"
 
 ---@param table table
 local function shallowCopyTable(table)
@@ -11,12 +12,12 @@ local function shallowCopyTable(table)
     return copy
 end
 
----@param source string|integer
----@param target string|integer
+---@param source string
+---@param target string
 ---@param maxStock? table<string, integer>
 return function(source, target, maxStock)
     maxStock = maxStock or {}
-    local targetItems = Chest.getStacks(target, true)
+    local targetItems = getStacks(target, true)
 
     --- to prevent mutating input table
     maxStock = shallowCopyTable(maxStock)

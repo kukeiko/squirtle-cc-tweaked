@@ -43,7 +43,7 @@ function Chest.getStacks(name, detailed)
     return getStacks(name, detailed)
 end
 
----@param name string|integer
+---@param name string
 ---@param detailed? boolean
 function Chest.getInputStacks(name, detailed)
     ---@type table<integer, ItemStack>
@@ -70,7 +70,7 @@ function Chest.getInputStacks(name, detailed)
     return inputStacks
 end
 
----@param name string|integer
+---@param name string
 ---@param detailed? boolean
 function Chest.getOutputStacks(name, detailed)
     ---@type table<integer, ItemStack>
@@ -105,7 +105,7 @@ function Chest.getInputOutputStacks(name)
     return input, output
 end
 
----@param name string|integer
+---@param name string
 ---@return table<string, integer>
 function Chest.getStock(name)
     if type(name) == "number" then
@@ -117,7 +117,7 @@ function Chest.getStock(name)
     error("invalid arg")
 end
 
----@param side integer|string
+---@param side string
 ---@param predicate string|function<boolean, ItemStack>
 function Chest.getItemStock(side, predicate)
     if type(predicate) == "string" then
@@ -131,7 +131,7 @@ function Chest.getItemStock(side, predicate)
 
     local stock = 0
 
-    for _, stack in pairs(Chest.getStacks(side)) do
+    for _, stack in pairs(getStacks(side)) do
         if predicate(stack) then
             stock = stock + stack.count
         end
@@ -168,7 +168,7 @@ function Chest.pullItems(from, to, fromSlot, limit, toSlot)
     return Peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
 end
 
----@param name string|integer
+---@param name string
 ---@return table<string, integer>
 function Chest.getInputMaxStock(name)
     ---@type table<string, integer>
@@ -181,6 +181,7 @@ function Chest.getInputMaxStock(name)
     return maxStock
 end
 
+---@param side string
 function Chest.getInputOutputMaxStock(side)
     ---@type table<string, integer>
     local maxStock = {}
@@ -196,7 +197,7 @@ function Chest.getInputOutputMaxStock(side)
     return maxStock
 end
 
----@param name string|integer
+---@param name string
 ---@return table<string, integer>
 function Chest.getOutputMissingStock(name)
     ---@type table<string, integer>
@@ -209,7 +210,7 @@ function Chest.getOutputMissingStock(name)
     return stock
 end
 
----@param name string|integer
+---@param name string
 ---@return table<string, integer>
 function Chest.getInputMissingStock(name)
     ---@type table<string, integer>
@@ -222,6 +223,7 @@ function Chest.getInputMissingStock(name)
     return stock
 end
 
+---@param side string
 function Chest.countItems(side)
     local stock = Chest.getStock(side)
     local count = 0

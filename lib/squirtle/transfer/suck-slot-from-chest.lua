@@ -2,6 +2,7 @@ local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
 local suck = require "squirtle.suck"
 local drop = require "squirtle.drop"
+local getStacks = require "inventory.get-stacks"
 
 local function firstEmptySlot(table, size)
     for index = 1, size do
@@ -11,7 +12,7 @@ local function firstEmptySlot(table, size)
     end
 end
 
----@param side string|integer
+---@param side string
 ---@param slot integer
 ---@param limit? integer
 ---@return any
@@ -20,7 +21,7 @@ return function(side, slot, limit)
         return suck(side, limit)
     end
 
-    local items = Chest.getStacks(side)
+    local items = getStacks(side)
 
     if items[1] ~= nil then
         local firstEmptySlot = firstEmptySlot(items, Chest.getSize(side))

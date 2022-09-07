@@ -1,9 +1,10 @@
 local Chest = require "world.chest"
+local getStacks = require "inventory.get-stacks"
 
----@param source string|integer
----@param target string|integer
+---@param source string
+---@param target string
 return function(source, target)
-    local sourceItems = Chest.getStacks(source, true)
+    local sourceItems = getStacks(source, true)
     -- local transferredTotal = 0
 
     for inputSlot, inputStack in pairs(Chest.getInputStacks(target, true)) do

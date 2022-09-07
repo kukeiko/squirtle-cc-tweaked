@@ -16,6 +16,7 @@ local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local drop = require "squirtle.drop"
 local place = require "squirtle.place"
 local suck = require "squirtle.suck"
+local getStacks = require "inventory.get-stacks"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -154,15 +155,15 @@ local function waitUntilCropReady(side, max)
     return true
 end
 
----@param bufferSide integer
+---@param buffer string
 ---@param fuel integer
-local function refuelFromBuffer(bufferSide, fuel)
+local function refuelFromBuffer(buffer, fuel)
     print("refueling, have", Fuel.getFuelLevel())
     Backpack.selectFirstEmptySlot()
 
-    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
+    for slot, stack in pairs(getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            suckSlotFromChest(bufferSide, slot)
+            suckSlotFromChest(buffer, slot)
             Fuel.refuel() -- [todo] should provide count to not consume a whole stack
         end
 
@@ -174,7 +175,7 @@ local function refuelFromBuffer(bufferSide, fuel)
     print("refueled to", Fuel.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not dump(bufferSide) then
+    if not dump(buffer) then
         error("buffer barrel full")
     end
 end
@@ -276,6 +277,7 @@ local function moveNext()
             os.sleep(1)
         end
 
+        -- [todo] fix
         turn(getBlockTurnSide(block))
     end
 end

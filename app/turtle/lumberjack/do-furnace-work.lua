@@ -1,13 +1,16 @@
 local Chest = require "world.chest"
 local Furnace = require "world.furnace"
 local pushOutput = require "squirtle.transfer.push-output"
+local getStacks = require "inventory.get-stacks"
 
-local function topOffFurnaceFuel(furnaceSide, bufferSide)
-    local missing = Furnace.getMissingFuelCount(furnaceSide)
+---@param furnace string
+---@param buffer string
+local function topOffFurnaceFuel(furnace, buffer)
+    local missing = Furnace.getMissingFuelCount(furnace)
 
-    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
+    for slot, stack in pairs(getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            missing = missing - Furnace.pullFuel(furnaceSide, bufferSide, slot)
+            missing = missing - Furnace.pullFuel(furnace, buffer, slot)
 
             if missing <= 0 then
                 break
@@ -16,12 +19,14 @@ local function topOffFurnaceFuel(furnaceSide, bufferSide)
     end
 end
 
-local function topOffFurnaceInput(furnaceSide, bufferSide)
-    local missing = Furnace.getMissingInputCount(furnaceSide)
+---@param furnace string
+---@param buffer string
+local function topOffFurnaceInput(furnace, buffer)
+    local missing = Furnace.getMissingInputCount(furnace)
 
-    for slot, stack in pairs(Chest.getStacks(bufferSide)) do
+    for slot, stack in pairs(getStacks(buffer)) do
         if stack.name == "minecraft:birch_log" then
-            missing = missing - Furnace.pullInput(furnaceSide, bufferSide, slot)
+            missing = missing - Furnace.pullInput(furnace, buffer, slot)
 
             if missing <= 0 then
                 break

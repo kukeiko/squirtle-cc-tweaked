@@ -70,7 +70,7 @@ local function refuel(stash)
 
         for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
-                suckSlotFromChest(Side.bottom, slot)
+                suckSlotFromChest("bottom", slot)
                 turtle.refuel() -- [todo] should provide count to not consume a whole stack
             end
 
