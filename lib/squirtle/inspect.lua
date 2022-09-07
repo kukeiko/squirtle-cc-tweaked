@@ -1,17 +1,22 @@
 local indexOf = require "utils.index-of"
-local Side = require "elements.side"
-local native = turtle
 
-local natives = {[Side.top] = native.inspectUp, [Side.front] = native.inspect, [Side.bottom] = native.inspectDown}
+local natives = {
+    top = turtle.inspectUp,
+    up = turtle.inspectUp,
+    front = turtle.inspect,
+    bottom = turtle.inspectDown,
+    down = turtle.inspectDown
+}
 
----@param side? integer|string
+---@param side? string
 ---@param name? table|string
 ---@return Block? block
 return function(side, name)
-    local handler = natives[Side.fromArg(side or Side.front)]
+    side = side or "front"
+    local handler = natives[side]
 
     if not handler then
-        error(string.format("inspect() does not support side %s", Side.getName(side)))
+        error(string.format("inspect() does not support side %s", side))
     end
 
     local success, block = handler()

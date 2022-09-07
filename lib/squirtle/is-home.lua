@@ -1,9 +1,8 @@
-local Side = require "elements.side"
 local inspect = require "squirtle.inspect"
 
 ---@return boolean
 return function()
-    local inspected = inspect(Side.bottom)
+    local inspected = inspect("bottom")
 
-    return inspected and inspected.name == "minecraft:barrel"
+    return inspected ~= nil and inspected.name == "minecraft:barrel"
 end
