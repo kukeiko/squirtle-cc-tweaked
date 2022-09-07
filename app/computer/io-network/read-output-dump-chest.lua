@@ -1,4 +1,4 @@
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local stacksToStock = require "inventory.stacks-to-stock"
 
 ---@param chest string

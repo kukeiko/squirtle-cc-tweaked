@@ -1,5 +1,5 @@
 local stacksToStock = require "inventory.stacks-to-stock"
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 
 ---@param name string
 ---@return NetworkedInventory

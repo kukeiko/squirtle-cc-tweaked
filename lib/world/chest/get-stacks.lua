@@ -1,32 +1,17 @@
-local getItemMaxCount = require "world.chest.get-item-max-count"
 local Side = require "elements.side"
+local getStacks = require "inventory.get-stacks"
 
----@param name string
+-- [todo] remove in favor of world.chest.get-stacks,
+-- difference is that this still supports "name" to be an integer
+---@param name string|integer
 ---@param detailed? boolean
 ---@return table<integer, ItemStack>
 return function(name, detailed)
     if type(name) == "number" then
-        name = Side.getName(name)
-    end
-
-    if not detailed then
-        ---@type table<integer, ItemStack>
-        local stacks = peripheral.call(name, "list")
-
-        for slot, stack in pairs(stacks) do
-            stack.maxCount = getItemMaxCount(stack.name, name, slot)
-        end
-
-        return stacks
+        return getStacks(Side.getName(name), detailed)
+    elseif type(name) == "string" then
+        return getStacks(name, detailed)
     else
-        local stacks = peripheral.call(name, "list")
-        ---@type table<integer, ItemStack>
-        local detailedStacks = {}
-
-        for slot, _ in pairs(stacks) do
-            detailedStacks[slot] = peripheral.call(name, "getItemDetail", slot)
-        end
-
-        return detailedStacks
+        error("arg error", name)
     end
 end

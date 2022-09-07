@@ -1,4 +1,4 @@
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local findNameTag = require "inventory.find-name-tag"
 local printProgress = require "io-network.print-progress"
 local readInputOutputChest = require "io-network.read-io-chest"

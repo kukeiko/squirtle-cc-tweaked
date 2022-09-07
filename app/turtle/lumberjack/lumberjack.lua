@@ -16,7 +16,7 @@ local pullInput = require "squirtle.transfer.pull-input"
 local suck = require "squirtle.suck"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"

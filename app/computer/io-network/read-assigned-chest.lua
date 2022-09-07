@@ -1,5 +1,5 @@
 local getSize = require "world.chest.get-size"
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local stacksToStock = require "inventory.stacks-to-stock"
 
 -- [todo] this method is dirtily written. i just wanted it to work

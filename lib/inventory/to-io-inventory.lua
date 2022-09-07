@@ -1,5 +1,5 @@
 local copy = require "utils.copy"
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local stacksToStock = require "inventory.stacks-to-stock"
 local findNameTag = require "inventory.find-name-tag"
 

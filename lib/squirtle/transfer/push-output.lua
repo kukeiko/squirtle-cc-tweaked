@@ -1,4 +1,4 @@
-local getStacks = require "world.chest.get-stacks"
+local getStacks = require "inventory.get-stacks"
 local toIoInventory = require "inventory.to-io-inventory"
 local transferItem = require "inventory.transfer-item"
 local stacksToStock = require "inventory.stacks-to-stock"
