@@ -38,9 +38,9 @@ local function orientateSameLayer(position)
     -- what i wrote this note actually for: allow for different styles and randomization
     -- [todo#2] well, good i wrote this note. because i was surprised that the turtle
     -- doesn't first try simply moving forward, and i was wondering why.
-    turn(Side.right)
+    turn("right")
     local success = stepOut("back", position) or stepOut("front", position)
-    turn(Side.left)
+    turn("left")
 
     if not success then
         success = stepOut("back", position) or stepOut("front", position)

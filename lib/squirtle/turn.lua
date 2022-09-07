@@ -1,4 +1,3 @@
-local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local getState = require "squirtle.get-state"
 local changeState = require "squirtle.change-state"
@@ -50,19 +49,19 @@ local function turnBack()
     return turnFn()
 end
 
----@param side? integer|string defaults to Side.left
+---@param side? string defaults to "left"
 return function(side)
     -- [todo] turning to the left by default is not a good idea,
     -- makes it harder to find bugs in case a bad side is given, e.g. "nil" 
-    side = Side.fromArg(side or Side.left)
+    side = side or "left"
 
-    if side == Side.left then
+    if side == "left" then
         return turnLeft()
-    elseif side == Side.right then
+    elseif side == "right" then
         return turnRight()
-    elseif side == Side.back then
+    elseif side == "back" then
         return turnBack()
     else
-        error(string.format("turn() does not support side %s", Side.getName(side)))
+        error(string.format("turn() does not support side %s", side))
     end
 end

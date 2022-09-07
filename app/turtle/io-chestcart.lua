@@ -139,6 +139,11 @@ local function doIO()
     end
 
     local signal = Redstone.getInput({"left", "right"})
+
+    if not signal then
+        error("chestcart vanished :(")
+    end
+
     turn(signal)
     print("filling chestcart...")
     dumpBarrelToChestcart()

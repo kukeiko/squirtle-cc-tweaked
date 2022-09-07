@@ -1,4 +1,3 @@
-local Side = require "elements.side"
 local getState = require "squirtle.get-state"
 local turn = require "squirtle.turn"
 
@@ -13,11 +12,11 @@ return function(target, current)
     end
 
     if (current + 2) % 4 == target then
-        turn(Side.back)
+        turn("back")
     elseif (current + 1) % 4 == target then
-        turn(Side.right)
+        turn("right")
     elseif (current - 1) % 4 == target then
-        turn(Side.left)
+        turn("left")
     end
 
     return target

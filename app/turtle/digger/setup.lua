@@ -11,9 +11,9 @@ local function getDirection()
         local _, key = os.pullEvent("key")
 
         if key == keys.a then
-            turn(Side.left)
+            turn("left")
         elseif key == keys.d then
-            turn(Side.right)
+            turn("right")
         elseif key == keys.enter then
             break
         end
