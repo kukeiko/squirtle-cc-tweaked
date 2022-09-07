@@ -23,7 +23,7 @@ local function stepOut(side, position)
 
     changeState({facing = facing})
 
-    while not move(Side.getName(Side.rotateAround(side))) do
+    while not move(Side.rotateAround(side)) do
         print("can't move back, something is blocking me. sleeping 1s...")
         os.sleep(1)
     end
