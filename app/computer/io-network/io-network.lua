@@ -11,7 +11,7 @@ local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
 
 ---@class NetworkedInventory
----@field type "storage" | "io" | "output-dump" | "assigned" | "furnace"
+---@field type "storage" | "io" | "drain" | "assigned" | "furnace"
 ---@field name string
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 -- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
@@ -26,7 +26,7 @@ local printProgress = require "io-network.print-progress"
 ---@field storage NetworkedInventory[]
 ---@field io NetworkedInventory[]
 ---@field assigned NetworkedInventory[]
----@field ["output-dump"] NetworkedInventory[]
+---@field drain NetworkedInventory[]
 ---@field furnace NetworkedInventory[]
 
 ---@class FoundInventory
@@ -41,6 +41,7 @@ local function spreadOutputStacksOfInventory(chest, inventoriesByType)
     for item, stock in pairs(chest.outputStock) do
         local ignore = {chest.name}
 
+        -- [todo] the while loop should not be needed anymore afaik
         while stock.count > 0 do
             local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
             local storageChests = getInventoriesAcceptingInput(inventoriesByType.storage, ignore, stock.name)
@@ -115,7 +116,7 @@ local function doTheThing(inventories)
     local numIo = #inventoriesByType.io
     local numStorage = #inventoriesByType.storage
     local numAssigned = #inventoriesByType.assigned
-    local numDumps = #inventoriesByType["output-dump"]
+    local numDumps = #inventoriesByType.drain
     local numFurnaces = #inventoriesByType.furnace
 
     if numIo > 0 then
@@ -131,7 +132,7 @@ local function doTheThing(inventories)
     end
 
     if numDumps > 0 then
-        print(" - " .. numDumps .. "x Dump")
+        print(" - " .. numDumps .. "x Drain")
     end
 
     if numFurnaces > 0 then
@@ -140,10 +141,10 @@ local function doTheThing(inventories)
 
     os.sleep(1)
 
-    if #inventoriesByType["output-dump"] > 0 then
-        print("spreading dumps...")
+    if #inventoriesByType.drain > 0 then
+        print("spreading drains...")
 
-        for _, chest in ipairs(inventoriesByType["output-dump"]) do
+        for _, chest in ipairs(inventoriesByType.drain) do
             spreadOutputStacksOfInventory(chest, inventoriesByType)
         end
     end
