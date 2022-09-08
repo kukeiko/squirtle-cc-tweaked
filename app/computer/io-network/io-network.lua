@@ -27,17 +27,26 @@ local printProgress = require "io-network.print-progress"
 ---@param chest NetworkedInventory
 ---@param inventoriesByType NetworkedInventoriesByType
 local function spreadOutputStacksOfInventory(chest, inventoriesByType)
-    print("working on", chest.name, "(" .. chest.type .. ")")
-
     for item, stock in pairs(chest.output.stock) do
         local ignore = {chest.name}
 
         -- [todo] the while loop should not be needed anymore afaik
+        -- [update] akshually is needed, as we spread items evenly across chests,
+        -- and one of them might fill up, but another one might still take it. 
+        -- i think.
         while stock.count > 0 do
             local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
             local storageChests = getInventoriesAcceptingInput(inventoriesByType.storage, ignore, stock.name)
             local furnaces = getInventoriesAcceptingInput(inventoriesByType.furnace, ignore, stock.name)
 
+            ---@type NetworkedInventory[]
+            local inputChests = concatTables(ioChests, furnaces, storageChests)
+
+            if #inputChests == 0 then
+                break
+            end
+
+            print("[" .. chest.name .. "]")
             print(stock.count .. "x", item, "across:")
 
             if #ioChests > 0 then
@@ -50,14 +59,6 @@ local function spreadOutputStacksOfInventory(chest, inventoriesByType)
 
             if #furnaces > 0 then
                 print(" - ", #furnaces .. "x furnaces")
-            end
-
-            ---@type NetworkedInventory[]
-            local inputChests = concatTables(ioChests, furnaces, storageChests)
-
-            if #inputChests == 0 then
-                print(" - (no chests)")
-                break
             end
 
             local stockPerChest = math.floor(stock.count / #inputChests)
@@ -114,24 +115,18 @@ local function doTheThing(inventories)
     os.sleep(1)
 
     if #inventoriesByType.drain > 0 then
-        print("spreading drains...")
-
         for _, chest in ipairs(inventoriesByType.drain) do
             spreadOutputStacksOfInventory(chest, inventoriesByType)
         end
     end
 
     if #inventoriesByType.io > 0 then
-        print("spreading I/O chests...")
-
         for _, ioChest in ipairs(inventoriesByType.io) do
             spreadOutputStacksOfInventory(ioChest, inventoriesByType)
         end
     end
 
     if #inventoriesByType.furnace > 0 then
-        print("spreading furnaces...")
-
         for _, furnace in ipairs(inventoriesByType.furnace) do
             spreadOutputStacksOfInventory(furnace, inventoriesByType)
         end
