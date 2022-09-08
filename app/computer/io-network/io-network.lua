@@ -10,17 +10,9 @@ local groupInventoriesByType = require "io-network.group-inventories-by-type"
 local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
 
----@class NetworkedInventory
+---@class NetworkedInventory : InputOutputInventory
 ---@field type "storage" | "io" | "drain" | "furnace"
 ---@field name string
--- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
--- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
----@field inputStock table<string, ItemStack>
----@field inputStacks table<integer, ItemStack>
--- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
--- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
----@field outputStock table<string, ItemStack>
----@field outputStacks table<integer, ItemStack>
 
 ---@class NetworkedInventoriesByType
 ---@field storage NetworkedInventory[]
@@ -37,7 +29,7 @@ local printProgress = require "io-network.print-progress"
 local function spreadOutputStacksOfInventory(chest, inventoriesByType)
     print("working on", chest.name, "(" .. chest.type .. ")")
 
-    for item, stock in pairs(chest.outputStock) do
+    for item, stock in pairs(chest.output.stock) do
         local ignore = {chest.name}
 
         -- [todo] the while loop should not be needed anymore afaik
@@ -78,16 +70,7 @@ local function spreadOutputStacksOfInventory(chest, inventoriesByType)
                     transfer = transfer + 1
                 end
 
-                ---@type Inventory
-                local fromInventory = {name = chest.name, stacks = chest.outputStacks, stock = chest.outputStock}
-                ---@type Inventory
-                local toInventory = {
-                    name = inputChest.name,
-                    stacks = inputChest.inputStacks,
-                    stock = inputChest.inputStock
-                }
-
-                local transferred = transferItem(fromInventory, toInventory, item, transfer, 8)
+                local transferred = transferItem(chest.output, inputChest.input, item, transfer, 8)
 
                 if transferred < transfer then
                     -- assuming chest is full or its state changed from an external source, in which case we just ignore it
@@ -109,7 +92,7 @@ local function doTheThing(inventories)
     print("found:")
     local numIo = #inventoriesByType.io
     local numStorage = #inventoriesByType.storage
-    local numDumps = #inventoriesByType.drain
+    local numDrains = #inventoriesByType.drain
     local numFurnaces = #inventoriesByType.furnace
 
     if numIo > 0 then
@@ -120,8 +103,8 @@ local function doTheThing(inventories)
         print(" - " .. numStorage .. "x Storage")
     end
 
-    if numDumps > 0 then
-        print(" - " .. numDumps .. "x Drain")
+    if numDrains > 0 then
+        print(" - " .. numDrains .. "x Drain")
     end
 
     if numFurnaces > 0 then

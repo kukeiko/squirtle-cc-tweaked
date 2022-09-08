@@ -11,10 +11,8 @@ return function(chest, stacks)
     local storageChest = {
         name = chest,
         type = "storage",
-        inputStacks = {},
-        inputStock = {},
-        outputStacks = {},
-        outputStock = {}
+        input = {name = chest, stacks = {}, stock = {}},
+        output = {name = chest, stacks = {}, stock = {}}
     }
 
     local items = {}
@@ -40,16 +38,16 @@ return function(chest, stacks)
             end
         end
 
-        storageChest.inputStacks = stacks
-        storageChest.inputStock = stacksToStock(stacks)
+        storageChest.input.stacks = stacks
+        storageChest.input.stock = stacksToStock(stacks)
     else
         for slot, stack in pairs(stacks) do
-            storageChest.inputStacks[slot] = stack
+            storageChest.input.stacks[slot] = stack
 
-            if not storageChest.inputStock[stack.name] then
-                storageChest.inputStock[stack.name] = copy(stack)
+            if not storageChest.input.stock[stack.name] then
+                storageChest.input.stock[stack.name] = copy(stack)
             else
-                local itemStock = storageChest.inputStock[stack.name]
+                local itemStock = storageChest.input.stock[stack.name]
                 itemStock.count = itemStock.count + stack.count
                 itemStock.maxCount = itemStock.maxCount + stack.maxCount
             end

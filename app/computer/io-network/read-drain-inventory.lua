@@ -13,7 +13,12 @@ return function(chest, ignoredSlots)
     end
 
     ---@type NetworkedInventory
-    local outputDumpChest = {name = chest, type = "drain", outputStacks = stacks, outputStock = stacksToStock(stacks)}
+    local drain = {
+        name = chest,
+        type = "drain",
+        input = {name = chest, stacks = {}, stock = {}},
+        output = {name = chest, stacks = stacks, stock = stacksToStock(stacks)}
+    }
 
-    return outputDumpChest
+    return drain
 end

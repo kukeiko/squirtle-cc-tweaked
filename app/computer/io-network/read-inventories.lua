@@ -3,7 +3,7 @@ local findNameTag = require "inventory.find-name-tag"
 local printProgress = require "io-network.print-progress"
 local readInputOutputChest = require "io-network.read-io-chest"
 local readStorageChest = require "io-network.read-storage-chest"
-local readOutputDumpChest = require "io-network.read-output-dump-chest"
+local readDrainInventory = require "io-network.read-drain-inventory"
 local readFurnace = require "io-network.read-furnace"
 
 ---@param found FoundInventory[]
@@ -27,7 +27,7 @@ return function(found)
                 if nameTagName == "I/O" then
                     table.insert(inventories, readInputOutputChest(name, stacks, nameTagSlot))
                 elseif nameTagName == "Drain" then
-                    table.insert(inventories, readOutputDumpChest(name, {nameTagSlot}))
+                    table.insert(inventories, readDrainInventory(name, {nameTagSlot}))
                 end
             else
                 table.insert(inventories, readStorageChest(name, stacks))

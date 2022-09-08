@@ -30,10 +30,8 @@ return function(name)
     local inventory = {
         name = name,
         type = "furnace",
-        inputStacks = inputStacks,
-        inputStock = stacksToStock(inputStacks),
-        outputStacks = outputStacks,
-        outputStock = stacksToStock(outputStacks)
+        input = {name = name, stacks = inputStacks, stock = stacksToStock(inputStacks)},
+        output = {name = name, stacks = outputStacks, stock = stacksToStock(outputStacks)}
     }
 
     return inventory
