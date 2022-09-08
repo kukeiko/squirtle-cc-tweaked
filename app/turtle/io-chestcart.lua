@@ -6,14 +6,12 @@ local Redstone = require "world.redstone"
 local Backpack = require "squirtle.backpack"
 local pushInput = require "squirtle.transfer.push-input"
 local pullOutput = require "squirtle.transfer.pull-output"
-local pullInput = require "squirtle.transfer.pull-input"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
 local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
-local subtractStock = require "world.chest.subtract-stock"
 local count = require "utils.count"
 local toInventory = require "inventory.to-inventory"
 local toIoInventory = require "inventory.to-io-inventory"
@@ -36,6 +34,36 @@ local function pushOutput(from, to, rate)
     end
 
     return transferItems(from, to.output, transferrable, rate)
+end
+
+---@param from InputOutputInventory
+---@param to Inventory
+---@param transferredOutput table<string, integer>
+---@param rate? integer
+---@return table<string, integer> transferred
+local function pullInput(from, to, transferredOutput, rate)
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, stock in pairs(from.input.stock) do
+        local maxStock = stock.maxCount
+
+        if from.output.stock[item] then
+            maxStock = maxStock + from.output.stock[item].maxCount
+        end
+
+        maxStock = maxStock - (transferredOutput[item] or 0)
+
+        local toStock = to.stock[item]
+
+        if toStock then
+            maxStock = maxStock - toStock.count
+        end
+
+        transferrable[item] = math.min(stock.count, maxStock)
+    end
+
+    return transferItems(from.input, to, transferrable, rate, true)
 end
 
 local function findChestSide()
@@ -125,11 +153,9 @@ local function doIO()
     else
         local barrel = toInventory("bottom")
         local ioChest = toIoInventory(io)
-
         local transferredStock = pushOutput(barrel, ioChest)
         local movedAnyOutput = count(transferredStock) > 0
-        local maxStock = subtractStock(Chest.getInputOutputMaxStock(io), transferredStock)
-        local transferredInputStock = pullInput(io, "bottom", maxStock)
+        local transferredInputStock = pullInput(ioChest, barrel, transferredStock)
         local movedAnyInput = count(transferredInputStock) > 0
 
         if not movedAnyInput and not movedAnyOutput then
