@@ -66,19 +66,7 @@ local function spreadOutputStacksOfInventory(chest, chestsByType)
             end
 
             ---@type NetworkedInventory[]
-            local inputChests = concatTables(ioChests, assignedChests, furnaces)
-
-            if #storageChests > 0 then
-                if #ioChests > 0 or #furnaces > 0 then
-                    -- only pick 1 storage chest in case we are spreading items across both I/O, assigned and storage chests.
-                    table.insert(inputChests, storageChests[1])
-                else
-                    -- otherwise just spread all into storage
-                    for i = 1, #storageChests do
-                        table.insert(inputChests, storageChests[i])
-                    end
-                end
-            end
+            local inputChests = concatTables(ioChests, assignedChests, furnaces, storageChests)
 
             if #inputChests == 0 then
                 print(" - (no chests)")
