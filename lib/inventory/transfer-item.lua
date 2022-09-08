@@ -1,5 +1,7 @@
 local pushItems = require "world.chest.push-items"
 local getDefaultRate = require "inventory.get-default-rate"
+local copy = require "utils.copy"
+local getSize = require "inventory.get-size"
 
 ---@param stacks table<integer, ItemStack>
 ---@param item string
@@ -15,10 +17,30 @@ end
 ---@param stacks table<integer, ItemStack>
 ---@param item string
 ---@return integer? slot, ItemStack? stack
-local function nextToStack(stacks, item)
+local function nextToStack(stacks, item, sample, size)
     for slot, stack in pairs(stacks) do
         if stack.count < stack.maxCount and stack.name == item then
             return slot, stack
+        end
+    end
+end
+
+---@param stacks table<integer, ItemStack>
+---@param item string
+---@param sample ItemStack
+---@param size integer
+---@return integer? slot, ItemStack? stack
+local function allocateNextToStack(stacks, item, sample, size)
+    for slot = 1, size do
+        local stack = stacks[slot]
+
+        if not stack then
+            ---@type ItemStack
+            stack = copy(sample)
+            stack.count = 0
+            stacks[slot] = stack
+
+            return slot, stacks[slot]
         end
     end
 end
@@ -28,14 +50,20 @@ end
 ---@param item string
 ---@param total integer
 ---@param rate? integer
+---@param allowAllocate? boolean
 ---@return integer transferredTotal
-return function(from, to, item, total, rate)
+return function(from, to, item, total, rate, allowAllocate)
     rate = rate or getDefaultRate()
 
     local transferredTotal = 0
     local fromSlot, fromStack = nextFromStack(from.stacks, item)
     local fromStock = from.stock[item]
     local toSlot, toStack = nextToStack(to.stacks, item)
+
+    if not toSlot and allowAllocate and fromStack then
+        toSlot, toStack = allocateNextToStack(to.stacks, item, fromStack, getSize(to.name))
+    end
+
     local toStock = to.stock[item]
 
     while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
@@ -63,6 +91,10 @@ return function(from, to, item, total, rate)
 
         fromSlot, fromStack = nextFromStack(from.stacks, item)
         toSlot, toStack = nextToStack(to.stacks, item)
+
+        if not toSlot and allowAllocate and fromStack then
+            toSlot, toStack = allocateNextToStack(to.stacks, item, fromStack, getSize(to.name))
+        end
     end
 
     return transferredTotal
