@@ -1,11 +1,8 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local findPeripheralSide = require "world.peripheral.find-side"
-local Chest = require "world.chest"
 local Redstone = require "world.redstone"
 local Backpack = require "squirtle.backpack"
-local pushInput = require "squirtle.transfer.push-input"
-local pullOutput = require "squirtle.transfer.pull-output"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
 local suck = require "squirtle.suck"
@@ -145,23 +142,16 @@ end
 local function doIO()
     print("doing I/O...")
     local io = findChestSide()
+    local barrel = toInventory("bottom")
+    local ioChest = toIoInventory(io)
+    local transferredStock = pushOutput(barrel, ioChest)
+    local movedAnyOutput = count(transferredStock) > 0
+    local transferredInputStock = pullInput(ioChest, barrel, transferredStock)
+    local movedAnyInput = count(transferredInputStock) > 0
 
-    -- [todo] need to somehow support 27+ slot chests
-    if sendOutput then
-        pushInput("bottom", io)
-        pullOutput(io, "bottom", Chest.getInputOutputMaxStock(io))
-    else
-        local barrel = toInventory("bottom")
-        local ioChest = toIoInventory(io)
-        local transferredStock = pushOutput(barrel, ioChest)
-        local movedAnyOutput = count(transferredStock) > 0
-        local transferredInputStock = pullInput(ioChest, barrel, transferredStock)
-        local movedAnyInput = count(transferredInputStock) > 0
-
-        if not movedAnyInput and not movedAnyOutput then
-            print("didn't transfer anything, sleeping 7s")
-            os.sleep(7)
-        end
+    if not movedAnyInput and not movedAnyOutput then
+        print("didn't transfer anything, sleeping 7s")
+        os.sleep(7)
     end
 
     local signal = Redstone.getInput({"left", "right"})
@@ -186,14 +176,6 @@ local function main(args)
 
     if not inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
-    end
-
-    if args[1] == "send-output" then
-        sendOutput = true
-    elseif args[1] == "send-input" then
-        sendOutput = false
-    else
-        sendOutput = false
     end
 
     while true do
