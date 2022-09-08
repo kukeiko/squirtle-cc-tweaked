@@ -11,7 +11,7 @@ local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
 
 ---@class NetworkedInventory
----@field type "storage" | "io" | "drain" | "assigned" | "furnace"
+---@field type "storage" | "io" | "drain" | "furnace"
 ---@field name string
 -- [todo] not completely convinced that we should store ItemStacks, but instead just an integer
 -- [update] nope, has to be ItemStack as we're mutating the stock within transferItem()
@@ -25,7 +25,6 @@ local printProgress = require "io-network.print-progress"
 ---@class NetworkedInventoriesByType
 ---@field storage NetworkedInventory[]
 ---@field io NetworkedInventory[]
----@field assigned NetworkedInventory[]
 ---@field drain NetworkedInventory[]
 ---@field furnace NetworkedInventory[]
 
@@ -45,7 +44,6 @@ local function spreadOutputStacksOfInventory(chest, inventoriesByType)
         while stock.count > 0 do
             local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
             local storageChests = getInventoriesAcceptingInput(inventoriesByType.storage, ignore, stock.name)
-            local assignedChests = getInventoriesAcceptingInput(inventoriesByType.assigned, ignore, stock.name)
             local furnaces = getInventoriesAcceptingInput(inventoriesByType.furnace, ignore, stock.name)
 
             print(stock.count .. "x", item, "across:")
@@ -58,16 +56,12 @@ local function spreadOutputStacksOfInventory(chest, inventoriesByType)
                 print(" - ", #storageChests .. "x storage chests")
             end
 
-            if #assignedChests > 0 then
-                print(" - ", #assignedChests .. "x assigned chests")
-            end
-
             if #furnaces > 0 then
                 print(" - ", #furnaces .. "x furnaces")
             end
 
             ---@type NetworkedInventory[]
-            local inputChests = concatTables(ioChests, assignedChests, furnaces, storageChests)
+            local inputChests = concatTables(ioChests, furnaces, storageChests)
 
             if #inputChests == 0 then
                 print(" - (no chests)")
@@ -115,7 +109,6 @@ local function doTheThing(inventories)
     print("found:")
     local numIo = #inventoriesByType.io
     local numStorage = #inventoriesByType.storage
-    local numAssigned = #inventoriesByType.assigned
     local numDumps = #inventoriesByType.drain
     local numFurnaces = #inventoriesByType.furnace
 
@@ -125,10 +118,6 @@ local function doTheThing(inventories)
 
     if numStorage > 0 then
         print(" - " .. numStorage .. "x Storage")
-    end
-
-    if numAssigned > 0 then
-        print(" - " .. numAssigned .. "x Assigned")
     end
 
     if numDumps > 0 then
