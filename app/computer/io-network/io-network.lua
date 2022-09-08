@@ -34,18 +34,18 @@ local printProgress = require "io-network.print-progress"
 ---@field type string
 
 ---@param chest NetworkedInventory
----@param chestsByType NetworkedInventoriesByType
-local function spreadOutputStacksOfInventory(chest, chestsByType)
+---@param inventoriesByType NetworkedInventoriesByType
+local function spreadOutputStacksOfInventory(chest, inventoriesByType)
     print("working on", chest.name, "(" .. chest.type .. ")")
 
     for item, stock in pairs(chest.outputStock) do
         local ignore = {chest.name}
 
         while stock.count > 0 do
-            local ioChests = getInventoriesAcceptingInput(chestsByType.io, ignore, stock.name)
-            local storageChests = getInventoriesAcceptingInput(chestsByType.storage, ignore, stock.name)
-            local assignedChests = getInventoriesAcceptingInput(chestsByType.assigned, ignore, stock.name)
-            local furnaces = getInventoriesAcceptingInput(chestsByType.furnace, ignore, stock.name)
+            local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
+            local storageChests = getInventoriesAcceptingInput(inventoriesByType.storage, ignore, stock.name)
+            local assignedChests = getInventoriesAcceptingInput(inventoriesByType.assigned, ignore, stock.name)
+            local furnaces = getInventoriesAcceptingInput(inventoriesByType.furnace, ignore, stock.name)
 
             print(stock.count .. "x", item, "across:")
 
@@ -177,7 +177,7 @@ local function main(args)
                 local found = findInventories(modem)
 
                 if #found > 0 then
-                    local inventories = readInventories(found, findPeripheralSide("minecraft:barrel"))
+                    local inventories = readInventories(found)
                     doTheThing(inventories)
                 else
                     print("no inventories found")
