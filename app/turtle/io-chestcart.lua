@@ -139,21 +139,27 @@ local function emptyChestcart()
     end
 end
 
-local function doIO()
-    print("doing I/O...")
-    local io = findChestSide()
-    local barrel = toInventory("bottom")
-    local ioChest = toIoInventory(io)
-    local transferredStock = pushOutput(barrel, ioChest)
-    local movedAnyOutput = count(transferredStock) > 0
-    local transferredInputStock = pullInput(ioChest, barrel, transferredStock)
-    local movedAnyInput = count(transferredInputStock) > 0
+---@param name string
+---@return boolean
+local function hasTransferrableStock(name)
+    local ioInventory = toIoInventory(name)
 
-    if not movedAnyInput and not movedAnyOutput then
-        print("didn't transfer anything, sleeping 7s")
-        os.sleep(7)
+    for _, stock in pairs(ioInventory.input.stock) do
+        if (stock.count > 0) then
+            return true
+        end
     end
 
+    for _, stock in pairs(ioInventory.output.stock) do
+        if (stock.count < stock.maxCount) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function fillAndSendOffChestcart()
     local signal = Redstone.getInput({"left", "right"})
 
     if not signal then
@@ -169,10 +175,38 @@ local function doIO()
     os.sleep(3)
 end
 
+local function doIO()
+    local io = findChestSide()
+
+    if not hasTransferrableStock(io) then
+        print("waiting until there are items to transfer...")
+
+        repeat
+            os.sleep(7 + (math.random() * 3))
+        until hasTransferrableStock(io)
+    end
+
+    print("transferring items...")
+    local ioChest = toIoInventory(io)
+    local transferRate = 16
+    local barrel = toInventory("bottom")
+    local transferredOutput = pushOutput(barrel, ioChest, transferRate)
+    local movedAnyOutput = count(transferredOutput) > 0
+    local transferredInputStock = pullInput(ioChest, barrel, transferredOutput, transferRate)
+    local movedAnyInput = count(transferredInputStock) > 0
+
+    if not movedAnyInput and not movedAnyOutput then
+        print("nothing transferred, sleeping 7s...")
+        os.sleep(7)
+    end
+
+    fillAndSendOffChestcart()
+end
+
 ---@param args table
 ---@return boolean success
 local function main(args)
-    print("[io-chestcart v1.3.0] booting...")
+    print("[io-chestcart v2.1.0] booting...")
 
     if not inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")

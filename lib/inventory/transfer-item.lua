@@ -25,22 +25,33 @@ local function nextToStack(stacks, item, sample, size)
     end
 end
 
----@param stacks table<integer, ItemStack>
----@param item string
+---@param inventory Inventory
 ---@param sample ItemStack
----@param size integer
 ---@return integer? slot, ItemStack? stack
-local function allocateNextToStack(stacks, item, sample, size)
+local function allocateNextToStack(inventory, sample)
+    local size = getSize(inventory.name)
     for slot = 1, size do
-        local stack = stacks[slot]
+        local stack = inventory.stacks[slot]
 
         if not stack then
             ---@type ItemStack
             stack = copy(sample)
             stack.count = 0
-            stacks[slot] = stack
+            inventory.stacks[slot] = stack
 
-            return slot, stacks[slot]
+            local stock = inventory.stock[sample.name]
+
+            if not stock then
+                ---@type ItemStack
+                stock = copy(sample)
+                stock.count = 0
+                stock.maxCount = 0
+                inventory.stock[sample.name] = stock
+            end
+
+            stock.maxCount = stock.maxCount + sample.maxCount
+
+            return slot, inventory.stacks[slot]
         end
     end
 end
@@ -61,7 +72,7 @@ return function(from, to, item, total, rate, allowAllocate)
     local toSlot, toStack = nextToStack(to.stacks, item)
 
     if not toSlot and allowAllocate and fromStack then
-        toSlot, toStack = allocateNextToStack(to.stacks, item, fromStack, getSize(to.name))
+        toSlot, toStack = allocateNextToStack(to, fromStack)
     end
 
     local toStock = to.stock[item]
@@ -93,7 +104,7 @@ return function(from, to, item, total, rate, allowAllocate)
         toSlot, toStack = nextToStack(to.stacks, item)
 
         if not toSlot and allowAllocate and fromStack then
-            toSlot, toStack = allocateNextToStack(to.stacks, item, fromStack, getSize(to.name))
+            toSlot, toStack = allocateNextToStack(to, fromStack)
         end
     end
 
