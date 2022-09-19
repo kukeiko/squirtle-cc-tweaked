@@ -5,6 +5,7 @@ local readInputOutputChest = require "io-network.read-io-chest"
 local readStorageChest = require "io-network.read-storage-chest"
 local readDrainInventory = require "io-network.read-drain-inventory"
 local readFurnace = require "io-network.read-furnace"
+local readSiloInventory = require "io-network.read-silo-inventory"
 
 ---@param found FoundInventory[]
 ---@return NetworkedInventory[]
@@ -28,6 +29,8 @@ return function(found)
                     table.insert(inventories, readInputOutputChest(name, stacks, nameTagSlot))
                 elseif nameTagName == "Drain" then
                     table.insert(inventories, readDrainInventory(name, {nameTagSlot}))
+                elseif nameTagName == "Silo" then
+                    table.insert(inventories, readSiloInventory(name, {nameTagSlot}))
                 end
             else
                 table.insert(inventories, readStorageChest(name, stacks))

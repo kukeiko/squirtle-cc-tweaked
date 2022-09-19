@@ -5,13 +5,12 @@ local concatTables = require "utils.concat-tables"
 local findPeripheralSide = require "world.peripheral.find-side"
 local findInventories = require "io-network.find-inventories"
 local readInventories = require "io-network.read-inventories"
-local getInventoriesAcceptingInput = require "io-network.get-inventories-accepting-input"
 local groupInventoriesByType = require "io-network.group-inventories-by-type"
-local transferItem = require "inventory.transfer-item"
 local printProgress = require "io-network.print-progress"
+local spreadOutputOfInventory = require "io-network.spread-output-of-inventory"
 
 ---@class NetworkedInventory : InputOutputInventory
----@field type "storage" | "io" | "drain" | "furnace"
+---@field type "storage" | "io" | "drain" | "furnace" | "silo"
 ---@field name string
 
 ---@class NetworkedInventoriesByType
@@ -19,68 +18,11 @@ local printProgress = require "io-network.print-progress"
 ---@field io NetworkedInventory[]
 ---@field drain NetworkedInventory[]
 ---@field furnace NetworkedInventory[]
+---@field silo NetworkedInventory[]
 
 ---@class FoundInventory
 ---@field name string
 ---@field type string
-
----@param chest NetworkedInventory
----@param inventoriesByType NetworkedInventoriesByType
-local function spreadOutputStacksOfInventory(chest, inventoriesByType)
-    for item, stock in pairs(chest.output.stock) do
-        local ignore = {chest.name}
-
-        -- [todo] the while loop should not be needed anymore afaik
-        -- [update] akshually is needed, as we spread items evenly across chests,
-        -- and one of them might fill up, but another one might still take it. 
-        -- i think.
-        while stock.count > 0 do
-            local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
-            local storageChests = getInventoriesAcceptingInput(inventoriesByType.storage, ignore, stock.name)
-            local furnaces = getInventoriesAcceptingInput(inventoriesByType.furnace, ignore, stock.name)
-
-            ---@type NetworkedInventory[]
-            local inputChests = concatTables(ioChests, furnaces, storageChests)
-
-            if #inputChests == 0 then
-                break
-            end
-
-            print("[" .. chest.name .. "]")
-            print(stock.count .. "x", item, "across:")
-
-            if #ioChests > 0 then
-                print(" - ", #ioChests .. "x io chests")
-            end
-
-            if #storageChests > 0 then
-                print(" - ", #storageChests .. "x storage chests")
-            end
-
-            if #furnaces > 0 then
-                print(" - ", #furnaces .. "x furnaces")
-            end
-
-            local stockPerChest = math.floor(stock.count / #inputChests)
-            local rest = stock.count - stockPerChest
-
-            for i, inputChest in ipairs(inputChests) do
-                local transfer = stockPerChest
-
-                if i <= rest then
-                    transfer = transfer + 1
-                end
-
-                local transferred = transferItem(chest.output, inputChest.input, item, transfer, 8)
-
-                if transferred < transfer then
-                    -- assuming chest is full or its state changed from an external source, in which case we just ignore it
-                    table.insert(ignore, inputChest.name)
-                end
-            end
-        end
-    end
-end
 
 -- [todo] we should not only spread an item (e.g. charcoal) evenly amongst inputs,
 -- but also evenly from outputs, so that e.g. the 4 lumberjack farms all start working
@@ -88,13 +30,14 @@ end
 
 ---@param inventories NetworkedInventory[]
 local function doTheThing(inventories)
-    local inventoriesByType = groupInventoriesByType(inventories)
+    local byType = groupInventoriesByType(inventories)
 
     print("found:")
-    local numIo = #inventoriesByType.io
-    local numStorage = #inventoriesByType.storage
-    local numDrains = #inventoriesByType.drain
-    local numFurnaces = #inventoriesByType.furnace
+    local numIo = #byType.io
+    local numStorage = #byType.storage
+    local numDrains = #byType.drain
+    local numFurnaces = #byType.furnace
+    local numSilos = #byType.silo
 
     if numIo > 0 then
         print(" - " .. numIo .. "x I/O")
@@ -112,29 +55,21 @@ local function doTheThing(inventories)
         print(" - " .. numFurnaces .. "x Furnace")
     end
 
+    if numSilos > 0 then
+        print(" - " .. numSilos .. "x Silo")
+    end
+
     os.sleep(1)
 
-    if #inventoriesByType.drain > 0 then
-        for _, chest in ipairs(inventoriesByType.drain) do
-            spreadOutputStacksOfInventory(chest, inventoriesByType)
-        end
-    end
+    local outputInventories = concatTables(byType.drain, byType.io, byType.furnace, byType.silo)
 
-    if #inventoriesByType.io > 0 then
-        for _, ioChest in ipairs(inventoriesByType.io) do
-            spreadOutputStacksOfInventory(ioChest, inventoriesByType)
-        end
-    end
-
-    if #inventoriesByType.furnace > 0 then
-        for _, furnace in ipairs(inventoriesByType.furnace) do
-            spreadOutputStacksOfInventory(furnace, inventoriesByType)
-        end
+    for _, inventory in ipairs(outputInventories) do
+        spreadOutputOfInventory(inventory, byType)
     end
 end
 
 local function main(args)
-    print("[io-network v2.3.0] booting...")
+    print("[io-network v3.1.0] booting...")
     local timeout = tonumber(args[1] or 30)
 
     while true do
