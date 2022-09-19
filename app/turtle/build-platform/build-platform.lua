@@ -5,39 +5,39 @@ local turn = require "squirtle.turn"
 local boot = require "build-platform.boot"
 local move = require "squirtle.move"
 local place = require "squirtle.place"
+local dig = require "squirtle.dig"
+local inspect = require "squirtle.inspect"
 
 ---@class BuildPlatformAppState
 ---@field depth integer
 ---@field width integer
+---@field direction "bottom"|"top"
 
-local function placeBlock()
-    if not place("bottom") then
-        if turtle.getItemCount() > 0 then
-            -- assuming a block is already there
-            return true
-        end
-
-        for slot = 1, 16 do
-            if turtle.getItemCount(slot) > 0 then
-                turtle.select(slot)
-
-                if not place("bottom") then
-                    -- assume a block magically appeared since last check
-                    return true
-                end
-            end
-        end
-
-        return false
+---@param direction "bottom"|"top"
+local function placeBlock(direction)
+    if place(direction) or inspect(direction) then
+        return true
     end
 
-    return true
+    local currentSlot = turtle.getSelectedSlot()
+
+    for slot = 1, 16 do
+        if slot ~= currentSlot and turtle.getItemCount(slot) > 0 then
+            turtle.select(slot)
+
+            if place(direction) then
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[build-platform v1.0.0] booting...")
+    print("[build-platform v1.1.1] booting...")
     local state = boot(args)
 
     if not state then
@@ -50,8 +50,8 @@ local function main(args)
     ---@param side string
     local function turnMove(side)
         turn(side)
-        if not move("front") then
-            error("failed to move forward")
+        while not move("front") do
+            dig("front")
         end
         turn(side)
     end
@@ -84,13 +84,18 @@ local function main(args)
 
     for line = 1, numLines do
         for _ = 1, lineLength do
-            if not placeBlock() then
-                error("failed to place a block below me :(")
+            if not placeBlock(state.direction) then
+                print("failed to place a block below me :(")
+                print("fix the situation, then press any key")
+
+                repeat
+                    os.pullEvent("key")
+                until placeBlock(state.direction)
             end
 
             if _ ~= lineLength then
-                if not move("front") then
-                    error("failed to move forward")
+                while not move("front") do
+                    dig("front")
                 end
             end
         end

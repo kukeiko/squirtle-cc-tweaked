@@ -2,7 +2,7 @@ local Fuel = require "squirtle.fuel"
 
 local function printUsage()
     print("Usage:")
-    print("build-platform <depth> <width>")
+    print("build-platform <depth> <width> [bottom|top]")
 end
 
 local function refuel(level)
@@ -48,8 +48,13 @@ end
 return function(args)
     local depth = tonumber(args[1])
     local width = tonumber(args[2])
+    local topOrBottom = args[3]
 
-    if not depth or not width or depth < 1 or width < 1 then
+    if not topOrBottom then
+        topOrBottom = "bottom"
+    end
+
+    if not depth or not width or depth < 1 or width < 1 or (topOrBottom ~= "bottom" and topOrBottom ~= "top") then
         printUsage()
         return nil
     end
@@ -64,7 +69,7 @@ return function(args)
     ensureHasBlocks(numBlocks)
 
     ---@type BuildPlatformAppState
-    local state = {depth = depth, width = width}
+    local state = {depth = depth, width = width, direction = topOrBottom}
 
     return state
 end
