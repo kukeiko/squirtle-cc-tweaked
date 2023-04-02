@@ -31,7 +31,12 @@
         {
             "label": "build build-platform",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/build-platform "
+            "command": "luabundler bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/build-platform"
+        },
+        {
+            "label": "build farmer",
+            "type": "shell",
+            "command": "luabundler bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/farmer"
         },
     ]
 }

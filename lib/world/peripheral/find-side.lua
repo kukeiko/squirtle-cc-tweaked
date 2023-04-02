@@ -3,7 +3,7 @@ local allSideNames = require "elements.side.all-names"
 
 ---@param types string[]|string
 ---@param sides? string[]
----@return string, string
+---@return string?, string?
 return function(types, sides)
     if type(types) == "string" then
         types = {types}

@@ -61,6 +61,8 @@ return function(side)
         return turnRight()
     elseif side == "back" then
         return turnBack()
+    elseif side == "front" then
+        return true
     else
         error(string.format("turn() does not support side %s", side))
     end

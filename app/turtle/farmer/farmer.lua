@@ -3,7 +3,6 @@ package.path = package.path .. ";/lib/?.lua"
 -- [todo] did some changes that might no longer make this app 100% crash safe
 local Backpack = require "squirtle.backpack"
 local Fuel = require "squirtle.fuel"
-local Peripheral = require "world.peripheral"
 local Chest = require "world.chest"
 local inspect = require "squirtle.inspect"
 local move = require "squirtle.move"
@@ -17,6 +16,7 @@ local drop = require "squirtle.drop"
 local place = require "squirtle.place"
 local suck = require "squirtle.suck"
 local getStacks = require "inventory.get-stacks"
+local selectItem = require "squirtle.backpack.select-item"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -50,7 +50,7 @@ end
 local function tryPlantAnything()
     for slot = 1, Backpack.size() do
         if Backpack.selectSlotIfNotEmpty(slot) then
-            if turtle.placeDown() then
+            if place("bottom") then
                 return
             end
         end
@@ -58,6 +58,7 @@ local function tryPlantAnything()
 end
 
 ---@param crops string
+---@return false|integer
 local function selectSlotWithSeedsOfCrop(crops)
     local seeds = cropsToSeedsMap[crops]
 
@@ -65,15 +66,7 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    for slot = 1, Backpack.size() do
-        local stack = Backpack.getStack(slot)
-
-        if stack and stack.name == seeds then
-            return Backpack.selectSlot(slot)
-        end
-    end
-
-    return false
+    return selectItem(seeds)
 end
 
 ---@param block Block
@@ -82,9 +75,15 @@ local function isCrops(block)
     return block.tags["minecraft:crops"]
 end
 
----@param crops Block
+---@param side string
 ---@return integer
-local function getCropsRemainingAge(crops)
+local function getCropsRemainingAge(side)
+    local crops = inspect(side)
+
+    if not crops or not isCrops(crops) then
+        error(string.format("expected block at %s to be crops", side))
+    end
+
     local readyAge = cropsReadyAges[crops.name]
 
     if not readyAge then
@@ -110,49 +109,56 @@ local function faceFirstCrop()
 end
 
 ---@param side string
-local function isCropsReady(side)
-    local block = inspect(side)
-
-    if not block or not isCrops(block) then
-        error(string.format("expected block at %s to be crops", side))
-    end
-
-    return getCropsRemainingAge(block) == 0
-end
-
----@param side string
 ---@param max? integer if supplied, only wait if age difference does not exceed max
-local function waitUntilCropReady(side, max)
-    while not isCropsReady(side) and Backpack.selectItem("minecraft:bone_meal") do
-        while place(side) do
-        end
+---@param time? integer maximum amount of time to wait
+---@return boolean ready if crops are ready
+local function waitUntilCropsReady(side, max, time)
+    while getCropsRemainingAge(side) > 0 and selectItem("minecraft:bone_meal") and place(side) do
     end
 
-    local block = inspect(side)
-
-    if not block or not isCrops(block) then
-        error(string.format("expected block at %s to be crops", side))
-    end
-
-    local remainingAge = getCropsRemainingAge(block)
+    local remainingAge = getCropsRemainingAge(side)
 
     if max and remainingAge > max then
         return false
     end
 
-    while remainingAge > 0 do
-        print(string.format("waiting for crop to grow, current: %d", remainingAge))
-        os.sleep(30)
-        block = inspect(side)
-
-        if not block or not isCrops(block) then
-            error(string.format("crops at %s unexpectedly got replaced", side))
-        end
-
-        remainingAge = getCropsRemainingAge(block)
+    if remainingAge > 0 then
+        print("waiting for crop to grow")
     end
 
+    local waitUntilReady = function()
+        while getCropsRemainingAge(side) > 0 do
+            os.sleep(7)
+        end
+    end
+
+    if time then
+        return parallel.waitForAny(waitUntilReady, function()
+            os.sleep(time)
+        end) == 1
+    end
+
+    waitUntilReady()
+
     return true
+end
+
+---@param block Block
+local function harvestCrops(block)
+    if waitUntilCropsReady("bottom", 2, (7 * 3) + 1) then
+        local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
+
+        if not selectedSeed then
+            Backpack.selectFirstEmptySlot()
+            -- [todo] error handling
+        end
+
+        dig("bottom")
+
+        if not place("bottom") then
+            tryPlantAnything()
+        end
+    end
 end
 
 ---@param buffer string
@@ -195,38 +201,25 @@ local function drainDropper()
     until Chest.countItems("bottom") == bufferCount
 end
 
-local function doHomeStuff()
+local function doHomework()
+    local ioChest = Chest.findSide()
     local barrel = "bottom"
-    print("i am home! doing home stuff")
 
-    while Backpack.selectItem("minecraft:poisonous_potato") do
-        print("discarding poisonous potatoes")
-        drop("top")
+    if not ioChest then
+        error("no I/O chest found")
     end
+
+    turn(ioChest)
+    ioChest = "front"
+    print("i am home! doing home stuff")
 
     if not dump(barrel) then
         error("buffer barrel full :(")
     end
 
-    -- first we make a single pushOutput() in case output wants seeds
-    local ioChest = Chest.findSide()
+    -- first we make a single pushOutput() in case output wants seeds or poisonous taters
     print("pushing output once")
     pushOutput(barrel, ioChest)
-
-    -- then we're gonna compost
-    move("back")
-
-    -- [todo] possible optimization: only move to composter if we have seeds
-    if not inspect("bottom", "minecraft:composter") then
-        print("no composter, going back to barrel")
-        move()
-    else
-        print("composting seeds")
-        compostSeeds()
-        move()
-        print("draining dropper")
-        drainDropper()
-    end
 
     local minFuel = 512
     local ioChest = Chest.findSide()
@@ -234,7 +227,7 @@ local function doHomeStuff()
     print("pushing output...")
 
     while not pushOutput(barrel, ioChest) do
-        os.sleep(3)
+        os.sleep(7)
     end
 
     while Fuel.getFuelLevel() < minFuel do
@@ -254,6 +247,28 @@ local function doHomeStuff()
     while suck(barrel) do
     end
 
+    -- then we're gonna compost and drop any unwanted poisonous taters
+    move("back")
+
+    while selectItem("minecraft:poisonous_potato") do
+        print("discarding poisonous potatoes")
+        drop("top")
+    end
+
+    -- [todo] possible optimization: only move to composter if we have seeds
+    if not inspect("bottom", "minecraft:composter") then
+        print("no composter, going back to barrel")
+        move()
+    else
+        print("composting seeds")
+        compostSeeds()
+        move()
+        print("draining dropper")
+        drainDropper()
+        while suck(barrel) do
+        end
+    end
+
     -- [todo] hacky workaround to put back charcoal
     for slot, stack in pairs(Backpack.getStacks()) do
         if stack.name == "minecraft:charcoal" then
@@ -264,7 +279,7 @@ local function doHomeStuff()
 
     print("home stuff ready!")
     faceFirstCrop()
-    waitUntilCropReady("front")
+    waitUntilCropsReady("front", 2, (7 * 3) + 1)
     move("top")
 end
 
@@ -273,11 +288,14 @@ local function moveNext()
         local block = inspect()
 
         if not block then
-            print("could not move even though front seems to be free. sleeping 1s ...")
-            os.sleep(1)
+            print("could not move even though front seems to be free")
+
+            while not block do
+                os.sleep(1)
+                block = inspect()
+            end
         end
 
-        -- [todo] fix
         turn(getBlockTurnSide(block))
     end
 end
@@ -289,73 +307,30 @@ end
 -- a block to check if we reached home, which is gud.
 ---@param args table
 local function main(args)
+    print("[farmer v1.3.0] booting...")
+
     while true do
         local block = inspect("bottom")
 
         if block and block.name == "minecraft:chest" then
             move("back")
             move("bottom")
-            local floor = inspect("bottom")
-
-            if not floor or floor.name ~= "minecraft:barrel" then
-                error("expected to find home")
+        else
+            if block and block.name == "minecraft:barrel" then
+                doHomework()
+            elseif block and block.name == "minecraft:spruce_fence" then
+                turn("left")
+            elseif block and block.name == "minecraft:oak_fence" then
+                turn("right")
+            elseif block and isCrops(block) then
+                harvestCrops(block)
+            elseif not block then
+                turtle.digDown()
+                tryPlantAnything()
             end
 
-            doHomeStuff()
-        elseif block and block.name == "minecraft:barrel" then
-            -- [todo] should only check for horizontal sides
-            local chest = peripheral.wrap("front")
-
-            -- [todo] there no longer is a dedicated input barrel, but an io-chest instead,
-            -- so should just error out, complaining that there is no io-chest.
-            if not chest then
-                -- [todo] there no longer is an input barrel
-                if not move("back") then
-                    error("could not back down from input barrel")
-                end
-
-                if not move("bottom") then
-                    error("could not back down from input barrel")
-                end
-
-                local floor = inspect("bottom")
-
-                if not floor or floor.name ~= "minecraft:barrel" then
-                    error("expected to find home after backing down from input barrel")
-                end
-            end
-
-            doHomeStuff()
-        elseif block and block.name == "minecraft:composter" then
-            print("crashed while composting!")
-            -- [todo] moving to barrel cause im lazy right now,
-            -- the home routing will initiate composting
-            move()
-        elseif block and block.name == "minecraft:spruce_fence" then
-            turn("left")
-        elseif block and block.name == "minecraft:oak_fence" then
-            turn("right")
-        elseif block and isCrops(block) then
-            if waitUntilCropReady("bottom", 2) then
-                local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
-
-                if not selectedSeed then
-                    Backpack.selectFirstEmptySlot()
-                    -- [todo] error handling
-                end
-
-                dig("bottom")
-
-                if not place("bottom") then
-                    tryPlantAnything()
-                end
-            end
-        elseif not block then
-            turtle.digDown()
-            tryPlantAnything()
+            moveNext()
         end
-
-        moveNext()
     end
 end
 
