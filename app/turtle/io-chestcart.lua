@@ -206,7 +206,7 @@ end
 ---@param args table
 ---@return boolean success
 local function main(args)
-    print("[io-chestcart v2.1.0] booting...")
+    print("[io-chestcart v2.2.0] booting...")
 
     if not inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
