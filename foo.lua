@@ -29,11 +29,32 @@ local SubwayService = require "subway.subway-service"
 
 local client = Rpc.client(SubwayService, "bar-station")
 local tracks = client.getTracks()
+local track = tracks[math.random(#tracks)]
 
-for _, track in pairs(tracks) do
-    print("switching to track", track.signal)
-    client.dispatchToTrack(track.signal)
-end
+EventLoop.run(function()
+    while true do
+        local timerId = os.startTimer(2)
 
-local value = table.pack(client.getTracks())
-Utils.prettyPrint(value)
+        EventLoop.pull("timer", function(_, id)
+            if id ~= timerId then
+                return
+            end
+
+            local readyToDispatch = client.readyToDispatchToTrack(track.signal)
+
+            if readyToDispatch then
+                print("switching to track", track.signal)
+                track = tracks[math.random(#tracks)]
+                client.dispatchToTrack(track.signal)
+            end
+        end)
+    end
+end)
+
+-- for _, track in pairs(tracks) do
+--     print("switching to track", track.signal)
+--     client.dispatchToTrack(track.signal)
+-- end
+
+-- local value = table.pack(client.getTracks())
+-- Utils.prettyPrint(value)

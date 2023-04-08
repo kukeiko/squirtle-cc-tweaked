@@ -9,6 +9,12 @@ local EventLoop = require "event-loop"
 ---@field targetStationId string
 ---@field signal number
 
+---@type integer|nil
+local switchedTrackSignal = nil
+---@type integer|nil
+local trackSwitchTimerId = nil
+local trackSwitchDuration = 7
+
 local function flickerGate()
     redstone.setOutput("top", true)
     os.sleep(1)
@@ -23,10 +29,17 @@ local function switchTrack(signal)
         side = "right"
     end
 
-    print("switching to track", signal)
     redstone.setOutput(side, true)
     redstone.setAnalogOutput("bottom", signal)
-    os.sleep(7)
+
+    while true do
+        local _, timerId = EventLoop.pull("timer")
+
+        if timerId == trackSwitchTimerId then
+            break
+        end
+    end
+
     redstone.setOutput(side, false)
     redstone.setOutput("bottom", false)
 end
@@ -54,10 +67,31 @@ function SubwayService.getTrack(signal)
 end
 
 ---@param signal integer
+---@return boolean
+function SubwayService.readyToDispatchToTrack(signal)
+    return switchedTrackSignal == nil or signal == switchedTrackSignal
+end
+
+---@param signal integer
+---@return boolean
 function SubwayService.dispatchToTrack(signal)
-    EventLoop.run(flickerGate, function()
-        switchTrack(signal)
-    end)
+    if signal == switchedTrackSignal then
+        flickerGate()
+        os.cancelTimer(trackSwitchTimerId)
+        trackSwitchTimerId = os.startTimer(trackSwitchDuration)
+        return true
+    elseif switchedTrackSignal == nil then
+        trackSwitchTimerId = os.startTimer(trackSwitchDuration)
+        switchedTrackSignal = signal
+        EventLoop.run(flickerGate, function()
+            switchTrack(signal)
+            switchedTrackSignal = nil
+        end)
+
+        return true
+    else
+        return false
+    end
 end
 
 return SubwayService
