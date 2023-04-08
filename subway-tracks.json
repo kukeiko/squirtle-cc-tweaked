@@ -1,0 +1,7 @@
+[
+    {
+        "signal": 4,
+        "stationId": "bar-station",
+        "targetStationId": "bar-station"
+    }
+]

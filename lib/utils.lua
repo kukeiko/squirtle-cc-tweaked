@@ -45,7 +45,7 @@ end
 
 ---@generic T, U
 ---@param list T[]
----@param mapper fun(item: T, index: number) : U
+---@param mapper fun(item: T, index: number): U
 ---@return U[]
 function Utils.map(list, mapper)
     local mapped = {}
@@ -57,9 +57,10 @@ function Utils.map(list, mapper)
     return mapped
 end
 
----@param list table
----@param predicate function
----@return table
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return T[]
 function Utils.filter(list, predicate)
     local filtered = {}
 
@@ -70,6 +71,18 @@ function Utils.filter(list, predicate)
     end
 
     return filtered
+end
+
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return T|nil, integer|nil
+function Utils.find(list, predicate)
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            return list[i], i
+        end
+    end
 end
 
 function Utils.prettyPrint(value)
@@ -99,6 +112,11 @@ function Utils.writeAutorunFile(args)
     local file = fs.open("startup/" .. args[1] .. ".autorun.lua", "w")
     file.write("shell.run(\"" .. table.concat(args, " ") .. "\")")
     file.close()
+end
+
+function Utils.readJson(path)
+    local file = fs.open(path, "r")
+    return textutils.unserializeJSON(file.readAll())
 end
 
 return Utils
