@@ -4,16 +4,21 @@ local copy = require "utils.copy"
 local indexOf = require "utils.index-of"
 local Utils = {copy = copy, indexOf = indexOf}
 
-function Utils.concat(a, b)
-    for i = 1, #b do
-        a[#a + 1] = b[i]
+---@param list table
+---@param values table
+---@return table
+function Utils.push(list, values)
+    for i = 1, #values do
+        list[#list + 1] = values[i]
     end
 
-    return a
+    return list
 end
 
 -- https://stackoverflow.com/a/26367080/1611592
----@param tbl table
+---@generic T: table
+---@param tbl T
+---@return T
 function Utils.clone(tbl, seen)
     if seen and seen[tbl] then
         return seen[tbl]
@@ -36,6 +41,35 @@ function Utils.isEmpty(t)
     end
 
     return true
+end
+
+---@generic T, U
+---@param list T[]
+---@param mapper fun(item: T, index: number) : U
+---@return U[]
+function Utils.map(list, mapper)
+    local mapped = {}
+
+    for i = 1, #list do
+        table.insert(mapped, mapper(list[i], i))
+    end
+
+    return mapped
+end
+
+---@param list table
+---@param predicate function
+---@return table
+function Utils.filter(list, predicate)
+    local filtered = {}
+
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            table.insert(filtered, list[i])
+        end
+    end
+
+    return filtered
 end
 
 function Utils.prettyPrint(value)

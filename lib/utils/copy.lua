@@ -1,4 +1,6 @@
----@param tbl table
+---@generic T: table
+---@param tbl T
+---@return T
 return function(tbl)
     local copy = {}
 
