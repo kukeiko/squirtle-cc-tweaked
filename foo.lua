@@ -31,25 +31,33 @@ local client = Rpc.client(SubwayService, "bar-station")
 local tracks = client.getTracks()
 local track = tracks[math.random(#tracks)]
 
-EventLoop.run(function()
-    while true do
-        local timerId = os.startTimer(2)
+local nearest = Rpc.nearest(SubwayService, 5)
 
-        EventLoop.pull("timer", function(_, id)
-            if id ~= timerId then
-                return
-            end
+if nearest then
+    print("nearest", nearest.host)
+else
+    print("no nearest")
+end
 
-            local readyToDispatch = client.readyToDispatchToTrack(track.signal)
+-- EventLoop.run(function()
+--     while true do
+--         local timerId = os.startTimer(2)
 
-            if readyToDispatch then
-                print("switching to track", track.signal)
-                track = tracks[math.random(#tracks)]
-                client.dispatchToTrack(track.signal)
-            end
-        end)
-    end
-end)
+--         EventLoop.pull("timer", function(_, id)
+--             if id ~= timerId then
+--                 return
+--             end
+
+--             local readyToDispatch = client.readyToDispatchToTrack(track.signal)
+
+--             if readyToDispatch then
+--                 print("switching to track", track.signal)
+--                 track = tracks[math.random(#tracks)]
+--                 client.dispatchToTrack(track.signal)
+--             end
+--         end)
+--     end
+-- end)
 
 -- for _, track in pairs(tracks) do
 --     print("switching to track", track.signal)

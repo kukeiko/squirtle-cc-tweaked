@@ -7,6 +7,16 @@ local function getWirelessModem()
     end) or error("no wireless modem equipped")
 end
 
+---@class RpcPingPacket
+---@field type "ping"
+---@field service string
+---@field host? string
+
+---@class RpcPongPacket
+---@field type "pong"
+---@field service string
+---@field host string
+
 ---@class RpcRequestPacket
 ---@field callId string
 ---@field service string
@@ -20,10 +30,14 @@ end
 ---@field response table
 ---@field type "response"
 
+---@class RpcClient
+---@field host string
+
 ---@class Service
 ---@field name string
 
 local callId = 0
+local channel = 64
 
 ---@return string
 local function nextCallId()
@@ -35,11 +49,60 @@ end
 ---@class Rpc
 local Rpc = {}
 
+---@generic T
+---@param service T | Service
+---@param maxDistance? number
+---@return (T|RpcClient)?
+function Rpc.nearest(service, maxDistance)
+    local modem = getWirelessModem()
+    modem.open(channel)
+
+    ---@type { host:string, distance:number }[]
+    local hosts = {}
+
+    parallel.waitForAny(function()
+        os.sleep(0.3)
+    end, function()
+        ---@type RpcPingPacket
+        local ping = {type = "ping", service = service.name}
+        modem.transmit(channel, channel, ping)
+
+        while true do
+            local event = table.pack(EventLoop.pull("modem_message"))
+            local message = event[5]
+            local distance = event[6]
+
+            if type(message) == "table" and message.type == "pong" and message.service == service.name then
+                if maxDistance then
+                    if distance <= maxDistance then
+                        table.insert(hosts, {host = message.host, distance = distance})
+                    end
+                else
+                    table.insert(hosts, {host = message.host, distance = distance})
+                end
+            end
+        end
+    end)
+
+    ---@type { host:string, distance:number }?
+    local best = nil
+
+    for i = 1, #hosts do
+        if best == nil or hosts[i].distance < best.distance then
+            best = hosts[i]
+        end
+    end
+
+    if best then
+        return Rpc.client(service, best.host)
+    end
+end
+
 ---@param service Service
 ---@param host string
 function Rpc.server(service, host)
     local modem = getWirelessModem()
-    modem.open(64)
+    modem.open(channel)
 
     EventLoop.run(function()
         while true do
@@ -50,7 +113,11 @@ function Rpc.server(service, host)
                     local response = table.pack(service[message.method](table.unpack(message.arguments)))
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response}
-                    peripheral.call(modem, "transmit", 64, 64, packet)
+                    peripheral.call(modem, "transmit", channel, channel, packet)
+                elseif type(message) == "table" and message.type == "ping" and message.service == service.name then
+                    ---@type RpcPongPacket
+                    local pong = {type = "pong", host = host, service = service.name}
+                    peripheral.call(modem, "transmit", channel, channel, pong)
                 end
             end)
         end
@@ -60,11 +127,12 @@ end
 ---@generic T
 ---@param service T | Service
 ---@param host string
----@return T
+---@return T|RpcClient
 function Rpc.client(service, host)
-    local client = {}
+    ---@type RpcClient
+    local client = {host = host}
     local modem = getWirelessModem()
-    modem.open(64)
+    modem.open(channel)
 
     for k, v in pairs(service) do
         if type(v) == "function" then
@@ -81,7 +149,7 @@ function Rpc.client(service, host)
                     arguments = {...}
                 }
 
-                modem.transmit(64, 64, packet)
+                modem.transmit(channel, channel, packet)
 
                 while true do
                     local event = {EventLoop.pull("modem_message")}
