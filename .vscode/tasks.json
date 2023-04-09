@@ -6,7 +6,12 @@
         {
             "label": "build io-chestcart",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p lib/?.lua -o dist/io-chestcart"
+            "command": "luabundler bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p lib/?.lua -o dist/io-chestcart",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "label": "build io-network",
@@ -38,5 +43,10 @@
             "type": "shell",
             "command": "luabundler bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/farmer"
         },
+        {
+            "label": "build subway:pocket",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p lib/?.lua -o ../23/subway.lua"
+        }
     ]
 }
