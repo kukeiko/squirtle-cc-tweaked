@@ -1,3 +1,7 @@
+---@class Application
+---@field name string
+---@field content? string
+---
 ---@class SubwayStation
 ---@field id string
 ---@field name string

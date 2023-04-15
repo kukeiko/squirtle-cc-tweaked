@@ -4,11 +4,11 @@ local Rpc = require "rpc"
 local EventLoop = require "event-loop"
 local SubwayService = require "services.subway-service"
 
-SubwayService.id = arg[1]
-print("station", SubwayService.id)
+SubwayService.host = arg[1]
+print("station", SubwayService.host)
 
 parallel.waitForAny(function()
-    Rpc.server(SubwayService, SubwayService.id)
+    Rpc.server(SubwayService)
 end, function()
     while true do
         local _, key = EventLoop.pull("key")

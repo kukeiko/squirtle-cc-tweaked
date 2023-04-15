@@ -63,5 +63,20 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p lib/?.lua -o dist/computer/subway-switch"
         },
+        {
+            "label": "build update-host",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update-host.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/update-host"
+        },
+        {
+            "label": "build update:pocket",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/update.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/update"
+        },
+        {
+            "label": "build update:turtle",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/update"
+        },
     ]
 }

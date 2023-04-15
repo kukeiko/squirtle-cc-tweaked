@@ -2,7 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 
 local Utils = require "utils"
 local Rpc = require "rpc"
-local Database = require "database"
+local DatabaseService = require "services.database-service"
 local SubwayService = require "services.subway-service"
 local SearchableList = require "ui.searchable-list"
 
@@ -94,10 +94,10 @@ end
 ---@return string?
 local function promptUserToPickGoal(allStations)
     allStations = allStations or false
-    local stations = Database.getSubwayStations()
+    local stations = DatabaseService.getSubwayStations()
 
     if not allStations then
-        stations = Utils.filter(Database.getSubwayStations(), function(station)
+        stations = Utils.filter(DatabaseService.getSubwayStations(), function(station)
             return station.type == "endpoint"
         end)
     end
@@ -141,8 +141,8 @@ local function main(args)
         goalId = promptUserToPickGoal(true)
     end
 
-    local stations = Database.getSubwayStations()
-    local tracks = Database.getSubwayTracks()
+    local stations = DatabaseService.getSubwayStations()
+    local tracks = DatabaseService.getSubwayTracks()
 
     local goal = Utils.find(stations, function(station)
         return station.id == goalId

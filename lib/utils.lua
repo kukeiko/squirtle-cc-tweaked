@@ -142,9 +142,24 @@ function Utils.writeAutorunFile(args)
     file.close()
 end
 
+---@param path string
+---@return table?
 function Utils.readJson(path)
     local file = fs.open(path, "r")
+
+    if not file then
+        return
+    end
+
     return textutils.unserializeJSON(file.readAll())
+end
+
+---@param path string
+---@param data table
+function Utils.writeJson(path, data)
+    local file = fs.open(path, "w")
+    file.write(textutils.serialiseJSON(data))
+    file.close()
 end
 
 return Utils

@@ -93,7 +93,7 @@ function Rpc.nearest(service, maxDistance)
             best = hosts[i]
         end
     end
-
+    
     if best then
         return Rpc.client(service, best.host), best.distance
     end
