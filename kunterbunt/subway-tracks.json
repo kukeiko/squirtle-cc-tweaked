@@ -1,0 +1,62 @@
+[
+    {
+        "stationId": "storage",
+        "targetStationId": "storage:platform",
+        "signal": 1
+    },
+    {
+        "stationId": "storage",
+        "targetStationId": "storage:exit",
+        "signal": 2
+    },
+    {
+        "stationId": "storage",
+        "targetStationId": "home",
+        "signal": 7
+    },
+    {
+        "stationId": "storage",
+        "targetStationId": "villagers",
+        "signal": 15
+    },
+    {
+        "stationId": "storage:platform",
+        "targetStationId": "storage",
+        "signal": 6
+    },
+    {
+        "stationId": "storage:platform",
+        "targetStationId": "NO_EXISTY_YET",
+        "signal": 7
+    },
+    {
+        "stationId": "storage:platform",
+        "targetStationId": "villagers",
+        "signal": 8
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "home",
+        "signal": 1
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "villagers:exit",
+        "signal": 2
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "villagers:exit:nether-portal",
+        "signal": 3
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "storage",
+        "signal": 4
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "gdi-nod",
+        "signal": 9
+    }
+]

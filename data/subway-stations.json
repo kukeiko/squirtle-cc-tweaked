@@ -1,0 +1,33 @@
+[
+    {
+        "id": "foo",
+        "name": "Foo (Hub)",
+        "type": "hub"
+    },
+    {
+        "id": "foo:exit",
+        "name": "Foo (Exit)",
+        "type": "endpoint"
+    },
+    {
+        "id": "bar",
+        "name": "Bar (Hub)",
+        "type": "hub"
+    },
+    {
+        "id": "baz",
+        "name": "Baz (Bahnhof)",
+        "type": "platform"
+    },
+    {
+        "id": "baz:exit",
+        "name": "Baz (Exit)",
+        "type": "endpoint",
+        "label": "Baz"
+    },
+    {
+        "id": "baz:foo:switch",
+        "name": "Baz Foo (Switch)",
+        "type": "switch"
+    }
+]

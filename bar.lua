@@ -2,9 +2,10 @@ package.path = package.path .. ";/lib/?.lua"
 
 local Rpc = require "rpc"
 local EventLoop = require "event-loop"
-local SubwayService = require "subway.subway-service"
+local SubwayService = require "services.subway-service"
 
-SubwayService.id = "bar-station"
+SubwayService.id = arg[1]
+print("station", SubwayService.id)
 
 parallel.waitForAny(function()
     Rpc.server(SubwayService, SubwayService.id)

@@ -1,0 +1,42 @@
+[
+    {
+        "id": "home",
+        "name": "Home (Exit)",
+        "type": "endpoint"
+    },
+    {
+        "id": "storage",
+        "name": "Storage (Hub)",
+        "type": "switch"
+    },
+    {
+        "id": "storage:exit",
+        "name": "Storage (Exit)",
+        "type": "endpoint"
+    },
+    {
+        "id": "storage:platform",
+        "name": "Bahnsteig (Exit)",
+        "type": "platform"
+    },
+    {
+        "id": "villagers",
+        "name": "Villagers (Hub)",
+        "type": "switch"
+    },
+    {
+        "id": "villagers:exit",
+        "name": "Villagers (Exit)",
+        "type": "endpoint"
+    },
+    {
+        "id": "villagers:exit:nether-portal",
+        "name": "Nether Portal (Exit)",
+        "type": "endpoint"
+    },
+    {
+        "id": "gdi-nod",
+        "name": "GDI & NOD Symbols",
+        "type": "endpoint"
+    }
+]

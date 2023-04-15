@@ -59,6 +59,26 @@ end
 
 ---@generic T
 ---@param list T[]
+---@param property string
+---@return T[]
+function Utils.toMap(list, property)
+    local map = {}
+
+    for _, element in pairs(list) do
+        local id = element[property]
+
+        if type(id) ~= "string" then
+            error("id must be of type string")
+        end
+
+        map[id] = element
+    end
+
+    return map
+end
+
+---@generic T
+---@param list T[]
 ---@param predicate fun(item: T, index: number): boolean
 ---@return T[]
 function Utils.filter(list, predicate)
@@ -83,6 +103,14 @@ function Utils.find(list, predicate)
             return list[i], i
         end
     end
+end
+
+function Utils.reverse(list)
+    for i = 1, #list / 2, 1 do
+        list[i], list[#list - i + 1] = list[#list - i + 1], list[i]
+    end
+
+    return list
 end
 
 function Utils.prettyPrint(value)

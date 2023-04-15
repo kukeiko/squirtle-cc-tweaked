@@ -34,6 +34,7 @@ end
 ---@field host string
 
 ---@class Service
+---@field host string
 ---@field name string
 
 local callId = 0
@@ -52,7 +53,7 @@ local Rpc = {}
 ---@generic T
 ---@param service T | Service
 ---@param maxDistance? number
----@return (T|RpcClient)?
+---@return (T|RpcClient)?, number?
 function Rpc.nearest(service, maxDistance)
     local modem = getWirelessModem()
     modem.open(channel)
@@ -61,7 +62,7 @@ function Rpc.nearest(service, maxDistance)
     local hosts = {}
 
     parallel.waitForAny(function()
-        os.sleep(0.3)
+        os.sleep(0.25)
     end, function()
         ---@type RpcPingPacket
         local ping = {type = "ping", service = service.name}
@@ -94,13 +95,12 @@ function Rpc.nearest(service, maxDistance)
     end
 
     if best then
-        return Rpc.client(service, best.host)
+        return Rpc.client(service, best.host), best.distance
     end
 end
 
 ---@param service Service
----@param host string
-function Rpc.server(service, host)
+function Rpc.server(service)
     local modem = getWirelessModem()
     modem.open(channel)
 
@@ -109,14 +109,14 @@ function Rpc.server(service, host)
             EventLoop.pull("modem_message", function(_, modem, _, _, message)
                 -- todo: make type safe
                 if type(message) == "table" and message.type == "request" and message.service == service.name and
-                    message.host == host and type(service[message.method]) == "function" then
+                    message.host == service.host and type(service[message.method]) == "function" then
                     local response = table.pack(service[message.method](table.unpack(message.arguments)))
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response}
                     peripheral.call(modem, "transmit", channel, channel, packet)
                 elseif type(message) == "table" and message.type == "ping" and message.service == service.name then
                     ---@type RpcPongPacket
-                    local pong = {type = "pong", host = host, service = service.name}
+                    local pong = {type = "pong", host = service.host, service = service.name}
                     peripheral.call(modem, "transmit", channel, channel, pong)
                 end
             end)

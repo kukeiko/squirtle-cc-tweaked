@@ -36,7 +36,7 @@
         {
             "label": "build build-platform",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/build-platform"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/build-platform"
         },
         {
             "label": "build farmer",
@@ -44,9 +44,24 @@
             "command": "luabundler bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/farmer"
         },
         {
-            "label": "build subway:pocket",
+            "label": "build subway:pocket (dev)",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p lib/?.lua -o ../23/subway.lua"
-        }
+        },
+        {
+            "label": "build subway:pocket",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/subway"
+        },
+        {
+            "label": "build subway-hub",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-hub.lua -p app/computer/subway/?.lua -p lib/?.lua -o dist/computer/subway-hub"
+        },
+        {
+            "label": "build subway-switch",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p lib/?.lua -o dist/computer/subway-switch"
+        },
     ]
 }

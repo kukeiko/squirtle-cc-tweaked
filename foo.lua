@@ -3,66 +3,42 @@ local Pretty = require(ccPretty)
 package.path = package.path .. ";/lib/?.lua"
 
 local Utils = require "utils"
--- local Side = require "elements.side"
 local Chest = require "world.chest"
 local findSide = require "world.peripheral.find-side"
--- local pullInput = require "squirtle.transfer.pull-input"
 local pushOutput = require "squirtle.transfer.push-output"
 local concatTables = require "utils.concat-tables"
 local toIoInventory = require "inventory.to-io-inventory"
--- local inspect = require "squirtle.inspect"
--- local Backpack = require "squirtle.backpack"
--- local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
--- local Redstone = require "world.redstone"
 local EventLoop = require "event-loop"
 local Rpc = require "rpc"
-local SubwayService = require "subway.subway-service"
--- Redstone.setOutput(Side.front, true)
-
--- local value = pushOutput("bottom", "front", {["minecraft:ender_pearl"] = 2})
--- local value = {pushOutput("bottom", "front")}
--- local value = concatTables({1, 2, 3}, {"four", "five", "six"}, {7, 8, 9})
--- local value = toIoInventory("front", {})
--- for slot, stack in pairs(value) do
---     print(stack.maxCount)
--- end
-
-local client = Rpc.client(SubwayService, "bar-station")
-local tracks = client.getTracks()
-local track = tracks[math.random(#tracks)]
-
-local nearest = Rpc.nearest(SubwayService, 5)
-
-if nearest then
-    print("nearest", nearest.host)
-else
-    print("no nearest")
-end
-
--- EventLoop.run(function()
---     while true do
---         local timerId = os.startTimer(2)
-
---         EventLoop.pull("timer", function(_, id)
---             if id ~= timerId then
---                 return
---             end
-
---             local readyToDispatch = client.readyToDispatchToTrack(track.signal)
-
---             if readyToDispatch then
---                 print("switching to track", track.signal)
---                 track = tracks[math.random(#tracks)]
---                 client.dispatchToTrack(track.signal)
---             end
---         end)
---     end
--- end)
-
--- for _, track in pairs(tracks) do
---     print("switching to track", track.signal)
---     client.dispatchToTrack(track.signal)
--- end
+local Database = require "database"
+local SubwayService = require "services.subway-service"
 
 -- local value = table.pack(client.getTracks())
 -- Utils.prettyPrint(value)
+
+local client = Rpc.client(SubwayService, "bar")
+local tracks = Database.getSubwayTracks("bar")
+local track = tracks[math.random(#tracks)]
+
+EventLoop.run(function()
+    while true do
+        local timerId = os.startTimer(2)
+
+        EventLoop.pull("timer", function(_, id)
+            if id ~= timerId then
+                return
+            end
+
+            local readyToDispatch = client.readyToDispatchToTrack(track.signal)
+
+            if readyToDispatch then
+                track = tracks[math.random(#tracks)]
+                print("switching to track", track.signal)
+                client.dispatchToTrack(track.signal)
+            else
+                print("station busy")
+            end
+        end)
+    end
+end)
+
