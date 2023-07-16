@@ -8,11 +8,11 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-switch v1.0.0] booting...")
+    print("[subway-switch v1.0.1] booting...")
 
     SubwayService.host = args[1]
     SubwayService.signalDuration = tonumber(args[2]) or 2
-    SubwayService.maxDistance = 3
+    SubwayService.maxDistance = tonumber(args[3]) or 3
 
     if not SubwayService.host then
         return printUsage()

@@ -8,12 +8,12 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-hub v1.0.0] booting...")
+    print("[subway-hub v1.0.1] booting...")
 
     SubwayService.host = args[1]
     SubwayService.lockAnalogSide = args[2]
     SubwayService.signalDuration = tonumber(args[3]) or 7
-    SubwayService.maxDistance = 5
+    SubwayService.maxDistance = tonumber(args[4]) or 5
 
     if not SubwayService.host then
         return printUsage()

@@ -109,6 +109,10 @@ local function promptUserToPickGoal(allStations)
         return option
     end)
 
+    table.sort(options, function(a, b)
+        return a.name < b.name
+    end)
+
     local titles = {
         "Where we goin' lad?",
         "Where to boss?",
@@ -128,7 +132,7 @@ local function promptUserToPickGoal(allStations)
 end
 
 local function main(args)
-    print("[subway v1.0.0] booting...")
+    print("[subway v1.0.1] booting...")
 
     ---@type string?
     local goalId = args[1] or promptUserToPickGoal()
