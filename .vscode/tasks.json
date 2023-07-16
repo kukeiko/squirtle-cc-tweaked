@@ -4,79 +4,89 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build io-chestcart",
+            "label": "build turtle:io-chestcart",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p lib/?.lua -o dist/io-chestcart",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/io-chestcart",
         },
         {
-            "label": "build io-network",
+            "label": "build computer:io-network",
             "type": "shell",
-            "command": "luabundler bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p lib/?.lua -o dist/io-network"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/io-network"
         },
         {
-            "label": "build lumberjack",
+            "label": "build turtle:lumberjack",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p lib/?.lua -o dist/lumberjack"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/lumberjack"
         },
         {
-            "label": "build digger",
+            "label": "build turtle:digger",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p lib/?.lua -o dist/digger"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/digger"
         },
         {
-            "label": "build dig",
+            "label": "build turtle:dig",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/dig"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/dig"
         },
         {
-            "label": "build build-platform",
+            "label": "build turtle:build-platform",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/build-platform"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/build-platform"
         },
         {
-            "label": "build farmer",
+            "label": "build turtle:farmer",
             "type": "shell",
-            "command": "luabundler bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/farmer"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/farmer"
         },
         {
-            "label": "build subway:pocket (dev)",
+            "label": "build pocket:subway:dev",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p lib/?.lua -o ../23/subway.lua"
         },
         {
-            "label": "build subway:pocket",
+            "label": "build pocket:subway",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/subway"
         },
         {
-            "label": "build subway-hub",
+            "label": "build computer:subway-hub",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-hub.lua -p app/computer/subway/?.lua -p lib/?.lua -o dist/computer/subway-hub"
         },
         {
-            "label": "build subway-switch",
+            "label": "build computer:subway-switch",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p lib/?.lua -o dist/computer/subway-switch"
         },
         {
-            "label": "build update-host",
+            "label": "build computer:update-host",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update-host.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/update-host"
         },
         {
-            "label": "build update:pocket",
+            "label": "build pocket:update",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/update.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/update"
         },
         {
-            "label": "build update:turtle",
+            "label": "build turtle:update",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/update"
+        },
+        {
+            "label": "build pocket:remote-control",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote-control.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/remote-control"
+        },
+        {
+            "label": "build turtle:remote-control",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/remote-control"
+        },
+        {
+            "label": "build turtle:crafter",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafter.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/crafter"
         },
     ]
 }
