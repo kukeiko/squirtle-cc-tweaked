@@ -12,10 +12,12 @@ local readSiloInventory = require "io-network.read-silo-inventory"
 return function(found)
     ---@type NetworkedInventory[]
     local inventories = {}
-    print("reading", #found, "inventories...")
+    print("[read]", #found, "inventories...")
     local x, y = printProgress(0, #found)
+    local i = 0
 
-    for i, foundInventory in ipairs(found) do
+    ---@param foundInventory FoundInventory
+    local readOneInventory = function(foundInventory)
         local name = foundInventory.name
 
         if foundInventory.type == "minecraft:furnace" then
@@ -37,8 +39,19 @@ return function(found)
             end
         end
 
+        i = i + 1
         x, y = printProgress(i, #found, x, y)
     end
+
+    local functions = {}
+
+    for _, foundInventory in ipairs(found) do
+        table.insert(functions, function()
+            readOneInventory(foundInventory)
+        end)
+    end
+
+    parallel.waitForAll(table.unpack(functions))
 
     return inventories
 end
