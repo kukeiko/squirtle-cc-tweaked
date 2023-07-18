@@ -1,62 +1,174 @@
 [
     {
         "stationId": "storage",
-        "targetStationId": "storage:platform",
-        "signal": 1
+        "targetStationId": "storage:platform:switch",
+        "signal": 1,
+        "duration": 10
     },
     {
         "stationId": "storage",
         "targetStationId": "storage:exit",
-        "signal": 2
+        "signal": 2,
+        "duration": 5
     },
     {
         "stationId": "storage",
         "targetStationId": "home",
-        "signal": 7
+        "signal": 7,
+        "duration": 10
     },
     {
         "stationId": "storage",
         "targetStationId": "villagers",
-        "signal": 15
+        "signal": 15,
+        "duration": 16
     },
     {
         "stationId": "storage:platform",
         "targetStationId": "storage",
-        "signal": 6
+        "signal": 6,
+        "duration": 9
     },
     {
         "stationId": "storage:platform",
-        "targetStationId": "NO_EXISTY_YET",
+        "targetStationId": "crystal:???",
         "signal": 7
     },
     {
         "stationId": "storage:platform",
-        "targetStationId": "villagers",
-        "signal": 8
+        "targetStationId": "farms:peak:switch",
+        "signal": 8,
+        "duration": 26
+    },
+    {
+        "stationId": "storage:platform:switch",
+        "targetStationId": "storage:platform:exit",
+        "signal": 0,
+        "duration": 2
+    },
+    {
+        "stationId": "storage:platform:switch",
+        "targetStationId": "storage:platform",
+        "signal": 1,
+        "duration": 3.5
+    },
+    {
+        "stationId": "storage:farms:switch",
+        "targetStationId": "farms:peak:switch",
+        "signal": 0
+    },
+    {
+        "stationId": "storage:farms:switch",
+        "targetStationId": "storage:platform",
+        "signal": 4
+    },
+    {
+        "stationId": "storage:farms:switch",
+        "targetStationId": "storage:platform:exit",
+        "signal": 6
+    },
+    {
+        "stationId": "storage:crystal:switch",
+        "targetStationId": "crystal",
+        "signal": 0
+    },
+    {
+        "stationId": "storage:crystal:switch",
+        "targetStationId": "storage:platform:exit",
+        "signal": 3,
+        "duration": 2
+    },
+    {
+        "stationId": "storage:crystal:switch",
+        "targetStationId": "storage:platform",
+        "signal": 6,
+        "duration": 3.5
     },
     {
         "stationId": "villagers",
         "targetStationId": "home",
-        "signal": 1
+        "signal": 1,
+        "duration": 7
     },
     {
         "stationId": "villagers",
         "targetStationId": "villagers:exit",
-        "signal": 2
+        "signal": 2,
+        "duration": 4
     },
     {
         "stationId": "villagers",
         "targetStationId": "villagers:exit:nether-portal",
-        "signal": 3
+        "signal": 3,
+        "duration": 6
     },
     {
         "stationId": "villagers",
         "targetStationId": "storage",
-        "signal": 4
+        "signal": 4,
+        "duration": 23
+    },
+    {
+        "stationId": "villagers",
+        "targetStationId": "farms:peak:switch",
+        "signal": 5,
+        "duration": 24
     },
     {
         "stationId": "villagers",
         "targetStationId": "gdi-nod",
-        "signal": 9
+        "signal": 9,
+        "duration": 10
+    },
+    {
+        "stationId": "farms",
+        "targetStationId": "farms:peak:switch",
+        "signal": 1,
+        "duration": 7
+    },
+    {
+        "stationId": "farms",
+        "targetStationId": "farms:storage:switch",
+        "signal": 2,
+        "duration": 10
+    },
+    {
+        "stationId": "farms",
+        "targetStationId": "villagers",
+        "signal": 7,
+        "duration": 20
+    },
+    {
+        "stationId": "farms",
+        "targetStationId": "???",
+        "signal": 12
+    },
+    {
+        "stationId": "farms:peak:switch",
+        "targetStationId": "peak:???",
+        "signal": 0
+    },
+    {
+        "stationId": "farms:peak:switch",
+        "targetStationId": "farms:exit",
+        "signal": 1,
+        "duration": 3
+    },
+    {
+        "stationId": "farms:peak:switch",
+        "targetStationId": "farms",
+        "signal": 6,
+        "duration": 4
+    },
+    {
+        "stationId": "farms:storage:switch",
+        "targetStationId": "storage:crystal:switch",
+        "signal": 0,
+        "duration": 23
+    },
+    {
+        "stationId": "farms:storage:switch",
+        "targetStationId": "farms:peak:switch",
+        "signal": 15
     }
 ]

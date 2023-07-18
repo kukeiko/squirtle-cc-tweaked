@@ -1,42 +1,89 @@
 [
     {
         "id": "home",
-        "name": "Home (Exit)",
+        "name": "Home",
+        "label": "Home",
         "type": "endpoint"
     },
     {
         "id": "storage",
         "name": "Storage (Hub)",
-        "type": "switch"
+        "type": "hub"
     },
     {
         "id": "storage:exit",
         "name": "Storage (Exit)",
+        "label": "Storage",
         "type": "endpoint"
     },
     {
         "id": "storage:platform",
-        "name": "Bahnsteig (Exit)",
+        "name": "Storage Bahnsteig",
         "type": "platform"
+    },
+    {
+        "id": "storage:platform:exit",
+        "name": "Storage (Bahnsteig)",
+        "type": "endpoint"
+    },
+    {
+        "id": "storage:platform:switch",
+        "name": "Storage Platform (Switch)",
+        "type": "switch"
+    },
+    {
+        "id": "storage:farms:switch",
+        "name": "Storage > Farms",
+        "type": "switch"
+    },
+    {
+        "id": "storage:crystal:switch",
+        "name": "Storage > Crystal",
+        "type": "switch"
     },
     {
         "id": "villagers",
         "name": "Villagers (Hub)",
-        "type": "switch"
+        "type": "hub"
     },
     {
         "id": "villagers:exit",
-        "name": "Villagers (Exit)",
+        "name": "Villagers",
         "type": "endpoint"
     },
     {
         "id": "villagers:exit:nether-portal",
-        "name": "Nether Portal (Exit)",
+        "name": "Nether Portal",
         "type": "endpoint"
     },
     {
         "id": "gdi-nod",
         "name": "GDI & NOD Symbols",
         "type": "endpoint"
+    },
+    {
+        "id": "farms",
+        "name": "Farms (Hub)",
+        "type": "platform"
+    },
+    {
+        "id": "farms:exit",
+        "name": "Farms",
+        "type": "endpoint"
+    },
+    {
+        "id": "farms:storage:switch",
+        "name": "Farms > Storage",
+        "type": "switch"
+    },
+    {
+        "id": "farms:peak:switch",
+        "name": "Farms > Peak",
+        "type": "switch"
+    },
+    {
+        "id": "peak:platform",
+        "name": "Peak (Platform)",
+        "type": "platform"
     }
 ]
