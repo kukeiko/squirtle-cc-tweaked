@@ -37,7 +37,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[build-platform v1.1.1] booting...")
+    print("[build-platform v1.2.0] booting...")
     local state = boot(args)
 
     if not state then
