@@ -3,26 +3,12 @@ local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 local World = require "geo.world"
 local changeState = require "squirtle.change-state"
+local refuel = require "squirtle.refuel"
 
 local function printUsage()
     print("Usage:")
     print("dig <depth> <width> <height>")
     print("(negative numbers possible)")
-end
-
-local function refuel(level)
-    if Fuel.hasFuel(level) then
-        return true
-    end
-
-    shell.run("refuel", "all")
-
-    while not Fuel.hasFuel(level) do
-        print(string.format("[help] not enough fuel, need %d more.", Fuel.getMissingFuel(level)))
-        print("please put some into inventory")
-        os.pullEvent("turtle_inventory")
-        shell.run("refuel", "all")
-    end
 end
 
 ---@param args table<string>

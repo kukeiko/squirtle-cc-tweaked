@@ -3,7 +3,6 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local World = require "geo.world"
 local navigate = require "squirtle.navigate"
-local locate = require "squirtle.locate"
 local dig = require "squirtle.dig"
 local face = require "squirtle.face"
 local nextPoint = require "dig.next-point"
@@ -45,9 +44,11 @@ local function placeAnywhere()
     if turtle.place() then
         return "front"
     end
+
     if turtle.placeUp() then
         return "up"
     end
+
     if turtle.placeDown() then
         return "down"
     end
@@ -96,7 +97,6 @@ local function tryLoadShulkers()
                 dig(placedSide)
 
                 if unloadedAll then
-                    print("loaded all up! continuing digging...")
                     return true
                 end
             end
@@ -108,7 +108,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[dig v1.1.0] booting...")
+    print("[dig v2.0.0] booting...")
     local state = boot(args)
 
     if not state then
@@ -125,7 +125,7 @@ local function main(args)
 
     while point do
         if navigate(point, world, isBreakable) then
-            digUpDownIfInBounds(world, locate())
+            digUpDownIfInBounds(world, point)
 
             if state.hasShulkers and not shulkersFull and isGettingFull() then
                 shulkersFull = not tryLoadShulkers()
@@ -140,7 +140,7 @@ local function main(args)
         tryLoadShulkers()
     end
 
-    print("all done! going home...")
+    print("[done] going home!")
     navigate(start, world, isBreakable)
     face(facing)
 

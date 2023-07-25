@@ -1,10 +1,79 @@
 local Vector = require "elements.vector"
 local World = require "geo.world"
 
+---@param world World
+---@param start Vector
+local function isStartInBottomPlane(world, start)
+    if World.isInBottomPlane(world, start) then
+        return true
+    elseif World.isInTopPlane(world, start) then
+        return false
+    else
+        error("start must be in either world bottom or top plane")
+    end
+end
+
 ---@param point Vector
 ---@param world World
 ---@param start Vector
-return function(point, world, start)
+---@param layerHeight integer
+---@return integer
+function getCurrentLayer(point, world, start, layerHeight)
+    if layerHeight >= world.height then
+        return 1
+    end
+
+    if isStartInBottomPlane(world, start) then
+        return math.floor((point.y - world.y) / layerHeight) + 1
+    else
+        return math.floor(((world.y + world.height - 1) - point.y) / layerHeight) + 1
+    end
+end
+
+---@param layer integer
+---@param world World
+---@param start Vector
+---@param layerHeight integer
+---@return integer
+function getLayerTargetY(layer, world, start, layerHeight)
+    if isStartInBottomPlane(world, start) then
+        local targetY = math.floor(layerHeight / 2) + ((layer - 1) * layerHeight) + world.y
+
+        if not World.isInBoundsY(world, targetY) then
+            return world.y + world.height - 1
+        else
+            return targetY
+        end
+    else
+        local targetY = (world.y + world.height - 1) - math.floor(layerHeight / 2) + ((layer - 1) * layerHeight)
+
+        if not World.isInBoundsY(world, targetY) then
+            return world.y
+        else
+            return targetY
+        end
+    end
+end
+
+---@param point Vector
+---@param world World
+---@param start Vector
+---@param layerHeight? integer
+---@return Vector?
+return function(point, world, start, layerHeight)
+    layerHeight = layerHeight or 3
+
+    local currentLayer = getCurrentLayer(point, world, start, layerHeight)
+    local targetY = getLayerTargetY(currentLayer, world, start, layerHeight)
+
+    if point.y ~= targetY then
+        if isStartInBottomPlane(world, start) then
+            return Vector.plus(point, Vector.create(0, 1, 0))
+        else
+            return Vector.plus(point, Vector.create(0, -1, 0))
+        end
+    end
+
     local delta = Vector.create(0, 0, 0)
 
     if start.x == world.x then
@@ -19,12 +88,6 @@ return function(point, world, start)
         delta.z = -1
     end
 
-    if start.y == world.y then
-        delta.y = 3
-    elseif start.y == world.y + world.height - 1 then
-        delta.y = -3
-    end
-
     if world.width > world.depth then
         local relative = Vector.minus(point, start)
 
@@ -32,7 +95,7 @@ return function(point, world, start)
             delta.x = delta.x * -1
         end
 
-        if relative.y % 2 == 1 then
+        if (currentLayer - 1) % 2 == 1 then
             delta.x = delta.x * -1
             delta.z = delta.z * -1
         end
@@ -49,7 +112,7 @@ return function(point, world, start)
             delta.z = delta.z * -1
         end
 
-        if relative.y % 2 == 1 then
+        if (currentLayer - 1) % 2 == 1 then
             delta.x = delta.x * -1
             delta.z = delta.z * -1
         end
@@ -61,17 +124,13 @@ return function(point, world, start)
         end
     end
 
-    if World.isInBoundsY(world, point.y + delta.y) then
-        return Vector.plus(point, Vector.create(0, delta.y, 0))
+    if isStartInBottomPlane(world, start) then
+        if World.isInBoundsY(world, point.y + 1) then
+            return Vector.plus(point, Vector.create(0, 1, 0))
+        end
     else
-        local unitY = delta.y / 3;
-
-        if World.isInBoundsY(world, point.y + (2 * unitY)) then
-            -- one more Y layer to dig, move one up. digUp() is the only thing that'll happen
-            return Vector.plus(point, Vector.create(0, unitY, 0))
-        else
-            return nil
+        if World.isInBoundsY(world, point.y - 1) then
+            return Vector.plus(point, Vector.create(0, -1, 0))
         end
     end
-
 end
