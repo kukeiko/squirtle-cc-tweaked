@@ -78,6 +78,18 @@ end
 
 ---@param world World
 ---@param point Vector
+local function isInBottomPlane(world, point)
+    return point.y == world.y
+end
+
+---@param world World
+---@param point Vector
+local function isInTopPlane(world, point)
+    return point.y == world.y + world.height - 1
+end
+
+---@param world World
+---@param point Vector
 ---@return boolean
 local function isBlocked(world, point)
     if not isInBounds(world, point) then
@@ -137,6 +149,8 @@ return {
     isInBoundsY = isInBoundsY,
     isInBoundsZ = isInBoundsZ,
     isInBounds = isInBounds,
+    isInBottomPlane = isInBottomPlane,
+    isInTopPlane = isInTopPlane,
     isBlocked = isBlocked,
     setBlock = setBlock,
     clearBlock = clearBlock,
