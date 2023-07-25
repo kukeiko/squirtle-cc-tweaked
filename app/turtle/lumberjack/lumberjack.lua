@@ -241,7 +241,7 @@ local function moveNext()
 end
 
 local function boot()
-    print("[lumberjack v1.2.1] booting...")
+    print("[lumberjack v1.2.2] booting...")
 
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
@@ -256,6 +256,13 @@ local function boot()
             end
 
             while move("bottom") do
+            end
+
+            if inspect("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence"}) then
+                -- turtle crashed and landed on the one fence piece that directs it to the tree.
+                -- should be safe to move back one, go down, and then resume default move routine
+                move("back")
+                move("down")
             end
         end
     end
@@ -291,8 +298,6 @@ local function main(args)
             move()
         else
             moveNext()
-            -- while not inspect(Side.bottom, {"minecraft:dirt", "minecraft:barrel"}) do
-            -- end
         end
     end
 end
