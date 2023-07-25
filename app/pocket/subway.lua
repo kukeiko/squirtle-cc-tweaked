@@ -132,7 +132,7 @@ local function promptUserToPickGoal(allStations)
 end
 
 local function main(args)
-    print("[subway v1.0.1] booting...")
+    print("[subway v1.1.0] booting...")
 
     ---@type string?
     local goalId = args[1] or promptUserToPickGoal()
