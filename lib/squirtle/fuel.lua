@@ -5,7 +5,8 @@ local native = turtle
 local items = {
     -- ["minecraft:lava_bucket"] = 1000,
     ["minecraft:coal"] = 80,
-    ["minecraft:charcoal"] = 80
+    ["minecraft:charcoal"] = 80,
+    ["minecraft:coal_block"] = 800,
     -- ["minecraft:bamboo"] = 2
 }
 
@@ -47,12 +48,12 @@ function Fuel.getMissingFuel(limit)
     return limit - Fuel.getFuelLevel()
 end
 
---- @param item string
+---@param item string
 function Fuel.isFuel(item)
     return items[item] ~= nil
 end
 
---- @param item string
+---@param item string
 function Fuel.getRefuelAmount(item)
     return items[item] or 0
 end
