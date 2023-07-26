@@ -6,7 +6,7 @@ local move = require "squirtle.move"
 local squirtleTurn = require "squirtle.turn"
 local dig = require "squirtle.dig"
 
-print("[silo v1.0.0] booting...")
+print("[silo v1.1.0] booting...")
 
 -- required blocks (for 9x chest height)
 -- (64 + 33)x smooth_stone
@@ -66,9 +66,7 @@ end
 local function selectBacksideBlock()
     local item = "minecraft:stripped_oak_log"
 
-    if dark then
-        item = "minecraft:stripped_dark_oak_log"
-    elseif basalt then
+    if basalt then
         item = "minecraft:deepslate_tiles"
     end
 
