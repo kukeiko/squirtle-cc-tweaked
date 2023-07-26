@@ -9,7 +9,7 @@ return function(name, exact)
 
         if item and exact and item.name == name then
             return slot
-        elseif item and string.find(item.name, name) then
+        elseif item and not exact and string.find(item.name, name) then
             return slot
         end
     end

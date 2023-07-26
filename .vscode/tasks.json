@@ -88,5 +88,10 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafter.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/crafter"
         },
+        {
+            "label": "build turtle:silo",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/silo.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/silo"
+        },
     ]
 }
