@@ -1,12 +1,13 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local selectItem = require "squirtle.backpack.select-item"
-local place = require "squirtle.place"
+local squirtlePlace = require "squirtle.place"
 local move = require "squirtle.move"
 local squirtleTurn = require "squirtle.turn"
 local dig = require "squirtle.dig"
+local Side = require "elements.side"
 
-print("[silo v1.1.0] booting...")
+print("[silo v1.2.0] booting...")
 
 -- required blocks (for 9x chest height)
 -- (64 + 33)x smooth_stone
@@ -20,66 +21,79 @@ print("[silo v1.1.0] booting...")
 -- 13x redstone
 -- 1x redstone_torch
 
-local dark = arg[2] == "dark"
-local basalt = arg[2] == "basalt"
+local state = {
+    ---@type "left" | "right"
+    lampLocation = "left",
+    ---@type "light" | "dark" | "basalt"
+    theme = "light",
+    layers = 4,
+    blocks = {
+        chest = "minecraft:chest",
+        hopper = "minecraft:hopper",
+        lamp = "minecraft:redstone_lamp",
+        comparator = "minecraft:comparator",
+        repeater = "minecraft:repeater",
+        redstone = "minecraft:redstone",
+        redstoneTorch = "minecraft:redstone_torch",
+        -- variadic blocks
+        filler = "minecraft:smooth_stone",
+        backside = "minecraft:stripped_oak_log",
+        support = "minecraft:oak_log"
+    }
+}
 
-local function selectChest()
-    return selectItem("minecraft:chest", true)
+if not arg[1] or not arg[2] then
+    error("invalid args")
 end
 
-local function selectSupport()
-    local item = "minecraft:oak_log"
+if string.lower(arg[1]) == "right" then
+    state.lampLocation = "right"
+elseif string.lower(arg[1]) == "left" then
+    state.lampLocation = "left"
+else
+    error("invalid args")
+end
 
-    if dark then
-        item = "minecraft:dark_oak_log"
-    elseif basalt then
-        item = "minecraft:polished_basalt"
+state.layers = tonumber(arg[2])
+
+if not state.layers then
+    error("invalid layers arg")
+end
+
+if not arg[3] then
+    state.theme = "light"
+elseif string.lower(arg[3]) == "dark" then
+    state.theme = "dark"
+elseif string.lower(arg[3]) == "basalt" then
+    state.theme = "basalt"
+end
+
+if state.theme == "basalt" then
+    state.blocks.backside = "minecraft:deepslate_tiles"
+    state.blocks.support = "minecraft:polished_basalt"
+elseif state.theme == "dark" then
+    state.blocks.support = "minecraft:dark_oak_log"
+end
+
+---@param block string
+---@param side? string
+---@param offset? integer
+local function place(block, side, offset)
+    if offset then
+        move(side, offset)
     end
 
-    return selectItem(item, true)
-end
+    selectItem(block, true)
+    squirtlePlace(side)
 
-local function selectHopper()
-    return selectItem("minecraft:hopper", true)
-end
-
-local function selectLamp()
-    return selectItem("minecraft:redstone_lamp", true)
-end
-
-local function selectComparator()
-    return selectItem("minecraft:comparator", true)
-end
-
-local function selectRepeater()
-    return selectItem("minecraft:repeater", true)
-end
-
-local function selectRedstone()
-    return selectItem("minecraft:redstone", true)
-end
-
-local function selectRedstonePlaceBlock()
-    return selectItem("minecraft:smooth_stone", true)
-end
-
-local function selectBacksideBlock()
-    local item = "minecraft:stripped_oak_log"
-
-    if basalt then
-        item = "minecraft:deepslate_tiles"
+    if offset then
+        move(Side.rotateAround(side or "forward"), offset)
     end
-
-    return selectItem(item, true)
-end
-
-local function selectRedstoneTorch()
-    return selectItem("minecraft:redstone_torch", true)
 end
 
 ---@param side string
 local function turn(side)
-    if arg[1] == "left" then
+    if state.lampLocation == "left" then
         if side == "right" then
             side = "left"
         elseif side == "left" then
@@ -90,12 +104,44 @@ local function turn(side)
     return squirtleTurn(side)
 end
 
+---@param times? integer
+local function forward(times)
+    move("forward", times)
+end
+
+---@param times? integer
+local function up(times)
+    move("up", times)
+end
+
+---@param times? integer
+local function down(times)
+    move("down", times)
+end
+
+---@param times? integer
+local function back(times)
+    move("back", times)
+end
+
+local function left()
+    turn("left")
+end
+
+local function right()
+    turn("right")
+end
+
+local function around()
+    turn("back")
+end
+
 -- starting at bottem left w/ lamp side to the right
-if string.lower(arg[1]) == "right" then
+if state.lampLocation == "right" then
     squirtleTurn("right")
     move("forward", 2)
     squirtleTurn("left")
-elseif string.lower(arg[1]) == "left" then
+elseif state.lampLocation == "left" then
     squirtleTurn("right")
     move("forward", 4)
     squirtleTurn("left")
@@ -104,414 +150,333 @@ else
 end
 
 -- place center chests
-for _ = 1, 9 do
-    selectChest()
-    place()
-    move("up")
+for _ = 1, (state.layers * 2) + 1 do
+    place(state.blocks.chest)
+    up()
 end
 
 -- place left support beam
-move("forward")
-turn("right")
-move("back", 2)
-
-selectSupport()
-place("top")
-
-move("down")
-selectSupport()
-place("top")
+forward()
+right()
+back(2)
+place(state.blocks.support, "top")
+down()
+place(state.blocks.support, "top")
 
 -- place left hoppers
-for _ = 1, 4 do
-    move("down")
-    selectSupport()
-    place("top")
-    selectHopper()
-    place()
-    move("down")
-    selectSupport()
-    place("top")
+for _ = 1, state.layers do
+    down()
+    place(state.blocks.support, "top")
+    place(state.blocks.hopper)
+    down()
+    place(state.blocks.support, "top")
 end
 
--- floor layer
+-- place bottom support beam
 dig("down")
-move("down")
-selectSupport()
-place("top")
-turn("right")
+down()
+place(state.blocks.support, "top")
+right()
 dig()
-move()
-move("up")
+forward()
+up()
 
 -- right support
-turn("left")
-move("forward", 4)
-turn("left")
-move()
-turn("left")
+left()
+forward(4)
+left()
+forward()
+left()
 
-for _ = 1, 4 do
-    selectHopper()
-    place()
-    move("up")
-    selectSupport()
-    place("down")
-    move("up")
-    selectSupport()
-    place("down")
+for _ = 1, state.layers do
+    place(state.blocks.hopper)
+    up()
+    place(state.blocks.support, "down")
+    up()
+    place(state.blocks.support, "down")
 end
 
-for i = 1, 2 do
-    move("up")
-    selectSupport()
-    place("down")
+for _ = 1, 2 do
+    up()
+    place(state.blocks.support, "down")
 end
 
 -- build top support
-move("forward", 2)
+forward(2)
 
 for i = 1, 5 do
-    selectSupport()
-    place()
+    place(state.blocks.support)
 
     if i ~= 5 then
-        move("back")
+        back()
     end
 end
 
 -- build right support incl. lights
-for i = 1, 10 do
-    move("down")
-    selectSupport()
-    place("top")
-    selectLamp()
-    place()
+for _ = 1, (state.layers * 2) + 2 do
+    down()
+    place(state.blocks.support, "top")
+    place(state.blocks.lamp)
 end
 
 -- bottom piece of right support
 dig("down")
-move("down")
-selectSupport()
-place("top")
-turn("left")
+down()
+place(state.blocks.support, "top")
+left()
 dig()
-move()
-move("up")
+forward()
+up()
 
 -- place remaining chests
-turn("right")
-move("forward", 3)
-turn("right")
+right()
+forward(3)
+right()
 
-for i = 1, 4 do
-    move("up")
-    selectChest()
-    place()
-    move("up")
+for _ = 1, state.layers do
+    up()
+    place(state.blocks.chest)
+    up()
 end
 
-turn("left")
-move("forward", 2)
-turn("right")
+left()
+forward(2)
+right()
 
-for i = 1, 5 do
-    selectChest()
-    place()
+for i = 1, state.layers + 1 do
+    place(state.blocks.chest)
 
     if i ~= 5 then
-        move("down", 2)
+        down(2)
     end
 end
 
 -- move to backside
-turn("left")
-move()
-move("down")
-turn("right")
-move()
+left()
+forward()
+down()
+right()
+forward()
 dig()
-move()
-move("up")
-turn("left")
-move("back", 2)
+forward()
+up()
+left()
+back(2)
 
 local function placeBacksideBlocks()
-    selectRedstonePlaceBlock()
-    place("down")
-    turn("right")
-    move()
-    selectRedstonePlaceBlock()
-    place("down")
-    move("back")
-    turn("left")
-    move()
-    selectBacksideBlock()
-    place("down")
-    move()
-    selectBacksideBlock()
-    place("down")
-    move()
-    selectBacksideBlock()
-    place("down")
-    move("back")
+    place(state.blocks.filler, "down")
+    right()
+    forward()
+    place(state.blocks.filler, "down")
+    back()
+    left()
+
+    for _ = 1, 3 do
+        forward()
+        place(state.blocks.backside, "down")
+    end
+
+    back()
 end
 
-for i = 1, 9 do
-    if i % 2 == 1 then
-        turn("right")
-        move("forward")
-
+-- place outer redstone circuit from chest to lamps
+---@param isBottomLayer boolean
+local function placeOuterRedstone(isBottomLayer)
+    local function placeBottomLayerBlock()
+        down()
         dig("down")
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
+        place(state.blocks.filler, "down")
+        up()
+    end
 
-        selectComparator()
-        place("down")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        turn("right")
-        move()
+    right()
+    forward()
+    dig("down")
+    place(state.blocks.filler, "down")
+    up()
+    place(state.blocks.comparator, "down")
+    forward()
+    place(state.blocks.filler, "down")
+    right()
+    forward()
 
-        if i == 1 then
-            move("down")
-            dig("down")
-            selectRedstonePlaceBlock()
-            place("down")
-            move("up")
-        end
+    if isBottomLayer then
+        placeBottomLayerBlock()
+    end
 
-        selectRepeater()
-        place("down")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        move()
+    place(state.blocks.repeater, "down")
+    forward()
+    place(state.blocks.filler, "down")
+    forward()
 
-        if i == 1 then
-            move("down")
-            dig("down")
-            selectRedstonePlaceBlock()
-            place("down")
-            move("up")
-        end
+    if isBottomLayer then
+        placeBottomLayerBlock()
+    end
 
-        selectRepeater()
-        place("down")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        turn("right")
-        move()
+    place(state.blocks.repeater, "down")
+    forward()
+    place(state.blocks.filler, "down")
+    right()
 
-        move("down")
-        if i == 1 then
+    for _ = 1, 2 do
+        forward()
+        down()
+
+        if isBottomLayer then
             dig("down")
         end
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
 
-        selectRedstone()
-        place("down")
-        move()
+        place(state.blocks.filler, "down")
+        up()
+        place(state.blocks.redstone, "down")
+    end
 
-        move("down")
-        if i == 1 then
-            dig("down")
-        end
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
+    right()
+    forward(2)
+    placeBacksideBlocks()
+end
 
-        selectRedstone()
-        place("down")
-        turn("right")
-        move("forward", 2)
+-- place inner redstone circuit from chest to lamps
+local function placeInnerRedstone()
+    back()
+    right()
+    forward()
+    place(state.blocks.filler, "down")
+    up()
+    place(state.blocks.comparator, "down")
+    forward()
+    place(state.blocks.filler, "down")
+    right()
+    forward()
+    place(state.blocks.repeater, "down")
+    forward()
+    place(state.blocks.filler, "down")
+    right()
+    forward()
+    down()
+    place(state.blocks.filler, "down")
+    up()
+    place(state.blocks.repeater, "down")
+    forward()
+    down()
+    place(state.blocks.filler, "down")
+    up()
+    place(state.blocks.filler, "down")
+    right()
+    forward()
+    placeBacksideBlocks()
+end
 
-        placeBacksideBlocks()
+for i = 1, (state.layers * 2) + 1 do
+    if i % 2 == 1 then
+        placeOuterRedstone(i == 1)
     else
-        move("back")
-        turn("right")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
-        selectComparator()
-        place("down")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        turn("right")
-        move()
-        selectRepeater()
-        place("down")
-        move()
-        selectRedstonePlaceBlock()
-        place("down")
-        turn("right")
-        move()
-        move("down")
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
-        selectRepeater()
-        place("down")
-        move()
-        move("down")
-        selectRedstonePlaceBlock()
-        place("down")
-        move("up")
-        selectRedstonePlaceBlock()
-        place("down")
-        turn("right")
-        move()
-        placeBacksideBlocks()
+        placeInnerRedstone()
     end
 end
 
 -- build input chest
-
-move()
-turn("left")
-move("back")
-move("down")
+forward()
+left()
+back()
+down()
 dig()
-selectHopper()
-place()
-turn("right")
-move("forward", 2)
-turn("left")
-move()
-turn("left")
-selectHopper()
-place()
+place(state.blocks.hopper)
+right()
+forward(2)
+left()
+forward()
+left()
+place(state.blocks.hopper)
 
 -- redstone torch
-move("down")
-move()
-turn("left")
-selectRedstonePlaceBlock()
-place()
-move("down")
-selectRedstoneTorch()
-place("up")
+down()
+forward()
+left()
+place(state.blocks.filler)
+down()
+place(state.blocks.redstoneTorch, "up")
 
 -- "plus" construct
-move("forward", 2)
-move("up")
-selectRedstonePlaceBlock()
-place("down")
-turn("back")
-
-move("up")
-selectRepeater()
-place("down")
-
-move("back")
-selectRedstonePlaceBlock()
-place("down")
-move("up")
-selectRedstone()
-place("down")
+forward(2)
+up()
+place(state.blocks.filler, "down")
+around()
+up()
+place(state.blocks.repeater, "down")
+back()
+place(state.blocks.filler, "down")
+up()
+place(state.blocks.redstone, "down")
 
 for _ = 1, 2 do
-    move()
-    selectRedstonePlaceBlock()
-    place("down")
+    forward()
+    place(state.blocks.filler, "down")
 end
 
-turn("back")
-move("up")
-selectComparator()
-place("down")
+around()
+up()
 
-move()
-selectRedstone()
-place("down")
-
-turn("right")
-move()
-move("down")
-selectRedstonePlaceBlock()
-place("down")
-
-move("up")
-selectRedstone()
-place("down")
-
-move()
--- move("down")
--- selectRedstonePlaceBlock()
--- place("down")
--- move("up")
-selectRepeater()
-place("down")
-
-move()
-selectRedstonePlaceBlock()
-place("down")
-
-move()
-selectRepeater()
-place("down")
-
-move()
-selectRedstonePlaceBlock()
-place("down")
-
-turn("right")
-move()
-move("down")
-selectRedstonePlaceBlock()
-place("down")
-move("up")
-selectRepeater()
-place("down")
-move()
-move("down")
-selectRedstonePlaceBlock()
-place("down")
-move("up")
-selectRedstonePlaceBlock()
-place("down")
+-- input chest connection to topmost redstone lamp
+place(state.blocks.comparator, "down")
+forward()
+place(state.blocks.redstone, "down")
+right()
+forward()
+down()
+place(state.blocks.filler, "down")
+up()
+place(state.blocks.redstone, "down")
+forward()
+place(state.blocks.repeater, "down")
+forward()
+place(state.blocks.filler, "down")
+forward()
+place(state.blocks.repeater, "down")
+forward()
+place(state.blocks.filler, "down")
+right()
+forward()
+down()
+place(state.blocks.filler, "down")
+up()
+place(state.blocks.repeater, "down")
+forward()
+down()
+place(state.blocks.filler, "down")
+up()
+place(state.blocks.filler, "down")
 
 -- last row of chest backing blocks + input chest
-turn("right")
-move()
+right()
+forward()
 placeBacksideBlocks()
-move("forward", 2)
-turn("left")
-selectChest()
-place("down")
+forward(2)
+left()
+place(state.blocks.chest, "down")
 
 -- go back home while placing last column of filler blocks
-move("back")
-turn("left")
-move()
+back()
+left()
+forward()
+down()
 
-move("down")
-
-for _ = 1, 9 do
-    move("down")
-    selectRedstonePlaceBlock()
-    place("top")
+for _ = 1, (state.layers * 2) + 1 do
+    down()
+    place(state.blocks.filler, "top")
 end
 
-move("back")
-selectRedstonePlaceBlock()
-place()
-turn("right")
-move()
-move("down")
-move("forward", 2)
-move("up")
+back()
+place(state.blocks.filler)
+right()
+forward()
+down()
+forward(2)
+up()
 
 -- done!
-if arg[1] == "right" then
-    turn("back")
+if state.lampLocation == "right" then
+    around()
 else
     squirtleTurn("right")
     move("forward", 6)
