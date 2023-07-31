@@ -74,14 +74,14 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/update"
         },
         {
-            "label": "build pocket:remote-control",
+            "label": "build pocket:remote",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote-control.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/remote-control"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/remote"
         },
         {
-            "label": "build turtle:remote-control",
+            "label": "build turtle:remote",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/remote-control"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/remote"
         },
         {
             "label": "build turtle:crafter",
@@ -91,7 +91,17 @@
         {
             "label": "build turtle:silo",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/silo.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/silo"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/silo/silo.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/silo"
+        },
+        {
+            "label": "build turtle:aqueduct",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/aqueduct/aqueduct.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/aqueduct"
+        },
+        {
+            "label": "build pocket:aqueduct",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/aqueduct.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/aqueduct"
         },
     ]
 }

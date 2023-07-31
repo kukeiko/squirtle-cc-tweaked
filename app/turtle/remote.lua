@@ -1,5 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
+---@type table<integer, function>
 local tasks = {
     [keys.w] = function()
         while not turtle.forward() do
@@ -37,7 +38,7 @@ local tasks = {
 }
 
 local function main(args)
-    print("[remote-control v 1.0.0] booting...")
+    print("[remote v1.1.0] booting...")
     local modem = peripheral.find("modem")
 
     if not modem then
@@ -45,14 +46,15 @@ local function main(args)
     end
 
     rednet.open(peripheral.getName(modem))
-    rednet.host("remote-control", os.getComputerLabel())
-
-    local taskQueue = {}
-
+    rednet.host("remote", os.getComputerLabel())
+    print(string.rep("-", term.getSize()))
+    print(
+        "[note] make sure you run \"remote\" on your PDA while staying close to me (after that, you can move further away)")
+    print(string.rep("-", term.getSize()))
+    print("[ready] to receive commands!")
     parallel.waitForAny(function()
         while true do
-            local _, message = rednet.receive("remote-control")
-            print("got message", message, "from", _)
+            local _, message = rednet.receive("remote")
             local task = tasks[message]
 
             if task then
