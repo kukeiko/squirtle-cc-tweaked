@@ -31,8 +31,20 @@ return function(chest, inventoriesByType)
                 break
             end
 
+            local transferrable = 0
+
+            for _, inputChest in ipairs(inputChests) do
+                local inputStock = inputChest.input.stock[item]
+                transferrable = transferrable + (inputStock.maxCount - inputStock.count)
+
+                if transferrable > stock.count then
+                    transferrable = stock.count
+                    break
+                end
+            end
+
             print("[" .. chest.name .. "]")
-            print(stock.count .. "x", item, "across:")
+            print(transferrable .. "x", item, "across:")
 
             if #ioChests > 0 then
                 print(" - ", #ioChests .. "x io chests")
@@ -59,7 +71,8 @@ return function(chest, inventoriesByType)
                 local transferred = transferItem(chest.output, inputChest.input, item, transfer, 8)
 
                 if transferred < transfer then
-                    -- assuming chest is full or its state changed from an external source, in which case we just ignore it
+                    -- assuming chest is full or its state changed from an external source,
+                    -- in which case we just ignore it for this cycle
                     table.insert(ignore, inputChest.name)
                 end
             end
