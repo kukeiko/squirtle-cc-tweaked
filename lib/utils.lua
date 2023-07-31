@@ -15,6 +15,19 @@ function Utils.push(list, values)
     return list
 end
 
+---@param list table
+---@param value unknown
+---@return boolean
+function Utils.contains(list, value)
+    for i = 1, #list do
+        if list[i] == value then
+            return true
+        end
+    end
+
+    return false
+end
+
 -- https://stackoverflow.com/a/26367080/1611592
 ---@generic T: table
 ---@param tbl T

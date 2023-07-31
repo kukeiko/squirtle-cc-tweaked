@@ -1,3 +1,5 @@
+local dig = require "squirtle.dig"
+
 local natives = {
     top = turtle.placeUp,
     up = turtle.placeUp,
@@ -16,5 +18,13 @@ return function(side)
         error(string.format("place() does not support side %s", side))
     end
 
-    return handler()
+    local success = handler()
+
+    if not success then
+        if dig(side) then
+            success = handler()
+        end
+    end
+
+    return success
 end

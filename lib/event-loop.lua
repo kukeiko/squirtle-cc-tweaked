@@ -65,7 +65,7 @@ local function runThreads(threads, event)
     return nextThreads
 end
 
----@param event string
+---@param event? string
 ---@param callback? function
 function EventLoop.pull(event, callback)
     return coroutine.yield(event, callback)

@@ -1,6 +1,5 @@
-local printProgress = require "io-network.print-progress"
+local printProgress = require "utils.print-progress"
 
--- [todo] copied to utils folder, use that one instead
 ---@param timeout integer
 ---@return "timeout" | "key"
 return function(timeout)
