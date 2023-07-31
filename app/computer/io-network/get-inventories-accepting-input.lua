@@ -1,7 +1,7 @@
 local indexOf = require "utils.index-of"
 
 ---@param inventories NetworkedInventory[]
----@param ignore NetworkedInventory[]
+---@param ignore string[]
 ---@param item string
 ---@return NetworkedInventory[]
 return function(inventories, ignore, item)

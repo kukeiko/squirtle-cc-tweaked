@@ -216,11 +216,11 @@ local function main(args)
         local front = inspect()
 
         if front and front.name == "minecraft:redstone_block" then
-            lookAtChestcart();
+            lookAtChestcart()
         elseif front and front.name == "minecraft:detector_rail" then
             emptyChestcart()
         elseif front and front.name == "minecraft:chest" then
-            doIO();
+            doIO()
         elseif not front and findChestSide() == "back" then
             waitForChestcart()
         end
