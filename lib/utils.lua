@@ -140,6 +140,15 @@ function Utils.count(table)
     return size
 end
 
+---@generic T
+---@param tbl T[]
+---@return T?
+function Utils.first(tbl)
+    for _, item in pairs(tbl) do
+        return item
+    end
+end
+
 function Utils.waitForUserToHitEnter()
     while true do
         local _, key = os.pullEvent("key")

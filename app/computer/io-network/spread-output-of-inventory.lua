@@ -2,8 +2,8 @@ local concatTables = require "utils.concat-tables"
 local getInventoriesAcceptingInput = require "io-network.get-inventories-accepting-input"
 local transferItem = require "inventory.transfer-item"
 
----@param chest NetworkedInventory
----@param inventoriesByType NetworkedInventoriesByType
+---@param chest InputOutputInventory
+---@param inventoriesByType InputOutputInventoriesByType
 return function(chest, inventoriesByType)
     for item, stock in pairs(chest.output.stock) do
         local ignore = {chest.name}
@@ -15,7 +15,7 @@ return function(chest, inventoriesByType)
         while stock.count > 0 do
             local ioChests = getInventoriesAcceptingInput(inventoriesByType.io, ignore, stock.name)
 
-            ---@type NetworkedInventory[]
+            ---@type InputOutputInventory[]
             local storageChests = {}
 
             if chest.type ~= "silo" then
@@ -24,7 +24,7 @@ return function(chest, inventoriesByType)
 
             local furnaces = getInventoriesAcceptingInput(inventoriesByType.furnace, ignore, stock.name)
 
-            ---@type NetworkedInventory[]
+            ---@type InputOutputInventory[]
             local inputChests = concatTables(ioChests, furnaces, storageChests)
 
             if #inputChests == 0 then

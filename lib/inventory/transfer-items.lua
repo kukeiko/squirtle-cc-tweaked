@@ -15,6 +15,7 @@ return function(from, to, total, rate, allowAllocate)
 
     for item, itemTotal in pairs(total) do
         local transferred = transferItem(from, to, item, itemTotal, rate, allowAllocate)
+
         if transferred > 0 then
             transferredTotal[item] = transferred
         end

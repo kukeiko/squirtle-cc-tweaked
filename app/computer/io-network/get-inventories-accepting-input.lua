@@ -1,9 +1,9 @@
 local indexOf = require "utils.index-of"
 
----@param inventories NetworkedInventory[]
+---@param inventories InputOutputInventory[]
 ---@param ignore string[]
 ---@param item string
----@return NetworkedInventory[]
+---@return InputOutputInventory[]
 return function(inventories, ignore, item)
     local others = {}
 

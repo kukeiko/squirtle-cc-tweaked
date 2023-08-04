@@ -1,7 +1,7 @@
----@param inventories NetworkedInventory[]
----@return NetworkedInventoriesByType
+---@param inventories InputOutputInventory[]
+---@return InputOutputInventoriesByType
 return function(inventories)
-    ---@type NetworkedInventoriesByType
+    ---@type InputOutputInventoriesByType
     local byType = {storage = {}, io = {}, drain = {}, furnace = {}, silo = {}}
 
     for _, inventory in ipairs(inventories) do

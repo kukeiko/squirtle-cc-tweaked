@@ -1,16 +1,16 @@
 local getStacks = require "inventory.get-stacks"
 local findNameTag = require "inventory.find-name-tag"
 local printProgress = require "io-network.print-progress"
-local readInputOutputChest = require "io-network.read-io-chest"
-local readStorageChest = require "io-network.read-storage-chest"
-local readDrainInventory = require "io-network.read-drain-inventory"
-local readFurnace = require "io-network.read-furnace"
-local readSiloInventory = require "io-network.read-silo-inventory"
+local readInputOutputChest = require "io-network.read.read-io-chest"
+local readStorageChest = require "io-network.read.read-storage-chest"
+local readDrainInventory = require "io-network.read.read-drain-inventory"
+local readFurnace = require "io-network.read.read-furnace"
+local readSiloInventory = require "io-network.read.read-silo-inventory"
 
 ---@param found FoundInventory[]
----@return NetworkedInventory[]
+---@return InputOutputInventory[]
 return function(found)
-    ---@type NetworkedInventory[]
+    ---@type InputOutputInventory[]
     local inventories = {}
     print("[read]", #found, "inventories...")
     local x, y = printProgress(0, #found)

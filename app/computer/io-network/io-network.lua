@@ -10,16 +10,12 @@ local spreadOutputOfInventory = require "io-network.spread-output-of-inventory"
 local printFoundInventories = require "io-network.print-found-inventories"
 local waitTimeoutOrUntilKeyEvent = require "io-network.wait-timeout-or-until-key-event"
 
----@class NetworkedInventory : InputOutputInventory
----@field type "storage" | "io" | "drain" | "furnace" | "silo"
----@field name string
-
----@class NetworkedInventoriesByType
----@field storage NetworkedInventory[]
----@field io NetworkedInventory[]
----@field drain NetworkedInventory[]
----@field furnace NetworkedInventory[]
----@field silo NetworkedInventory[]
+---@class InputOutputInventoriesByType
+---@field storage InputOutputInventory[]
+---@field io InputOutputInventory[]
+---@field drain InputOutputInventory[]
+---@field furnace InputOutputInventory[]
+---@field silo InputOutputInventory[]
 
 ---@class FoundInventory
 ---@field name string
@@ -29,7 +25,7 @@ local waitTimeoutOrUntilKeyEvent = require "io-network.wait-timeout-or-until-key
 -- but also evenly from outputs, so that e.g. the 4 lumberjack farms all start working
 -- at the same time whenever charcoal is being transported away (and their outputs were full)
 
----@param inventories NetworkedInventoriesByType
+---@param inventories InputOutputInventoriesByType
 local function spreadOutputOfInventories(inventories)
     local outputInventories = concatTables(inventories.drain, inventories.io, inventories.furnace, inventories.silo)
 
@@ -39,7 +35,7 @@ local function spreadOutputOfInventories(inventories)
 end
 
 local function main(args)
-    print("[io-network v3.4.0] booting...")
+    print("[io-network v4.0.0-dev] booting...")
     local timeout = tonumber(args[1] or 30) or 30
 
     while true do

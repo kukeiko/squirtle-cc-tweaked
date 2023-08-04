@@ -1,4 +1,4 @@
----@param inventories NetworkedInventoriesByType
+---@param inventories InputOutputInventoriesByType
 return function(inventories)
     print("found:")
     local numIo = #inventories.io

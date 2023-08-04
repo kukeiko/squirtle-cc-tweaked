@@ -2,6 +2,8 @@ local copy = require "utils.copy"
 local getStacks = require "inventory.get-stacks"
 local stacksToStock = require "inventory.stacks-to-stock"
 local findNameTag = require "inventory.find-name-tag"
+local Inventory = require "inventory.inventory"
+local InputOutputInventory = require "inventory.input-output-inventory"
 
 ---@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
@@ -46,13 +48,8 @@ return function(name, stacks, nameTagSlot)
     end
 
     local inputStacks, outputStacks = toInputOutputStacks(stacks, nameTagSlot)
+    local input = Inventory.create(name, inputStacks)
+    local output = Inventory.create(name, outputStacks)
 
-    ---@type InputOutputInventory
-    local inventory = {
-        name = name,
-        input = {name = name, stacks = inputStacks, stock = stacksToStock(inputStacks)},
-        output = {name = name, stacks = outputStacks, stock = stacksToStock(outputStacks)}
-    }
-
-    return inventory
+    return InputOutputInventory.create(name, input, output, "io")
 end

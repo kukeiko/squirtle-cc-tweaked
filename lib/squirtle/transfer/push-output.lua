@@ -1,7 +1,7 @@
 local getStacks = require "inventory.get-stacks"
 local toIoInventory = require "inventory.to-io-inventory"
 local transferItem = require "inventory.transfer-item"
-local stacksToStock = require "inventory.stacks-to-stock"
+local Inventory = require "inventory.inventory"
 
 -- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
 -- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32
@@ -15,9 +15,7 @@ return function(from, to, keepStock)
     ---@type  table<string, integer>
     local transferredStock = {}
     local fromStacks = getStacks(from)
-    ---@type Inventory
-    local fromInventory = {name = from, stacks = fromStacks, stock = stacksToStock(fromStacks)}
-
+    local fromInventory = Inventory.create(from, fromStacks)
     local toInventory = toIoInventory(to)
     local transferredAll = true
 

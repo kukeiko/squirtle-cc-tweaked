@@ -29,6 +29,7 @@ end
 ---@param sample ItemStack
 ---@return integer? slot, ItemStack? stack
 local function allocateNextToStack(inventory, sample)
+    -- [todo] doesn't work with i/o inventories - it doesn't have to currently, but still.
     local size = getSize(inventory.name)
     for slot = 1, size do
         local stack = inventory.stacks[slot]

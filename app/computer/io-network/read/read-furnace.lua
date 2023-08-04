@@ -1,8 +1,9 @@
-local stacksToStock = require "inventory.stacks-to-stock"
 local getStacks = require "inventory.get-stacks"
+local Inventory = require "inventory.inventory"
+local InputOutputInventory = require "inventory.input-output-inventory"
 
 ---@param name string
----@return NetworkedInventory
+---@return InputOutputInventory
 return function(name)
     local stacks = getStacks(name)
     local inputStack = stacks[1]
@@ -22,17 +23,13 @@ return function(name)
 
     if outputStack then
         if inputStack then
+            -- this makes sure that the input stack never gets empty
             outputStack.count = math.max(0, inputStack.count + outputStack.count - (outputStack.maxCount + 1))
         end
     end
 
-    ---@type NetworkedInventory
-    local inventory = {
-        name = name,
-        type = "furnace",
-        input = {name = name, stacks = inputStacks, stock = stacksToStock(inputStacks)},
-        output = {name = name, stacks = outputStacks, stock = stacksToStock(outputStacks)}
-    }
+    local input = Inventory.create(name, inputStacks)
+    local output = Inventory.create(name, outputStacks)
 
-    return inventory
+    return InputOutputInventory.create(name, input, output, "furnace")
 end
