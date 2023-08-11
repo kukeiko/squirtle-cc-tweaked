@@ -13,6 +13,13 @@ local function isStartInBottomPlane(world, start)
     end
 end
 
+---@param world World
+---@param layerHeight integer
+---@return integer
+function getNumLayers(world, layerHeight)
+    return math.ceil(world.height / layerHeight)
+end
+
 ---@param point Vector
 ---@param world World
 ---@param start Vector
@@ -63,6 +70,7 @@ end
 return function(point, world, start, layerHeight)
     layerHeight = layerHeight or 3
 
+    -- first we try to move to the correct y position, based on which layer we are in
     local currentLayer = getCurrentLayer(point, world, start, layerHeight)
     local targetY = getLayerTargetY(currentLayer, world, start, layerHeight)
 
@@ -74,6 +82,7 @@ return function(point, world, start, layerHeight)
         end
     end
 
+    -- then we snake through the plane for digging
     local delta = Vector.create(0, 0, 0)
 
     if start.x == world.x then
@@ -124,7 +133,10 @@ return function(point, world, start, layerHeight)
         end
     end
 
-    if isStartInBottomPlane(world, start) then
+    -- after that, advance to the next layer, or stop if we are at the max layer
+    if currentLayer == getNumLayers(world, layerHeight) then
+        return nil
+    elseif isStartInBottomPlane(world, start) then
         if World.isInBoundsY(world, point.y + 1) then
             return Vector.plus(point, Vector.create(0, 1, 0))
         end
