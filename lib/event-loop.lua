@@ -71,6 +71,32 @@ function EventLoop.pull(event, callback)
     return coroutine.yield(event, callback)
 end
 
+---@param event string
+---@param ... unknown
+function EventLoop.queue(event, ...)
+    os.queueEvent(event, ...)
+end
+
+---@param event string
+---@param time number
+function EventLoop.debounce(event, time)
+    local result = table.pack(EventLoop.pull(event))
+    local debounce = os.startTimer(time)
+
+    parallel.waitForAny(function()
+        repeat
+            local _, timerId = EventLoop.pull("timer")
+        until timerId == debounce
+    end, function()
+        while true do
+            result = table.pack(EventLoop.pull(event))
+            debounce = os.startTimer(3)
+        end
+    end)
+
+    return table.unpack(result)
+end
+
 ---@param ... function
 function EventLoop.run(...)
     local threads = Utils.map({...}, function(fn)

@@ -12,7 +12,7 @@ function InputOutputInventory.create(name, input, output, type)
     return inventory
 end
 
----@alias InputOutputInventoryType "storage" | "io" | "drain" | "furnace" | "silo"
+---@alias InputOutputInventoryType "storage" | "io" | "drain" | "furnace" | "silo" | "shulker"
 ---@class InputOutputInventory
 ---@field name string
 ---@field input Inventory

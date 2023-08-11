@@ -5,5 +5,5 @@
 ---@field maxCount? integer
 ---@field displayName? integer
 ---@field tags? table<string, boolean>
-
 ---@alias ItemStacks table<integer, ItemStack>
+---@alias ItemStock table<string, ItemStack>

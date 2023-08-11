@@ -84,20 +84,17 @@ return function(from, to, item, total, rate, allowAllocate)
         local open = total - transferredTotal
         local transfer = math.min(space, open, rate, stock)
         local transferred = pushItems(from.name, to.name, fromSlot, transfer, toSlot)
-        os.sleep(.5)
 
         fromStack.count = fromStack.count - transferred
         fromStock.count = fromStock.count - transferred
-
         toStack.count = toStack.count + transferred
         toStock.count = toStock.count + transferred
+
+        os.sleep(.5)
 
         transferredTotal = transferredTotal + transferred
 
         if transferred ~= transfer then
-            -- [todo] if i ever decide to not abort, but continue, then i need to flag the current toSlot
-            -- to be ignored, otherwise we'll have an endless loop
-            print("transferred amount not as expected")
             return transferredTotal
         end
 
