@@ -53,7 +53,6 @@ return function(collection, type, timeout)
             end)
 
             local outputStock = mergeStocks(outputStocks)
-            print((outputStock["minecraft:stone"] or {}).count)
             transferStock(outputStock, refreshed, collection:getInventories(), collection)
 
             os.sleep(timeout)

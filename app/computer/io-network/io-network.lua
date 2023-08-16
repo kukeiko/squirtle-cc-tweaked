@@ -43,7 +43,7 @@ local function attachInventory(name, collection)
 end
 
 local function main(args)
-    print("[io-network v4.0.0] booting...")
+    print("[io-network v4.0.1] booting...")
     local timeout = tonumber(args[1] or 30) or 30
     local modem = findPeripheralSide("modem")
 
