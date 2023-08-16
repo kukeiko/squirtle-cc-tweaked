@@ -1,16 +1,16 @@
 local Side = require "elements.side"
-local findSide = require "world.chest.find-side"
 local getStacks = require "inventory.get-stacks"
 local getSize = require "inventory.get-size"
 local getStock = require "world.chest.get-stock"
 local findNameTag = require "inventory.find-name-tag"
+local findSide = require "world.peripheral.find-side"
 
 ---@class Chest
 ---@field side integer
 local Chest = {}
 
 function Chest.findSide()
-    return findSide()
+    return findSide("minecraft:chest")
 end
 
 ---@param side string
@@ -73,14 +73,6 @@ function Chest.getOutputStacks(name, detailed)
     end
 
     return outputStacks
-end
-
----@param name string
-function Chest.getInputOutputStacks(name)
-    -- [todo] optimize to only call chest.list() once
-    local input = Chest.getInputStacks(name)
-    local output = Chest.getOutputStacks(name)
-    return input, output
 end
 
 ---@param name string
@@ -153,22 +145,6 @@ function Chest.getInputMaxStock(name)
     local maxStock = {}
 
     for _, stack in pairs(Chest.getInputStacks(name, true)) do
-        maxStock[stack.name] = (maxStock[stack.name] or 0) + stack.maxCount
-    end
-
-    return maxStock
-end
-
----@param side string
-function Chest.getInputOutputMaxStock(side)
-    ---@type table<string, integer>
-    local maxStock = {}
-
-    for _, stack in pairs(Chest.getInputStacks(side, true)) do
-        maxStock[stack.name] = (maxStock[stack.name] or 0) + stack.maxCount
-    end
-
-    for _, stack in pairs(Chest.getOutputStacks(side, true)) do
         maxStock[stack.name] = (maxStock[stack.name] or 0) + stack.maxCount
     end
 
