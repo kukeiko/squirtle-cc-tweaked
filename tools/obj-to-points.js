@@ -15,7 +15,6 @@ const groups = contents.split("\n").reduce((groups, line) => {
     return groups;
 }, []);
 
-// const coordinates = contents.split("\n\n")
 const coordinates = groups
     .map(group => group
         .filter(line => line.startsWith("v "))
@@ -60,12 +59,12 @@ const offsetBy = coordinates.reduce((offset, value) => {
         offset.y = value.y;
     }
 
-    if (value.z < offset.z) {
+    if (value.z > offset.z) {
         offset.z = value.z;
     }
 
     return offset;
-}, { x: Infinity, y: Infinity, z: Infinity })
+}, { x: Infinity, y: Infinity, z: -Infinity })
 
 coordinates.forEach(point => {
     point.x -= offsetBy.x;
@@ -77,9 +76,6 @@ coordinates.forEach(point => {
     point.x = Math.round(point.x / unit);
     point.y = Math.round(point.y / unit);
     point.z = Math.round(point.z / unit);
-    // point.x = (point.x / unit);
-    // point.y = (point.y / unit);
-    // point.z = (point.z / unit);
 });
 
 coordinates.sort((a, b) => {

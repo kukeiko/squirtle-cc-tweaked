@@ -62,5 +62,5 @@ return function(refresh)
         end
     end
 
-    return locate(), facing
+    return locate(), getState().facing
 end

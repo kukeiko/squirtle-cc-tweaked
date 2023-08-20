@@ -103,5 +103,10 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/aqueduct.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/aqueduct"
         },
+        {
+            "label": "build turtle:print3d",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/print3d/print3d.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/print3d"
+        },
     ]
 }

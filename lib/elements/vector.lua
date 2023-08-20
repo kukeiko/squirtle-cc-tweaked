@@ -75,4 +75,21 @@ function Vector.manhattan(a, b)
     return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
 end
 
+---@param vector Vector
+---@param times integer?
+---@return Vector
+function Vector.rotateClockwise(vector, times)
+    times = times or 1
+    local rotated = Vector.create(vector.x, vector.y, vector.z)
+
+    for _ = 1, times do
+        local x = -rotated.z
+        local z = rotated.x
+        rotated.x = x
+        rotated.z = z
+    end
+
+    return rotated
+end
+
 return Vector
