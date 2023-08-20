@@ -1,232 +1,246 @@
----@param squirtle SimulatableSquirtle
+local SquirtleV2 = require "squirtle.squirtle-v2"
+
 ---@param state SiloAppState
-return function(squirtle, state)
+return function(state)
+    local move = SquirtleV2.move
+    local forward = SquirtleV2.forward
+    local up = SquirtleV2.up
+    local down = SquirtleV2.down
+    local back = SquirtleV2.back
+    local right = SquirtleV2.right
+    local left = SquirtleV2.left
+    local place = SquirtleV2.place
+    local placeUp = SquirtleV2.placeUp
+    local placeDown = SquirtleV2.placeDown
+    local dig = SquirtleV2.dig
+    local around = SquirtleV2.around
+
     if state.lampLocation == "right" then
-        squirtle:right()
-        squirtle:move("forward", 2)
-        squirtle:left()
+        right()
+        move("forward", 2)
+        left()
     elseif state.lampLocation == "left" then
-        squirtle:right()
-        squirtle:move("forward", 4)
-        squirtle:left()
-        squirtle:flipTurns(true)
+        right()
+        move("forward", 4)
+        left()
+        SquirtleV2.flipTurns = true
     end
 
     -- place center chests
     for _ = 1, (state.layers * 2) + 1 do
-        squirtle:place(state.blocks.chest)
-        squirtle:up()
+        place(state.blocks.chest)
+        up()
     end
 
     -- place left support beam
-    squirtle:forward()
-    squirtle:right()
-    squirtle:back(2)
-    squirtle:place(state.blocks.support, "top")
-    squirtle:down()
-    squirtle:place(state.blocks.support, "top")
+    forward()
+    right()
+    back(2)
+    placeUp(state.blocks.support)
+    down()
+    placeUp(state.blocks.support)
 
     -- place left hoppers
     for _ = 1, state.layers do
-        squirtle:down()
-        squirtle:place(state.blocks.support, "top")
-        squirtle:place(state.blocks.hopper)
-        squirtle:down()
-        squirtle:place(state.blocks.support, "top")
+        down()
+        placeUp(state.blocks.support)
+        place(state.blocks.hopper)
+        down()
+        placeUp(state.blocks.support)
     end
 
     -- place bottom support beam
-    squirtle:dig("down")
-    squirtle:down()
-    squirtle:place(state.blocks.support, "top")
-    squirtle:right()
-    squirtle:dig()
-    squirtle:forward()
-    squirtle:up()
+    dig("down")
+    down()
+    placeUp(state.blocks.support)
+    right()
+    dig()
+    forward()
+    up()
 
     -- right support
-    squirtle:left()
-    squirtle:forward(4)
-    squirtle:left()
-    squirtle:forward()
-    squirtle:left()
+    left()
+    forward(4)
+    left()
+    forward()
+    left()
 
     for _ = 1, state.layers do
-        squirtle:place(state.blocks.hopper)
-        squirtle:up()
-        squirtle:place(state.blocks.support, "down")
-        squirtle:up()
-        squirtle:place(state.blocks.support, "down")
+        place(state.blocks.hopper)
+        up()
+        placeDown(state.blocks.support)
+        up()
+        placeDown(state.blocks.support)
     end
 
     for _ = 1, 2 do
-        squirtle:up()
-        squirtle:place(state.blocks.support, "down")
+        up()
+        placeDown(state.blocks.support)
     end
 
     -- build top support
-    squirtle:forward(2)
+    forward(2)
 
     for i = 1, 5 do
-        squirtle:place(state.blocks.support)
+        place(state.blocks.support)
 
         if i ~= 5 then
-            squirtle:back()
+            back()
         end
     end
 
     -- build right support incl. lights
     for _ = 1, (state.layers * 2) + 2 do
-        squirtle:down()
-        squirtle:place(state.blocks.support, "top")
-        squirtle:place(state.blocks.lamp)
+        down()
+        placeUp(state.blocks.support)
+        place(state.blocks.lamp)
     end
 
     -- bottom piece of right support
-    squirtle:dig("down")
-    squirtle:down()
-    squirtle:place(state.blocks.support, "top")
-    squirtle:left()
-    squirtle:dig()
-    squirtle:forward()
-    squirtle:up()
+    dig("down")
+    down()
+    placeUp(state.blocks.support)
+    left()
+    dig()
+    forward()
+    up()
 
     -- place remaining chests
-    squirtle:right()
-    squirtle:forward(3)
-    squirtle:right()
+    right()
+    forward(3)
+    right()
 
     for _ = 1, state.layers do
-        squirtle:up()
-        squirtle:place(state.blocks.chest)
-        squirtle:up()
+        up()
+        place(state.blocks.chest)
+        up()
     end
 
-    squirtle:left()
-    squirtle:forward(2)
-    squirtle:right()
+    left()
+    forward(2)
+    right()
 
     for i = 1, state.layers + 1 do
-        squirtle:place(state.blocks.chest)
+        place(state.blocks.chest)
 
         if i ~= 5 then
-            squirtle:down(2)
+            down(2)
         end
     end
 
     -- move to backside
-    squirtle:left()
-    squirtle:forward()
-    squirtle:down()
-    squirtle:right()
-    squirtle:forward()
-    squirtle:dig()
-    squirtle:forward()
-    squirtle:up()
-    squirtle:left()
-    squirtle:back(2)
+    left()
+    forward()
+    down()
+    right()
+    forward()
+    dig()
+    forward()
+    up()
+    left()
+    back(2)
 
     local function placeBacksideBlocks()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:back()
-        squirtle:left()
+        placeDown(state.blocks.filler)
+        right()
+        forward()
+        placeDown(state.blocks.filler)
+        back()
+        left()
 
         for _ = 1, 3 do
-            squirtle:forward()
-            squirtle:place(state.blocks.backside, "down")
+            forward()
+            placeDown(state.blocks.backside)
         end
 
-        squirtle:back()
+        back()
     end
 
     -- place outer redstone circuit from chest to lamps
     ---@param isBottomLayer boolean
     local function placeOuterRedstone(isBottomLayer)
         local function placeBottomLayerBlock()
-            squirtle:down()
-            squirtle:dig("down")
-            squirtle:place(state.blocks.filler, "down")
-            squirtle:up()
+            down()
+            dig("down")
+            placeDown(state.blocks.filler)
+            up()
         end
 
-        squirtle:right()
-        squirtle:forward()
-        squirtle:dig("down")
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:up()
-        squirtle:place(state.blocks.comparator, "down")
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
-        squirtle:forward()
+        right()
+        forward()
+        dig("down")
+        placeDown(state.blocks.filler)
+        up()
+        placeDown(state.blocks.comparator)
+        forward()
+        placeDown(state.blocks.filler)
+        right()
+        forward()
 
         if isBottomLayer then
             placeBottomLayerBlock()
         end
 
-        squirtle:place(state.blocks.repeater, "down")
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:forward()
+        placeDown(state.blocks.repeater)
+        forward()
+        placeDown(state.blocks.filler)
+        forward()
 
         if isBottomLayer then
             placeBottomLayerBlock()
         end
 
-        squirtle:place(state.blocks.repeater, "down")
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
+        placeDown(state.blocks.repeater)
+        forward()
+        placeDown(state.blocks.filler)
+        right()
 
         for _ = 1, 2 do
-            squirtle:forward()
-            squirtle:down()
+            forward()
+            down()
 
             if isBottomLayer then
-                squirtle:dig("down")
+                dig("down")
             end
 
-            squirtle:place(state.blocks.filler, "down")
-            squirtle:up()
-            squirtle:place(state.blocks.redstone, "down")
+            placeDown(state.blocks.filler)
+            up()
+            placeDown(state.blocks.redstone)
         end
 
-        squirtle:right()
-        squirtle:forward(2)
+        right()
+        forward(2)
         placeBacksideBlocks()
     end
 
     -- place inner redstone circuit from chest to lamps
     local function placeInnerRedstone()
-        squirtle:back()
-        squirtle:right()
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:up()
-        squirtle:place(state.blocks.comparator, "down")
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
-        squirtle:forward()
-        squirtle:place(state.blocks.repeater, "down")
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
-        squirtle:forward()
-        squirtle:down()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:up()
-        squirtle:place(state.blocks.repeater, "down")
-        squirtle:forward()
-        squirtle:down()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:up()
-        squirtle:place(state.blocks.filler, "down")
-        squirtle:right()
-        squirtle:forward()
+        back()
+        right()
+        forward()
+        placeDown(state.blocks.filler)
+        up()
+        placeDown(state.blocks.comparator)
+        forward()
+        placeDown(state.blocks.filler)
+        right()
+        forward()
+        placeDown(state.blocks.repeater)
+        forward()
+        placeDown(state.blocks.filler)
+        right()
+        forward()
+        down()
+        placeDown(state.blocks.filler)
+        up()
+        placeDown(state.blocks.repeater)
+        forward()
+        down()
+        placeDown(state.blocks.filler)
+        up()
+        placeDown(state.blocks.filler)
+        right()
+        forward()
         placeBacksideBlocks()
     end
 
@@ -239,111 +253,111 @@ return function(squirtle, state)
     end
 
     -- build input chest
-    squirtle:forward()
-    squirtle:left()
-    squirtle:back()
-    squirtle:down()
-    squirtle:dig()
-    squirtle:place(state.blocks.hopper)
-    squirtle:right()
-    squirtle:forward(2)
-    squirtle:left()
-    squirtle:forward()
-    squirtle:left()
-    squirtle:place(state.blocks.hopper)
+    forward()
+    left()
+    back()
+    down()
+    dig()
+    place(state.blocks.hopper)
+    right()
+    forward(2)
+    left()
+    forward()
+    left()
+    place(state.blocks.hopper)
 
     -- redstone torch
-    squirtle:down()
-    squirtle:forward()
-    squirtle:left()
-    squirtle:place(state.blocks.filler)
-    squirtle:down()
-    squirtle:place(state.blocks.redstoneTorch, "up")
+    down()
+    forward()
+    left()
+    place(state.blocks.filler)
+    down()
+    placeUp(state.blocks.redstoneTorch)
 
     -- "plus" construct
-    squirtle:forward(2)
-    squirtle:up()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:around()
-    squirtle:up()
-    squirtle:place(state.blocks.repeater, "down")
-    squirtle:back()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:up()
-    squirtle:place(state.blocks.redstone, "down")
+    forward(2)
+    up()
+    placeDown(state.blocks.filler)
+    around()
+    up()
+    placeDown(state.blocks.repeater)
+    back()
+    placeDown(state.blocks.filler)
+    up()
+    placeDown(state.blocks.redstone)
 
     for _ = 1, 2 do
-        squirtle:forward()
-        squirtle:place(state.blocks.filler, "down")
+        forward()
+        placeDown(state.blocks.filler)
     end
 
-    squirtle:around()
-    squirtle:up()
+    around()
+    up()
 
     -- input chest connection to topmost redstone lamp
-    squirtle:place(state.blocks.comparator, "down")
-    squirtle:forward()
-    squirtle:place(state.blocks.redstone, "down")
-    squirtle:right()
-    squirtle:forward()
-    squirtle:down()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:up()
-    squirtle:place(state.blocks.redstone, "down")
-    squirtle:forward()
-    squirtle:place(state.blocks.repeater, "down")
-    squirtle:forward()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:forward()
-    squirtle:place(state.blocks.repeater, "down")
-    squirtle:forward()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:right()
-    squirtle:forward()
-    squirtle:down()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:up()
-    squirtle:place(state.blocks.repeater, "down")
-    squirtle:forward()
-    squirtle:down()
-    squirtle:place(state.blocks.filler, "down")
-    squirtle:up()
-    squirtle:place(state.blocks.filler, "down")
+    placeDown(state.blocks.comparator)
+    forward()
+    placeDown(state.blocks.redstone)
+    right()
+    forward()
+    down()
+    placeDown(state.blocks.filler)
+    up()
+    placeDown(state.blocks.redstone)
+    forward()
+    placeDown(state.blocks.repeater)
+    forward()
+    placeDown(state.blocks.filler)
+    forward()
+    placeDown(state.blocks.repeater)
+    forward()
+    placeDown(state.blocks.filler)
+    right()
+    forward()
+    down()
+    placeDown(state.blocks.filler)
+    up()
+    placeDown(state.blocks.repeater)
+    forward()
+    down()
+    placeDown(state.blocks.filler)
+    up()
+    placeDown(state.blocks.filler)
 
     -- last row of chest backing blocks + input chest
-    squirtle:right()
-    squirtle:forward()
+    right()
+    forward()
     placeBacksideBlocks()
-    squirtle:forward(2)
-    squirtle:left()
-    squirtle:place(state.blocks.chest, "down")
+    forward(2)
+    left()
+    placeDown(state.blocks.chest)
 
     -- go back home while placing last column of filler blocks
-    squirtle:back()
-    squirtle:left()
-    squirtle:forward()
-    squirtle:down()
+    back()
+    left()
+    forward()
+    down()
 
     for _ = 1, (state.layers * 2) + 1 do
-        squirtle:down()
-        squirtle:place(state.blocks.filler, "top")
+        down()
+        placeUp(state.blocks.filler)
     end
 
-    squirtle:back()
-    squirtle:place(state.blocks.filler)
-    squirtle:right()
-    squirtle:forward()
-    squirtle:down()
-    squirtle:forward(2)
-    squirtle:up()
+    back()
+    place(state.blocks.filler)
+    right()
+    forward()
+    down()
+    forward(2)
+    up()
 
     -- done!
     if state.lampLocation == "right" then
-        squirtle:around()
+        around()
     else
-        squirtle:flipTurns(false)
-        squirtle:right()
-        squirtle:move("forward", 6)
-        squirtle:right()
+        SquirtleV2.flipTurns = false
+        right()
+        move("forward", 6)
+        right()
     end
 end

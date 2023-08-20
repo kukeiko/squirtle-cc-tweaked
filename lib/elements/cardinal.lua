@@ -119,11 +119,11 @@ end
 ---@param facing integer
 ---@return integer
 function Cardinal.fromSide(side, facing)
-    if side == Side.front or side == "front" then
+    if side == Side.front or side == "front" or side == "forward" then
         return facing
-    elseif side == Side.top or side == "top" then
+    elseif side == Side.top or side == "top" or side == "up" then
         return Cardinal.up
-    elseif side == Side.bottom or side == "bottom" then
+    elseif side == Side.bottom or side == "bottom" or side == "down" then
         return Cardinal.down
     elseif side == Side.left or side == "left" then
         return Cardinal.rotateLeft(facing)

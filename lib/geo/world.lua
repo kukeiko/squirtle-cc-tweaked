@@ -42,7 +42,7 @@ end
 ---@param depth? integer
 ---@return World
 local function create(x, y, z, width, height, depth)
-    if width < 1 or height < 1 or depth < 1 then
+    if (width ~= nil and width < 1) or (height ~= nil and height < 1) or (depth ~= nil and depth < 1) then
         error("can't create world with width/height/depth less than 1")
     end
 
