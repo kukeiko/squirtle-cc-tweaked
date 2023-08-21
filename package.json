@@ -1,5 +1,8 @@
 {
+  "type": "module",
   "dependencies": {
-    "luabundler": "^1.2.2"
+    "luabundler": "^1.2.2",
+    "luamin": "1.0.4",
+    "fast-average-color-node": "2.6.0"
   }
 }
