@@ -1,4 +1,45 @@
+import { existsSync } from "fs";
 import { readFile } from "fs/promises"
+
+/**
+ * @param {string} objFilename 
+ * @returns {Promise<Map<string, { r: number; g: number; b:number }>}
+ */
+async function parseMtl(objFilename) {
+    const pos = objFilename.lastIndexOf(".");
+    const mtlFilename = objFilename.substring(0, pos < 0 ? file.length : pos) + ".mtl";
+
+    if (!existsSync(mtlFilename)) {
+        return new Map();
+    }
+
+    const contents = (await readFile(mtlFilename, { encoding: "utf-8" })).toString();
+
+    /** @type {string[][]} */
+    const groups = contents.split("\n").reduce((groups, line) => {
+        if (line.startsWith("Kd ")) {
+            groups[groups.length - 1].push(line);
+        } else if (line.startsWith("newmtl")) {
+            groups.push([line]);
+        }
+
+        return groups;
+    }, []);
+
+    return new Map(groups.map(lines => {
+        const nameLine = lines.find(line => line.startsWith("newmtl"));
+        const diffuseLine = lines.find(line => line.startsWith("Kd "));
+
+        if (!nameLine || !diffuseLine) {
+            return;
+        }
+
+        const name = nameLine.split("newmtl ")[1];
+        const [r, g, b] = diffuseLine.split("Kd ")[1].split(" ").map(val => parseFloat(val) * 255);
+
+        return [name, { r, g, b }]
+    }));
+}
 
 /**
  * @param {string} filename
@@ -6,6 +47,7 @@ import { readFile } from "fs/promises"
  * @returns {Promise<{points: Point[]; unit: number}>}
  */
 export async function parseObjFile(filename, toGrayscale = false) {
+    const colors = await parseMtl(filename);
     const contents = (await readFile(filename, { encoding: "utf-8" })).toString();
 
     /** @type {string[][]} */
@@ -61,13 +103,24 @@ export async function parseObjFile(filename, toGrayscale = false) {
                 point.b = parseInt(name.slice(4, 6), 16);
 
                 // [todo] move grayscaling to turtle app
-                if (toGrayscale) {
-                    // ntsc formula
-                    const gray = (point.r * .299) + (point.g * .857) + (point.b * .114);
-                    point.r = gray;
-                    point.g = gray;
-                    point.b = gray;
+
+            } else {
+                const name = mtl.split("usemtl ")[1];
+
+                if (colors.has(name)) {
+                    const color = colors.get(name);
+                    point.r = color.r;
+                    point.g = color.g;
+                    point.b = color.b;
                 }
+            }
+
+            if (toGrayscale) {
+                // ntsc formula
+                const gray = (point.r * .299) + (point.g * .857) + (point.b * .114);
+                point.r = gray;
+                point.g = gray;
+                point.b = gray;
             }
         }
 

@@ -68,7 +68,9 @@ const blacklist = [
     "black_terracotta",
     "terracotta",
     "concrete",
-    "soul"
+    "soul",
+    "mossy",
+    /^diorite$/
 ];
 
 for (const jsonFile of await readdir(blockFolder)) {

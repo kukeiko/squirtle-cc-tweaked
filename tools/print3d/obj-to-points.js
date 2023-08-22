@@ -92,12 +92,20 @@ dimensions.y += 1;
 dimensions.z *= -1;
 dimensions.z += 1;
 
+console.log("dimensions:", dimensions);
+
 /** @type {Point[][]} */
 const slicedPoints = [];
-const sliceWidth = Math.ceil(dimensions.x / slices);
+const sliceWidth = Math.floor(dimensions.x / slices);
 
 for (let i = 0; i < slices; i++) {
-    const pointsOfSlice = points.filter(point => (point.x >= i * sliceWidth) && point.x < ((i + 1) * sliceWidth));
+    const pointsOfSlice = points.filter(point => {
+        if(i == slices - 1) {
+            return (point.x >= i * sliceWidth);
+        } else {
+            return (point.x >= i * sliceWidth) && point.x < ((i + 1) * sliceWidth)
+        }
+    });
 
     pointsOfSlice.forEach(point => {
         point.x -= i * sliceWidth;
@@ -147,7 +155,16 @@ async function exportPoints(points, objFilename, x) {
 
 
     /** @type {[number, number, number, string]} */
-    const compacted = snakedLayers.flat(2).map(point => [point.x, point.y, point.z, point.block]);
+    const compacted = snakedLayers.flat(2).map(point => {
+        const compact = [point.x, point.y, point.z];
+
+        if (point.block) {
+            compact.push(point.block);
+        }
+
+        return compact;
+    });
+
     const pos = objFilename.lastIndexOf(".");
     const outFilename = objFilename.substring(0, pos < 0 ? file.length : pos) + (x === undefined ? ".t3d" : "_" + (x + 1) + ".t3d");
     // console.log(unit);

@@ -8,13 +8,15 @@ local navigate = require "squirtle.navigate"
 local locate = require "squirtle.locate"
 local orientate = require "squirtle.orientate"
 local SquirtleV2 = require "squirtle.squirtle-v2"
+local requireItems = require "squirtle.require-items"
+local face = require "squirtle.face"
 
 ---@class ColoredPoint
 ---@field vector Vector
 ---@field block string?
 
 local function main(args)
-    print("[print3d v1.2.0]")
+    print("[print3d v1.3.0]")
     local filename = args[1] or "seahorse-colored_27.t3d"
     local defaultBlock = args[2] or "minecraft:stone_bricks"
     local file = fs.open(filename, "r")
@@ -22,6 +24,8 @@ local function main(args)
     file.close()
 
     local _, facing = orientate()
+    ---@type table<string, integer>
+    local blocks = {}
 
     ---@type ColoredPoint[]
     local points = Utils.map(pointsCompact, function(point)
@@ -36,15 +40,27 @@ local function main(args)
             point = Vector.rotateClockwise(point, 3)
         end
 
+        local usedBlock = block or defaultBlock
+        blocks[usedBlock] = (blocks[usedBlock] or 0) + 1
+
+        -- [todo] dirty hack to make sure we can start. missing blocks will have to be added during printing
+
+        if blocks[usedBlock] > 64 then
+            blocks[usedBlock] = 64
+        end
+
         return {vector = point, block = block}
     end)
 
+    requireItems(blocks)
     local start = locate()
 
     for _, point in pairs(points) do
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
         local worldPoint = Vector.plus(start, above)
-        local success, message = navigate(worldPoint)
+        local success, message = navigate(worldPoint, nil, function()
+            return true
+        end)
 
         if not success then
             error(message)
@@ -52,6 +68,9 @@ local function main(args)
 
         SquirtleV2.placeDown(point.block or defaultBlock)
     end
+
+    navigate(start)
+    face(facing)
 end
 
 return main(arg)
