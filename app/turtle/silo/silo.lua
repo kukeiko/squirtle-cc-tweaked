@@ -6,7 +6,7 @@ local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 local requireItems = require "squirtle.require-items"
 
-print("[silo v1.4.0] booting...")
+print("[silo v1.4.1] booting...")
 local state = boot(arg)
 
 if not state then
@@ -15,7 +15,8 @@ end
 
 SquirtleV2.simulate = true
 sequence(state)
-requireItems(SquirtleV2.results.blocksPlaced)
+-- [todo] also require fuel based on steps taken
+requireItems(SquirtleV2.results.placed)
 print("all good now! building...")
 SquirtleV2.simulate = false
 sequence(state)

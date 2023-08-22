@@ -15,6 +15,8 @@ return function(state)
     local dig = SquirtleV2.dig
     local around = SquirtleV2.around
 
+    SquirtleV2.enableBlockBreaking()
+
     if state.lampLocation == "right" then
         right()
         move("forward", 2)
@@ -123,7 +125,7 @@ return function(state)
     for i = 1, state.layers + 1 do
         place(state.blocks.chest)
 
-        if i ~= 5 then
+        if i ~= state.layers + 1 then
             down(2)
         end
     end

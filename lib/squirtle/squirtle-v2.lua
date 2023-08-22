@@ -10,22 +10,8 @@ local inspect = require "squirtle.inspect"
 local requireItems = require "squirtle.require-items"
 
 ---@class SquirtleV2SimulationResults
----@field timesMoved integer
----@field blocksPlaced table<string, integer>
-
----@class SquirtleV2
----@field results SquirtleV2SimulationResults
----@field breakable fun(block: Block) : boolean
-local SquirtleV2 = {
-    flipTurns = false,
-    simulate = false,
-    results = {blocksPlaced = {}, timesMoved = 0},
-    position = Vector.create(0, 0, 0),
-    facing = Cardinal.south,
-    breakable = function()
-        return true
-    end
-}
+---@field steps integer
+---@field placed table<string, integer>
 
 local natives = {
     move = {
@@ -39,10 +25,38 @@ local natives = {
     }
 }
 
+---@param block Block
+---@return boolean
+local breakableSafeguard = function(block)
+    return block.name ~= "minecraft:bedrock"
+end
+
+---@class SquirtleV2
+---@field results SquirtleV2SimulationResults
+---@field breakable? fun(block: Block) : boolean
+local SquirtleV2 = {
+    flipTurns = false,
+    simulate = false,
+    results = {placed = {}, steps = 0},
+    position = Vector.create(0, 0, 0),
+    facing = Cardinal.south
+}
+
+---@param predicate? fun(block: Block) : boolean
+function SquirtleV2.enableBlockBreaking(predicate)
+    SquirtleV2.breakable = predicate
+end
+
+function SquirtleV2.disableBlockBreaking()
+    local current = SquirtleV2.breakable
+    SquirtleV2.breakable = nil
+    return current
+end
+
 ---@param side? string
----@param times? integer
----@return boolean, Block?
-function SquirtleV2.tryMove(side, times)
+---@param steps? integer
+---@return boolean, integer, string?
+function SquirtleV2.tryMove(side, steps)
     side = side or "front"
     local handler = natives.move[side]
 
@@ -51,22 +65,28 @@ function SquirtleV2.tryMove(side, times)
     end
 
     if SquirtleV2.simulate then
-        return false
+        if steps then
+            SquirtleV2.results.steps = SquirtleV2.results.steps + 1
+        else
+            -- "tryMove()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
+            -- and since we're not simulating a world we can not really return a meaningful value of steps taken if none have been supplied.
+            return false, 0, "simulation mode is active"
+        end
     end
 
-    times = times or 1
+    steps = steps or 1
 
-    if not Fuel.hasFuel(times) then
-        refuel(times)
+    if not Fuel.hasFuel(steps) then
+        refuel(steps)
     end
 
     local delta = Cardinal.toVector(Cardinal.fromSide(side, SquirtleV2.facing))
 
-    for _ = 1, times do
+    for step = 1, steps do
         repeat
             local success, error = handler()
 
-            if not success then
+            if not success then                    
                 -- [todo] inspect error message (i.e. missing tool => error)
                 local block = inspect(side)
 
@@ -76,10 +96,10 @@ function SquirtleV2.tryMove(side, times)
                     error(string.format("move(%s) failed, but there is no block in the way", side))
                 end
 
-                if block.name == "minecraft:bedrock" or not SquirtleV2.breakable(block) then
-                    return false, block
-                else
+                if SquirtleV2.breakable and (breakableSafeguard(block) and SquirtleV2.breakable(block)) then
                     dig(side)
+                else
+                    return false, step - 1, string.format("undiggabble block '%s'", block.name)
                 end
             end
         until success
@@ -87,29 +107,29 @@ function SquirtleV2.tryMove(side, times)
         SquirtleV2.position = Vector.plus(SquirtleV2.position, delta)
     end
 
-    return true
+    return true, steps
 end
 
 ---@param times? integer
----@return boolean, Block?
+---@return boolean, integer, string?
 function SquirtleV2.tryForward(times)
     return SquirtleV2.tryMove("forward", times)
 end
 
 ---@param times? integer
----@return boolean, Block?
+---@return boolean, integer, string?
 function SquirtleV2.tryUp(times)
     return SquirtleV2.tryMove("up", times)
 end
 
 ---@param times? integer
----@return boolean, Block?
+---@return boolean, integer, string?
 function SquirtleV2.tryDown(times)
     return SquirtleV2.tryMove("down", times)
 end
 
 ---@param times? integer
----@return boolean, Block?
+---@return boolean, integer, string?
 function SquirtleV2.tryBack(times)
     return SquirtleV2.tryMove("back", times)
 end
@@ -118,20 +138,17 @@ end
 ---@param times? integer
 function SquirtleV2.move(side, times)
     if SquirtleV2.simulate then
+        -- when simulating, only "move()" will simulate actual steps.
         times = times or 1
-        SquirtleV2.results.timesMoved = SquirtleV2.results.timesMoved + 1
+        SquirtleV2.results.steps = SquirtleV2.results.steps + 1
 
         return nil
     end
 
-    local success, block = SquirtleV2.tryMove(side, times)
+    local success, _, message = SquirtleV2.tryMove(side, times)
 
     if not success then
-        if block then
-            error(string.format("move(%s) failed: undiggabble block '%s'", side, block.name))
-        else
-            error(string.format("move(%s) failed, but there is no block in the way", side))
-        end
+        error(string.format("move(%s) failed: %s", side, message))
     end
 end
 
@@ -194,11 +211,11 @@ end
 ---@param side? string
 function SquirtleV2.place(block, side)
     if SquirtleV2.simulate then
-        if not SquirtleV2.results.blocksPlaced[block] then
-            SquirtleV2.results.blocksPlaced[block] = 0
+        if not SquirtleV2.results.placed[block] then
+            SquirtleV2.results.placed[block] = 0
         end
 
-        SquirtleV2.results.blocksPlaced[block] = SquirtleV2.results.blocksPlaced[block] + 1
+        SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
     else
         if not SquirtleV2.select(block, true) then
             requireItems({[block] = 1})

@@ -4,6 +4,7 @@ local natives = {
     top = turtle.inspectUp,
     up = turtle.inspectUp,
     front = turtle.inspect,
+    forward = turtle.inspect,
     bottom = turtle.inspectDown,
     down = turtle.inspectDown
 }
