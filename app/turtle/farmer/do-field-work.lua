@@ -1,9 +1,9 @@
 local Backpack = require "squirtle.backpack"
-local dig = require "squirtle.dig"
 local isCrops = require "farmer.is-crops"
 local place = require "squirtle.place"
 local selectItem = require "squirtle.backpack.select-item"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -44,7 +44,7 @@ local function harvestCrops(block)
             -- [todo] error handling
         end
 
-        dig("bottom")
+        SquirtleV2.dig("down")
 
         if not place("bottom") then
             tryPlantAnything()

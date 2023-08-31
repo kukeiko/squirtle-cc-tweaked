@@ -1,13 +1,12 @@
 local selectItem = require "squirtle.backpack.select-item"
 local turn = require "squirtle.turn"
 local place = require "squirtle.place"
-local dig = require "squirtle.dig"
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
 local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
-local inspect = require "squirtle.inspect"
 local requireItems = require "squirtle.require-items"
+local Utils = require "utils"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
@@ -22,6 +21,22 @@ local natives = {
         bottom = turtle.down,
         down = turtle.down,
         back = turtle.back
+    },
+    dig = {
+        top = turtle.digUp,
+        up = turtle.digUp,
+        front = turtle.dig,
+        forward = turtle.dig,
+        bottom = turtle.digDown,
+        down = turtle.digDown
+    },
+    inspect = {
+        top = turtle.inspectUp,
+        up = turtle.inspectUp,
+        front = turtle.inspect,
+        forward = turtle.inspect,
+        bottom = turtle.inspectDown,
+        down = turtle.inspectDown
     }
 }
 
@@ -42,15 +57,24 @@ local SquirtleV2 = {
     facing = Cardinal.south
 }
 
----@param predicate? fun(block: Block) : boolean
-function SquirtleV2.enableBlockBreaking(predicate)
-    SquirtleV2.breakable = predicate
+---@param block Block
+---@return boolean
+local function canBreak(block)
+    return SquirtleV2.breakable ~= nil and breakableSafeguard(block) and SquirtleV2.breakable(block)
 end
 
-function SquirtleV2.disableBlockBreaking()
+---@param predicate? fun(block: Block) : boolean
+---@return fun() : nil
+function SquirtleV2.setBreakable(predicate)
     local current = SquirtleV2.breakable
-    SquirtleV2.breakable = nil
-    return current
+
+    local function restore()
+        SquirtleV2.breakable = current
+    end
+
+    SquirtleV2.breakable = predicate
+
+    return restore
 end
 
 ---@param side? string
@@ -58,9 +82,9 @@ end
 ---@return boolean, integer, string?
 function SquirtleV2.tryMove(side, steps)
     side = side or "front"
-    local handler = natives.move[side]
+    local native = natives.move[side]
 
-    if not handler then
+    if not native then
         error(string.format("move() does not support side %s", side))
     end
 
@@ -84,22 +108,45 @@ function SquirtleV2.tryMove(side, steps)
 
     for step = 1, steps do
         repeat
-            local success, error = handler()
+            local success, error = native()
 
-            if not success then                    
-                -- [todo] inspect error message (i.e. missing tool => error)
-                local block = inspect(side)
+            if not success then
+                local actionSide = side
+
+                if side == "back" then
+                    actionSide = "front"
+                    SquirtleV2.around()
+                end
+
+                local block = SquirtleV2.inspect(actionSide)
 
                 if not block then
+                    if side == "back" then
+                        SquirtleV2.around()
+                    end
+
                     -- [todo] it is possible (albeit unlikely) that between handler() and inspect(), a previously
                     -- existing block has been removed by someone else
                     error(string.format("move(%s) failed, but there is no block in the way", side))
                 end
 
-                if SquirtleV2.breakable and (breakableSafeguard(block) and SquirtleV2.breakable(block)) then
-                    dig(side)
+                -- [todo] wanted to reuse newly introduced Squirtle.tryDig(), but it would be awkward to do so.
+                -- maybe I find a non-awkward solution in the future?
+                -- [todo] should tryDig really try to dig? I think I am going to use this only for "move until you hit something",
+                -- so in that case, no, it shouldn't try to dig.
+                if canBreak(block) then
+                    while SquirtleV2.dig(actionSide) do
+                    end
+
+                    if side == "back" then
+                        SquirtleV2.around()
+                    end
                 else
-                    return false, step - 1, string.format("undiggabble block '%s'", block.name)
+                    if side == "back" then
+                        SquirtleV2.around()
+                    end
+
+                    return false, step - 1, string.format("blocked by %s", block.name)
                 end
             end
         until success
@@ -201,10 +248,54 @@ end
 
 ---@param side? string
 ---@param toolSide? string
-function SquirtleV2.dig(side, toolSide)
-    if not SquirtleV2.simulate then
-        dig(side, toolSide)
+---@return boolean, string?
+function SquirtleV2.tryDig(side, toolSide)
+    if SquirtleV2.simulate then
+        return true
     end
+
+    side = side or "front"
+    local native = natives.dig[side]
+
+    if not native then
+        error(string.format("dig() does not support side %s", side))
+    end
+
+    local block = SquirtleV2.inspect(side)
+
+    if not block then
+        return false
+    end
+
+    if not canBreak(block) then
+        return false, string.format("not allowed to dig block %s", block.name)
+    end
+
+    local success, message = native(toolSide)
+
+    if not success and string.match(message, "tool") then
+        if toolSide then
+            error(string.format("dig(%s, %s) failed: %s", side, toolSide, message))
+        else
+            error(string.format("dig(%s) failed: %s", side, message))
+        end
+    end
+
+    return success, message
+end
+
+---@param side? string
+---@param toolSide? string
+---@return boolean, string?
+function SquirtleV2.dig(side, toolSide)
+    local success, message = SquirtleV2.tryDig(side, toolSide)
+
+    -- if there is no message, then there just wasn't anything to dig, meaning every other case is interpreted as an error
+    if not success and message then
+        error(message)
+    end
+
+    return success
 end
 
 ---@param block string
@@ -217,14 +308,11 @@ function SquirtleV2.place(block, side)
 
         SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
     else
-        if not SquirtleV2.select(block, true) then
+        while not SquirtleV2.select(block, true) do
             requireItems({[block] = 1})
-
-            if not SquirtleV2.select(block, true) then
-                error("unexpected error")
-            end
         end
 
+        -- [todo] error handling
         place(side)
     end
 end
@@ -244,6 +332,36 @@ end
 ---@return false|integer
 function SquirtleV2.select(name, exact)
     return selectItem(name, exact)
+end
+
+---@param side? string
+---@param name? table|string
+---@return Block? block
+function SquirtleV2.inspect(side, name)
+    side = side or "front"
+    local native = natives.inspect[side]
+
+    if not native then
+        error(string.format("inspect() does not support side %s", side))
+    end
+
+    local success, block = native()
+
+    if success then
+        if name then
+            if type(name) == "string" and block.name == name then
+                return block
+            elseif type(name) == "table" and Utils.indexOf(name, block.name) > 0 then
+                return block
+            else
+                return nil
+            end
+        end
+
+        return block
+    else
+        return nil
+    end
 end
 
 return SquirtleV2

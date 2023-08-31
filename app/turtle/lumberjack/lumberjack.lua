@@ -15,7 +15,7 @@ local suck = require "squirtle.suck"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local getStacks = require "inventory.get-stacks"
-
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
 
@@ -201,7 +201,7 @@ local function doWork()
     print("doing work!")
     assert(isAtWork(), "expected to sit on top of dirt")
 
-    if inspect("top", "minecraft:birch_log") then
+    if SquirtleV2.inspect("top", "minecraft:birch_log") then
         -- should only happen if turtle crashed while planting a tree
         harvestTree()
     end
@@ -209,13 +209,13 @@ local function doWork()
     while shouldPlantTree() do
         if plantTree() then
             Backpack.selectSlot(1)
-            dig()
-            move()
+            SquirtleV2.dig()
+            SquirtleV2.forward()
             harvestTree()
             refuelFromBackpack()
         else
             -- this case should only happen when bone meal ran out before sapling could be grown
-            move()
+            SquirtleV2.forward()
             break
         end
     end
@@ -224,8 +224,9 @@ local function doWork()
 end
 
 local function moveNext()
-    while not move() do
-        local block = inspect()
+    -- [todo] need to exclude logs from digging for tryForward to not dig an already grown tree
+    while not SquirtleV2.tryForward() do
+        local block = SquirtleV2.inspect()
 
         if not block then
             error("could not move even though front seems to be free")
@@ -236,6 +237,7 @@ local function moveNext()
             dig("front")
         else
             turn(getBlockTurnSide(block))
+            
         end
     end
 end

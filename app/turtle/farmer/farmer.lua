@@ -1,11 +1,10 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local inspect = require "squirtle.inspect"
-local move = require "squirtle.move"
-local turn = require "squirtle.turn"
 local doHomework = require "farmer.do-homework"
 local doFieldWork = require "farmer.do-field-work"
+local SquirtleV2 = require "squirtle.squirtle-v2"
+local isCrops = require "farmer.is-crops"
 
 ---@param block Block
 local function getBlockTurnSide(block)
@@ -23,19 +22,19 @@ local function getBlockTurnSide(block)
 end
 
 local function moveNext()
-    while not move() do
-        local block = inspect()
+    while not SquirtleV2.tryMove() do
+        local block = SquirtleV2.inspect()
 
         if not block then
             print("could not move even though front seems to be free")
 
             while not block do
                 os.sleep(1)
-                block = inspect()
+                block = SquirtleV2.inspect()
             end
         end
 
-        turn(getBlockTurnSide(block))
+        SquirtleV2.turn(getBlockTurnSide(block))
     end
 end
 
@@ -46,21 +45,22 @@ end
 -- a block to check if we reached home, which is gud.
 ---@param args table
 local function main(args)
-    print("[farmer v1.3.1] booting...")
+    print("[farmer v1.3.2] booting...")
+    SquirtleV2.setBreakable(isCrops)
 
     while true do
-        local block = inspect("bottom")
+        local block = SquirtleV2.inspect("bottom")
 
         if block and block.name == "minecraft:chest" then
-            move("back")
-            move("bottom")
+            SquirtleV2.back()
+            SquirtleV2.down()
         else
             if block and block.name == "minecraft:barrel" then
                 doHomework()
             elseif block and block.name == "minecraft:spruce_fence" then
-                turn("left")
+                SquirtleV2.turn(getBlockTurnSide(block))
             elseif block and block.name == "minecraft:oak_fence" then
-                turn("right")
+                SquirtleV2.turn(getBlockTurnSide(block))
             else
                 doFieldWork(block)
             end

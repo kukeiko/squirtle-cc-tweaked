@@ -1,6 +1,5 @@
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
-local Side = require "elements.side"
 local locate = require "squirtle.locate"
 local move = require "squirtle.move"
 local face = require "squirtle.face"

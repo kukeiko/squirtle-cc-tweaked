@@ -1,7 +1,7 @@
 local place = require "squirtle.place"
 local selectItem = require "squirtle.backpack.select-item"
 local isCrops = require "farmer.is-crops"
-local inspect = require "squirtle.inspect"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 local cropsReadyAges = {
     ["minecraft:wheat"] = 7,
@@ -13,7 +13,7 @@ local cropsReadyAges = {
 ---@param side string
 ---@return integer
 local function getCropsRemainingAge(side)
-    local crops = inspect(side)
+    local crops = SquirtleV2.inspect(side)
 
     if not crops or not isCrops(crops) then
         error(string.format("expected block at %s to be crops", side))

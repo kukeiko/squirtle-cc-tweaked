@@ -12,18 +12,19 @@ return function(state)
     local place = SquirtleV2.place
     local placeUp = SquirtleV2.placeUp
     local placeDown = SquirtleV2.placeDown
-    local dig = SquirtleV2.dig
     local around = SquirtleV2.around
 
-    SquirtleV2.enableBlockBreaking()
+    local restoreBreakable = SquirtleV2.setBreakable(function()
+        return true
+    end)
 
     if state.lampLocation == "right" then
         right()
-        move("forward", 2)
+        forward(2)
         left()
     elseif state.lampLocation == "left" then
         right()
-        move("forward", 4)
+        forward(4)
         left()
         SquirtleV2.flipTurns = true
     end
@@ -52,11 +53,9 @@ return function(state)
     end
 
     -- place bottom support beam
-    dig("down")
     down()
     placeUp(state.blocks.support)
     right()
-    dig()
     forward()
     up()
 
@@ -99,11 +98,9 @@ return function(state)
     end
 
     -- bottom piece of right support
-    dig("down")
     down()
     placeUp(state.blocks.support)
     left()
-    dig()
     forward()
     up()
 
@@ -136,7 +133,6 @@ return function(state)
     down()
     right()
     forward()
-    dig()
     forward()
     up()
     left()
@@ -163,14 +159,12 @@ return function(state)
     local function placeOuterRedstone(isBottomLayer)
         local function placeBottomLayerBlock()
             down()
-            dig("down")
             placeDown(state.blocks.filler)
             up()
         end
 
         right()
         forward()
-        dig("down")
         placeDown(state.blocks.filler)
         up()
         placeDown(state.blocks.comparator)
@@ -200,11 +194,6 @@ return function(state)
         for _ = 1, 2 do
             forward()
             down()
-
-            if isBottomLayer then
-                dig("down")
-            end
-
             placeDown(state.blocks.filler)
             up()
             placeDown(state.blocks.redstone)
@@ -259,7 +248,6 @@ return function(state)
     left()
     back()
     down()
-    dig()
     place(state.blocks.hopper)
     right()
     forward(2)
@@ -362,4 +350,6 @@ return function(state)
         move("forward", 6)
         right()
     end
+
+    restoreBreakable()
 end

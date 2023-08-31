@@ -6,7 +6,7 @@ local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 local requireItems = require "squirtle.require-items"
 
-print("[silo v1.4.1] booting...")
+print("[silo v1.4.2] booting...")
 local state = boot(arg)
 
 if not state then
