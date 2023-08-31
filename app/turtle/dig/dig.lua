@@ -1,19 +1,21 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
+local Utils = require "utils"
 local World = require "geo.world"
 local navigate = require "squirtle.navigate"
-local dig = require "squirtle.dig"
 local face = require "squirtle.face"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
 local drop = require "squirtle.drop"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@class DigAppState
 ---@field world World
 ---@field position Vector
 ---@field facing integer
 ---@field hasShulkers boolean
+---@field ignore table<string>
 
 local function isGettingFull()
     return turtle.getItemCount(16) > 0
@@ -23,20 +25,12 @@ end
 ---@param position Vector
 local function digUpDownIfInBounds(world, position)
     if World.isInBoundsY(world, position.y + 1) then
-        dig("top")
+        SquirtleV2.tryDig("up")
     end
 
     if World.isInBoundsY(world, position.y - 1) then
-        dig("bottom")
+        SquirtleV2.tryDig("down")
     end
-end
-
-local function isBreakable(block)
-    if not block then
-        return false
-    end
-
-    return true
 end
 
 ---@return string? direction
@@ -94,7 +88,7 @@ local function tryLoadShulkers()
             else
                 local unloadedAll = loadIntoShulker(placedSide)
                 turtle.select(slot)
-                dig(placedSide)
+                SquirtleV2.dig(placedSide)
 
                 if unloadedAll then
                     return true
@@ -108,11 +102,17 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[dig v2.0.1] booting...")
+    print("[dig v3.0.0] booting...")
     local state = boot(args)
 
     if not state then
         return false
+    end
+
+    print(string.format("[area] %dx%dx%d", state.world.depth, state.world.width, state.world.height))
+
+    if #state.ignore > 0 then
+        print("[ignore] " .. table.concat(state.ignore, ", "))
     end
 
     ---@type Vector|nil
@@ -122,6 +122,20 @@ local function main(args)
     local facing = state.facing
     local shulkersFull = false
     turtle.select(1)
+
+    ---@param block Block
+    ---@return boolean
+    local isBreakable = function(block)
+        if #state.ignore == 0 then
+            return true
+        end
+
+        return not Utils.find(state.ignore, function(item)
+            return string.match(block.name, item)
+        end)
+    end
+
+    local restoreBreakable = SquirtleV2.setBreakable(isBreakable)
 
     while point do
         if navigate(point, world, isBreakable) then
@@ -140,6 +154,7 @@ local function main(args)
         tryLoadShulkers()
     end
 
+    restoreBreakable()
     print("[done] going home!")
     navigate(start, world, isBreakable)
     face(facing)

@@ -17,6 +17,12 @@ return function(args)
     local depth = tonumber(args[1])
     local width = tonumber(args[2])
     local height = tonumber(args[3])
+    ---@type table<string>
+    local ignore = {}
+
+    for i = 4, #args do
+        table.insert(ignore, args[i])
+    end
 
     if not depth or not width or not height or depth == 0 or width == 0 or height == 0 then
         printUsage()
@@ -66,5 +72,5 @@ return function(args)
         end
     end
 
-    return {position = position, facing = facing, world = world, hasShulkers = hasShulkers}
+    return {position = position, facing = facing, world = world, hasShulkers = hasShulkers, ignore = ignore}
 end
