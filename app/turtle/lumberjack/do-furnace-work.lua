@@ -70,26 +70,26 @@ local function kickstartFurnaceFuel(furnace, count)
 end
 
 ---@param furnace string
----@param buffer string
+---@param stash string
 ---@param io string
-return function(furnace, buffer, io)
-    while Chest.getItemStock(buffer, "minecraft:birch_log") > 0 do
+return function(furnace, stash, io)
+    while Chest.getItemStock(stash, "minecraft:birch_log") > 0 do
         print("topping off furnace input...")
-        topOffFurnaceInput(furnace, buffer)
+        topOffFurnaceInput(furnace, stash)
 
         print("pushing furnace output into buffer...")
-        Furnace.pushOutput(furnace, buffer)
+        Furnace.pushOutput(furnace, stash)
 
         print("topping off furnace fuel...")
-        topOffFurnaceFuel(furnace, buffer)
+        topOffFurnaceFuel(furnace, stash)
 
         print("warming up furnace...")
         kickstartFurnaceFuel(furnace, 8)
 
-        if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
-            pushOutput(buffer, io)
+        if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
+            pushOutput(stash, io)
 
-            if Chest.getItemStock(buffer, "minecraft:birch_log") > 0 then
+            if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
                 print("logs leftover, pausing for 30s")
                 os.sleep(30)
             end

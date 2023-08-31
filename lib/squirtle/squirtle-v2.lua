@@ -1,4 +1,5 @@
 local selectItem = require "squirtle.backpack.select-item"
+local findItem = require "squirtle.backpack.find"
 local turn = require "squirtle.turn"
 local place = require "squirtle.place"
 local Vector = require "elements.vector"
@@ -7,10 +8,13 @@ local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local requireItems = require "squirtle.require-items"
 local Utils = require "utils"
+local Backpack = require "squirtle.backpack"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
 ---@field placed table<string, integer>
+
+local inventorySize = 16
 
 local natives = {
     move = {
@@ -37,6 +41,14 @@ local natives = {
         forward = turtle.inspect,
         bottom = turtle.inspectDown,
         down = turtle.inspectDown
+    },
+    suck = {
+        top = turtle.suckUp,
+        up = turtle.suckUp,
+        front = turtle.suck,
+        forward = turtle.suck,
+        bottom = turtle.suckDown,
+        down = turtle.suckDown
     }
 }
 
@@ -47,6 +59,9 @@ local breakableSafeguard = function(block)
 end
 
 ---@class SquirtleV2
+---@field flipTurns boolean
+---@field simulate boolean
+---@field facing integer
 ---@field results SquirtleV2SimulationResults
 ---@field breakable? fun(block: Block) : boolean
 local SquirtleV2 = {
@@ -63,7 +78,7 @@ local function canBreak(block)
     return SquirtleV2.breakable ~= nil and breakableSafeguard(block) and SquirtleV2.breakable(block)
 end
 
----@param predicate? fun(block: Block) : boolean
+---@param predicate? (fun(block: Block) : boolean) | string[]
 ---@return fun() : nil
 function SquirtleV2.setBreakable(predicate)
     local current = SquirtleV2.breakable
@@ -72,7 +87,19 @@ function SquirtleV2.setBreakable(predicate)
         SquirtleV2.breakable = current
     end
 
-    SquirtleV2.breakable = predicate
+    if type(predicate) == "table" then
+        SquirtleV2.breakable = function(block)
+            for _, item in pairs(predicate) do
+                if block.name == item then
+                    return true
+                end
+            end
+
+            return false
+        end
+    else
+        SquirtleV2.breakable = predicate
+    end
 
     return restore
 end
@@ -157,66 +184,66 @@ function SquirtleV2.tryMove(side, steps)
     return true, steps
 end
 
----@param times? integer
+---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryForward(times)
-    return SquirtleV2.tryMove("forward", times)
+function SquirtleV2.tryForward(steps)
+    return SquirtleV2.tryMove("forward", steps)
 end
 
----@param times? integer
+---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryUp(times)
-    return SquirtleV2.tryMove("up", times)
+function SquirtleV2.tryUp(steps)
+    return SquirtleV2.tryMove("up", steps)
 end
 
----@param times? integer
+---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryDown(times)
-    return SquirtleV2.tryMove("down", times)
+function SquirtleV2.tryDown(steps)
+    return SquirtleV2.tryMove("down", steps)
 end
 
----@param times? integer
+---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryBack(times)
-    return SquirtleV2.tryMove("back", times)
+function SquirtleV2.tryBack(steps)
+    return SquirtleV2.tryMove("back", steps)
 end
 
 ---@param side? string
----@param times? integer
-function SquirtleV2.move(side, times)
+---@param steps? integer
+function SquirtleV2.move(side, steps)
     if SquirtleV2.simulate then
         -- when simulating, only "move()" will simulate actual steps.
-        times = times or 1
+        steps = steps or 1
         SquirtleV2.results.steps = SquirtleV2.results.steps + 1
 
         return nil
     end
 
-    local success, _, message = SquirtleV2.tryMove(side, times)
+    local success, _, message = SquirtleV2.tryMove(side, steps)
 
     if not success then
         error(string.format("move(%s) failed: %s", side, message))
     end
 end
 
----@param times? integer
-function SquirtleV2.forward(times)
-    SquirtleV2.move("forward", times)
+---@param steps? integer
+function SquirtleV2.forward(steps)
+    SquirtleV2.move("forward", steps)
 end
 
----@param times? integer
-function SquirtleV2.up(times)
-    SquirtleV2.move("up", times)
+---@param steps? integer
+function SquirtleV2.up(steps)
+    SquirtleV2.move("up", steps)
 end
 
----@param times? integer
-function SquirtleV2.down(times)
-    SquirtleV2.move("down", times)
+---@param steps? integer
+function SquirtleV2.down(steps)
+    SquirtleV2.move("down", steps)
 end
 
----@param times? integer
-function SquirtleV2.back(times)
-    SquirtleV2.move("back", times)
+---@param steps? integer
+function SquirtleV2.back(steps)
+    SquirtleV2.move("back", steps)
 end
 
 ---@param side? string
@@ -247,9 +274,8 @@ function SquirtleV2.around()
 end
 
 ---@param side? string
----@param toolSide? string
 ---@return boolean, string?
-function SquirtleV2.tryDig(side, toolSide)
+function SquirtleV2.tryDig(side)
     if SquirtleV2.simulate then
         return true
     end
@@ -271,24 +297,19 @@ function SquirtleV2.tryDig(side, toolSide)
         return false, string.format("not allowed to dig block %s", block.name)
     end
 
-    local success, message = native(toolSide)
+    local success, message = native()
 
     if not success and string.match(message, "tool") then
-        if toolSide then
-            error(string.format("dig(%s, %s) failed: %s", side, toolSide, message))
-        else
-            error(string.format("dig(%s) failed: %s", side, message))
-        end
+        error(string.format("dig(%s) failed: %s", side, message))
     end
 
     return success, message
 end
 
 ---@param side? string
----@param toolSide? string
 ---@return boolean, string?
-function SquirtleV2.dig(side, toolSide)
-    local success, message = SquirtleV2.tryDig(side, toolSide)
+function SquirtleV2.dig(side)
+    local success, message = SquirtleV2.tryDig(side)
 
     -- if there is no message, then there just wasn't anything to dig, meaning every other case is interpreted as an error
     if not success and message then
@@ -298,18 +319,35 @@ function SquirtleV2.dig(side, toolSide)
     return success
 end
 
----@param block string
----@param side? string
-function SquirtleV2.place(block, side)
-    if SquirtleV2.simulate then
-        if not SquirtleV2.results.placed[block] then
-            SquirtleV2.results.placed[block] = 0
-        end
+---@return boolean, string?
+function SquirtleV2.digUp()
+    return SquirtleV2.dig("up")
+end
 
-        SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
+---@return boolean, string?
+function SquirtleV2.digDown()
+    return SquirtleV2.dig("down")
+end
+
+---@param block? string
+---@param requireItem? boolean
+---@param side? string
+function SquirtleV2.place(block, requireItem, side)
+    requireItem = requireItem or true
+
+    if SquirtleV2.simulate then
+        if block then
+            if not SquirtleV2.results.placed[block] then
+                SquirtleV2.results.placed[block] = 0
+            end
+
+            SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
+        end
     else
-        while not SquirtleV2.select(block, true) do
-            requireItems({[block] = 1})
+        if block and requireItem then
+            while not SquirtleV2.select(block, true) do
+                requireItems({[block] = 1})
+            end
         end
 
         -- [todo] error handling
@@ -317,21 +355,73 @@ function SquirtleV2.place(block, side)
     end
 end
 
----@param block string
-function SquirtleV2.placeUp(block)
-    SquirtleV2.place(block, "up")
+---@param block? string
+---@param requireItem? boolean
+function SquirtleV2.placeUp(block, requireItem)
+    SquirtleV2.place(block, requireItem, "up")
 end
 
----@param block string
-function SquirtleV2.placeDown(block)
-    SquirtleV2.place(block, "down")
+---@param block? string
+---@param requireItem? boolean
+function SquirtleV2.placeDown(block, requireItem)
+    SquirtleV2.place(block, requireItem, "down")
 end
 
----@param name string
+---@param name string|integer
 ---@param exact? boolean
 ---@return false|integer
 function SquirtleV2.select(name, exact)
-    return selectItem(name, exact)
+    if type(name) == "string" then
+        return selectItem(name, exact)
+    else
+        return turtle.select(name)
+    end
+end
+
+---@param startAt? number
+function SquirtleV2.selectEmpty(startAt)
+    startAt = startAt or turtle.getSelectedSlot()
+
+    for i = 0, inventorySize - 1 do
+        local slot = startAt + i
+
+        if slot > inventorySize then
+            slot = slot - inventorySize
+        end
+
+        if turtle.getItemCount(slot) == 0 then
+            return turtle.select(slot)
+        end
+    end
+
+    return nil
+end
+
+---@param item string
+---@param minCount? integer
+---@return boolean
+function SquirtleV2.has(item, minCount)
+    if type(minCount) == "number" then
+        return Backpack.getItemStock(item) >= minCount
+    else
+        return findItem(item, true) ~= nil
+    end
+end
+
+---@return table<string, integer>
+function SquirtleV2.getStock()
+    ---@type table<string, integer>
+    local stock = {}
+
+    for _, stack in pairs(Backpack.getStacks()) do
+        stock[stack.name] = (stock[stack.name] or 0) + stack.count
+    end
+
+    return stock
+end
+
+function SquirtleV2.condense()
+    Backpack.condense()
 end
 
 ---@param side? string
@@ -362,6 +452,20 @@ function SquirtleV2.inspect(side, name)
     else
         return nil
     end
+end
+
+---@param side? string
+---@param limit? integer
+---@return boolean, string?
+function SquirtleV2.suck(side, limit)
+    side = side or "front"
+    local native = natives.suck[side]
+
+    if not native then
+        error(string.format("suck() does not support side %s", side))
+    end
+
+    return native(limit)
 end
 
 return SquirtleV2

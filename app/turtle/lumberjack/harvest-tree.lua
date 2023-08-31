@@ -1,53 +1,55 @@
-local Backpack = require "squirtle.backpack"
-local dig = require "squirtle.dig"
-local move = require "squirtle.move"
-local inspect = require "squirtle.inspect"
-local turn = require "squirtle.turn"
-local suck = require "squirtle.suck"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 local function digLeftAndRight()
-    turn("left")
-    dig()
-    suck()
-    turn("back")
-    dig()
-    suck()
-    turn("left")
+    SquirtleV2.left()
+    SquirtleV2.dig()
+    SquirtleV2.suck()
+    SquirtleV2.around()
+    SquirtleV2.dig()
+    SquirtleV2.suck()
+    SquirtleV2.left()
 end
 
 local function digUpAndDown()
-    dig("top")
-    dig("bottom")
+    SquirtleV2.digUp()
+    SquirtleV2.digDown()
 end
 
----@param direction? string
-local function digAndMove(direction)
-    direction = direction or "front"
-    dig(direction)
-    suck()
-    move(direction)
+local function digSuckMove()
+    SquirtleV2.dig()
+    SquirtleV2.suck()
+    SquirtleV2.move()
 end
 
 local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
     leftAndRightOnFirstStep = leftAndRightOnFirstStep or false
-    digAndMove()
+    digSuckMove()
     digUpAndDown()
 
     if leftAndRightOnFirstStep then
         digLeftAndRight()
     end
 
-    digAndMove()
+    digSuckMove()
     digUpAndDown()
     digLeftAndRight()
-    move("back")
-    move("back")
+    SquirtleV2.back(2)
 end
 
 local function digAllSides()
     for _ = 1, 4 do
-        dig()
-        turn("left")
+        SquirtleV2.dig()
+        SquirtleV2.left()
+    end
+end
+
+---@param minSaplings integer
+local function collectSaplings(minSaplings)
+    if not SquirtleV2.has("minecraft:birch_sapling", minSaplings) then
+        for i = 1, 4 do
+            moveOutAndCutLeaves(i % 2 == 1)
+            SquirtleV2.left()
+        end
     end
 end
 
@@ -55,36 +57,21 @@ end
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
-    while inspect("top", "minecraft:birch_log") do
-        dig("top")
-        move("top")
+    while SquirtleV2.inspect("top", "minecraft:birch_log") do
+        SquirtleV2.up()
 
-        if inspect("front", "minecraft:birch_leaves") then
+        if SquirtleV2.inspect("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    digAndMove("top") -- goto peak
+    SquirtleV2.up() -- goto peak
     digAllSides() -- dig peak
-    move("bottom")
-    move("bottom")
+    SquirtleV2.down(2)
+    collectSaplings(minSaplings)
+    SquirtleV2.down()
+    collectSaplings(minSaplings)
 
-    if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
-        for i = 1, 4 do
-            moveOutAndCutLeaves(i % 2 == 1)
-            turn()
-        end
-    end
-
-    move("bottom")
-
-    if Backpack.getItemStock("minecraft:birch_sapling") < minSaplings then
-        for i = 1, 4 do
-            moveOutAndCutLeaves(i % 2 == 1)
-            turn()
-        end
-    end
-
-    while move("bottom") do
+    while SquirtleV2.tryDown() do
     end
 end

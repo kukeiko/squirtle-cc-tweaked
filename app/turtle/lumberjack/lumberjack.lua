@@ -2,16 +2,9 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Chest = require "world.chest"
-local Backpack = require "squirtle.backpack"
-local turn = require "squirtle.turn"
-local inspect = require "squirtle.inspect"
-local move = require "squirtle.move"
-local dig = require "squirtle.dig"
-local place = require "squirtle.place"
 local dump = require "squirtle.dump"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
-local suck = require "squirtle.suck"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local getStacks = require "inventory.get-stacks"
@@ -35,15 +28,15 @@ local function getBlockTurnSide(block)
 end
 
 local function isHome()
-    return inspect("bottom", "minecraft:barrel") ~= nil
+    return SquirtleV2.inspect("bottom", "minecraft:barrel") ~= nil
 end
 
 local function isAtWork()
-    return inspect("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
+    return SquirtleV2.inspect("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
 
 local function isLookingAtTree()
-    return inspect("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
+    return SquirtleV2.inspect("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
 end
 
 local function faceHomeExit()
@@ -52,7 +45,7 @@ local function faceHomeExit()
             return
         end
 
-        turn("left")
+        SquirtleV2.left()
     end
 
     error("could not face exit: no furnace found")
@@ -62,7 +55,7 @@ end
 local function refuel(stash)
     if turtle.getFuelLevel() < (64 * 80) then
         print("refueling, have", turtle.getFuelLevel(), ", want " .. (64 * 80))
-        Backpack.selectFirstEmptySlot()
+        SquirtleV2.selectEmpty(1)
 
         for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
@@ -135,10 +128,10 @@ local function doHomework(stash, io, furnace)
     refuel(stash)
     doInputOutput(stash, io)
 
-    while suck(stash) do
+    while SquirtleV2.suck(stash) do
     end
 
-    local backpackStock = Backpack.getStock()
+    local backpackStock = SquirtleV2.getStock()
 
     if not backpackStock["minecraft:birch_sapling"] then
         error("out of birch saplings :(")
@@ -151,50 +144,42 @@ end
 
 local function plantTree()
     print("planting tree...")
-    move("back")
-    Backpack.selectItem("minecraft:birch_sapling")
-    place()
+    SquirtleV2.back()
+    SquirtleV2.place("minecraft:birch_sapling")
 
-    while not inspect("front", "minecraft:birch_log") do
-        if Backpack.selectItem("minecraft:bone_meal") then
-            while place() do
-            end
-        else
-            dig()
-            move("front")
-            return false, "out of bone meal"
-        end
+    while not SquirtleV2.inspect("front", "minecraft:birch_log") and SquirtleV2.has("minecraft:bone_meal") do
+        SquirtleV2.place("minecraft:bone_meal")
     end
 
-    return true
+    return SquirtleV2.inspect("front", "minecraft:birch_log")
 end
 
 local function shouldPlantTree()
-    local stock = Backpack.getStock()
+    local stock = SquirtleV2.getStock()
     local needsMoreLogs = (stock["minecraft:birch_log"] or 0) < maxLogs
-    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) > minBonemeal
+    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) >= minBonemeal
     local hasSaplings = (stock["minecraft:birch_sapling"] or 0) > 0
 
     return hasSaplings and needsMoreLogs and hasBoneMeal
 end
 
 local function refuelFromBackpack()
-    while Fuel.getMissingFuel() > 0 and Backpack.selectItem("minecraft:stick") do
+    while Fuel.getMissingFuel() > 0 and SquirtleV2.select("minecraft:stick") do
         print("refueling from sticks...")
         Fuel.refuel()
     end
 
-    local saplingStock = Backpack.getItemStock("minecraft:birch_sapling")
+    local saplingStock = SquirtleV2.getStock()["minecraft:birch_sapling"] or 0
 
     print("refueling from saplings...")
     while Fuel.getMissingFuel() > 0 and saplingStock > 64 do
-        Backpack.selectItem("minecraft:birch_sapling")
+        SquirtleV2.select("minecraft:birch_sapling")
         Fuel.refuel(saplingStock - 64)
-        saplingStock = Backpack.getItemStock("minecraft:birch_sapling")
+        saplingStock = SquirtleV2.getStock()["minecraft:birch_sapling"] or 0
     end
 
     print("condensing backpack...")
-    Backpack.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
+    SquirtleV2.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
 end
 
 local function doWork()
@@ -208,8 +193,7 @@ local function doWork()
 
     while shouldPlantTree() do
         if plantTree() then
-            Backpack.selectSlot(1)
-            SquirtleV2.dig()
+            SquirtleV2.select(1)
             SquirtleV2.forward()
             harvestTree()
             refuelFromBackpack()
@@ -234,37 +218,33 @@ local function moveNext()
 
         if isLookingAtTree() then
             -- [todo] hack - should only happen if sapling got placed by player
-            dig("front")
+            SquirtleV2.dig()
         else
-            turn(getBlockTurnSide(block))
-            
+            SquirtleV2.turn(getBlockTurnSide(block))
         end
     end
 end
 
 local function boot()
-    print("[lumberjack v1.2.2] booting...")
+    print("[lumberjack v1.3.0] booting...")
+    SquirtleV2.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
 
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
-        if inspect("top", "minecraft:birch_log") then
+
+        if SquirtleV2.inspect("top", "minecraft:birch_log") then
             harvestTree()
         elseif isLookingAtTree() then
-            dig("front")
+            SquirtleV2.dig()
         else
-            while inspect("bottom", "minecraft:birch_leaves") do
-                dig("bottom")
-                move("bottom")
+            while SquirtleV2.tryDown() do
             end
 
-            while move("bottom") do
-            end
-
-            if inspect("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence"}) then
+            if SquirtleV2.inspect("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence"}) then
                 -- turtle crashed and landed on the one fence piece that directs it to the tree.
                 -- should be safe to move back one, go down, and then resume default move routine
-                move("back")
-                move("down")
+                SquirtleV2.back()
+                SquirtleV2.down()
             end
         end
     end
@@ -293,11 +273,11 @@ local function main(args)
 
             doHomework(stash, io, furnace)
             faceHomeExit()
-            move()
+            SquirtleV2.move()
         elseif isAtWork() then
             doWork()
-            turn("left")
-            move()
+            SquirtleV2.left()
+            SquirtleV2.move()
         else
             moveNext()
         end
