@@ -2,7 +2,6 @@ local find = require "squirtle.backpack.find"
 local getSize = require "squirtle.backpack.get-size"
 local getStack = require "squirtle.backpack.get-stack"
 local getStacks = require "squirtle.backpack.get-stacks"
-local selectItem = require "squirtle.backpack.select-item"
 local selectSlot = require "squirtle.backpack.select-slot"
 
 local native = turtle
@@ -106,11 +105,6 @@ end
 ---@param exact? boolean
 function Backpack.find(name, exact)
     return find(name, exact)
-end
-
----@param name string
-function Backpack.selectItem(name)
-    return selectItem(name)
 end
 
 ---@param startAt? number

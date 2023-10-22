@@ -78,7 +78,10 @@ local function boot(args)
     state.left = left
     state.top = top
     state.times = times
-    state.pillar = pillar
+
+    if pillar then
+        state.pillar = pillar
+    end
 
     return state
 end
@@ -86,7 +89,6 @@ end
 ---@param state AqueductAppState
 ---@param squirtle SimulatableSquirtle
 local function floorSequence(state, squirtle)
-
     for _ = 1, state.times do
         squirtle:place(state.blocks.bricks, "down")
         squirtle:back(1)
@@ -301,7 +303,6 @@ local function main(args)
 
     rednet.open(peripheral.getName(modem))
     rednet.host("aqueduct", os.getComputerLabel())
-
 
     local sequence = floorSequence
 

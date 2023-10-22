@@ -367,6 +367,21 @@ function SquirtleV2.placeDown(block, requireItem)
     SquirtleV2.place(block, requireItem, "down")
 end
 
+---@return string? direction
+function SquirtleV2.placeAnywhere()
+    if turtle.place() then
+        return "front"
+    end
+
+    if turtle.placeUp() then
+        return "top"
+    end
+
+    if turtle.placeDown() then
+        return "bottom"
+    end
+end
+
 ---@param name string|integer
 ---@param exact? boolean
 ---@return false|integer
@@ -405,6 +420,222 @@ function SquirtleV2.has(item, minCount)
         return Backpack.getItemStock(item) >= minCount
     else
         return findItem(item, true) ~= nil
+    end
+end
+
+---@param items table<string, integer>
+function SquirtleV2.requireItems(items)
+    requireItems(items)
+end
+
+-- [todo] assumes that everything stacks to 64
+---@param items table<string, integer>
+---@return integer
+local function itemsToStacks(items)
+    local numStacks = 0
+
+    for _, numItems in pairs(items) do
+        numStacks = numStacks + math.ceil(numItems / 64)
+    end
+
+    return numStacks
+end
+
+---@param items table<string, integer>
+local function getMissing(items)
+    ---@type table<string, integer>
+    local open = {}
+    local stock = Backpack.getStock()
+
+    for item, required in pairs(items) do
+        local missing = required - (stock[item] or 0)
+
+        if missing > 0 then
+            open[item] = required - (stock[item] or 0)
+        end
+    end
+
+    return open
+end
+
+---@param items table<string, integer>
+---@param shulker string
+local function getMissingInShulker(items, shulker)
+    ---@type table<string, integer>
+    local open = {}
+    ---@type table<string, integer>
+    local stock = {}
+
+    for _, stack in pairs(peripheral.call(shulker, "list")) do
+        stock[stack.name] = (stock[stack.name] or 0) + stack.count
+    end
+
+    for item, required in pairs(items) do
+        local missing = required - (stock[item] or 0)
+
+        if missing > 0 then
+            open[item] = required - (stock[item] or 0)
+        end
+    end
+
+    return open
+end
+
+---@param side string
+local function dropSide(side)
+    if side == "front" then
+        turtle.drop()
+    elseif side == "up" then
+        turtle.dropUp()
+    elseif side == "down" then
+        turtle.dropDown()
+    end
+end
+
+---@param items table<string, integer>
+---@param shulker string
+local function fillShulker(items, shulker)
+    while not peripheral.isPresent(shulker) do
+        os.sleep(.1)
+    end
+
+    while true do
+        ---@type table<string, integer>
+        local open = getMissingInShulker(items, shulker)
+
+        if Utils.count(open) == 0 then
+            term.clear()
+            term.setCursorPos(1, 1)
+            return nil
+        end
+
+        term.clear()
+        term.setCursorPos(1, 1)
+        print("Required Items")
+        local width = term.getSize()
+        print(string.rep("-", width))
+
+        for item, missing in pairs(open) do
+            print(string.format("%dx %s", missing, item))
+        end
+
+        os.pullEvent("turtle_inventory")
+
+        for slot = 1, 16 do
+            local item = turtle.getItemDetail(slot)
+
+            if item and item.name ~= "minecraft:shulker_box" then
+                turtle.select(slot)
+                dropSide(shulker)
+            end
+        end
+    end
+end
+
+-- [todo] assumes that everything stacks to 64
+---@param items table<string, integer>
+---@param numStacks integer
+---@return table<string, integer>,table<string, integer>
+local function sliceNumStacksFromItems(items, numStacks)
+    ---@type table<string, integer>
+    local sliced = {}
+    local remainingStacks = numStacks
+    local leftOver = Utils.copy(items)
+
+    for item, count in pairs(items) do
+        local slicedCount = math.min(count, remainingStacks * 64)
+        sliced[item] = slicedCount
+        leftOver[item] = leftOver[item] - slicedCount
+
+        if leftOver[item] == 0 then
+            leftOver[item] = nil
+        end
+
+        remainingStacks = remainingStacks - math.ceil(slicedCount / 64)
+
+        if remainingStacks == 0 then
+            break
+        end
+    end
+
+    return sliced, leftOver
+end
+
+---@param side string
+local function digSide(side)
+    if side == "front" then
+        turtle.dig()
+    elseif side == "top" then
+        turtle.digUp()
+    elseif side == "bottom" then
+        turtle.digDown()
+    end
+end
+
+-- [todo] assumes an empty inventory
+---@param items table<string, integer>
+function SquirtleV2.requireItemsV2(items)
+    local numStacks = itemsToStacks(items)
+
+    if numStacks <= 16 then
+        while true do
+            ---@type table<string, integer>
+            local open = getMissing(items)
+
+            if Utils.count(open) == 0 then
+                term.clear()
+                term.setCursorPos(1, 1)
+                return nil
+            end
+
+            term.clear()
+            term.setCursorPos(1, 1)
+            print("Required Items")
+            local width = term.getSize()
+            print(string.rep("-", width))
+
+            for item, missing in pairs(open) do
+                print(string.format("%dx %s", missing, item))
+            end
+
+            os.pullEvent("turtle_inventory")
+        end
+    else
+        -- shulkers have 27 slots, but we want to keep one slot empty per shulker
+        -- so that suckSlotFromChest() doesn't have to temporarily load an item
+        -- from the shulker into the turtle inventory
+        local numShulkers = math.ceil(numStacks / 26)
+
+        if numShulkers > 15 then
+            error("required items would need more than 15 shulker boxes")
+        end
+
+        SquirtleV2.requireItems({["minecraft:shulker_box"] = numShulkers})
+
+        local fullShulkers = {}
+        local theItems = Utils.copy(items)
+
+        for i = 1, numShulkers do
+            for slot = 1, 16 do
+                local item = turtle.getItemDetail(slot, true)
+
+                if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
+                    turtle.select(slot)
+                    local placedSide = SquirtleV2.placeAnywhere()
+
+                    if not placedSide then
+                        error("no space to place shulker box")
+                    end
+
+                    local itemsForShulker, leftOver = sliceNumStacksFromItems(theItems, 26)
+                    theItems = leftOver
+                    fillShulker(itemsForShulker, placedSide)
+                    digSide(placedSide)
+                    local shulkerItem = turtle.getItemDetail(slot, true)
+                    fullShulkers[shulkerItem.nbt] = true
+                end
+            end
+        end
     end
 end
 
@@ -466,6 +697,32 @@ function SquirtleV2.suck(side, limit)
     end
 
     return native(limit)
+end
+
+---@param fuel integer
+---@return boolean
+function SquirtleV2.hasFuel(fuel)
+    local level = turtle.getFuelLevel()
+
+    return level == "unlimited" or level >= fuel
+end
+
+---@param limit? integer
+---@return integer
+function SquirtleV2.missingFuel(limit)
+    local current = turtle.getFuelLevel()
+
+    if current == "unlimited" then
+        return 0
+    end
+
+    return (limit or turtle.getFuelLimit()) - current
+end
+
+---@param quantity? integer
+---@return boolean
+function SquirtleV2.refuelSlot(quantity)
+    return turtle.refuel(quantity)
 end
 
 return SquirtleV2

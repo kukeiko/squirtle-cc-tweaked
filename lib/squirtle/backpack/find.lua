@@ -3,8 +3,11 @@ local getStack = require "squirtle.backpack.get-stack"
 
 ---@param name string
 ---@param exact? boolean
-return function(name, exact)
-    for slot = 1, getSize() do
+---@return integer?
+return function(name, exact, startAtSlot)
+    startAtSlot = startAtSlot or 1
+
+    for slot = startAtSlot, getSize() do
         local item = getStack(slot)
 
         if item and exact and item.name == name then

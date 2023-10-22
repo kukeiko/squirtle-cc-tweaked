@@ -53,17 +53,19 @@ end
 
 ---@param stash string
 local function refuel(stash)
-    if turtle.getFuelLevel() < (64 * 80) then
-        print("refueling, have", turtle.getFuelLevel(), ", want " .. (64 * 80))
+    local minFuel = 80 * 65;
+
+    if not SquirtleV2.hasFuel(minFuel) then
+        print(string.format("refueling %s more fuel", SquirtleV2.missingFuel(minFuel)))
         SquirtleV2.selectEmpty(1)
 
         for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
                 suckSlotFromChest("bottom", slot)
-                turtle.refuel() -- [todo] should provide count to not consume a whole stack
+                SquirtleV2.refuelSlot(math.ceil(SquirtleV2.missingFuel(minFuel) / 80))
             end
 
-            if turtle.getFuelLevel() >= (64 * 80) then
+            if SquirtleV2.hasFuel(minFuel) then
                 break
             end
         end
@@ -227,6 +229,7 @@ end
 
 local function boot()
     print("[lumberjack v1.3.0] booting...")
+    SquirtleV2.requireItems({["minecraft:birch_sapling"] = 1})
     SquirtleV2.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
 
     if not isHome() and not isAtWork() then

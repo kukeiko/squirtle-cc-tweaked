@@ -14,6 +14,7 @@ local suck = require "squirtle.suck"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local turn = require "squirtle.turn"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@param buffer string
 ---@param fuel integer
@@ -41,7 +42,7 @@ local function refuelFromBuffer(buffer, fuel)
 end
 
 local function compostSeeds()
-    while Backpack.selectItem("seeds") do
+    while SquirtleV2.select("seeds") do
         drop("bottom")
     end
 end

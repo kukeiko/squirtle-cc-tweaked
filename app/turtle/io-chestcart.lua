@@ -9,6 +9,7 @@ local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local count = require "utils.count"
 local toInventory = require "inventory.to-inventory"
 local toIoInventory = require "inventory.to-io-inventory"
@@ -97,7 +98,7 @@ end
 
 local function waitForChestcart()
     os.sleep(1)
-    if not Backpack.selectItem("minecraft:redstone_block") then
+    if not SquirtleV2.select("minecraft:redstone_block") then
         error("my redstone block went missing :(")
     end
 
