@@ -2,10 +2,8 @@ package.path = package.path .. ";/lib/?.lua"
 
 local findPeripheralSide = require "world.peripheral.find-side"
 local Redstone = require "world.redstone"
-local Backpack = require "squirtle.backpack"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
-local suck = require "squirtle.suck"
 local dump = require "squirtle.dump"
 local place = require "squirtle.place"
 local dig = require "squirtle.dig"
@@ -69,20 +67,20 @@ local function findChestSide()
 end
 
 local function dumpChestcartToBarrel()
-    while suck() do
+    while SquirtleV2.suck() do
     end
 
     if not dump("bottom") then
         error("buffer barrel full")
     end
 
-    if suck() then
+    if SquirtleV2.suck() then
         dumpChestcartToBarrel()
     end
 end
 
 local function dumpBarrelToChestcart()
-    while suck("bottom") do
+    while SquirtleV2.suck("bottom") do
     end
 
     if not dump("front") then
@@ -91,7 +89,7 @@ local function dumpBarrelToChestcart()
         error("chestcart full")
     end
 
-    if suck("bottom") then
+    if SquirtleV2.suck("bottom") then
         dumpBarrelToChestcart()
     end
 end

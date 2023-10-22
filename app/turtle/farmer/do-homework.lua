@@ -10,7 +10,6 @@ local move = require "squirtle.move"
 local pullInput = require "squirtle.transfer.pull-input"
 local pushOutput = require "squirtle.transfer.push-output"
 local selectItem = require "squirtle.backpack.select-item"
-local suck = require "squirtle.suck"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local turn = require "squirtle.turn"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
@@ -114,7 +113,7 @@ return function()
     pullInput(ioChest, barrel)
 
     print("sucking barrel...")
-    while suck(barrel) do
+    while SquirtleV2.suck(barrel) do
     end
 
     -- then we're gonna compost and drop any unwanted poisonous taters
@@ -135,7 +134,7 @@ return function()
         move()
         print("draining dropper")
         drainDropper()
-        while suck(barrel) do
+        while SquirtleV2.suck(barrel) do
         end
     end
 

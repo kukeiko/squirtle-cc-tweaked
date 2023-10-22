@@ -751,11 +751,7 @@ end
 ---@return boolean, string?
 function SquirtleV2.suck(side, limit)
     side = side or "front"
-    local native = natives.suck[side]
-
-    if not native then
-        error(string.format("suck() does not support side %s", side))
-    end
+    local native = getNative("suck", side)
 
     return native(limit)
 end
