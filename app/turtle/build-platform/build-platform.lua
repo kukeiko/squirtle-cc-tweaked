@@ -1,32 +1,26 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local turn = require "squirtle.turn"
 local boot = require "build-platform.boot"
-local move = require "squirtle.move"
-local place = require "squirtle.place"
-local dig = require "squirtle.dig"
-local inspect = require "squirtle.inspect"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@class BuildPlatformAppState
 ---@field depth integer
 ---@field width integer
 ---@field direction "bottom"|"top"
 
----@param direction "bottom"|"top"
-local function placeBlock(direction)
-    if place(direction) or inspect(direction) then
-        return true
-    end
-
-    local currentSlot = turtle.getSelectedSlot()
-
+---@param side "bottom"|"top"
+local function placeBlock(side)
     for slot = 1, 16 do
-        if slot ~= currentSlot and turtle.getItemCount(slot) > 0 then
-            turtle.select(slot)
+        if turtle.getItemCount(slot) > 0 then
+            local item = turtle.getItemDetail(slot)
 
-            if place(direction) then
-                return true
+            if item.name ~= "minecraft:sand" and item.name ~= "minecraft:gravel" then
+                turtle.select(slot)
+
+                if SquirtleV2.tryPlace(side) then
+                    return true
+                end
             end
         end
     end
@@ -37,53 +31,31 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[build-platform v1.2.0] booting...")
+    print("[build-platform v2.0.0] booting...")
     local state = boot(args)
 
     if not state then
         return false
     end
 
-    local lineLength
-    local numLines
-
     ---@param side string
     local function turnMove(side)
-        turn(side)
-        while not move("front") do
-            dig("front")
-        end
-        turn(side)
+        SquirtleV2.turn(side)
+        SquirtleV2.move("front")
+        SquirtleV2.turn(side)
     end
 
     ---@param currentLine integer
     local function moveToNextLine(currentLine)
-        if state.width > state.depth then
-            if currentLine % 2 == 0 then
-                turnMove("right")
-            else
-                turnMove("left")
-            end
+        if currentLine % 2 == 1 then
+            turnMove("right")
         else
-            if currentLine % 2 == 0 then
-                turnMove("left")
-            else
-                turnMove("right")
-            end
+            turnMove("left")
         end
     end
 
-    if state.width > state.depth then
-        turn("right")
-        lineLength = state.width
-        numLines = state.depth
-    else
-        lineLength = state.depth
-        numLines = state.width
-    end
-
-    for line = 1, numLines do
-        for _ = 1, lineLength do
+    for line = 1, state.width do
+        for _ = 1, state.depth do
             if not placeBlock(state.direction) then
                 print("failed to place a block below me :(")
                 print("fix the situation, then press any key")
@@ -93,14 +65,12 @@ local function main(args)
                 until placeBlock(state.direction)
             end
 
-            if _ ~= lineLength then
-                while not move("front") do
-                    dig("front")
-                end
+            if _ ~= state.depth then
+                SquirtleV2.move()
             end
         end
 
-        if line == numLines then
+        if line == state.width then
             break
         end
 

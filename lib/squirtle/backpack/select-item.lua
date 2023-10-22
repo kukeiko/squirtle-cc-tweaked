@@ -111,6 +111,7 @@ local function loadFromShulker(shulker, item)
     return false
 end
 
+---[todo] consider adding requireItems() logic here
 ---@param name string
 ---@param exact? boolean
 ---@return false|integer

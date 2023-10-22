@@ -49,8 +49,29 @@ local natives = {
         forward = turtle.suck,
         bottom = turtle.suckDown,
         down = turtle.suckDown
+    },
+    place = {
+        top = turtle.placeUp,
+        up = turtle.placeUp,
+        front = turtle.place,
+        forward = turtle.place,
+        bottom = turtle.placeDown,
+        down = turtle.placeDown
     }
 }
+
+---@param fn string
+---@param side string
+---@return function
+local function getNative(fn, side)
+    local native = (natives[fn] or {})[side]
+
+    if not native then
+        error(string.format("%s does not support side %s", fn, side))
+    end
+
+    return native
+end
 
 ---@param block Block
 ---@return boolean
@@ -75,7 +96,7 @@ local SquirtleV2 = {
 ---@param block Block
 ---@return boolean
 local function canBreak(block)
-    return SquirtleV2.breakable ~= nil and breakableSafeguard(block) and SquirtleV2.breakable(block)
+    return breakableSafeguard(block) and (SquirtleV2.breakable == nil or SquirtleV2.breakable(block))
 end
 
 ---@param predicate? (fun(block: Block) : boolean) | string[]
@@ -104,6 +125,22 @@ function SquirtleV2.setBreakable(predicate)
     return restore
 end
 
+---@param side string
+---@param steps? integer
+---@return boolean
+---@return integer
+function SquirtleV2.tryWalk(side, steps)
+    steps = steps or 1
+
+    if SquirtleV2.simulate then
+        -- "tryWalk()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
+        -- and since we're not simulating an actual world we can not really return a meaningful value of steps taken.
+        return false, 0
+    else
+        error("only the simulation mode is currently implemented for SquirtleV2.tryWalk()")
+    end
+end
+
 ---@param side? string
 ---@param steps? integer
 ---@return boolean, integer, string?
@@ -115,17 +152,12 @@ function SquirtleV2.tryMove(side, steps)
         error(string.format("move() does not support side %s", side))
     end
 
-    if SquirtleV2.simulate then
-        if steps then
-            SquirtleV2.results.steps = SquirtleV2.results.steps + 1
-        else
-            -- "tryMove()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
-            -- and since we're not simulating a world we can not really return a meaningful value of steps taken if none have been supplied.
-            return false, 0, "simulation mode is active"
-        end
-    end
-
     steps = steps or 1
+
+    if SquirtleV2.simulate then
+        SquirtleV2.results.steps = SquirtleV2.results.steps + 1
+        return true, steps
+    end
 
     if not Fuel.hasFuel(steps) then
         refuel(steps)
@@ -135,7 +167,7 @@ function SquirtleV2.tryMove(side, steps)
 
     for step = 1, steps do
         repeat
-            local success, error = native()
+            local success = native()
 
             if not success then
                 local actionSide = side
@@ -145,35 +177,21 @@ function SquirtleV2.tryMove(side, steps)
                     SquirtleV2.around()
                 end
 
-                local block = SquirtleV2.inspect(actionSide)
-
-                if not block then
-                    if side == "back" then
-                        SquirtleV2.around()
-                    end
-
-                    -- [todo] it is possible (albeit unlikely) that between handler() and inspect(), a previously
-                    -- existing block has been removed by someone else
-                    error(string.format("move(%s) failed, but there is no block in the way", side))
+                while SquirtleV2.tryDig(actionSide) do
                 end
 
-                -- [todo] wanted to reuse newly introduced Squirtle.tryDig(), but it would be awkward to do so.
-                -- maybe I find a non-awkward solution in the future?
-                -- [todo] should tryDig really try to dig? I think I am going to use this only for "move until you hit something",
-                -- so in that case, no, it shouldn't try to dig.
-                if canBreak(block) then
-                    while SquirtleV2.dig(actionSide) do
-                    end
+                local block = SquirtleV2.inspect(actionSide)
 
-                    if side == "back" then
-                        SquirtleV2.around()
-                    end
-                else
+                if block then
                     if side == "back" then
                         SquirtleV2.around()
                     end
 
                     return false, step - 1, string.format("blocked by %s", block.name)
+                else
+                    if side == "back" then
+                        SquirtleV2.around()
+                    end
                 end
             end
         until success
@@ -353,6 +371,49 @@ function SquirtleV2.place(block, requireItem, side)
         -- [todo] error handling
         place(side)
     end
+end
+
+---@param side? string
+---@param block? string
+---@return boolean
+local function simulateTryPlace(side, block)
+    if block then
+        if not SquirtleV2.results.placed[block] then
+            SquirtleV2.results.placed[block] = 0
+        end
+
+        SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
+    end
+
+    return true
+end
+
+---(did not add requireItem flag as in .place() cause not really sure we should keep it)
+---@param side? string
+---@param block? string
+---@return boolean
+function SquirtleV2.tryPlace(side, block)
+    side = side or "front"
+    local native = getNative("place", side)
+
+    if SquirtleV2.simulate then
+        return simulateTryPlace(side, block)
+    end
+
+    if block then
+        while not SquirtleV2.select(block) do
+            SquirtleV2.requireItems({[block] = 1})
+        end
+    end
+
+    if native() then
+        return true
+    end
+
+    while SquirtleV2.tryDig(side) do
+    end
+
+    return native()
 end
 
 ---@param block? string
