@@ -147,10 +147,10 @@ end
 local function plantTree()
     print("planting tree...")
     SquirtleV2.back()
-    SquirtleV2.place("minecraft:birch_sapling")
+    SquirtleV2.placeFront("minecraft:birch_sapling")
 
     while not SquirtleV2.inspect("front", "minecraft:birch_log") and SquirtleV2.has("minecraft:bone_meal") do
-        SquirtleV2.place("minecraft:bone_meal")
+        SquirtleV2.placeFront("minecraft:bone_meal")
     end
 
     return SquirtleV2.inspect("front", "minecraft:birch_log")

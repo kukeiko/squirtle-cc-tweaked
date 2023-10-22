@@ -9,7 +9,7 @@ return function(state)
     local back = SquirtleV2.back
     local right = SquirtleV2.right
     local left = SquirtleV2.left
-    local place = SquirtleV2.place
+    local placeFront = SquirtleV2.placeFront
     local placeUp = SquirtleV2.placeUp
     local placeDown = SquirtleV2.placeDown
     local around = SquirtleV2.around
@@ -31,7 +31,7 @@ return function(state)
 
     -- place center chests
     for _ = 1, (state.layers * 2) + 1 do
-        place(state.blocks.chest)
+        placeFront(state.blocks.chest)
         up()
     end
 
@@ -47,7 +47,7 @@ return function(state)
     for _ = 1, state.layers do
         down()
         placeUp(state.blocks.support)
-        place(state.blocks.hopper)
+        placeFront(state.blocks.hopper)
         down()
         placeUp(state.blocks.support)
     end
@@ -67,7 +67,7 @@ return function(state)
     left()
 
     for _ = 1, state.layers do
-        place(state.blocks.hopper)
+        placeFront(state.blocks.hopper)
         up()
         placeDown(state.blocks.support)
         up()
@@ -83,7 +83,7 @@ return function(state)
     forward(2)
 
     for i = 1, 5 do
-        place(state.blocks.support)
+        placeFront(state.blocks.support)
 
         if i ~= 5 then
             back()
@@ -94,7 +94,7 @@ return function(state)
     for _ = 1, (state.layers * 2) + 2 do
         down()
         placeUp(state.blocks.support)
-        place(state.blocks.lamp)
+        placeFront(state.blocks.lamp)
     end
 
     -- bottom piece of right support
@@ -111,7 +111,7 @@ return function(state)
 
     for _ = 1, state.layers do
         up()
-        place(state.blocks.chest)
+        placeFront(state.blocks.chest)
         up()
     end
 
@@ -120,7 +120,7 @@ return function(state)
     right()
 
     for i = 1, state.layers + 1 do
-        place(state.blocks.chest)
+        placeFront(state.blocks.chest)
 
         if i ~= state.layers + 1 then
             down(2)
@@ -248,19 +248,19 @@ return function(state)
     left()
     back()
     down()
-    place(state.blocks.hopper)
+    placeFront(state.blocks.hopper)
     right()
     forward(2)
     left()
     forward()
     left()
-    place(state.blocks.hopper)
+    placeFront(state.blocks.hopper)
 
     -- redstone torch
     down()
     forward()
     left()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     down()
     placeUp(state.blocks.redstoneTorch)
 
@@ -334,7 +334,7 @@ return function(state)
     end
 
     back()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     right()
     forward()
     down()

@@ -33,7 +33,7 @@ end
 ---@param time? integer maximum amount of time to wait
 ---@return boolean ready if crops are ready
 return function(side, max, time)
-    while getCropsRemainingAge(side) > 0 and selectItem("minecraft:bone_meal") and place(side) do
+    while getCropsRemainingAge(side) > 0 and selectItem("minecraft:bone_meal") and SquirtleV2.tryPlace(side) do
     end
 
     local remainingAge = getCropsRemainingAge(side)

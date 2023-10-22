@@ -1,13 +1,12 @@
 local SquirtleV2 = require "squirtle.squirtle-v2"
 
-local move = SquirtleV2.move
 local forward = SquirtleV2.forward
 local up = SquirtleV2.up
 local down = SquirtleV2.down
 local back = SquirtleV2.back
 local right = SquirtleV2.right
 local left = SquirtleV2.left
-local place = SquirtleV2.place
+local placeFront = SquirtleV2.placeFront
 local placeUp = SquirtleV2.placeUp
 local placeDown = SquirtleV2.placeDown
 local around = SquirtleV2.around
@@ -24,16 +23,16 @@ local function placeCollectorChest(state)
     forward(4)
     left()
     forward()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     back()
-    place(state.blocks.chest)
+    placeFront(state.blocks.chest)
     right()
     forward()
     left()
     forward()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     back()
-    place(state.blocks.chest)
+    placeFront(state.blocks.chest)
 end
 
 ---@param state BoneMealAppState
@@ -63,7 +62,7 @@ local function placeObserver(state)
     down()
     down()
     placeDown(state.blocks.filler)
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     up()
     placeDown(state.blocks.redstone)
     left()
@@ -90,13 +89,13 @@ local function placeChestHopperAndDropperRedstone(state)
 
     down()
     left()
-    place(state.blocks.hopper)
+    placeFront(state.blocks.hopper)
     right()
     up()
 
     placeDown(state.blocks.filler)
     right()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     up()
     placeDown(state.blocks.comparator)
     left()
@@ -122,7 +121,7 @@ local function placeCompostersAndHoppers(state)
     right()
     forward()
     left()
-    place(state.blocks.hopper)
+    placeFront(state.blocks.hopper)
     left()
     forward(2)
     right()
@@ -130,7 +129,7 @@ local function placeCompostersAndHoppers(state)
     right()
 
     for i = 1, 4 do
-        place(state.blocks.hopper)
+        placeFront(state.blocks.hopper)
 
         if i ~= 4 then
             back()
@@ -142,7 +141,7 @@ local function placeCompostersAndHoppers(state)
     right()
     forward()
     right()
-    place(state.blocks.hopper)
+    placeFront(state.blocks.hopper)
 
     -- place composters
     up(2)
@@ -237,11 +236,11 @@ local function placeWaterHopperWall(state)
 
         if (i > 1 and i < 5) or i == 7 then
             left()
-            place(state.blocks.filler)
+            placeFront(state.blocks.filler)
             right()
         elseif i == 5 or i == 6 then
             left()
-            place(state.blocks.hopper)
+            placeFront(state.blocks.hopper)
             right()
         end
 
@@ -267,7 +266,7 @@ local function placeRedstonePathToFloodGates(state)
     down()
     left()
     forward(1)
-    place(state.blocks.redstoneBlock)
+    placeFront(state.blocks.redstoneBlock)
     right()
     forward()
     left()
@@ -314,10 +313,10 @@ local function placeRedstonePathToFloodGates(state)
     forward()
     down()
     placeDown(state.blocks.filler)
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     up()
     placeDown(state.blocks.repeater)
-    place(state.blocks.redstoneTorch)
+    placeFront(state.blocks.redstoneTorch)
 end
 
 ---@param state BoneMealAppState
@@ -329,7 +328,7 @@ local function placeReservoirWallsAndFloor(state)
     forward()
     placeDown(state.blocks.filler)
     back()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     placeDown(state.blocks.filler)
 
     for i = 1, 6 do
@@ -452,9 +451,9 @@ local function placePistonsAndWalls(state)
     placeDown(state.blocks.filler)
     back()
     placeDown(state.blocks.filler)
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     back()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     placeDown(state.blocks.filler)
     back()
     placeDown(state.blocks.filler)
@@ -469,11 +468,11 @@ local function placePistonsAndWalls(state)
 
         if i == 4 then
             forward(2)
-            place(state.blocks.filler)
+            placeFront(state.blocks.filler)
             back(2)
-            place(state.blocks.filler)
+            placeFront(state.blocks.filler)
         else
-            place(state.blocks.piston)
+            placeFront(state.blocks.piston)
         end
 
         left()
@@ -483,15 +482,15 @@ local function placePistonsAndWalls(state)
     -- place remaining wall
     right()
     forward()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     back()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
 
     -- place lever
     right()
     back()
     up()
-    place(state.blocks.filler)
+    placeFront(state.blocks.filler)
     up()
     placeDown(state.blocks.redstoneTorch)
     forward()

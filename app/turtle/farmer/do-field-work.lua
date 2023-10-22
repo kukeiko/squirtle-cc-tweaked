@@ -15,7 +15,7 @@ local cropsToSeedsMap = {
 local function tryPlantAnything()
     for slot = 1, Backpack.size() do
         if Backpack.selectSlotIfNotEmpty(slot) then
-            if place("bottom") then
+            if SquirtleV2.tryPlace("bottom") then
                 return
             end
         end
@@ -46,7 +46,7 @@ local function harvestCrops(block)
 
         SquirtleV2.dig("down")
 
-        if not place("bottom") then
+        if not SquirtleV2.tryPlace("bottom") then
             tryPlantAnything()
         end
     end

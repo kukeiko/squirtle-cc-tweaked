@@ -5,8 +5,6 @@ local Redstone = require "world.redstone"
 local turn = require "squirtle.turn"
 local inspect = require "squirtle.inspect"
 local dump = require "squirtle.dump"
-local place = require "squirtle.place"
-local dig = require "squirtle.dig"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local count = require "utils.count"
 local toInventory = require "inventory.to-inventory"
@@ -96,17 +94,10 @@ end
 
 local function waitForChestcart()
     os.sleep(1)
-    if not SquirtleV2.select("minecraft:redstone_block") then
-        error("my redstone block went missing :(")
-    end
-
     print("waiting for chestcart...")
     os.pullEvent("redstone")
     print("chestcart is here! locking it in place...")
-
-    if not place() then
-        error("could not place redstone block to lock piston :(")
-    end
+    SquirtleV2.placeFront("minecraft:redstone_block")
 end
 
 local function lookAtChestcart()
@@ -117,7 +108,7 @@ local function lookAtChestcart()
         turn(signal)
     else
         -- unlock piston in case there is no chestcart
-        dig()
+        SquirtleV2.dig()
     end
 end
 
@@ -170,7 +161,7 @@ local function fillAndSendOffChestcart()
     dumpBarrelToChestcart()
     print("sending off chestcart!")
     turn(signal)
-    dig()
+    SquirtleV2.dig()
     os.sleep(3)
 end
 

@@ -1,7 +1,6 @@
 local selectItem = require "squirtle.backpack.select-item"
 local findItem = require "squirtle.backpack.find"
 local turn = require "squirtle.turn"
-local place = require "squirtle.place"
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
 local Fuel = require "squirtle.fuel"
@@ -348,35 +347,8 @@ function SquirtleV2.digDown()
 end
 
 ---@param block? string
----@param requireItem? boolean
----@param side? string
-function SquirtleV2.place(block, requireItem, side)
-    requireItem = requireItem or true
-
-    if SquirtleV2.simulate then
-        if block then
-            if not SquirtleV2.results.placed[block] then
-                SquirtleV2.results.placed[block] = 0
-            end
-
-            SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
-        end
-    else
-        if block and requireItem then
-            while not SquirtleV2.select(block, true) do
-                requireItems({[block] = 1})
-            end
-        end
-
-        -- [todo] error handling
-        place(side)
-    end
-end
-
----@param side? string
----@param block? string
 ---@return boolean
-local function simulateTryPlace(side, block)
+local function simulateTryPlace(block)
     if block then
         if not SquirtleV2.results.placed[block] then
             SquirtleV2.results.placed[block] = 0
@@ -388,7 +360,25 @@ local function simulateTryPlace(side, block)
     return true
 end
 
----(did not add requireItem flag as in .place() cause not really sure we should keep it)
+---@param block? string
+local function simulatePlace(block)
+    simulateTryPlace(block)
+end
+
+---@param side? string
+---@param block? string
+function SquirtleV2.place(side, block)
+    requireItem = requireItem or true
+
+    if SquirtleV2.simulate then
+        return simulatePlace(block)
+    end
+
+    if not SquirtleV2.tryPlace(side, block) then
+        error("failed to place")
+    end
+end
+
 ---@param side? string
 ---@param block? string
 ---@return boolean
@@ -397,7 +387,7 @@ function SquirtleV2.tryPlace(side, block)
     local native = getNative("place", side)
 
     if SquirtleV2.simulate then
-        return simulateTryPlace(side, block)
+        return simulateTryPlace(block)
     end
 
     if block then
@@ -417,15 +407,18 @@ function SquirtleV2.tryPlace(side, block)
 end
 
 ---@param block? string
----@param requireItem? boolean
-function SquirtleV2.placeUp(block, requireItem)
-    SquirtleV2.place(block, requireItem, "up")
+function SquirtleV2.placeFront(block)
+    SquirtleV2.place("front", block)
 end
 
 ---@param block? string
----@param requireItem? boolean
-function SquirtleV2.placeDown(block, requireItem)
-    SquirtleV2.place(block, requireItem, "down")
+function SquirtleV2.placeUp(block)
+    SquirtleV2.place("up", block)
+end
+
+---@param block? string
+function SquirtleV2.placeDown(block)
+    SquirtleV2.place("down", block)
 end
 
 ---@return string? direction
