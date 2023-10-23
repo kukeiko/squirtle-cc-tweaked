@@ -3,7 +3,7 @@
 ---@field count integer
 ---@field nbt? string
 ---@field maxCount? integer
----@field displayName? integer
+---@field displayName? string
 ---@field tags? table<string, boolean>
 ---@alias ItemStacks table<integer, ItemStack>
 ---@alias ItemStock table<string, ItemStack>

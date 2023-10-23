@@ -1,8 +1,8 @@
 local Vector = require "elements.vector"
-local Chest = require "world.chest"
 local World = require "geo.world"
 local Cardinal = require "elements.cardinal"
 local Squirtle = require "squirtle"
+local Inventory = require "inventory.inventory"
 
 local function getDirection()
     while true do
@@ -40,8 +40,13 @@ end
 local function readMineableBlocks()
     ---@type table<string, unknown>
     local mineable = {}
+    local chest = Inventory.findChest()
 
-    for _, stack in pairs(Chest.getOutputStacks(Chest.findSide())) do
+    if not chest then
+        error("no chest found")
+    end
+
+    for _, stack in pairs(Inventory.getOutputStacks(chest)) do
         mineable[stack.name] = true -- [todo] value doesn't matter (typed it to unknown) - can we find a use?
     end
 

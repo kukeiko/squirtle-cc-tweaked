@@ -3,10 +3,9 @@ package.path = package.path .. ";/lib/?.lua"
 local findPeripheralSide = require "world.peripheral.find-side"
 local Redstone = require "world.redstone"
 local Squirtle = require "squirtle"
+local Inventory = require "inventory.inventory"
 local count = require "utils.count"
-local toInventory = require "inventory.to-inventory"
 local toIoInventory = require "inventory.to-io-inventory"
-local transferItems = require "inventory.transfer-items"
 
 ---@param from Inventory
 ---@param to InputOutputInventory
@@ -24,7 +23,7 @@ local function pushOutput(from, to, rate)
         end
     end
 
-    return transferItems(from, to.output, transferrable, rate)
+    return Inventory.transferItems(from, to.output, transferrable, rate)
 end
 
 ---@param from InputOutputInventory
@@ -54,7 +53,7 @@ local function pullInput(from, to, transferredOutput, rate)
         transferrable[item] = math.min(stock.count, maxStock)
     end
 
-    return transferItems(from.input, to, transferrable, rate, true)
+    return Inventory.transferItems(from.input, to, transferrable, rate, true)
 end
 
 local function findChestSide()
@@ -176,7 +175,7 @@ local function doIO()
     print("transferring items...")
     local ioChest = toIoInventory(io)
     local transferRate = 16
-    local barrel = toInventory("bottom")
+    local barrel = Inventory.create("bottom")
     local transferredOutput = pushOutput(barrel, ioChest, transferRate)
     local movedAnyOutput = count(transferredOutput) > 0
     local transferredInputStock = pullInput(ioChest, barrel, transferredOutput, transferRate)

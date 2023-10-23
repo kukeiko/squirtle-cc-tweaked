@@ -1,5 +1,4 @@
-local getStacks = require "inventory.get-stacks"
-local findNameTag = require "inventory.find-name-tag"
+local Inventory = require "inventory.inventory"
 local readInputOutputChest = require "io-network.read.read-io-chest"
 local readStorageChest = require "io-network.read.read-storage-chest"
 local readDrainInventory = require "io-network.read.read-drain-inventory"
@@ -24,13 +23,13 @@ return function(name)
     if baseType == "minecraft:furnace" then
         return readFurnace(name)
     elseif baseType == "minecraft:shulker_box" then
-        local shulker = readStorageChest(name, getStacks(name))
+        local shulker = readStorageChest(name, Inventory.getStacks(name))
         shulker.type = "shulker"
 
         return shulker
     else
-        local stacks = getStacks(name)
-        local nameTagSlot, nameTagName = findNameTag(name, {"I/O", "Drain"}, stacks)
+        local stacks = Inventory.getStacks(name)
+        local nameTagSlot, nameTagName = Inventory.findNameTag(name, {"I/O", "Drain"}, stacks)
 
         if nameTagSlot and nameTagName then
             if nameTagName == "I/O" then

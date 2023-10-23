@@ -1,14 +1,13 @@
-local Chest = require "world.chest"
 local Furnace = require "world.furnace"
 local Squirtle = require "squirtle"
-local getStacks = require "inventory.get-stacks"
+local Inventory = require "inventory.inventory"
 
 ---@param furnace string
 ---@param buffer string
 local function topOffFurnaceFuel(furnace, buffer)
     local missing = Furnace.getMissingFuelCount(furnace)
 
-    for slot, stack in pairs(getStacks(buffer)) do
+    for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
             missing = missing - Furnace.pullFuel(furnace, buffer, slot)
 
@@ -24,7 +23,7 @@ end
 local function topOffFurnaceInput(furnace, buffer)
     local missing = Furnace.getMissingInputCount(furnace)
 
-    for slot, stack in pairs(getStacks(buffer)) do
+    for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:birch_log" then
             missing = missing - Furnace.pullInput(furnace, buffer, slot)
 
@@ -73,7 +72,7 @@ end
 ---@param stash string
 ---@param io string
 return function(furnace, stash, io)
-    while Chest.getItemStock(stash, "minecraft:birch_log") > 0 do
+    while Inventory.getItemStock(stash, "minecraft:birch_log") > 0 do
         print("topping off furnace input...")
         topOffFurnaceInput(furnace, stash)
 
@@ -86,10 +85,10 @@ return function(furnace, stash, io)
         print("warming up furnace...")
         kickstartFurnaceFuel(furnace, 8)
 
-        if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
+        if Inventory.getItemStock(stash, "minecraft:birch_log") > 0 then
             Squirtle.pushOutput(stash, io)
 
-            if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
+            if Inventory.getItemStock(stash, "minecraft:birch_log") > 0 then
                 print("logs leftover, pausing for 30s")
                 os.sleep(30)
             end

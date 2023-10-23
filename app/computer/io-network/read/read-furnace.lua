@@ -1,11 +1,10 @@
-local getStacks = require "inventory.get-stacks"
 local Inventory = require "inventory.inventory"
 local InputOutputInventory = require "inventory.input-output-inventory"
 
 ---@param name string
 ---@return InputOutputInventory
 return function(name)
-    local stacks = getStacks(name)
+    local stacks = Inventory.getStacks(name)
     local inputStack = stacks[1]
     local fuelStack = stacks[2]
     local outputStack = stacks[3]

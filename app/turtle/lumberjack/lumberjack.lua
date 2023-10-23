@@ -1,8 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Chest = require "world.chest"
-local getStacks = require "inventory.get-stacks"
+local Inventory = require "inventory.inventory"
 local Squirtle = require "squirtle"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
@@ -54,7 +53,7 @@ local function refuel(stash)
         print(string.format("refueling %s more fuel", Squirtle.missingFuel(minFuel)))
         Squirtle.selectEmpty(1)
 
-        for slot, stack in pairs(getStacks(stash)) do
+        for slot, stack in pairs(Inventory.getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
                 Squirtle.suckSlotFromChest("bottom", slot)
                 Squirtle.refuelSlot(math.ceil(Squirtle.missingFuel(minFuel) / 80))
@@ -85,7 +84,7 @@ local function doInputOutput(stash, io)
     Squirtle.pullInput(io, stash)
 
     local missingCharcoal = function()
-        return (Chest.getOutputMissingStock(io)["minecraft:charcoal"] or 0)
+        return (Inventory.getOutputMissingStock(io)["minecraft:charcoal"] or 0)
     end
 
     if missingCharcoal() == 0 then
@@ -99,10 +98,10 @@ local function doInputOutput(stash, io)
     print("output has space for charcoal, want to work now!")
     print("checking if we have enough input...")
 
-    if Chest.getItemStock(stash, "minecraft:bone_meal") < 64 then
+    if Inventory.getItemStock(stash, "minecraft:bone_meal") < 64 then
         print("waiting for more bone meal...")
 
-        while Chest.getItemStock(stash, "minecraft:bone_meal") < 64 do
+        while Inventory.getItemStock(stash, "minecraft:bone_meal") < 64 do
             os.sleep(3)
             Squirtle.pullInput(io, stash)
         end

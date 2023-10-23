@@ -1,14 +1,13 @@
 local Utils = require "utils"
-local Chest = require "world.chest"
 local World = require "geo.world"
 local findPath = require "geo.find-path"
 local Inventory = require "inventory.inventory"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
-local subtractStock = require "world.chest.subtract-stock"
 local getStacks = require "inventory.get-stacks"
 local toIoInventory = require "inventory.to-io-inventory"
 local transferItem = require "inventory.transfer-item"
+local transferItems = require "inventory.transfer-items"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
@@ -1383,18 +1382,18 @@ function Squirtle.suckSlotFromChest(side, slot, limit)
             local initialSlot = turtle.getSelectedSlot()
             Squirtle.selectFirstEmptySlot()
             Squirtle.suck(side)
-            Chest.pushItems(side, side, slot, limit, 1)
+            Inventory.pushItems(side, side, slot, limit, 1)
             -- [todo] if we want to be super strict, we would have to move the
             -- item we just sucked in back to the first slot after sucking the requested item
             Squirtle.drop(side)
             print("pushing back temporarily loaded item")
             turtle.select(initialSlot)
         else
-            Chest.pushItems(side, side, 1, nil, firstEmptySlot)
-            Chest.pushItems(side, side, slot, limit, 1)
+            Inventory.pushItems(side, side, 1, nil, firstEmptySlot)
+            Inventory.pushItems(side, side, slot, limit, 1)
         end
     else
-        Chest.pushItems(side, side, slot, limit, 1)
+        Inventory.pushItems(side, side, slot, limit, 1)
     end
 
     return suck(side, limit)
@@ -1502,22 +1501,27 @@ end
 
 ---@param from string
 ---@param to string
----@param maxStock? table<string, integer>
 ---@return table<string, integer> transferredStock
-function Squirtle.pullInput(from, to, maxStock)
-    maxStock = maxStock or Chest.getInputMaxStock(from)
-    -- local maxStock = Chest.getInputOutputMaxStock(from)
-    local currentStock = Chest.getStock(to)
-    local missingStock = subtractStock(maxStock, currentStock)
+function Squirtle.pullInput(from, to)
+    local maxStock = Inventory.getInputStock(from)
+    local currentStock = Inventory.getStock(to)
+    -- [todo] i have the same name "stock" for two different data structures :/ (table<string, int> and table<string, ItemStack>)
+    ---@type table<string, integer>
+    local missingStock = {}
+
+    for item, stock in pairs(maxStock) do
+        missingStock[item] = stock.maxCount - ((currentStock[item] or {}).count or 0)
+    end
+
     ---@type table<string, integer>
     local transferredStock = {}
 
-    for slot, stack in pairs(Chest.getInputStacks(from)) do
+    for slot, stack in pairs(Inventory.getInputStacks(from)) do
         local stock = missingStock[stack.name]
 
         if stock ~= nil and stock > 0 then
             local limit = math.min(stack.count - 1, stock)
-            local transferred = Chest.pullItems(to, from, slot, limit)
+            local transferred = Inventory.pullItems(to, from, slot, limit)
             missingStock[stack.name] = stock - transferred
 
             if transferred > 0 then
@@ -1527,6 +1531,38 @@ function Squirtle.pullInput(from, to, maxStock)
     end
 
     return transferredStock
+end
+
+-- [note] copied from io-chestcart
+---@param from InputOutputInventory
+---@param to Inventory
+---@param transferredOutput? table<string, integer>
+---@param rate? integer
+---@return table<string, integer> transferred
+function Squirtle.pullInput_v2(from, to, transferredOutput, rate)
+    transferredOutput = transferredOutput or {}
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, stock in pairs(from.input.stock) do
+        local maxStock = stock.maxCount
+
+        if from.output.stock[item] then
+            maxStock = maxStock + from.output.stock[item].maxCount
+        end
+
+        maxStock = maxStock - (transferredOutput[item] or 0)
+
+        local toStock = to.stock[item]
+
+        if toStock then
+            maxStock = maxStock - toStock.count
+        end
+
+        transferrable[item] = math.min(stock.count, maxStock)
+    end
+
+    return Inventory.transferItems(from.input, to, transferrable, rate, true)
 end
 
 -- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
@@ -1540,7 +1576,7 @@ function Squirtle.pushOutput(from, to, keepStock)
 
     ---@type  table<string, integer>
     local transferredStock = {}
-    local fromStacks = getStacks(from)
+    local fromStacks = Inventory.getStacks(from)
     local fromInventory = Inventory.create(from, fromStacks)
     local toInventory = toIoInventory(to)
     local transferredAll = true
@@ -1554,7 +1590,7 @@ function Squirtle.pushOutput(from, to, keepStock)
             local transfer = math.min(open, pushable)
 
             while stock.count < stock.maxCount do
-                local transferred = transferItem(fromInventory, toInventory.output, item, transfer, 16)
+                local transferred = Inventory.transferItem(fromInventory, toInventory.output, item, transfer, 16)
                 transferredStock[item] = (transferredStock[item] or 0) + transferred
 
                 if transferred ~= transfer then

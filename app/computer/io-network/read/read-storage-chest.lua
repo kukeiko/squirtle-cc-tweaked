@@ -1,7 +1,6 @@
 local Utils = require "utils"
 local Inventory = require "inventory.inventory"
 local InputOutputInventory = require "inventory.input-output-inventory"
-local getSize = require "inventory.get-size"
 
 ---@param stacks ItemStacks
 ---@return boolean
@@ -31,7 +30,7 @@ local function createMonoTypeInventory(chest, stacks)
     ---@type ItemStack
     local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
 
-    for slot = 1, getSize(chest) do
+    for slot = 1, Inventory.getSize(chest) do
         local stack = stacks[slot]
 
         if stack then

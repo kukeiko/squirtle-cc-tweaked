@@ -4,11 +4,10 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "utils"
 local Vectors = require "elements.vector"
 local World = require "geo.world"
-local Chest = require "world.chest"
 local Squirtle = require "squirtle"
 local AppState = require "app-state"
-local getStacks = require "inventory.get-stacks"
 local boot = require "digger.boot"
+local Inventory = require "inventory.inventory"
 
 ---@class DiggerAppState
 ---@field home Vector
@@ -81,7 +80,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueling, have", Squirtle.getFuelLevel())
     Squirtle.selectFirstEmptySlot()
 
-    for slot, stack in pairs(getStacks(buffer)) do
+    for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
             Squirtle.suckSlotFromChest(buffer, slot)
             Squirtle.refuelSlot() -- [todo] should provide count to not consume a whole stack
@@ -223,7 +222,11 @@ local function main(args)
             end
 
             if args[1] == "io" then
-                local io = Chest.findSide()
+                local io = Inventory.findChest()
+
+                if not io then
+                    error("no chest found")
+                end
 
                 if not Squirtle.pushOutput(buffer, io) then
                     print("output full, waiting for it to drain...")

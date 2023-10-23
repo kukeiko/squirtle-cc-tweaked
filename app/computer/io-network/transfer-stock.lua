@@ -1,5 +1,5 @@
 local Utils = require "utils"
-local transferItem = require "inventory.transfer-item"
+local Inventory = require "inventory.inventory"
 
 ---@param inventories Inventory[]
 ---@param item string
@@ -112,7 +112,7 @@ local function transferStock(stock, from, to, collection)
                 print(toPrintTransferString(output, input, stock.name, transfer))
 
                 collection:lock(output, input)
-                local transferred = transferItem(output, input, stock.name, transfer)
+                local transferred = Inventory.transferItem(output, input, stock.name, transfer)
                 collection:unlock(output, input)
                 transferredTotal = transferredTotal + transferred
 

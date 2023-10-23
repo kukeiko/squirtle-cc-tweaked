@@ -1,4 +1,3 @@
-local getStacks = require "inventory.get-stacks"
 local Inventory = require "inventory.inventory"
 local InputOutputInventory = require "inventory.input-output-inventory"
 
@@ -7,7 +6,7 @@ local InputOutputInventory = require "inventory.input-output-inventory"
 ---@return InputOutputInventory
 return function(chest, ignoredSlots)
     ignoredSlots = ignoredSlots or {}
-    local stacks = getStacks(chest)
+    local stacks = Inventory.getStacks(chest)
 
     for slot in pairs(ignoredSlots) do
         stacks[slot] = nil

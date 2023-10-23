@@ -1,6 +1,4 @@
 local copy = require "utils.copy"
-local getStacks = require "inventory.get-stacks"
-local findNameTag = require "inventory.find-name-tag"
 local Inventory = require "inventory.inventory"
 local InputOutputInventory = require "inventory.input-output-inventory"
 
@@ -35,11 +33,11 @@ end
 ---@return InputOutputInventory
 return function(name, stacks, nameTagSlot)
     if not stacks then
-        stacks = getStacks(name)
+        stacks = Inventory.getStacks(name)
     end
 
     if not nameTagSlot then
-        nameTagSlot = findNameTag(name, {"I/O"}, stacks)
+        nameTagSlot = Inventory.findNameTag(name, {"I/O"}, stacks)
 
         if not nameTagSlot then
             error(("chest %s does not have an I/O name tag"):format(name))
