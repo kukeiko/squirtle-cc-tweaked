@@ -11,7 +11,6 @@ local SquirtleV2 = require "squirtle.squirtle-v2"
 local boot = require "digger.boot"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
-local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local dig = require "squirtle.dig"
 local AppState = require "app-state"
@@ -85,21 +84,21 @@ end
 ---@param buffer string
 ---@param fuel integer
 local function refuelFromBuffer(buffer, fuel)
-    print("refueling, have", Fuel.getFuelLevel())
+    print("refueling, have", SquirtleV2.getFuelLevel())
     Backpack.selectFirstEmptySlot()
 
     for slot, stack in pairs(getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
             suckSlotFromChest(buffer, slot)
-            Fuel.refuel() -- [todo] should provide count to not consume a whole stack
+            SquirtleV2.refuelSlot() -- [todo] should provide count to not consume a whole stack
         end
 
-        if Fuel.getFuelLevel() >= fuel then
+        if SquirtleV2.getFuelLevel() >= fuel then
             break
         end
     end
 
-    print("refueled to", Fuel.getFuelLevel())
+    print("refueled to", SquirtleV2.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
     if not SquirtleV2.dump(buffer) then
@@ -202,7 +201,7 @@ local function main(args)
         point = nextPoint(point, state.world, state.start)
 
         local gettingFull = Backpack.getStack(16) ~= nil
-        local lowFuel = Fuel.getFuelLevel() < 1000
+        local lowFuel = SquirtleV2.getFuelLevel() < 1000
         local minFuel = 1200
         local buffer = "top"
 
@@ -240,12 +239,12 @@ local function main(args)
                     until pushOutput(buffer, io)
                 end
 
-                while Fuel.getFuelLevel() < minFuel do
-                    print("trying to refuel to ", minFuel, ", have", Fuel.getFuelLevel())
+                while SquirtleV2.getFuelLevel() < minFuel do
+                    print("trying to refuel to ", minFuel, ", have", SquirtleV2.getFuelLevel())
                     pullInput(io, buffer)
                     refuelFromBuffer(buffer, minFuel)
 
-                    if Fuel.getFuelLevel() < minFuel then
+                    if SquirtleV2.getFuelLevel() < minFuel then
                         os.sleep(3)
                     end
                 end

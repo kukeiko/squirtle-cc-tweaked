@@ -2,7 +2,6 @@ local SquirtleV2 = require "squirtle.squirtle-v2"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 local World = require "geo.world"
-local refuel = require "squirtle.refuel"
 
 local function printUsage()
     print("Usage:")
@@ -35,7 +34,7 @@ return function(args)
     print(numBlocks .. "x blocks, guessing " .. numBlocks / 32 .. " stacks")
 
     local requiredFuel = math.ceil((numBlocks + returnTripFuel) * 1.2)
-    refuel(requiredFuel)
+    SquirtleV2.refuel(requiredFuel)
 
     local position = Vector.create(0, 0, 0)
     local facing = Cardinal.north

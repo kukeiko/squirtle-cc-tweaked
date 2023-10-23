@@ -4,7 +4,6 @@ local findPath = require "geo.find-path"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local World = require "geo.world"
 local dig = require "squirtle.dig"
-local refuel = require "squirtle.refuel"
 local moveToPoint = require "squirtle.move.to-point"
 
 ---@param path Vector[]
@@ -48,7 +47,7 @@ return function(to, world, breakable)
         end
 
         local distance = Vector.manhattan(from, to)
-        refuel(distance)
+        SquirtleV2.refuel(distance)
         local success, failedSide = walkPath(path)
 
         if success then

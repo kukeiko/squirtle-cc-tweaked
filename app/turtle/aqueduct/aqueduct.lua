@@ -1,7 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local refuel = require "squirtle.refuel"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@class AqueductAppState
@@ -171,8 +170,7 @@ local function archesTopSequence(state)
 end
 
 ---@param state AqueductAppState
----@param squirtle SimulatableSquirtle
-local function archesBottomSequence(state, squirtle)
+local function archesBottomSequence(state)
     SquirtleV2.flipTurns = not state.left
 
     for _ = 1, state.times do
@@ -321,7 +319,7 @@ local function main(args)
         requiredItems[state.blocks.bricks] = requiredItems[state.blocks.bricks] + (state.pillar * state.times)
     end
 
-    refuel(requiredFuel)
+    SquirtleV2.refuel(requiredFuel)
     SquirtleV2.requireItems(requiredItems)
 
     local note = ""

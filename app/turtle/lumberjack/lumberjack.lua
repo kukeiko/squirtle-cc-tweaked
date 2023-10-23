@@ -4,7 +4,6 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Chest = require "world.chest"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
-local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local getStacks = require "inventory.get-stacks"
 local SquirtleV2 = require "squirtle.squirtle-v2"
@@ -165,17 +164,17 @@ local function shouldPlantTree()
 end
 
 local function refuelFromBackpack()
-    while Fuel.getMissingFuel() > 0 and SquirtleV2.select("minecraft:stick") do
+    while SquirtleV2.getMissingFuel() > 0 and SquirtleV2.select("minecraft:stick") do
         print("refueling from sticks...")
-        Fuel.refuel()
+        SquirtleV2.refuelSlot()
     end
 
     local saplingStock = SquirtleV2.getStock()["minecraft:birch_sapling"] or 0
 
     print("refueling from saplings...")
-    while Fuel.getMissingFuel() > 0 and saplingStock > 64 do
+    while SquirtleV2.getMissingFuel() > 0 and saplingStock > 64 do
         SquirtleV2.select("minecraft:birch_sapling")
-        Fuel.refuel(saplingStock - 64)
+        SquirtleV2.refuelSlot(saplingStock - 64)
         saplingStock = SquirtleV2.getStock()["minecraft:birch_sapling"] or 0
     end
 

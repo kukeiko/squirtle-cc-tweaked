@@ -3,7 +3,6 @@ local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
 local selectItem = require "squirtle.backpack.select-item"
 local findItem = require "squirtle.backpack.find"
-local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local requireItems = require "squirtle.require-items"
 
@@ -64,6 +63,14 @@ local natives = {
         bottom = turtle.dropDown,
         down = turtle.dropDown
     }
+}
+
+local fuelItems = {
+    -- ["minecraft:lava_bucket"] = 1000,
+    ["minecraft:coal"] = 80,
+    ["minecraft:charcoal"] = 80,
+    ["minecraft:coal_block"] = 800
+    -- ["minecraft:bamboo"] = 2
 }
 
 ---@param fn string
@@ -174,8 +181,8 @@ function SquirtleV2.tryMove(side, steps)
         return true, steps
     end
 
-    if not Fuel.hasFuel(steps) then
-        refuel(steps)
+    if not SquirtleV2.hasFuel(steps) then
+        SquirtleV2.refuel(steps)
     end
 
     local delta = Cardinal.toVector(Cardinal.fromSide(side, SquirtleV2.facing))
@@ -369,7 +376,7 @@ end
 
 ---@param position Vector
 local function stepOut(position)
-    refuel(2)
+    SquirtleV2.refuel(2)
 
     if not SquirtleV2.tryForward() then
         return false
@@ -907,32 +914,6 @@ function SquirtleV2.suck(side, limit)
     return native(limit)
 end
 
----@param fuel integer
----@return boolean
-function SquirtleV2.hasFuel(fuel)
-    local level = turtle.getFuelLevel()
-
-    return level == "unlimited" or level >= fuel
-end
-
----@param limit? integer
----@return integer
-function SquirtleV2.missingFuel(limit)
-    local current = turtle.getFuelLevel()
-
-    if current == "unlimited" then
-        return 0
-    end
-
-    return (limit or turtle.getFuelLimit()) - current
-end
-
----@param quantity? integer
----@return boolean
-function SquirtleV2.refuelSlot(quantity)
-    return turtle.refuel(quantity)
-end
-
 ---@return integer
 function SquirtleV2.size()
     return SquirtleV2.inventorySize
@@ -1086,6 +1067,158 @@ function SquirtleV2.dump(side)
     end
 
     return SquirtleV2.isEmpty()
+end
+
+---@param fuel integer
+function SquirtleV2.hasFuel(fuel)
+    local level = turtle.getFuelLevel()
+
+    return level == "unlimited" or level >= fuel
+end
+
+---@param limit? integer
+---@return integer
+function SquirtleV2.missingFuel(limit)
+    local current = turtle.getFuelLevel()
+
+    if current == "unlimited" then
+        return 0
+    end
+
+    return (limit or turtle.getFuelLimit()) - current
+end
+
+---@param quantity? integer
+---@return boolean
+function SquirtleV2.refuelSlot(quantity)
+    return turtle.refuel(quantity)
+end
+
+---@return integer
+function SquirtleV2.getFuelLevel()
+    return turtle.getFuelLevel()
+end
+
+---@return integer
+function SquirtleV2.getFuelLimit()
+    return turtle.getFuelLimit()
+end
+
+---@param item string
+function SquirtleV2.isFuel(item)
+    return fuelItems[item] ~= nil
+end
+
+---@param item string
+function SquirtleV2.getRefuelAmount(item)
+    return fuelItems[item] or 0
+end
+
+---@param stack table
+function SquirtleV2.getStackRefuelAmount(stack)
+    return SquirtleV2.getRefuelAmount(stack.name) * stack.count
+end
+
+---@param stacks ItemStack[]
+---@param fuel number
+---@param allowedOverFlow? number
+---@return ItemStack[] fuelStacks, number openFuel
+function SquirtleV2.pickStacks(stacks, fuel, allowedOverFlow)
+    allowedOverFlow = math.max(allowedOverFlow or 1000, 0)
+    local pickedStacks = {}
+    local openFuel = fuel
+
+    -- [todo] try to order stacks based on type of item
+    -- for example, we may want to start with the smallest ones to minimize potential overflow
+    for slot, stack in pairs(stacks) do
+        if SquirtleV2.isFuel(stack.name) then
+            local stackRefuelAmount = SquirtleV2.getStackRefuelAmount(stack)
+
+            if stackRefuelAmount <= openFuel then
+                pickedStacks[slot] = stack
+                openFuel = openFuel - stackRefuelAmount
+            else
+                -- [todo] can be shortened
+                -- actually, im not even sure we need the option to provide an allowed overflow
+                local itemRefuelAmount = SquirtleV2.getRefuelAmount(stack.name)
+                local numRequiredItems = math.floor(openFuel / itemRefuelAmount)
+                local numItemsToPick = numRequiredItems
+
+                if allowedOverFlow > 0 and ((numItemsToPick + 1) * itemRefuelAmount) - openFuel <= allowedOverFlow then
+                    numItemsToPick = numItemsToPick + 1
+                end
+                -- local numRequiredItems = math.ceil(openFuel / itemRefuelAmount)
+
+                -- if (numRequiredItems * itemRefuelAmount) - openFuel <= allowedOverFlow then
+                if numItemsToPick > 0 then
+                    pickedStacks[slot] = {name = stack.name, count = numItemsToPick}
+                    openFuel = openFuel - stackRefuelAmount
+                end
+            end
+
+            if openFuel <= 0 then
+                break
+            end
+        end
+    end
+
+    return pickedStacks, openFuel
+end
+
+local bucket = "minecraft:bucket"
+
+---@param fuel? integer
+local function refuelFromBackpack(fuel)
+    fuel = fuel or SquirtleV2.getMissingFuel()
+    local fuelStacks = SquirtleV2.pickStacks(SquirtleV2.getStacks(), fuel)
+    local emptyBucketSlot = SquirtleV2.find(bucket)
+
+    for slot, stack in pairs(fuelStacks) do
+        SquirtleV2.selectSlot(slot)
+        SquirtleV2.refuel(stack.count)
+
+        local remaining = SquirtleV2.getStack(slot)
+
+        if remaining and remaining.name == bucket then
+            if (emptyBucketSlot == nil) or (not SquirtleV2.transfer(emptyBucketSlot)) then
+                emptyBucketSlot = slot
+            end
+        end
+    end
+end
+
+---@param fuel? integer
+local function refuelWithHelpFromPlayer(fuel)
+    fuel = fuel or SquirtleV2.getMissingFuel()
+
+    if fuel > turtle.getFuelLimit() then
+        error(string.format("required fuel is %d more than the tank can hold", fuel - turtle.getFuelLimit()))
+    end
+
+    local _, y = term.getCursorPos()
+
+    while SquirtleV2.getFuelLevel() < fuel do
+        term.setCursorPos(1, y)
+        term.clearLine()
+        local openFuel = fuel - SquirtleV2.getFuelLevel()
+        term.write(string.format("[help] need %d more fuel please", openFuel))
+        term.setCursorPos(1, y + 1)
+        os.pullEvent("turtle_inventory")
+        refuelFromBackpack(openFuel)
+    end
+end
+
+---@param fuel integer
+function SquirtleV2.refuel(fuel)
+    if SquirtleV2.hasFuel(fuel) then
+        return true
+    end
+
+    refuelFromBackpack(fuel)
+
+    if SquirtleV2.getFuelLevel() < fuel then
+        refuelWithHelpFromPlayer(fuel)
+    end
 end
 
 return SquirtleV2
