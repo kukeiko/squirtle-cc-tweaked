@@ -12,8 +12,12 @@
     },
     {
         "id": "storage:exit",
-        "name": "Storage (Exit)",
-        "label": "Storage",
+        "name": "Storage",
+        "type": "endpoint"
+    },
+    {
+        "id": "storage-silos:exit",
+        "name": "Storage (Silos)",
         "type": "endpoint"
     },
     {

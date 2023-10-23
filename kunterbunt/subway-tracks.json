@@ -7,8 +7,13 @@
     },
     {
         "stationId": "storage",
+        "targetStationId": "storage-silos:exit",
+        "signal": 2
+    },
+    {
+        "stationId": "storage",
         "targetStationId": "storage:exit",
-        "signal": 2,
+        "signal": 3,
         "duration": 5
     },
     {
