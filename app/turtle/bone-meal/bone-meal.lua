@@ -15,7 +15,7 @@ end
 SquirtleV2.simulate = true
 sequence(state)
 -- [todo] also require fuel based on steps taken
-SquirtleV2.requireItemsV2(SquirtleV2.results.placed)
+SquirtleV2.requireItems(SquirtleV2.results.placed)
 print("all good now! building...")
 SquirtleV2.simulate = false
 sequence(state)

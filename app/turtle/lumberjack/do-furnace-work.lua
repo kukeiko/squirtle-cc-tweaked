@@ -1,6 +1,6 @@
 local Chest = require "world.chest"
 local Furnace = require "world.furnace"
-local pushOutput = require "squirtle.transfer.push-output"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local getStacks = require "inventory.get-stacks"
 
 ---@param furnace string
@@ -87,7 +87,7 @@ return function(furnace, stash, io)
         kickstartFurnaceFuel(furnace, 8)
 
         if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
-            pushOutput(stash, io)
+            SquirtleV2.pushOutput(stash, io)
 
             if Chest.getItemStock(stash, "minecraft:birch_log") > 0 then
                 print("logs leftover, pausing for 30s")

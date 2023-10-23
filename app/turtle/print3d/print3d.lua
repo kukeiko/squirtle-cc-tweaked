@@ -4,9 +4,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "utils"
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
-local navigate = require "squirtle.navigate"
 local SquirtleV2 = require "squirtle.squirtle-v2"
-local requireItems = require "squirtle.require-items"
 
 ---@class ColoredPoint
 ---@field vector Vector
@@ -49,13 +47,13 @@ local function main(args)
         return {vector = point, block = block}
     end)
 
-    requireItems(blocks)
+    SquirtleV2.requireItems(blocks)
     local start = SquirtleV2.locate(true)
 
     for _, point in pairs(points) do
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
         local worldPoint = Vector.plus(start, above)
-        local success, message = navigate(worldPoint, nil, function()
+        local success, message = SquirtleV2.navigate(worldPoint, nil, function()
             return true
         end)
 
@@ -66,7 +64,7 @@ local function main(args)
         SquirtleV2.placeDown(point.block or defaultBlock)
     end
 
-    navigate(start)
+    SquirtleV2.navigate(start)
     SquirtleV2.face(facing)
 end
 

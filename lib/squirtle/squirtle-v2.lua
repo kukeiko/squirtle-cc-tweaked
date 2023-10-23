@@ -1,10 +1,14 @@
 local Utils = require "utils"
-local Vector = require "elements.vector"
+local Chest = require "world.chest"
+local World = require "geo.world"
+local findPath = require "geo.find-path"
+local Inventory = require "inventory.inventory"
 local Cardinal = require "elements.cardinal"
-local selectItem = require "squirtle.backpack.select-item"
-local findItem = require "squirtle.backpack.find"
-local refuel = require "squirtle.refuel"
-local requireItems = require "squirtle.require-items"
+local Vector = require "elements.vector"
+local subtractStock = require "world.chest.subtract-stock"
+local getStacks = require "inventory.get-stacks"
+local toIoInventory = require "inventory.to-io-inventory"
+local transferItem = require "inventory.transfer-item"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
@@ -592,6 +596,113 @@ function SquirtleV2.drop(side, count)
     return getNative("drop", side)(count)
 end
 
+---@param side string
+local function digSide(side)
+    if side == "front" then
+        turtle.dig()
+    elseif side == "top" then
+        turtle.digUp()
+    elseif side == "bottom" then
+        turtle.digDown()
+    end
+end
+
+---@param alsoIgnoreSlot integer
+---@return integer?
+local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
+    for slot = 1, 16 do
+        if alsoIgnoreSlot ~= slot then
+            local item = turtle.getItemDetail(slot)
+
+            if item.name ~= "minecraft:shulker_box" then
+                return slot
+            end
+        end
+    end
+end
+
+---@param shulker integer
+---@param item string
+---@return boolean
+local function loadFromShulker(shulker, item)
+    SquirtleV2.selectSlot(shulker)
+
+    local placedSide = SquirtleV2.placeAnywhere()
+
+    if not placedSide then
+        return false
+    end
+
+    while not peripheral.isPresent(placedSide) do
+        os.sleep(.1)
+    end
+
+    local stacks = Inventory.getStacks(placedSide)
+
+    for stackSlot, stack in pairs(stacks) do
+        if stack.name == item then
+            SquirtleV2.suckSlotFromChest(placedSide, stackSlot)
+            local emptySlot = SquirtleV2.firstEmptySlot()
+
+            if not emptySlot then
+                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
+
+                if not slotToPutIntoShulker then
+                    error("i seem to be full with shulkers")
+                end
+
+                turtle.select(slotToPutIntoShulker)
+                SquirtleV2.drop(placedSide)
+                turtle.select(shulker)
+            end
+
+            -- [todo] cannot use SquirtleV2.dig() cause breaking shulkers might not be allowed
+            digSide(placedSide)
+
+            return true
+        end
+    end
+
+    digSide(placedSide)
+
+    return false
+end
+
+-- [todo] consider adding requireItems() logic here
+-- [update] not every app would want that though, e.g. check out farmer app
+---@param name string
+---@param exact? boolean
+---@return false|integer
+local function selectItem(name, exact)
+    local slot = SquirtleV2.find(name, exact)
+
+    if not slot then
+        local nextShulkerSlot = 1
+
+        while true do
+            local shulker = SquirtleV2.find("minecraft:shulker_box", true, nextShulkerSlot)
+
+            if not shulker then
+                break
+            end
+
+            if loadFromShulker(shulker, name) then
+                -- [note] we can return "shulker" here because the item loaded from the shulker box ends
+                -- up in the slot the shulker originally was
+                return shulker
+            end
+
+            nextShulkerSlot = nextShulkerSlot + 1
+        end
+
+        return false
+    end
+
+    SquirtleV2.selectSlot(slot)
+
+    return slot
+end
+
 ---@param name string|integer
 ---@param exact? boolean
 ---@return false|integer
@@ -629,13 +740,18 @@ function SquirtleV2.has(item, minCount)
     if type(minCount) == "number" then
         return SquirtleV2.getItemStock(item) >= minCount
     else
-        return findItem(item, true) ~= nil
-    end
-end
+        startAtSlot = startAtSlot or 1
 
----@param items table<string, integer>
-function SquirtleV2.requireItems(items)
-    requireItems(items)
+        for slot = startAtSlot, SquirtleV2.size() do
+            local item = SquirtleV2.getStack(slot)
+
+            if item and item.name == item then
+                return true
+            end
+        end
+
+        return false
+    end
 end
 
 -- [todo] assumes that everything stacks to 64
@@ -691,17 +807,6 @@ local function getMissingInShulker(items, shulker)
     return open
 end
 
----@param side string
-local function dropSide(side)
-    if side == "front" then
-        turtle.drop()
-    elseif side == "up" then
-        turtle.dropUp()
-    elseif side == "down" then
-        turtle.dropDown()
-    end
-end
-
 ---@param items table<string, integer>
 ---@param shulker string
 local function fillShulker(items, shulker)
@@ -736,7 +841,7 @@ local function fillShulker(items, shulker)
 
             if item and item.name ~= "minecraft:shulker_box" then
                 turtle.select(slot)
-                dropSide(shulker)
+                SquirtleV2.drop(shulker)
             end
         end
     end
@@ -771,20 +876,9 @@ local function sliceNumStacksFromItems(items, numStacks)
     return sliced, leftOver
 end
 
----@param side string
-local function digSide(side)
-    if side == "front" then
-        turtle.dig()
-    elseif side == "top" then
-        turtle.digUp()
-    elseif side == "bottom" then
-        turtle.digDown()
-    end
-end
-
 -- [todo] assumes an empty inventory
 ---@param items table<string, integer>
-function SquirtleV2.requireItemsV2(items)
+function SquirtleV2.requireItems(items)
     local numStacks = itemsToStacks(items)
 
     if numStacks <= 16 then
@@ -1030,6 +1124,17 @@ function SquirtleV2.find(name, exact, startAtSlot)
     end
 end
 
+---@return boolean
+function SquirtleV2.isFull()
+    for slot = 1, SquirtleV2.size() do
+        if SquirtleV2.numInSlot(slot) == 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
 ---@param startAt? number
 function SquirtleV2.firstEmptySlot(startAt)
     startAt = startAt or 1
@@ -1218,6 +1323,299 @@ function SquirtleV2.refuel(fuel)
 
     if SquirtleV2.getFuelLevel() < fuel then
         refuelWithHelpFromPlayer(fuel)
+    end
+end
+
+local function firstEmptySlot(table, size)
+    for index = 1, size do
+        if table[index] == nil then
+            return index
+        end
+    end
+end
+
+local natives = {
+    top = turtle.suckUp,
+    up = turtle.suckUp,
+    front = turtle.suck,
+    forward = turtle.suck,
+    bottom = turtle.suckDown,
+    down = turtle.suckDown
+}
+
+---@param side? string
+---@param limit? integer
+---@return boolean,string?
+local function suck(side, limit)
+    side = side or "front"
+    local handler = natives[side]
+
+    if not handler then
+        error(string.format("suck() does not support side %s", side))
+    end
+
+    return handler(limit)
+end
+
+---@param side string
+---@param slot integer
+---@param limit? integer
+---@return any
+function SquirtleV2.suckSlotFromChest(side, slot, limit)
+    if slot == 1 then
+        return SquirtleV2.suck(side, limit)
+    end
+
+    local items = Inventory.getStacks(side)
+
+    if items[1] ~= nil then
+        local firstEmptySlot = firstEmptySlot(items, Inventory.getSize(side))
+
+        if not firstEmptySlot and SquirtleV2.isFull() then
+            error("container full. turtle also full, so no temporary unloading possible.")
+        elseif not firstEmptySlot then
+            if limit ~= nil and limit ~= items[slot].count then
+                -- [todo] we're not gonna have a slot free in the container
+                error("not yet implemented: container would still be full even after moving slot")
+            end
+
+            print("temporarily load first container slot into turtle...")
+            local initialSlot = turtle.getSelectedSlot()
+            SquirtleV2.selectFirstEmptySlot()
+            SquirtleV2.suck(side)
+            Chest.pushItems(side, side, slot, limit, 1)
+            -- [todo] if we want to be super strict, we would have to move the
+            -- item we just sucked in back to the first slot after sucking the requested item
+            SquirtleV2.drop(side)
+            print("pushing back temporarily loaded item")
+            turtle.select(initialSlot)
+        else
+            Chest.pushItems(side, side, 1, nil, firstEmptySlot)
+            Chest.pushItems(side, side, slot, limit, 1)
+        end
+    else
+        Chest.pushItems(side, side, slot, limit, 1)
+    end
+
+    return suck(side, limit)
+end
+
+---@param target Vector
+---@return boolean, string?
+function SquirtleV2.moveToPoint(target)
+    local delta = Vector.minus(target, SquirtleV2.locate())
+
+    if delta.y > 0 then
+        if not SquirtleV2.tryMove("top", delta.y) then
+            return false, "top"
+        end
+    elseif delta.y < 0 then
+        if not SquirtleV2.tryMove("bottom", -delta.y) then
+            return false, "bottom"
+        end
+    end
+
+    if delta.x > 0 then
+        SquirtleV2.face(Cardinal.east)
+        if not SquirtleV2.tryMove("front", delta.x) then
+            return false, "front"
+        end
+    elseif delta.x < 0 then
+        SquirtleV2.face(Cardinal.west)
+        if not SquirtleV2.tryMove("front", -delta.x) then
+            return false, "front"
+        end
+    end
+
+    if delta.z > 0 then
+        SquirtleV2.face(Cardinal.south)
+        if not SquirtleV2.tryMove("front", delta.z) then
+            return false, "front"
+        end
+    elseif delta.z < 0 then
+        SquirtleV2.face(Cardinal.north)
+        if not SquirtleV2.tryMove("front", -delta.z) then
+            return false, "front"
+        end
+    end
+
+    return true
+end
+
+---@param path Vector[]
+---@return boolean, string?, integer?
+local function walkPath(path)
+    for i, next in ipairs(path) do
+        local success, failedSide = SquirtleV2.moveToPoint(next)
+
+        if not success then
+            return false, failedSide, i
+        end
+    end
+
+    return true
+end
+
+---@param to Vector
+---@param world? World
+---@param breakable? function
+function SquirtleV2.navigate(to, world, breakable)
+    breakable = breakable or function(...)
+        return false
+    end
+
+    if not world then
+        local position = SquirtleV2.locate(true)
+        world = World.create(position.x, position.y, position.z)
+    end
+
+    local from, facing = SquirtleV2.orientate(true)
+
+    while true do
+        local path, msg = findPath(from, to, facing, world)
+
+        if not path then
+            return false, msg
+        end
+
+        local distance = Vector.manhattan(from, to)
+        SquirtleV2.refuel(distance)
+        local success, failedSide = walkPath(path)
+
+        if success then
+            return true
+        elseif failedSide then
+            from, facing = SquirtleV2.orientate()
+            local block = SquirtleV2.inspect(failedSide)
+            local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
+
+            if block and breakable(block) then
+                SquirtleV2.dig(failedSide)
+            elseif block then
+                World.setBlock(world, scannedLocation)
+            else
+                error("could not move, not sure why")
+            end
+        end
+    end
+end
+
+---@param from string
+---@param to string
+---@param maxStock? table<string, integer>
+---@return table<string, integer> transferredStock
+function SquirtleV2.pullInput(from, to, maxStock)
+    maxStock = maxStock or Chest.getInputMaxStock(from)
+    -- local maxStock = Chest.getInputOutputMaxStock(from)
+    local currentStock = Chest.getStock(to)
+    local missingStock = subtractStock(maxStock, currentStock)
+    ---@type table<string, integer>
+    local transferredStock = {}
+
+    for slot, stack in pairs(Chest.getInputStacks(from)) do
+        local stock = missingStock[stack.name]
+
+        if stock ~= nil and stock > 0 then
+            local limit = math.min(stack.count - 1, stock)
+            local transferred = Chest.pullItems(to, from, slot, limit)
+            missingStock[stack.name] = stock - transferred
+
+            if transferred > 0 then
+                transferredStock[stack.name] = (transferredStock[stack.name] or 0) + transferred
+            end
+        end
+    end
+
+    return transferredStock
+end
+
+-- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
+-- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32
+---@param from string
+---@param to string
+---@param keepStock? table<string, integer>
+---@return boolean, table<string, integer>
+function SquirtleV2.pushOutput(from, to, keepStock)
+    keepStock = keepStock or {}
+
+    ---@type  table<string, integer>
+    local transferredStock = {}
+    local fromStacks = getStacks(from)
+    local fromInventory = Inventory.create(from, fromStacks)
+    local toInventory = toIoInventory(to)
+    local transferredAll = true
+
+    for item, stock in pairs(toInventory.output.stock) do
+        local fromStock = fromInventory.stock[item]
+
+        if fromStock then
+            local pushable = math.max(fromStock.count - (keepStock[item] or 0), 0)
+            local open = stock.maxCount - stock.count
+            local transfer = math.min(open, pushable)
+
+            while stock.count < stock.maxCount do
+                local transferred = transferItem(fromInventory, toInventory.output, item, transfer, 16)
+                transferredStock[item] = (transferredStock[item] or 0) + transferred
+
+                if transferred ~= transfer then
+                    -- assuming chest is full or its state changed from an external source, in which case we just ignore it
+                    break
+                end
+            end
+
+            if fromStock.count - (keepStock[item] or 0) > 0 then
+                transferredAll = false
+            end
+        end
+    end
+
+    return transferredAll, transferredStock
+end
+
+---@param checkEarlyExit? fun() : boolean
+---@return boolean
+function SquirtleV2.navigateTunnel(checkEarlyExit)
+    local forbidden
+
+    while true do
+        local strategy
+
+        if turtle.forward() then
+            strategy = "forward"
+            forbidden = "back"
+        elseif forbidden ~= "up" and turtle.up() then
+            strategy = "up"
+            forbidden = "down"
+        elseif forbidden ~= "down" and turtle.down() then
+            strategy = "down"
+            forbidden = "up"
+        elseif turtle.turnLeft() and turtle.forward() then
+            strategy = "forward"
+            forbidden = "back"
+        elseif turtle.turnLeft() and forbidden ~= "back" and turtle.forward() then
+            strategy = "forward"
+            forbidden = "back"
+        elseif turtle.turnLeft() and turtle.forward() then
+            strategy = "forward"
+            forbidden = "back"
+        else
+            return true
+        end
+
+        if strategy == "forward" then
+            while turtle.forward() do
+            end
+        elseif strategy == "up" then
+            while turtle.up() do
+            end
+        elseif strategy == "down" then
+            while turtle.down() do
+            end
+        end
+
+        if checkEarlyExit ~= nil and checkEarlyExit() then
+            return checkEarlyExit()
+        end
     end
 end
 

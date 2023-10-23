@@ -2,7 +2,6 @@ package.path = package.path .. ";/lib/?.lua"
 
 local World = require "geo.world"
 local SquirtleV2 = require "squirtle.squirtle-v2"
-local navigate = require "squirtle.navigate"
 
 local function printUsage()
     print("Usage:")
@@ -27,7 +26,7 @@ local function main(args)
     local world = World.create(start.x, start.y, start.z)
 
     while true do
-        local reachedGoal, msg = navigate(goal, world, function(block)
+        local reachedGoal, msg = SquirtleV2.navigate(goal, world, function(block)
             return block.name == "minecraft:stone"
         end)
 
@@ -39,7 +38,7 @@ local function main(args)
         print("going to start in 3s...")
         os.sleep(3)
 
-        local reachedStart, msg = navigate(start, world, function(block)
+        local reachedStart, msg = SquirtleV2.navigate(start, world, function(block)
             return block.name == "minecraft:stone"
         end)
 

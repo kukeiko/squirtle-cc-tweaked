@@ -2,9 +2,6 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Chest = require "world.chest"
-local pushOutput = require "squirtle.transfer.push-output"
-local pullInput = require "squirtle.transfer.pull-input"
-local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local getStacks = require "inventory.get-stacks"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local harvestTree = require "lumberjack.harvest-tree"
@@ -59,7 +56,7 @@ local function refuel(stash)
 
         for slot, stack in pairs(getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
-                suckSlotFromChest("bottom", slot)
+                SquirtleV2.suckSlotFromChest("bottom", slot)
                 SquirtleV2.refuelSlot(math.ceil(SquirtleV2.missingFuel(minFuel) / 80))
             end
 
@@ -83,9 +80,9 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("pushing output...")
-    pushOutput(stash, io)
+    SquirtleV2.pushOutput(stash, io)
     print("pulling input...")
-    pullInput(io, stash)
+    SquirtleV2.pullInput(io, stash)
 
     local missingCharcoal = function()
         return (Chest.getOutputMissingStock(io)["minecraft:charcoal"] or 0)
@@ -107,7 +104,7 @@ local function doInputOutput(stash, io)
 
         while Chest.getItemStock(stash, "minecraft:bone_meal") < 64 do
             os.sleep(3)
-            pullInput(io, stash)
+            SquirtleV2.pullInput(io, stash)
         end
     end
 

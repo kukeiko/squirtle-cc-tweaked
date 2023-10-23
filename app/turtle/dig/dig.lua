@@ -3,10 +3,8 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
 local World = require "geo.world"
-local navigate = require "squirtle.navigate"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
-local drop = require "squirtle.drop"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@class DigAppState
@@ -53,11 +51,11 @@ local function loadIntoShulker(direction)
     local unloadedAll = true
 
     for slot = 1, 16 do
-        local stack = turtle.getItemDetail(slot)
+        local stack = SquirtleV2.getStack(slot)
 
         if stack and not stack.name:match("shulker") then
-            turtle.select(slot)
-            if not drop(direction) then
+            SquirtleV2.selectSlot(slot)
+            if not SquirtleV2.drop(direction) then
                 unloadedAll = false
             end
         end
@@ -72,10 +70,10 @@ local function tryLoadShulkers()
     local placedSide = nil
 
     for slot = 1, 16 do
-        local stack = turtle.getItemDetail(slot)
+        local stack = SquirtleV2.getStack(slot)
 
         if stack and stack.name:match("shulker") then
-            turtle.select(slot)
+            SquirtleV2.selectSlot(slot)
             placedSide = placeAnywhere()
 
             if not placedSide then
@@ -86,7 +84,7 @@ local function tryLoadShulkers()
                 return false
             else
                 local unloadedAll = loadIntoShulker(placedSide)
-                turtle.select(slot)
+                SquirtleV2.selectSlot(slot)
                 SquirtleV2.dig(placedSide)
 
                 if unloadedAll then
@@ -137,7 +135,7 @@ local function main(args)
     local restoreBreakable = SquirtleV2.setBreakable(isBreakable)
 
     while point do
-        if navigate(point, world, isBreakable) then
+        if SquirtleV2.navigate(point, world, isBreakable) then
             digUpDownIfInBounds(world, point)
 
             if state.hasShulkers and not shulkersFull and isGettingFull() then
@@ -155,7 +153,7 @@ local function main(args)
 
     restoreBreakable()
     print("[done] going home!")
-    navigate(start, world, isBreakable)
+    SquirtleV2.navigate(start, world, isBreakable)
     SquirtleV2.face(facing)
 
     return true

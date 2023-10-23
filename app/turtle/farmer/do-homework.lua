@@ -1,9 +1,5 @@
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local Inventory = require "inventory.inventory"
-
-local pullInput = require "squirtle.transfer.pull-input"
-local pushOutput = require "squirtle.transfer.push-output"
-local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
@@ -15,7 +11,7 @@ local function refuelFromBuffer(buffer, fuel)
 
     for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            suckSlotFromChest(buffer, slot)
+            SquirtleV2.suckSlotFromChest(buffer, slot)
             SquirtleV2.refuelSlot() -- [todo] should provide count to not consume a whole stack
         end
 
@@ -80,18 +76,18 @@ return function()
 
     -- first we make a single pushOutput() in case output wants seeds or poisonous taters
     print("pushing output once")
-    pushOutput(barrel, ioChest)
+    SquirtleV2.pushOutput(barrel, ioChest)
 
     local minFuel = 512
     print("pushing output...")
 
-    while not pushOutput(barrel, ioChest) do
+    while not SquirtleV2.pushOutput(barrel, ioChest) do
         os.sleep(7)
     end
 
     while SquirtleV2.getFuelLevel() < minFuel do
         print("trying to refuel to ", minFuel, ", have", SquirtleV2.getFuelLevel())
-        pullInput(ioChest, barrel)
+        SquirtleV2.pullInput(ioChest, barrel)
         refuelFromBuffer(barrel, minFuel)
 
         if SquirtleV2.getFuelLevel() < minFuel then
@@ -100,7 +96,7 @@ return function()
     end
 
     print("pulling input...")
-    pullInput(ioChest, barrel)
+    SquirtleV2.pullInput(ioChest, barrel)
 
     print("sucking barrel...")
     while SquirtleV2.suck(barrel) do

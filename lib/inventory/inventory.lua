@@ -58,6 +58,12 @@ function Inventory.findChest()
     return findSide("minecraft:chest")
 end
 
+---@param chest string
+---@return integer
+function Inventory.getSize(chest)
+    return peripheral.call(chest, "size")
+end
+
 ---@param name string
 function Inventory.countItems(name)
     local stock = stacksToStock(getStacks(name))
