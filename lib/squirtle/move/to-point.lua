@@ -1,12 +1,11 @@
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
-local locate = require "squirtle.locate"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 
 ---@param target Vector
 ---@return boolean, string?
 return function(target)
-    local delta = Vector.minus(target, locate())
+    local delta = Vector.minus(target, SquirtleV2.locate())
 
     if delta.y > 0 then
         if not SquirtleV2.tryMove("top", delta.y) then

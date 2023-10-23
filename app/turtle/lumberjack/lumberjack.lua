@@ -2,7 +2,6 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Chest = require "world.chest"
-local dump = require "squirtle.dump"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
 local Fuel = require "squirtle.fuel"
@@ -73,7 +72,7 @@ local function refuel(stash)
         print("refueled to", turtle.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not dump(stash) then
+        if not SquirtleV2.dump(stash) then
             error("stash full")
         end
     else
@@ -122,7 +121,7 @@ end
 local function doHomework(stash, io, furnace)
     print("i am home! dumping inventory to stash...")
 
-    if not dump(stash) then
+    if not SquirtleV2.dump(stash) then
         error("stash is full :(")
     end
 

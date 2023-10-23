@@ -1,8 +1,7 @@
-local Fuel = require "squirtle.fuel"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 local World = require "geo.world"
-local changeState = require "squirtle.change-state"
 local refuel = require "squirtle.refuel"
 
 local function printUsage()
@@ -40,7 +39,8 @@ return function(args)
 
     local position = Vector.create(0, 0, 0)
     local facing = Cardinal.north
-    changeState({facing = facing, position = position})
+    SquirtleV2.facing = facing
+    SquirtleV2.position = position
 
     local worldX = 0
     local worldY = 0

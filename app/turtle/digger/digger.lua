@@ -7,14 +7,12 @@ local World = require "geo.world"
 local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
 local navigate = require "squirtle.navigate"
-local locate = require "squirtle.locate"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local boot = require "digger.boot"
 local pushOutput = require "squirtle.transfer.push-output"
 local pullInput = require "squirtle.transfer.pull-input"
-local dump = require "squirtle.dump"
 local Fuel = require "squirtle.fuel"
 local suckSlotFromChest = require "squirtle.transfer.suck-slot-from-chest"
-local inspect = require "squirtle.inspect"
 local dig = require "squirtle.dig"
 local AppState = require "app-state"
 local getStacks = require "inventory.get-stacks"
@@ -104,7 +102,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueled to", Fuel.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not dump(buffer) then
+    if not SquirtleV2.dump(buffer) then
         error("buffer barrel full")
     end
 end
@@ -149,7 +147,7 @@ local function main(args)
         return
     end
 
-    local position = locate()
+    local position = SquirtleV2.locate()
 
     if not World.isInBounds(state.world, position) then
         print("not inside digging area, going there now...")
@@ -191,11 +189,11 @@ local function main(args)
         else
             numFailedNavigates = 0
 
-            if isBreakable(inspect("top")) then
+            if isBreakable(SquirtleV2.inspect("top")) then
                 dig("top")
             end
 
-            if isBreakable(inspect("bottom")) then
+            if isBreakable(SquirtleV2.inspect("bottom")) then
                 dig("bottom")
             end
         end
@@ -221,11 +219,11 @@ local function main(args)
             navigate(state.home, nil, isBreakable)
 
             if args[1] == "io" then
-                if not dump(buffer) then
+                if not SquirtleV2.dump(buffer) then
                     error("buffer full")
                 end
             else
-                while not dump(buffer) do
+                while not SquirtleV2.dump(buffer) do
                     print("chest full, sleeping 7s...")
                     os.sleep(7)
                 end

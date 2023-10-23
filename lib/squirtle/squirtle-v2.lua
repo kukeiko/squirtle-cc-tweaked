@@ -1,13 +1,11 @@
+local Utils = require "utils"
+local Vector = require "elements.vector"
+local Cardinal = require "elements.cardinal"
 local selectItem = require "squirtle.backpack.select-item"
 local findItem = require "squirtle.backpack.find"
-local turn = require "squirtle.turn"
-local Vector = require "elements.vector"
-local Side = require "elements.side"
-local Cardinal = require "elements.cardinal"
 local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local requireItems = require "squirtle.require-items"
-local Utils = require "utils"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
@@ -16,6 +14,7 @@ local Utils = require "utils"
 local inventorySize = 16
 
 local natives = {
+    turn = {left = turtle.turnLeft, right = turtle.turnRight},
     move = {
         top = turtle.up,
         up = turtle.up,
@@ -145,7 +144,15 @@ function SquirtleV2.tryWalk(side, steps)
         -- and since we're not simulating an actual world we can not really return a meaningful value of steps taken.
         return false, 0
     else
-        error("only the simulation mode is currently implemented for SquirtleV2.tryWalk()")
+        local native = getNative("move", side)
+
+        for step = 1, steps do
+            if not native() then
+                return false, step
+            end
+        end
+
+        return true, steps
     end
 end
 
@@ -273,18 +280,44 @@ function SquirtleV2.back(steps)
 end
 
 ---@param side? string
+---@return boolean
 function SquirtleV2.turn(side)
-    if not SquirtleV2.simulate then
-        if SquirtleV2.flipTurns then
-            if side == "left" then
-                side = "right"
-            elseif side == "right" then
-                side = "left"
-            end
+    if SquirtleV2.flipTurns then
+        if side == "left" then
+            side = "right"
+        elseif side == "right" then
+            side = "left"
         end
-
-        turn(side)
     end
+
+    if SquirtleV2.simulate then
+        return true
+    end
+
+    if side == "left" then
+        turtle.turnLeft()
+        SquirtleV2.facing = Cardinal.rotateLeft(SquirtleV2.facing)
+        return true
+    elseif side == "right" then
+        turtle.turnRight()
+        SquirtleV2.facing = Cardinal.rotateRight(SquirtleV2.facing)
+        return true
+    elseif side == "back" then
+        local turnFn = natives.turn.left
+
+        if math.random() < .5 then
+            turnFn = natives.turn.right
+        end
+        turnFn()
+        turnFn()
+        SquirtleV2.facing = Cardinal.rotateLeft(SquirtleV2.facing, 2)
+
+        return true
+    elseif side == "front" then
+        return true
+    end
+
+    error(string.format("turn() does not support side %s", side))
 end
 
 function SquirtleV2.left()
@@ -309,11 +342,11 @@ function SquirtleV2.face(target, current)
     end
 
     if (current + 2) % 4 == target then
-        turn("back")
+        SquirtleV2.turn("back")
     elseif (current + 1) % 4 == target then
-        turn("right")
+        SquirtleV2.turn("right")
     elseif (current - 1) % 4 == target then
-        turn("left")
+        SquirtleV2.turn("left")
     end
 
     return target
@@ -334,21 +367,18 @@ function SquirtleV2.locate(refresh)
     return SquirtleV2.position
 end
 
----@param side string
 ---@param position Vector
-local function stepOut(side, position)
+local function stepOut(position)
     refuel(2)
 
-    if not SquirtleV2.tryMove(side) then
+    if not SquirtleV2.tryForward() then
         return false
     end
 
     local now = SquirtleV2.locate(true)
-    local cardinal = Cardinal.fromVector(Vector.minus(now, position))
+    SquirtleV2.facing = Cardinal.fromVector(Vector.minus(now, position))
 
-    SquirtleV2.facing = Cardinal.rotate(cardinal, side)
-
-    while not SquirtleV2.tryMove(Side.rotateAround(side)) do
+    while not SquirtleV2.tryBack() do
         print("can't move back, something is blocking me. sleeping 1s...")
         os.sleep(1)
     end
@@ -358,7 +388,32 @@ end
 
 ---@param position Vector
 local function orientateSameLayer(position)
-    return stepOut("back", position) or stepOut("front", position)
+    if stepOut(position) then
+        return true
+    end
+
+    SquirtleV2.left()
+
+    if stepOut(position) then
+        SquirtleV2.right()
+        return true
+    end
+
+    SquirtleV2.left()
+
+    if stepOut(position) then
+        SquirtleV2.around()
+        return true
+    end
+
+    SquirtleV2.left()
+
+    if stepOut(position) then
+        SquirtleV2.left()
+        return true
+    end
+
+    return false
 end
 
 ---@param refresh? boolean

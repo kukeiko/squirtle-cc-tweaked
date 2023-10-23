@@ -1,9 +1,9 @@
 local AppState = require "app-state"
-local orientate = require "squirtle.orientate"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local setup = require "digger.setup"
 
 return function()
-    orientate()
+    SquirtleV2.orientate(true)
 
     ---@type DiggerAppState
     local state = AppState.load("digger", {})

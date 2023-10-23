@@ -1,13 +1,9 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Squirtle = require "squirtle.squirtle"
-local SimulatableSquirtle = require "squirtle.simulated-squirtle"
-local requireItems = require "squirtle.require-items"
 local refuel = require "squirtle.refuel"
-local timeout = require "utils.wait-timeout-or-until-key-event"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
-local cycles = tonumber(arg[1])
 ---@class AqueductAppState
 local state = {
     times = 1,
@@ -87,199 +83,195 @@ local function boot(args)
 end
 
 ---@param state AqueductAppState
----@param squirtle SimulatableSquirtle
-local function floorSequence(state, squirtle)
+local function floorSequence(state)
     for _ = 1, state.times do
-        squirtle:place(state.blocks.bricks, "down")
-        squirtle:back(1)
-        squirtle:place(state.blocks.chiseled)
+        SquirtleV2.placeDown(state.blocks.bricks)
+        SquirtleV2.back()
+        SquirtleV2.placeFront(state.blocks.chiseled)
     end
 end
 
 ---@param state AqueductAppState
----@param squirtle SimulatableSquirtle
-local function wallSequence(state, squirtle)
-    squirtle:flipTurns(not state.left)
+local function wallSequence(state)
+    SquirtleV2.flipTurns = not state.left
 
     for _ = 1, state.times do
-        squirtle:place(state.blocks.bricks)
-        squirtle:up(1, true)
-        squirtle:place(state.blocks.torch)
-        squirtle:down(3, true)
-        squirtle:forward(1, true)
-        squirtle:around()
+        SquirtleV2.placeFront(state.blocks.bricks)
+        SquirtleV2.up()
+        SquirtleV2.placeFront(state.blocks.torch)
+        SquirtleV2.down(3)
+        SquirtleV2.forward()
+        SquirtleV2.around()
         -- top stairs
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.stone, "up")
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.forward()
+        SquirtleV2.placeUp(state.blocks.stone)
         -- bottom stairs
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "up")
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
         -- remaining stone line
-        squirtle:left()
-        squirtle:forward(1, true)
-        squirtle:up(3, true)
+        SquirtleV2.left()
+        SquirtleV2.forward()
+        SquirtleV2.up(3)
 
         for _ = 1, 7 do
-            squirtle:place(state.blocks.stone, "down")
-            squirtle:forward(1, true)
+            SquirtleV2.placeDown(state.blocks.stone)
+            SquirtleV2.forward()
         end
 
-        squirtle:left()
+        SquirtleV2.left()
     end
 
-    squirtle:flipTurns(not state.left)
+    SquirtleV2.flipTurns = false
 end
 
 ---@param state AqueductAppState
----@param squirtle SimulatableSquirtle
-local function archesTopSequence(state, squirtle)
+local function archesTopSequence(state)
     for _ = 1, state.times do
         -- right side
-        squirtle:down(1, true)
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.stairs, "top")
+        SquirtleV2.down()
+        SquirtleV2.forward()
+        SquirtleV2.placeUp(state.blocks.stairs)
 
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.bricks, "top")
+        SquirtleV2.forward()
+        SquirtleV2.placeUp(state.blocks.bricks)
 
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "top")
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
 
         -- center
-        squirtle:forward(1, true)
-        squirtle:down(4, true)
+        SquirtleV2.forward()
+        SquirtleV2.down(4)
 
         for _ = 1, 6 do
-            squirtle:place(state.blocks.bricks, "down")
-            squirtle:up(1, true)
+            SquirtleV2.placeDown(state.blocks.bricks)
+            SquirtleV2.up()
         end
 
-        squirtle:place(state.blocks.bricks, "down")
+        SquirtleV2.placeDown(state.blocks.bricks)
 
         -- left
-        squirtle:forward(1, true)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.bricks, "top")
+        SquirtleV2.forward()
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.bricks)
 
-        squirtle:down(1, true)
-        squirtle:around()
-        squirtle:place(state.blocks.stairs, "top")
+        SquirtleV2.down()
+        SquirtleV2.around()
+        SquirtleV2.placeUp(state.blocks.stairs)
 
-        squirtle:back(1, true)
-        squirtle:up(1, true)
-        squirtle:place(state.blocks.stairs, "top")
+        SquirtleV2.back()
+        SquirtleV2.up()
+        SquirtleV2.placeUp(state.blocks.stairs)
 
-        squirtle:around()
-        squirtle:forward(1, true)
-        squirtle:up(1, true)
-        squirtle:forward(2, true)
+        SquirtleV2.around()
+        SquirtleV2.forward()
+        SquirtleV2.up()
+        SquirtleV2.forward(2)
     end
 end
 
 ---@param state AqueductAppState
 ---@param squirtle SimulatableSquirtle
 local function archesBottomSequence(state, squirtle)
-    squirtle:flipTurns(not state.left)
+    SquirtleV2.flipTurns = not state.left
 
     for _ = 1, state.times do
-        squirtle:forward(1, true)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "up")
+        SquirtleV2.forward()
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
 
         for _ = 1, 2 do
-            squirtle:forward(1, true)
-            squirtle:place(state.blocks.bricks, "up")
+            SquirtleV2.forward()
+            SquirtleV2.placeUp(state.blocks.bricks)
         end
 
-        squirtle:forward(2, true)
-        squirtle:place(state.blocks.bricks, "down")
-        squirtle:up(1, true)
-        squirtle:around()
-        squirtle:place(state.blocks.stairs, "down")
-        squirtle:around()
-        squirtle:back(1, true)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.bricks, "up")
-        squirtle:back(1, true)
-        squirtle:place(state.blocks.bricks)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:forward(1, true)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:forward(1, true)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.bricks, "up")
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:forward(1, true)
+        SquirtleV2.forward(2)
+        SquirtleV2.placeDown(state.blocks.bricks)
+        SquirtleV2.up()
+        SquirtleV2.around()
+        SquirtleV2.placeDown(state.blocks.stairs)
+        SquirtleV2.around()
+        SquirtleV2.back()
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.bricks)
+        SquirtleV2.back()
+        SquirtleV2.placeFront(state.blocks.bricks)
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.forward()
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.forward()
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.bricks)
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.forward()
 
         -- center pillar
         local depth = 0
 
-        while squirtle:down() do
+        while SquirtleV2.tryWalk("down") do
             depth = depth + 1
         end
 
         for i = 1, depth + 4 do
-            squirtle:up(1, true)
-            squirtle:place(state.blocks.bricks, "down")
+            SquirtleV2.up()
+            SquirtleV2.placeDown(state.blocks.bricks)
 
             if i == (depth + 4) - 2 then
-                squirtle:left()
-                squirtle:forward(1, true)
-                squirtle:up(1, true)
-                squirtle:place(state.blocks.bricks, "up")
-                squirtle:down(1, true)
-                squirtle:around()
-                squirtle:place(state.blocks.stairs, "up")
-                squirtle:around()
-                squirtle:back(1, true)
-                squirtle:right()
+                SquirtleV2.left()
+                SquirtleV2.forward()
+                SquirtleV2.up()
+                SquirtleV2.placeUp(state.blocks.bricks)
+                SquirtleV2.down()
+                SquirtleV2.around()
+                SquirtleV2.placeUp(state.blocks.stairs)
+                SquirtleV2.around()
+                SquirtleV2.back()
+                SquirtleV2.right()
             end
         end
 
-        squirtle:left()
-        squirtle:place(state.blocks.lantern)
-        squirtle:right()
+        SquirtleV2.left()
+        SquirtleV2.placeFront(state.blocks.lantern)
+        SquirtleV2.right()
 
         -- left side
-
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.bricks, "down")
-        squirtle:up(1, true)
-        squirtle:place(state.blocks.stairs, "down")
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.bricks)
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.bricks, "up")
-        squirtle:down(1, true)
-        squirtle:place(state.blocks.bricks, "up")
-        squirtle:down(1, true)
-        squirtle:around()
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:place(state.blocks.bricks)
-        squirtle:down(2, true)
-        squirtle:forward(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:back(1, true)
-        squirtle:up(2, true)
-        squirtle:back(1, true)
-        squirtle:up(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:back(1, true)
-        squirtle:up(1, true)
-        squirtle:place(state.blocks.bricks, "up")
-        squirtle:back(1, true)
-        squirtle:place(state.blocks.stairs, "up")
-        squirtle:around()
-        squirtle:forward(1, true)
-        squirtle:up(1, true)
-        squirtle:forward(4, true)
+        SquirtleV2.forward()
+        SquirtleV2.placeDown(state.blocks.bricks)
+        SquirtleV2.up()
+        SquirtleV2.placeDown(state.blocks.stairs)
+        SquirtleV2.forward()
+        SquirtleV2.placeFront(state.blocks.bricks)
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.bricks)
+        SquirtleV2.down()
+        SquirtleV2.placeUp(state.blocks.bricks)
+        SquirtleV2.down()
+        SquirtleV2.around()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.placeFront(state.blocks.bricks)
+        SquirtleV2.down(2)
+        SquirtleV2.forward()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.back()
+        SquirtleV2.up(2)
+        SquirtleV2.back()
+        SquirtleV2.up()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.back()
+        SquirtleV2.up()
+        SquirtleV2.placeUp(state.blocks.bricks)
+        SquirtleV2.back()
+        SquirtleV2.placeUp(state.blocks.stairs)
+        SquirtleV2.around()
+        SquirtleV2.forward()
+        SquirtleV2.up()
+        SquirtleV2.forward(4)
     end
 
-    squirtle:flipTurns(not state.left)
+    SquirtleV2.flipTurns = false
 end
 
 ---@param args table<string>
@@ -318,20 +310,19 @@ local function main(args)
         end
     end
 
-    local squirtle = SimulatableSquirtle:new(Squirtle:new())
-    squirtle.simulate = true
-    sequence(state, squirtle)
-    squirtle.simulate = false
+    SquirtleV2.simulate = true
+    sequence(state)
+    SquirtleV2.simulate = false
 
-    local requiredFuel = squirtle.timesMoved
-    local requiredItems = squirtle.blocksPlaced
+    local requiredFuel = SquirtleV2.results.steps
+    local requiredItems = SquirtleV2.results.placed
 
     if state.mode == "arches" and state.top == false then
         requiredItems[state.blocks.bricks] = requiredItems[state.blocks.bricks] + (state.pillar * state.times)
     end
 
     refuel(requiredFuel)
-    requireItems(requiredItems)
+    SquirtleV2.requireItems(requiredItems)
 
     local note = ""
 
@@ -366,7 +357,7 @@ local function main(args)
     -- print("[idle] starting in 30 seconds. hit any key to skip waiting")
     -- timeout(30)
     print("[ready] starting to build!")
-    sequence(state, squirtle)
+    sequence(state)
 end
 
 return main(arg)

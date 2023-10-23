@@ -5,8 +5,6 @@ local Utils = require "utils"
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
 local navigate = require "squirtle.navigate"
-local locate = require "squirtle.locate"
-local orientate = require "squirtle.orientate"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local requireItems = require "squirtle.require-items"
 
@@ -22,7 +20,7 @@ local function main(args)
     local pointsCompact = textutils.unserializeJSON(file.readAll())
     file.close()
 
-    local _, facing = orientate()
+    local _, facing = SquirtleV2.orientate(true)
     ---@type table<string, integer>
     local blocks = {}
 
@@ -52,7 +50,7 @@ local function main(args)
     end)
 
     requireItems(blocks)
-    local start = locate()
+    local start = SquirtleV2.locate(true)
 
     for _, point in pairs(points) do
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))

@@ -1,8 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local Vector = require "elements.vector"
 local World = require "geo.world"
-local locate = require "squirtle.locate"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local navigate = require "squirtle.navigate"
 
 local function printUsage()
@@ -23,7 +22,7 @@ local function main(args)
 
     ---@type Vector
     local goal = {x = x, y = y, z = z}
-    local start = locate()
+    local start = SquirtleV2.locate(true)
     ---@type World
     local world = World.create(start.x, start.y, start.z)
 

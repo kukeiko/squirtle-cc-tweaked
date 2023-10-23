@@ -1,10 +1,8 @@
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 local findPath = require "geo.find-path"
-local locate = require "squirtle.locate"
-local orientate = require "squirtle.orientate"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local World = require "geo.world"
-local inspect = require "squirtle.inspect"
 local dig = require "squirtle.dig"
 local refuel = require "squirtle.refuel"
 local moveToPoint = require "squirtle.move.to-point"
@@ -36,11 +34,11 @@ return function(to, world, breakable)
     end
 
     if not world then
-        local position = locate()
+        local position = SquirtleV2.locate(true)
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = orientate()
+    local from, facing = SquirtleV2.orientate(true)
 
     while true do
         local path, msg = findPath(from, to, facing, world)
@@ -56,8 +54,8 @@ return function(to, world, breakable)
         if success then
             return true
         elseif failedSide then
-            from, facing = orientate()
-            local block = inspect(failedSide)
+            from, facing = SquirtleV2.orientate()
+            local block = SquirtleV2.inspect(failedSide)
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
             if block and breakable(block) then

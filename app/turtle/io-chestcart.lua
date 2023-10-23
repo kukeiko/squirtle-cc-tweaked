@@ -2,9 +2,6 @@ package.path = package.path .. ";/lib/?.lua"
 
 local findPeripheralSide = require "world.peripheral.find-side"
 local Redstone = require "world.redstone"
-local turn = require "squirtle.turn"
-local inspect = require "squirtle.inspect"
-local dump = require "squirtle.dump"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local count = require "utils.count"
 local toInventory = require "inventory.to-inventory"
@@ -68,7 +65,7 @@ local function dumpChestcartToBarrel()
     while SquirtleV2.suck() do
     end
 
-    if not dump("bottom") then
+    if not SquirtleV2.dump("bottom") then
         error("buffer barrel full")
     end
 
@@ -81,7 +78,7 @@ local function dumpBarrelToChestcart()
     while SquirtleV2.suck("bottom") do
     end
 
-    if not dump("front") then
+    if not SquirtleV2.dump("front") then
         -- [todo] recover from error. this should only happen when buffer already had items in it
         -- before chestcart arrived
         error("chestcart full")
@@ -105,7 +102,7 @@ local function lookAtChestcart()
 
     if signal then
         -- turn towards the chestcart
-        turn(signal)
+        SquirtleV2.turn(signal)
     else
         -- unlock piston in case there is no chestcart
         SquirtleV2.dig()
@@ -118,14 +115,14 @@ local function emptyChestcart()
         local chest = findChestSide()
 
         if chest == "left" then
-            turn("right")
+            SquirtleV2.turn("right")
         else
-            turn("left")
+            SquirtleV2.turn("left")
         end
     else
         dumpChestcartToBarrel()
         local chest = findChestSide()
-        turn(chest)
+        SquirtleV2.turn(chest)
     end
 end
 
@@ -156,11 +153,11 @@ local function fillAndSendOffChestcart()
         error("chestcart vanished :(")
     end
 
-    turn(signal)
+    SquirtleV2.turn(signal)
     print("filling chestcart...")
     dumpBarrelToChestcart()
     print("sending off chestcart!")
-    turn(signal)
+    SquirtleV2.turn(signal)
     SquirtleV2.dig()
     os.sleep(3)
 end
@@ -198,12 +195,12 @@ end
 local function main(args)
     print("[io-chestcart v2.2.0] booting...")
 
-    if not inspect("bottom", "minecraft:barrel") then
+    if not SquirtleV2.inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
     end
 
     while true do
-        local front = inspect()
+        local front = SquirtleV2.inspect()
 
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()

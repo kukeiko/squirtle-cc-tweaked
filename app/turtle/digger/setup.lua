@@ -1,25 +1,23 @@
 local Vector = require "elements.vector"
 local Chest = require "world.chest"
 local World = require "geo.world"
-local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
-local orientate = require "squirtle.orientate"
-local turn = require "squirtle.turn"
+local SquirtleV2 = require "squirtle.squirtle-v2"
 
 local function getDirection()
     while true do
         local _, key = os.pullEvent("key")
 
         if key == keys.a then
-            turn("left")
+            SquirtleV2.turn("left")
         elseif key == keys.d then
-            turn("right")
+            SquirtleV2.turn("right")
         elseif key == keys.enter then
             break
         end
     end
 
-    local _, direction = orientate()
+    local _, direction = SquirtleV2.orientate()
 
     return direction
 end
@@ -52,7 +50,7 @@ end
 
 return function()
     print("setup!")
-    local position = orientate()
+    local position = SquirtleV2.orientate()
     -- [todo] make sure barrel and io-chest are placed
 
     print("use a/d keys to let me look towards 1st digging direction, then hit enter")
