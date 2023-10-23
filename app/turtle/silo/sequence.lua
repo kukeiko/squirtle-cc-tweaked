@@ -1,20 +1,20 @@
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@param state SiloAppState
 return function(state)
-    local move = SquirtleV2.move
-    local forward = SquirtleV2.forward
-    local up = SquirtleV2.up
-    local down = SquirtleV2.down
-    local back = SquirtleV2.back
-    local right = SquirtleV2.right
-    local left = SquirtleV2.left
-    local placeFront = SquirtleV2.placeFront
-    local placeUp = SquirtleV2.placeUp
-    local placeDown = SquirtleV2.placeDown
-    local around = SquirtleV2.around
+    local move = Squirtle.move
+    local forward = Squirtle.forward
+    local up = Squirtle.up
+    local down = Squirtle.down
+    local back = Squirtle.back
+    local right = Squirtle.right
+    local left = Squirtle.left
+    local placeFront = Squirtle.placeFront
+    local placeUp = Squirtle.placeUp
+    local placeDown = Squirtle.placeDown
+    local around = Squirtle.around
 
-    local restoreBreakable = SquirtleV2.setBreakable(function()
+    local restoreBreakable = Squirtle.setBreakable(function()
         return true
     end)
 
@@ -26,7 +26,7 @@ return function(state)
         right()
         forward(4)
         left()
-        SquirtleV2.flipTurns = true
+        Squirtle.flipTurns = true
     end
 
     -- place center chests
@@ -345,7 +345,7 @@ return function(state)
     if state.lampLocation == "right" then
         around()
     else
-        SquirtleV2.flipTurns = false
+        Squirtle.flipTurns = false
         right()
         move("forward", 6)
         right()

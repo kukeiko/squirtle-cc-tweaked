@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 local doHomework = require "farmer.do-homework"
 local doFieldWork = require "farmer.do-field-work"
 local isCrops = require "farmer.is-crops"
@@ -22,19 +22,19 @@ local function getBlockTurnSide(block)
 end
 
 local function moveNext()
-    while not SquirtleV2.tryMove() do
-        local block = SquirtleV2.inspect()
+    while not Squirtle.tryMove() do
+        local block = Squirtle.inspect()
 
         if not block then
             print("could not move even though front seems to be free")
 
             while not block do
                 os.sleep(1)
-                block = SquirtleV2.inspect()
+                block = Squirtle.inspect()
             end
         end
 
-        SquirtleV2.turn(getBlockTurnSide(block))
+        Squirtle.turn(getBlockTurnSide(block))
     end
 end
 
@@ -46,21 +46,21 @@ end
 ---@param args table
 local function main(args)
     print("[farmer v1.4.0] booting...")
-    SquirtleV2.setBreakable(isCrops)
+    Squirtle.setBreakable(isCrops)
 
     while true do
-        local block = SquirtleV2.inspect("bottom")
+        local block = Squirtle.inspect("bottom")
 
         if block and block.name == "minecraft:chest" then
-            SquirtleV2.back()
-            SquirtleV2.down()
+            Squirtle.back()
+            Squirtle.down()
         else
             if block and block.name == "minecraft:barrel" then
                 doHomework()
             elseif block and block.name == "minecraft:spruce_fence" then
-                SquirtleV2.turn(getBlockTurnSide(block))
+                Squirtle.turn(getBlockTurnSide(block))
             elseif block and block.name == "minecraft:oak_fence" then
-                SquirtleV2.turn(getBlockTurnSide(block))
+                Squirtle.turn(getBlockTurnSide(block))
             else
                 doFieldWork(block)
             end

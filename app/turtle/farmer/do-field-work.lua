@@ -1,4 +1,4 @@
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
@@ -10,9 +10,9 @@ local cropsToSeedsMap = {
 }
 
 local function tryPlantAnything()
-    for slot = 1, SquirtleV2.size() do
-        if SquirtleV2.selectSlotIfNotEmpty(slot) then
-            if SquirtleV2.tryPlace("bottom") then
+    for slot = 1, Squirtle.size() do
+        if Squirtle.selectSlotIfNotEmpty(slot) then
+            if Squirtle.tryPlace("bottom") then
                 return
             end
         end
@@ -28,7 +28,7 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    return SquirtleV2.select(seeds)
+    return Squirtle.select(seeds)
 end
 
 ---@param block Block
@@ -37,13 +37,13 @@ local function harvestCrops(block)
         local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
 
         if not selectedSeed then
-            SquirtleV2.selectFirstEmptySlot()
+            Squirtle.selectFirstEmptySlot()
             -- [todo] error handling
         end
 
-        SquirtleV2.dig("down")
+        Squirtle.dig("down")
 
-        if not SquirtleV2.tryPlace("bottom") then
+        if not Squirtle.tryPlace("bottom") then
             tryPlantAnything()
         end
     end

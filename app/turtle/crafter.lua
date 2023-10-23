@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local findSide = require "world.peripheral.find-side"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@param name string
 ---@param chest string
@@ -79,7 +79,7 @@ local function main(args)
         end
 
         turtle.craft()
-        SquirtleV2.dump("front")
+        Squirtle.dump("front")
     end
 
 end

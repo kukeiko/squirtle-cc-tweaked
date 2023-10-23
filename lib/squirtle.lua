@@ -96,13 +96,13 @@ local breakableSafeguard = function(block)
     return block.name ~= "minecraft:bedrock"
 end
 
----@class SquirtleV2
+---@class Squirtle
 ---@field flipTurns boolean
 ---@field simulate boolean
 ---@field facing integer
 ---@field results SquirtleV2SimulationResults
 ---@field breakable? fun(block: Block) : boolean
-local SquirtleV2 = {
+local Squirtle = {
     flipTurns = false,
     simulate = false,
     results = {placed = {}, steps = 0},
@@ -114,20 +114,20 @@ local SquirtleV2 = {
 ---@param block Block
 ---@return boolean
 local function canBreak(block)
-    return breakableSafeguard(block) and (SquirtleV2.breakable == nil or SquirtleV2.breakable(block))
+    return breakableSafeguard(block) and (Squirtle.breakable == nil or Squirtle.breakable(block))
 end
 
 ---@param predicate? (fun(block: Block) : boolean) | string[]
 ---@return fun() : nil
-function SquirtleV2.setBreakable(predicate)
-    local current = SquirtleV2.breakable
+function Squirtle.setBreakable(predicate)
+    local current = Squirtle.breakable
 
     local function restore()
-        SquirtleV2.breakable = current
+        Squirtle.breakable = current
     end
 
     if type(predicate) == "table" then
-        SquirtleV2.breakable = function(block)
+        Squirtle.breakable = function(block)
             for _, item in pairs(predicate) do
                 if block.name == item then
                     return true
@@ -137,7 +137,7 @@ function SquirtleV2.setBreakable(predicate)
             return false
         end
     else
-        SquirtleV2.breakable = predicate
+        Squirtle.breakable = predicate
     end
 
     return restore
@@ -147,10 +147,10 @@ end
 ---@param steps? integer
 ---@return boolean
 ---@return integer
-function SquirtleV2.tryWalk(side, steps)
+function Squirtle.tryWalk(side, steps)
     steps = steps or 1
 
-    if SquirtleV2.simulate then
+    if Squirtle.simulate then
         -- "tryWalk()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
         -- and since we're not simulating an actual world we can not really return a meaningful value of steps taken.
         return false, 0
@@ -170,7 +170,7 @@ end
 ---@param side? string
 ---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryMove(side, steps)
+function Squirtle.tryMove(side, steps)
     side = side or "front"
     local native = natives.move[side]
 
@@ -180,16 +180,16 @@ function SquirtleV2.tryMove(side, steps)
 
     steps = steps or 1
 
-    if SquirtleV2.simulate then
-        SquirtleV2.results.steps = SquirtleV2.results.steps + 1
+    if Squirtle.simulate then
+        Squirtle.results.steps = Squirtle.results.steps + 1
         return true, steps
     end
 
-    if not SquirtleV2.hasFuel(steps) then
-        SquirtleV2.refuel(steps)
+    if not Squirtle.hasFuel(steps) then
+        Squirtle.refuel(steps)
     end
 
-    local delta = Cardinal.toVector(Cardinal.fromSide(side, SquirtleV2.facing))
+    local delta = Cardinal.toVector(Cardinal.fromSide(side, Squirtle.facing))
 
     for step = 1, steps do
         repeat
@@ -200,29 +200,29 @@ function SquirtleV2.tryMove(side, steps)
 
                 if side == "back" then
                     actionSide = "front"
-                    SquirtleV2.around()
+                    Squirtle.around()
                 end
 
-                while SquirtleV2.tryDig(actionSide) do
+                while Squirtle.tryDig(actionSide) do
                 end
 
-                local block = SquirtleV2.inspect(actionSide)
+                local block = Squirtle.inspect(actionSide)
 
                 if block then
                     if side == "back" then
-                        SquirtleV2.around()
+                        Squirtle.around()
                     end
 
                     return false, step - 1, string.format("blocked by %s", block.name)
                 else
                     if side == "back" then
-                        SquirtleV2.around()
+                        Squirtle.around()
                     end
                 end
             end
         until success
 
-        SquirtleV2.position = Vector.plus(SquirtleV2.position, delta)
+        Squirtle.position = Vector.plus(Squirtle.position, delta)
     end
 
     return true, steps
@@ -230,40 +230,40 @@ end
 
 ---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryForward(steps)
-    return SquirtleV2.tryMove("forward", steps)
+function Squirtle.tryForward(steps)
+    return Squirtle.tryMove("forward", steps)
 end
 
 ---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryUp(steps)
-    return SquirtleV2.tryMove("up", steps)
+function Squirtle.tryUp(steps)
+    return Squirtle.tryMove("up", steps)
 end
 
 ---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryDown(steps)
-    return SquirtleV2.tryMove("down", steps)
+function Squirtle.tryDown(steps)
+    return Squirtle.tryMove("down", steps)
 end
 
 ---@param steps? integer
 ---@return boolean, integer, string?
-function SquirtleV2.tryBack(steps)
-    return SquirtleV2.tryMove("back", steps)
+function Squirtle.tryBack(steps)
+    return Squirtle.tryMove("back", steps)
 end
 
 ---@param side? string
 ---@param steps? integer
-function SquirtleV2.move(side, steps)
-    if SquirtleV2.simulate then
+function Squirtle.move(side, steps)
+    if Squirtle.simulate then
         -- when simulating, only "move()" will simulate actual steps.
         steps = steps or 1
-        SquirtleV2.results.steps = SquirtleV2.results.steps + 1
+        Squirtle.results.steps = Squirtle.results.steps + 1
 
         return nil
     end
 
-    local success, _, message = SquirtleV2.tryMove(side, steps)
+    local success, _, message = Squirtle.tryMove(side, steps)
 
     if not success then
         error(string.format("move(%s) failed: %s", side, message))
@@ -271,29 +271,29 @@ function SquirtleV2.move(side, steps)
 end
 
 ---@param steps? integer
-function SquirtleV2.forward(steps)
-    SquirtleV2.move("forward", steps)
+function Squirtle.forward(steps)
+    Squirtle.move("forward", steps)
 end
 
 ---@param steps? integer
-function SquirtleV2.up(steps)
-    SquirtleV2.move("up", steps)
+function Squirtle.up(steps)
+    Squirtle.move("up", steps)
 end
 
 ---@param steps? integer
-function SquirtleV2.down(steps)
-    SquirtleV2.move("down", steps)
+function Squirtle.down(steps)
+    Squirtle.move("down", steps)
 end
 
 ---@param steps? integer
-function SquirtleV2.back(steps)
-    SquirtleV2.move("back", steps)
+function Squirtle.back(steps)
+    Squirtle.move("back", steps)
 end
 
 ---@param side? string
 ---@return boolean
-function SquirtleV2.turn(side)
-    if SquirtleV2.flipTurns then
+function Squirtle.turn(side)
+    if Squirtle.flipTurns then
         if side == "left" then
             side = "right"
         elseif side == "right" then
@@ -301,17 +301,17 @@ function SquirtleV2.turn(side)
         end
     end
 
-    if SquirtleV2.simulate then
+    if Squirtle.simulate then
         return true
     end
 
     if side == "left" then
         turtle.turnLeft()
-        SquirtleV2.facing = Cardinal.rotateLeft(SquirtleV2.facing)
+        Squirtle.facing = Cardinal.rotateLeft(Squirtle.facing)
         return true
     elseif side == "right" then
         turtle.turnRight()
-        SquirtleV2.facing = Cardinal.rotateRight(SquirtleV2.facing)
+        Squirtle.facing = Cardinal.rotateRight(Squirtle.facing)
         return true
     elseif side == "back" then
         local turnFn = natives.turn.left
@@ -321,7 +321,7 @@ function SquirtleV2.turn(side)
         end
         turnFn()
         turnFn()
-        SquirtleV2.facing = Cardinal.rotateLeft(SquirtleV2.facing, 2)
+        Squirtle.facing = Cardinal.rotateLeft(Squirtle.facing, 2)
 
         return true
     elseif side == "front" then
@@ -331,40 +331,40 @@ function SquirtleV2.turn(side)
     error(string.format("turn() does not support side %s", side))
 end
 
-function SquirtleV2.left()
-    SquirtleV2.turn("left")
+function Squirtle.left()
+    Squirtle.turn("left")
 end
 
-function SquirtleV2.right()
-    SquirtleV2.turn("right")
+function Squirtle.right()
+    Squirtle.turn("right")
 end
 
-function SquirtleV2.around()
-    SquirtleV2.turn("back")
+function Squirtle.around()
+    Squirtle.turn("back")
 end
 
 ---@param target integer
 ---@param current? integer
-function SquirtleV2.face(target, current)
-    current = current or SquirtleV2.facing
+function Squirtle.face(target, current)
+    current = current or Squirtle.facing
 
     if not current then
         error("facing not available")
     end
 
     if (current + 2) % 4 == target then
-        SquirtleV2.turn("back")
+        Squirtle.turn("back")
     elseif (current + 1) % 4 == target then
-        SquirtleV2.turn("right")
+        Squirtle.turn("right")
     elseif (current - 1) % 4 == target then
-        SquirtleV2.turn("left")
+        Squirtle.turn("left")
     end
 
     return target
 end
 
 ---@param refresh? boolean
-function SquirtleV2.locate(refresh)
+function Squirtle.locate(refresh)
     if refresh then
         local x, y, z = gps.locate()
 
@@ -372,24 +372,24 @@ function SquirtleV2.locate(refresh)
             error("no gps available")
         end
 
-        SquirtleV2.position = Vector.create(x, y, z)
+        Squirtle.position = Vector.create(x, y, z)
     end
 
-    return SquirtleV2.position
+    return Squirtle.position
 end
 
 ---@param position Vector
 local function stepOut(position)
-    SquirtleV2.refuel(2)
+    Squirtle.refuel(2)
 
-    if not SquirtleV2.tryForward() then
+    if not Squirtle.tryForward() then
         return false
     end
 
-    local now = SquirtleV2.locate(true)
-    SquirtleV2.facing = Cardinal.fromVector(Vector.minus(now, position))
+    local now = Squirtle.locate(true)
+    Squirtle.facing = Cardinal.fromVector(Vector.minus(now, position))
 
-    while not SquirtleV2.tryBack() do
+    while not Squirtle.tryBack() do
         print("can't move back, something is blocking me. sleeping 1s...")
         os.sleep(1)
     end
@@ -403,24 +403,24 @@ local function orientateSameLayer(position)
         return true
     end
 
-    SquirtleV2.left()
+    Squirtle.left()
 
     if stepOut(position) then
-        SquirtleV2.right()
+        Squirtle.right()
         return true
     end
 
-    SquirtleV2.left()
+    Squirtle.left()
 
     if stepOut(position) then
-        SquirtleV2.around()
+        Squirtle.around()
         return true
     end
 
-    SquirtleV2.left()
+    Squirtle.left()
 
     if stepOut(position) then
-        SquirtleV2.left()
+        Squirtle.left()
         return true
     end
 
@@ -429,9 +429,9 @@ end
 
 ---@param refresh? boolean
 ---@return Vector position, integer facing
-function SquirtleV2.orientate(refresh)
-    local position = SquirtleV2.locate(refresh)
-    local facing = SquirtleV2.facing
+function Squirtle.orientate(refresh)
+    local position = Squirtle.locate(refresh)
+    local facing = Squirtle.facing
 
     if refresh or not facing then
         if not orientateSameLayer(position) then
@@ -439,13 +439,13 @@ function SquirtleV2.orientate(refresh)
         end
     end
 
-    return SquirtleV2.position, SquirtleV2.facing
+    return Squirtle.position, Squirtle.facing
 end
 
 ---@param side? string
 ---@return boolean, string?
-function SquirtleV2.tryDig(side)
-    if SquirtleV2.simulate then
+function Squirtle.tryDig(side)
+    if Squirtle.simulate then
         return true
     end
 
@@ -456,7 +456,7 @@ function SquirtleV2.tryDig(side)
         error(string.format("dig() does not support side %s", side))
     end
 
-    local block = SquirtleV2.inspect(side)
+    local block = Squirtle.inspect(side)
 
     if not block then
         return false
@@ -477,8 +477,8 @@ end
 
 ---@param side? string
 ---@return boolean, string?
-function SquirtleV2.dig(side)
-    local success, message = SquirtleV2.tryDig(side)
+function Squirtle.dig(side)
+    local success, message = Squirtle.tryDig(side)
 
     -- if there is no message, then there just wasn't anything to dig, meaning every other case is interpreted as an error
     if not success and message then
@@ -489,24 +489,24 @@ function SquirtleV2.dig(side)
 end
 
 ---@return boolean, string?
-function SquirtleV2.digUp()
-    return SquirtleV2.dig("up")
+function Squirtle.digUp()
+    return Squirtle.dig("up")
 end
 
 ---@return boolean, string?
-function SquirtleV2.digDown()
-    return SquirtleV2.dig("down")
+function Squirtle.digDown()
+    return Squirtle.dig("down")
 end
 
 ---@param block? string
 ---@return boolean
 local function simulateTryPlace(block)
     if block then
-        if not SquirtleV2.results.placed[block] then
-            SquirtleV2.results.placed[block] = 0
+        if not Squirtle.results.placed[block] then
+            Squirtle.results.placed[block] = 0
         end
 
-        SquirtleV2.results.placed[block] = SquirtleV2.results.placed[block] + 1
+        Squirtle.results.placed[block] = Squirtle.results.placed[block] + 1
     end
 
     return true
@@ -519,14 +519,14 @@ end
 
 ---@param side? string
 ---@param block? string
-function SquirtleV2.place(side, block)
+function Squirtle.place(side, block)
     requireItem = requireItem or true
 
-    if SquirtleV2.simulate then
+    if Squirtle.simulate then
         return simulatePlace(block)
     end
 
-    if not SquirtleV2.tryPlace(side, block) then
+    if not Squirtle.tryPlace(side, block) then
         error("failed to place")
     end
 end
@@ -534,17 +534,17 @@ end
 ---@param side? string
 ---@param block? string
 ---@return boolean
-function SquirtleV2.tryPlace(side, block)
+function Squirtle.tryPlace(side, block)
     side = side or "front"
     local native = getNative("place", side)
 
-    if SquirtleV2.simulate then
+    if Squirtle.simulate then
         return simulateTryPlace(block)
     end
 
     if block then
-        while not SquirtleV2.select(block) do
-            SquirtleV2.requireItems({[block] = 1})
+        while not Squirtle.select(block) do
+            Squirtle.requireItems({[block] = 1})
         end
     end
 
@@ -552,29 +552,29 @@ function SquirtleV2.tryPlace(side, block)
         return true
     end
 
-    while SquirtleV2.tryDig(side) do
+    while Squirtle.tryDig(side) do
     end
 
     return native()
 end
 
 ---@param block? string
-function SquirtleV2.placeFront(block)
-    SquirtleV2.place("front", block)
+function Squirtle.placeFront(block)
+    Squirtle.place("front", block)
 end
 
 ---@param block? string
-function SquirtleV2.placeUp(block)
-    SquirtleV2.place("up", block)
+function Squirtle.placeUp(block)
+    Squirtle.place("up", block)
 end
 
 ---@param block? string
-function SquirtleV2.placeDown(block)
-    SquirtleV2.place("down", block)
+function Squirtle.placeDown(block)
+    Squirtle.place("down", block)
 end
 
 ---@return string? direction
-function SquirtleV2.placeAnywhere()
+function Squirtle.placeAnywhere()
     if turtle.place() then
         return "front"
     end
@@ -591,7 +591,7 @@ end
 ---@param side? string
 ---@param count? integer
 ---@return boolean, string?
-function SquirtleV2.drop(side, count)
+function Squirtle.drop(side, count)
     side = side or "front"
     return getNative("drop", side)(count)
 end
@@ -625,9 +625,9 @@ end
 ---@param item string
 ---@return boolean
 local function loadFromShulker(shulker, item)
-    SquirtleV2.selectSlot(shulker)
+    Squirtle.selectSlot(shulker)
 
-    local placedSide = SquirtleV2.placeAnywhere()
+    local placedSide = Squirtle.placeAnywhere()
 
     if not placedSide then
         return false
@@ -641,8 +641,8 @@ local function loadFromShulker(shulker, item)
 
     for stackSlot, stack in pairs(stacks) do
         if stack.name == item then
-            SquirtleV2.suckSlotFromChest(placedSide, stackSlot)
-            local emptySlot = SquirtleV2.firstEmptySlot()
+            Squirtle.suckSlotFromChest(placedSide, stackSlot)
+            local emptySlot = Squirtle.firstEmptySlot()
 
             if not emptySlot then
                 local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
@@ -652,11 +652,11 @@ local function loadFromShulker(shulker, item)
                 end
 
                 turtle.select(slotToPutIntoShulker)
-                SquirtleV2.drop(placedSide)
+                Squirtle.drop(placedSide)
                 turtle.select(shulker)
             end
 
-            -- [todo] cannot use SquirtleV2.dig() cause breaking shulkers might not be allowed
+            -- [todo] cannot use Squirtle.dig() cause breaking shulkers might not be allowed
             digSide(placedSide)
 
             return true
@@ -674,13 +674,13 @@ end
 ---@param exact? boolean
 ---@return false|integer
 local function selectItem(name, exact)
-    local slot = SquirtleV2.find(name, exact)
+    local slot = Squirtle.find(name, exact)
 
     if not slot then
         local nextShulkerSlot = 1
 
         while true do
-            local shulker = SquirtleV2.find("minecraft:shulker_box", true, nextShulkerSlot)
+            local shulker = Squirtle.find("minecraft:shulker_box", true, nextShulkerSlot)
 
             if not shulker then
                 break
@@ -698,7 +698,7 @@ local function selectItem(name, exact)
         return false
     end
 
-    SquirtleV2.selectSlot(slot)
+    Squirtle.selectSlot(slot)
 
     return slot
 end
@@ -706,7 +706,7 @@ end
 ---@param name string|integer
 ---@param exact? boolean
 ---@return false|integer
-function SquirtleV2.select(name, exact)
+function Squirtle.select(name, exact)
     if type(name) == "string" then
         return selectItem(name, exact)
     else
@@ -715,7 +715,7 @@ function SquirtleV2.select(name, exact)
 end
 
 ---@param startAt? number
-function SquirtleV2.selectEmpty(startAt)
+function Squirtle.selectEmpty(startAt)
     startAt = startAt or turtle.getSelectedSlot()
 
     for i = 0, inventorySize - 1 do
@@ -736,14 +736,14 @@ end
 ---@param item string
 ---@param minCount? integer
 ---@return boolean
-function SquirtleV2.has(item, minCount)
+function Squirtle.has(item, minCount)
     if type(minCount) == "number" then
-        return SquirtleV2.getItemStock(item) >= minCount
+        return Squirtle.getItemStock(item) >= minCount
     else
         startAtSlot = startAtSlot or 1
 
-        for slot = startAtSlot, SquirtleV2.size() do
-            local item = SquirtleV2.getStack(slot)
+        for slot = startAtSlot, Squirtle.size() do
+            local item = Squirtle.getStack(slot)
 
             if item and item.name == item then
                 return true
@@ -771,7 +771,7 @@ end
 local function getMissing(items)
     ---@type table<string, integer>
     local open = {}
-    local stock = SquirtleV2.getStock()
+    local stock = Squirtle.getStock()
 
     for item, required in pairs(items) do
         local missing = required - (stock[item] or 0)
@@ -841,7 +841,7 @@ local function fillShulker(items, shulker)
 
             if item and item.name ~= "minecraft:shulker_box" then
                 turtle.select(slot)
-                SquirtleV2.drop(shulker)
+                Squirtle.drop(shulker)
             end
         end
     end
@@ -878,7 +878,7 @@ end
 
 -- [todo] assumes an empty inventory
 ---@param items table<string, integer>
-function SquirtleV2.requireItems(items)
+function Squirtle.requireItems(items)
     local numStacks = itemsToStacks(items)
 
     if numStacks <= 16 then
@@ -914,7 +914,7 @@ function SquirtleV2.requireItems(items)
             error("required items would need more than 15 shulker boxes")
         end
 
-        SquirtleV2.requireItems({["minecraft:shulker_box"] = numShulkers})
+        Squirtle.requireItems({["minecraft:shulker_box"] = numShulkers})
 
         local fullShulkers = {}
         local theItems = Utils.copy(items)
@@ -925,7 +925,7 @@ function SquirtleV2.requireItems(items)
 
                 if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
                     turtle.select(slot)
-                    local placedSide = SquirtleV2.placeAnywhere()
+                    local placedSide = Squirtle.placeAnywhere()
 
                     if not placedSide then
                         error("no space to place shulker box")
@@ -943,24 +943,24 @@ function SquirtleV2.requireItems(items)
     end
 end
 
-function SquirtleV2.condense()
-    for slot = SquirtleV2.size(), 1, -1 do
-        local item = SquirtleV2.getStack(slot)
+function Squirtle.condense()
+    for slot = Squirtle.size(), 1, -1 do
+        local item = Squirtle.getStack(slot)
 
         if item then
             for targetSlot = 1, slot - 1 do
-                local candidate = SquirtleV2.getStack(targetSlot, true)
+                local candidate = Squirtle.getStack(targetSlot, true)
 
                 if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
-                    SquirtleV2.selectSlot(slot)
-                    SquirtleV2.transfer(targetSlot)
+                    Squirtle.selectSlot(slot)
+                    Squirtle.transfer(targetSlot)
 
-                    if SquirtleV2.numInSlot(slot) == 0 then
+                    if Squirtle.numInSlot(slot) == 0 then
                         break
                     end
                 elseif not candidate then
-                    SquirtleV2.selectSlot(slot)
-                    SquirtleV2.transfer(targetSlot)
+                    Squirtle.selectSlot(slot)
+                    Squirtle.transfer(targetSlot)
                     break
                 end
             end
@@ -971,7 +971,7 @@ end
 ---@param side? string
 ---@param name? table|string
 ---@return Block? block
-function SquirtleV2.inspect(side, name)
+function Squirtle.inspect(side, name)
     side = side or "front"
     local native = natives.inspect[side]
 
@@ -1001,7 +1001,7 @@ end
 ---@param side? string
 ---@param limit? integer
 ---@return boolean, string?
-function SquirtleV2.suck(side, limit)
+function Squirtle.suck(side, limit)
     side = side or "front"
     local native = getNative("suck", side)
 
@@ -1009,29 +1009,29 @@ function SquirtleV2.suck(side, limit)
 end
 
 ---@return integer
-function SquirtleV2.size()
-    return SquirtleV2.inventorySize
+function Squirtle.size()
+    return Squirtle.inventorySize
 end
 
 ---@param slot integer
 ---@param detailed? boolean
 ---@return ItemStack?
-function SquirtleV2.getStack(slot, detailed)
+function Squirtle.getStack(slot, detailed)
     return turtle.getItemDetail(slot, detailed)
 end
 
 ---@param slot integer
 ---@param count? integer
-function SquirtleV2.transfer(slot, count)
+function Squirtle.transfer(slot, count)
     return turtle.transferTo(slot, count)
 end
 
 ---@return ItemStack[]
-function SquirtleV2.getStacks()
+function Squirtle.getStacks()
     local stacks = {}
 
-    for slot = 1, SquirtleV2.size() do
-        local item = SquirtleV2.getStack(slot)
+    for slot = 1, Squirtle.size() do
+        local item = Squirtle.getStack(slot)
 
         if item then
             stacks[slot] = item
@@ -1042,9 +1042,9 @@ function SquirtleV2.getStacks()
 end
 
 ---@return boolean
-function SquirtleV2.isEmpty()
-    for slot = 1, SquirtleV2.size() do
-        if SquirtleV2.numInSlot(slot) > 0 then
+function Squirtle.isEmpty()
+    for slot = 1, Squirtle.size() do
+        if Squirtle.numInSlot(slot) > 0 then
             return false
         end
     end
@@ -1053,11 +1053,11 @@ function SquirtleV2.isEmpty()
 end
 
 ---@return table<string, integer>
-function SquirtleV2.getStock()
+function Squirtle.getStock()
     ---@type table<string, integer>
     local stock = {}
 
-    for _, stack in pairs(SquirtleV2.getStacks()) do
+    for _, stack in pairs(Squirtle.getStacks()) do
         stock[stack.name] = (stock[stack.name] or 0) + stack.count
     end
 
@@ -1065,7 +1065,7 @@ function SquirtleV2.getStock()
 end
 
 ---@param predicate string|function<boolean, ItemStack>
-function SquirtleV2.getItemStock(predicate)
+function Squirtle.getItemStock(predicate)
     if type(predicate) == "string" then
         local name = predicate
 
@@ -1078,7 +1078,7 @@ function SquirtleV2.getItemStock(predicate)
 
     local stock = 0
 
-    for _, stack in pairs(SquirtleV2.getStacks()) do
+    for _, stack in pairs(Squirtle.getStacks()) do
         if predicate(stack) then
             stock = stock + stack.count
         end
@@ -1088,20 +1088,20 @@ function SquirtleV2.getItemStock(predicate)
 end
 
 ---@param slot integer
-function SquirtleV2.selectSlot(slot)
+function Squirtle.selectSlot(slot)
     return turtle.select(slot)
 end
 
 ---@param slot integer
 ---@return integer
-function SquirtleV2.numInSlot(slot)
+function Squirtle.numInSlot(slot)
     return turtle.getItemCount(slot)
 end
 
 ---@return boolean
-function SquirtleV2.selectSlotIfNotEmpty(slot)
-    if SquirtleV2.numInSlot(slot) > 0 then
-        return SquirtleV2.selectSlot(slot)
+function Squirtle.selectSlotIfNotEmpty(slot)
+    if Squirtle.numInSlot(slot) > 0 then
+        return Squirtle.selectSlot(slot)
     else
         return false
     end
@@ -1110,11 +1110,11 @@ end
 ---@param name string
 ---@param exact? boolean
 ---@param startAtSlot? integer
-function SquirtleV2.find(name, exact, startAtSlot)
+function Squirtle.find(name, exact, startAtSlot)
     startAtSlot = startAtSlot or 1
 
-    for slot = startAtSlot, SquirtleV2.size() do
-        local item = SquirtleV2.getStack(slot)
+    for slot = startAtSlot, Squirtle.size() do
+        local item = Squirtle.getStack(slot)
 
         if item and exact and item.name == name then
             return slot
@@ -1125,9 +1125,9 @@ function SquirtleV2.find(name, exact, startAtSlot)
 end
 
 ---@return boolean
-function SquirtleV2.isFull()
-    for slot = 1, SquirtleV2.size() do
-        if SquirtleV2.numInSlot(slot) == 0 then
+function Squirtle.isFull()
+    for slot = 1, Squirtle.size() do
+        if Squirtle.numInSlot(slot) == 0 then
             return false
         end
     end
@@ -1136,11 +1136,11 @@ function SquirtleV2.isFull()
 end
 
 ---@param startAt? number
-function SquirtleV2.firstEmptySlot(startAt)
+function Squirtle.firstEmptySlot(startAt)
     startAt = startAt or 1
 
-    for slot = startAt, SquirtleV2.size() do
-        if SquirtleV2.numInSlot(slot) == 0 then
+    for slot = startAt, Squirtle.size() do
+        if Squirtle.numInSlot(slot) == 0 then
             return slot
         end
     end
@@ -1149,33 +1149,33 @@ function SquirtleV2.firstEmptySlot(startAt)
 end
 
 ---@return boolean|integer
-function SquirtleV2.selectFirstEmptySlot()
-    local slot = SquirtleV2.firstEmptySlot()
+function Squirtle.selectFirstEmptySlot()
+    local slot = Squirtle.firstEmptySlot()
 
     if not slot then
         return false
     end
 
-    SquirtleV2.selectSlot(slot)
+    Squirtle.selectSlot(slot)
 
     return slot
 end
 
 ---@param side string
 ---@return boolean success if everything could be dumped
-function SquirtleV2.dump(side)
-    local items = SquirtleV2.getStacks()
+function Squirtle.dump(side)
+    local items = Squirtle.getStacks()
 
     for slot in pairs(items) do
-        SquirtleV2.selectSlot(slot)
-        SquirtleV2.drop(side)
+        Squirtle.selectSlot(slot)
+        Squirtle.drop(side)
     end
 
-    return SquirtleV2.isEmpty()
+    return Squirtle.isEmpty()
 end
 
 ---@param fuel integer
-function SquirtleV2.hasFuel(fuel)
+function Squirtle.hasFuel(fuel)
     local level = turtle.getFuelLevel()
 
     return level == "unlimited" or level >= fuel
@@ -1183,7 +1183,7 @@ end
 
 ---@param limit? integer
 ---@return integer
-function SquirtleV2.missingFuel(limit)
+function Squirtle.missingFuel(limit)
     local current = turtle.getFuelLevel()
 
     if current == "unlimited" then
@@ -1195,40 +1195,40 @@ end
 
 ---@param quantity? integer
 ---@return boolean
-function SquirtleV2.refuelSlot(quantity)
+function Squirtle.refuelSlot(quantity)
     return turtle.refuel(quantity)
 end
 
 ---@return integer
-function SquirtleV2.getFuelLevel()
+function Squirtle.getFuelLevel()
     return turtle.getFuelLevel()
 end
 
 ---@return integer
-function SquirtleV2.getFuelLimit()
+function Squirtle.getFuelLimit()
     return turtle.getFuelLimit()
 end
 
 ---@param item string
-function SquirtleV2.isFuel(item)
+function Squirtle.isFuel(item)
     return fuelItems[item] ~= nil
 end
 
 ---@param item string
-function SquirtleV2.getRefuelAmount(item)
+function Squirtle.getRefuelAmount(item)
     return fuelItems[item] or 0
 end
 
 ---@param stack table
-function SquirtleV2.getStackRefuelAmount(stack)
-    return SquirtleV2.getRefuelAmount(stack.name) * stack.count
+function Squirtle.getStackRefuelAmount(stack)
+    return Squirtle.getRefuelAmount(stack.name) * stack.count
 end
 
 ---@param stacks ItemStack[]
 ---@param fuel number
 ---@param allowedOverFlow? number
 ---@return ItemStack[] fuelStacks, number openFuel
-function SquirtleV2.pickStacks(stacks, fuel, allowedOverFlow)
+function Squirtle.pickStacks(stacks, fuel, allowedOverFlow)
     allowedOverFlow = math.max(allowedOverFlow or 1000, 0)
     local pickedStacks = {}
     local openFuel = fuel
@@ -1236,8 +1236,8 @@ function SquirtleV2.pickStacks(stacks, fuel, allowedOverFlow)
     -- [todo] try to order stacks based on type of item
     -- for example, we may want to start with the smallest ones to minimize potential overflow
     for slot, stack in pairs(stacks) do
-        if SquirtleV2.isFuel(stack.name) then
-            local stackRefuelAmount = SquirtleV2.getStackRefuelAmount(stack)
+        if Squirtle.isFuel(stack.name) then
+            local stackRefuelAmount = Squirtle.getStackRefuelAmount(stack)
 
             if stackRefuelAmount <= openFuel then
                 pickedStacks[slot] = stack
@@ -1245,7 +1245,7 @@ function SquirtleV2.pickStacks(stacks, fuel, allowedOverFlow)
             else
                 -- [todo] can be shortened
                 -- actually, im not even sure we need the option to provide an allowed overflow
-                local itemRefuelAmount = SquirtleV2.getRefuelAmount(stack.name)
+                local itemRefuelAmount = Squirtle.getRefuelAmount(stack.name)
                 local numRequiredItems = math.floor(openFuel / itemRefuelAmount)
                 local numItemsToPick = numRequiredItems
 
@@ -1274,18 +1274,18 @@ local bucket = "minecraft:bucket"
 
 ---@param fuel? integer
 local function refuelFromBackpack(fuel)
-    fuel = fuel or SquirtleV2.getMissingFuel()
-    local fuelStacks = SquirtleV2.pickStacks(SquirtleV2.getStacks(), fuel)
-    local emptyBucketSlot = SquirtleV2.find(bucket)
+    fuel = fuel or Squirtle.getMissingFuel()
+    local fuelStacks = Squirtle.pickStacks(Squirtle.getStacks(), fuel)
+    local emptyBucketSlot = Squirtle.find(bucket)
 
     for slot, stack in pairs(fuelStacks) do
-        SquirtleV2.selectSlot(slot)
-        SquirtleV2.refuel(stack.count)
+        Squirtle.selectSlot(slot)
+        Squirtle.refuel(stack.count)
 
-        local remaining = SquirtleV2.getStack(slot)
+        local remaining = Squirtle.getStack(slot)
 
         if remaining and remaining.name == bucket then
-            if (emptyBucketSlot == nil) or (not SquirtleV2.transfer(emptyBucketSlot)) then
+            if (emptyBucketSlot == nil) or (not Squirtle.transfer(emptyBucketSlot)) then
                 emptyBucketSlot = slot
             end
         end
@@ -1294,7 +1294,7 @@ end
 
 ---@param fuel? integer
 local function refuelWithHelpFromPlayer(fuel)
-    fuel = fuel or SquirtleV2.getMissingFuel()
+    fuel = fuel or Squirtle.getMissingFuel()
 
     if fuel > turtle.getFuelLimit() then
         error(string.format("required fuel is %d more than the tank can hold", fuel - turtle.getFuelLimit()))
@@ -1302,10 +1302,10 @@ local function refuelWithHelpFromPlayer(fuel)
 
     local _, y = term.getCursorPos()
 
-    while SquirtleV2.getFuelLevel() < fuel do
+    while Squirtle.getFuelLevel() < fuel do
         term.setCursorPos(1, y)
         term.clearLine()
-        local openFuel = fuel - SquirtleV2.getFuelLevel()
+        local openFuel = fuel - Squirtle.getFuelLevel()
         term.write(string.format("[help] need %d more fuel please", openFuel))
         term.setCursorPos(1, y + 1)
         os.pullEvent("turtle_inventory")
@@ -1314,14 +1314,14 @@ local function refuelWithHelpFromPlayer(fuel)
 end
 
 ---@param fuel integer
-function SquirtleV2.refuel(fuel)
-    if SquirtleV2.hasFuel(fuel) then
+function Squirtle.refuel(fuel)
+    if Squirtle.hasFuel(fuel) then
         return true
     end
 
     refuelFromBackpack(fuel)
 
-    if SquirtleV2.getFuelLevel() < fuel then
+    if Squirtle.getFuelLevel() < fuel then
         refuelWithHelpFromPlayer(fuel)
     end
 end
@@ -1361,9 +1361,9 @@ end
 ---@param slot integer
 ---@param limit? integer
 ---@return any
-function SquirtleV2.suckSlotFromChest(side, slot, limit)
+function Squirtle.suckSlotFromChest(side, slot, limit)
     if slot == 1 then
-        return SquirtleV2.suck(side, limit)
+        return Squirtle.suck(side, limit)
     end
 
     local items = Inventory.getStacks(side)
@@ -1371,7 +1371,7 @@ function SquirtleV2.suckSlotFromChest(side, slot, limit)
     if items[1] ~= nil then
         local firstEmptySlot = firstEmptySlot(items, Inventory.getSize(side))
 
-        if not firstEmptySlot and SquirtleV2.isFull() then
+        if not firstEmptySlot and Squirtle.isFull() then
             error("container full. turtle also full, so no temporary unloading possible.")
         elseif not firstEmptySlot then
             if limit ~= nil and limit ~= items[slot].count then
@@ -1381,12 +1381,12 @@ function SquirtleV2.suckSlotFromChest(side, slot, limit)
 
             print("temporarily load first container slot into turtle...")
             local initialSlot = turtle.getSelectedSlot()
-            SquirtleV2.selectFirstEmptySlot()
-            SquirtleV2.suck(side)
+            Squirtle.selectFirstEmptySlot()
+            Squirtle.suck(side)
             Chest.pushItems(side, side, slot, limit, 1)
             -- [todo] if we want to be super strict, we would have to move the
             -- item we just sucked in back to the first slot after sucking the requested item
-            SquirtleV2.drop(side)
+            Squirtle.drop(side)
             print("pushing back temporarily loaded item")
             turtle.select(initialSlot)
         else
@@ -1402,39 +1402,39 @@ end
 
 ---@param target Vector
 ---@return boolean, string?
-function SquirtleV2.moveToPoint(target)
-    local delta = Vector.minus(target, SquirtleV2.locate())
+function Squirtle.moveToPoint(target)
+    local delta = Vector.minus(target, Squirtle.locate())
 
     if delta.y > 0 then
-        if not SquirtleV2.tryMove("top", delta.y) then
+        if not Squirtle.tryMove("top", delta.y) then
             return false, "top"
         end
     elseif delta.y < 0 then
-        if not SquirtleV2.tryMove("bottom", -delta.y) then
+        if not Squirtle.tryMove("bottom", -delta.y) then
             return false, "bottom"
         end
     end
 
     if delta.x > 0 then
-        SquirtleV2.face(Cardinal.east)
-        if not SquirtleV2.tryMove("front", delta.x) then
+        Squirtle.face(Cardinal.east)
+        if not Squirtle.tryMove("front", delta.x) then
             return false, "front"
         end
     elseif delta.x < 0 then
-        SquirtleV2.face(Cardinal.west)
-        if not SquirtleV2.tryMove("front", -delta.x) then
+        Squirtle.face(Cardinal.west)
+        if not Squirtle.tryMove("front", -delta.x) then
             return false, "front"
         end
     end
 
     if delta.z > 0 then
-        SquirtleV2.face(Cardinal.south)
-        if not SquirtleV2.tryMove("front", delta.z) then
+        Squirtle.face(Cardinal.south)
+        if not Squirtle.tryMove("front", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
-        SquirtleV2.face(Cardinal.north)
-        if not SquirtleV2.tryMove("front", -delta.z) then
+        Squirtle.face(Cardinal.north)
+        if not Squirtle.tryMove("front", -delta.z) then
             return false, "front"
         end
     end
@@ -1446,7 +1446,7 @@ end
 ---@return boolean, string?, integer?
 local function walkPath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = SquirtleV2.moveToPoint(next)
+        local success, failedSide = Squirtle.moveToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -1459,17 +1459,17 @@ end
 ---@param to Vector
 ---@param world? World
 ---@param breakable? function
-function SquirtleV2.navigate(to, world, breakable)
+function Squirtle.navigate(to, world, breakable)
     breakable = breakable or function(...)
         return false
     end
 
     if not world then
-        local position = SquirtleV2.locate(true)
+        local position = Squirtle.locate(true)
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = SquirtleV2.orientate(true)
+    local from, facing = Squirtle.orientate(true)
 
     while true do
         local path, msg = findPath(from, to, facing, world)
@@ -1479,18 +1479,18 @@ function SquirtleV2.navigate(to, world, breakable)
         end
 
         local distance = Vector.manhattan(from, to)
-        SquirtleV2.refuel(distance)
+        Squirtle.refuel(distance)
         local success, failedSide = walkPath(path)
 
         if success then
             return true
         elseif failedSide then
-            from, facing = SquirtleV2.orientate()
-            local block = SquirtleV2.inspect(failedSide)
+            from, facing = Squirtle.orientate()
+            local block = Squirtle.inspect(failedSide)
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
             if block and breakable(block) then
-                SquirtleV2.dig(failedSide)
+                Squirtle.dig(failedSide)
             elseif block then
                 World.setBlock(world, scannedLocation)
             else
@@ -1504,7 +1504,7 @@ end
 ---@param to string
 ---@param maxStock? table<string, integer>
 ---@return table<string, integer> transferredStock
-function SquirtleV2.pullInput(from, to, maxStock)
+function Squirtle.pullInput(from, to, maxStock)
     maxStock = maxStock or Chest.getInputMaxStock(from)
     -- local maxStock = Chest.getInputOutputMaxStock(from)
     local currentStock = Chest.getStock(to)
@@ -1535,7 +1535,7 @@ end
 ---@param to string
 ---@param keepStock? table<string, integer>
 ---@return boolean, table<string, integer>
-function SquirtleV2.pushOutput(from, to, keepStock)
+function Squirtle.pushOutput(from, to, keepStock)
     keepStock = keepStock or {}
 
     ---@type  table<string, integer>
@@ -1574,7 +1574,7 @@ end
 
 ---@param checkEarlyExit? fun() : boolean
 ---@return boolean
-function SquirtleV2.navigateTunnel(checkEarlyExit)
+function Squirtle.navigateTunnel(checkEarlyExit)
     local forbidden
 
     while true do
@@ -1619,4 +1619,4 @@ function SquirtleV2.navigateTunnel(checkEarlyExit)
     end
 end
 
-return SquirtleV2
+return Squirtle

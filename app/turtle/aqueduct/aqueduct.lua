@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@class AqueductAppState
 local state = {
@@ -84,192 +84,192 @@ end
 ---@param state AqueductAppState
 local function floorSequence(state)
     for _ = 1, state.times do
-        SquirtleV2.placeDown(state.blocks.bricks)
-        SquirtleV2.back()
-        SquirtleV2.placeFront(state.blocks.chiseled)
+        Squirtle.placeDown(state.blocks.bricks)
+        Squirtle.back()
+        Squirtle.placeFront(state.blocks.chiseled)
     end
 end
 
 ---@param state AqueductAppState
 local function wallSequence(state)
-    SquirtleV2.flipTurns = not state.left
+    Squirtle.flipTurns = not state.left
 
     for _ = 1, state.times do
-        SquirtleV2.placeFront(state.blocks.bricks)
-        SquirtleV2.up()
-        SquirtleV2.placeFront(state.blocks.torch)
-        SquirtleV2.down(3)
-        SquirtleV2.forward()
-        SquirtleV2.around()
+        Squirtle.placeFront(state.blocks.bricks)
+        Squirtle.up()
+        Squirtle.placeFront(state.blocks.torch)
+        Squirtle.down(3)
+        Squirtle.forward()
+        Squirtle.around()
         -- top stairs
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.forward()
-        SquirtleV2.placeUp(state.blocks.stone)
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.forward()
+        Squirtle.placeUp(state.blocks.stone)
         -- bottom stairs
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
         -- remaining stone line
-        SquirtleV2.left()
-        SquirtleV2.forward()
-        SquirtleV2.up(3)
+        Squirtle.left()
+        Squirtle.forward()
+        Squirtle.up(3)
 
         for _ = 1, 7 do
-            SquirtleV2.placeDown(state.blocks.stone)
-            SquirtleV2.forward()
+            Squirtle.placeDown(state.blocks.stone)
+            Squirtle.forward()
         end
 
-        SquirtleV2.left()
+        Squirtle.left()
     end
 
-    SquirtleV2.flipTurns = false
+    Squirtle.flipTurns = false
 end
 
 ---@param state AqueductAppState
 local function archesTopSequence(state)
     for _ = 1, state.times do
         -- right side
-        SquirtleV2.down()
-        SquirtleV2.forward()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.down()
+        Squirtle.forward()
+        Squirtle.placeUp(state.blocks.stairs)
 
-        SquirtleV2.forward()
-        SquirtleV2.placeUp(state.blocks.bricks)
+        Squirtle.forward()
+        Squirtle.placeUp(state.blocks.bricks)
 
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
 
         -- center
-        SquirtleV2.forward()
-        SquirtleV2.down(4)
+        Squirtle.forward()
+        Squirtle.down(4)
 
         for _ = 1, 6 do
-            SquirtleV2.placeDown(state.blocks.bricks)
-            SquirtleV2.up()
+            Squirtle.placeDown(state.blocks.bricks)
+            Squirtle.up()
         end
 
-        SquirtleV2.placeDown(state.blocks.bricks)
+        Squirtle.placeDown(state.blocks.bricks)
 
         -- left
-        SquirtleV2.forward()
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.bricks)
+        Squirtle.forward()
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.bricks)
 
-        SquirtleV2.down()
-        SquirtleV2.around()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.down()
+        Squirtle.around()
+        Squirtle.placeUp(state.blocks.stairs)
 
-        SquirtleV2.back()
-        SquirtleV2.up()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.back()
+        Squirtle.up()
+        Squirtle.placeUp(state.blocks.stairs)
 
-        SquirtleV2.around()
-        SquirtleV2.forward()
-        SquirtleV2.up()
-        SquirtleV2.forward(2)
+        Squirtle.around()
+        Squirtle.forward()
+        Squirtle.up()
+        Squirtle.forward(2)
     end
 end
 
 ---@param state AqueductAppState
 local function archesBottomSequence(state)
-    SquirtleV2.flipTurns = not state.left
+    Squirtle.flipTurns = not state.left
 
     for _ = 1, state.times do
-        SquirtleV2.forward()
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
+        Squirtle.forward()
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
 
         for _ = 1, 2 do
-            SquirtleV2.forward()
-            SquirtleV2.placeUp(state.blocks.bricks)
+            Squirtle.forward()
+            Squirtle.placeUp(state.blocks.bricks)
         end
 
-        SquirtleV2.forward(2)
-        SquirtleV2.placeDown(state.blocks.bricks)
-        SquirtleV2.up()
-        SquirtleV2.around()
-        SquirtleV2.placeDown(state.blocks.stairs)
-        SquirtleV2.around()
-        SquirtleV2.back()
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.bricks)
-        SquirtleV2.back()
-        SquirtleV2.placeFront(state.blocks.bricks)
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.forward()
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.forward()
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.bricks)
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.forward()
+        Squirtle.forward(2)
+        Squirtle.placeDown(state.blocks.bricks)
+        Squirtle.up()
+        Squirtle.around()
+        Squirtle.placeDown(state.blocks.stairs)
+        Squirtle.around()
+        Squirtle.back()
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.bricks)
+        Squirtle.back()
+        Squirtle.placeFront(state.blocks.bricks)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.forward()
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.forward()
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.bricks)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.forward()
 
         -- center pillar
         local depth = 0
 
-        while SquirtleV2.tryWalk("down") do
+        while Squirtle.tryWalk("down") do
             depth = depth + 1
         end
 
         for i = 1, depth + 4 do
-            SquirtleV2.up()
-            SquirtleV2.placeDown(state.blocks.bricks)
+            Squirtle.up()
+            Squirtle.placeDown(state.blocks.bricks)
 
             if i == (depth + 4) - 2 then
-                SquirtleV2.left()
-                SquirtleV2.forward()
-                SquirtleV2.up()
-                SquirtleV2.placeUp(state.blocks.bricks)
-                SquirtleV2.down()
-                SquirtleV2.around()
-                SquirtleV2.placeUp(state.blocks.stairs)
-                SquirtleV2.around()
-                SquirtleV2.back()
-                SquirtleV2.right()
+                Squirtle.left()
+                Squirtle.forward()
+                Squirtle.up()
+                Squirtle.placeUp(state.blocks.bricks)
+                Squirtle.down()
+                Squirtle.around()
+                Squirtle.placeUp(state.blocks.stairs)
+                Squirtle.around()
+                Squirtle.back()
+                Squirtle.right()
             end
         end
 
-        SquirtleV2.left()
-        SquirtleV2.placeFront(state.blocks.lantern)
-        SquirtleV2.right()
+        Squirtle.left()
+        Squirtle.placeFront(state.blocks.lantern)
+        Squirtle.right()
 
         -- left side
-        SquirtleV2.forward()
-        SquirtleV2.placeDown(state.blocks.bricks)
-        SquirtleV2.up()
-        SquirtleV2.placeDown(state.blocks.stairs)
-        SquirtleV2.forward()
-        SquirtleV2.placeFront(state.blocks.bricks)
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.bricks)
-        SquirtleV2.down()
-        SquirtleV2.placeUp(state.blocks.bricks)
-        SquirtleV2.down()
-        SquirtleV2.around()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.placeFront(state.blocks.bricks)
-        SquirtleV2.down(2)
-        SquirtleV2.forward()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.back()
-        SquirtleV2.up(2)
-        SquirtleV2.back()
-        SquirtleV2.up()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.back()
-        SquirtleV2.up()
-        SquirtleV2.placeUp(state.blocks.bricks)
-        SquirtleV2.back()
-        SquirtleV2.placeUp(state.blocks.stairs)
-        SquirtleV2.around()
-        SquirtleV2.forward()
-        SquirtleV2.up()
-        SquirtleV2.forward(4)
+        Squirtle.forward()
+        Squirtle.placeDown(state.blocks.bricks)
+        Squirtle.up()
+        Squirtle.placeDown(state.blocks.stairs)
+        Squirtle.forward()
+        Squirtle.placeFront(state.blocks.bricks)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.bricks)
+        Squirtle.down()
+        Squirtle.placeUp(state.blocks.bricks)
+        Squirtle.down()
+        Squirtle.around()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.placeFront(state.blocks.bricks)
+        Squirtle.down(2)
+        Squirtle.forward()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.back()
+        Squirtle.up(2)
+        Squirtle.back()
+        Squirtle.up()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.back()
+        Squirtle.up()
+        Squirtle.placeUp(state.blocks.bricks)
+        Squirtle.back()
+        Squirtle.placeUp(state.blocks.stairs)
+        Squirtle.around()
+        Squirtle.forward()
+        Squirtle.up()
+        Squirtle.forward(4)
     end
 
-    SquirtleV2.flipTurns = false
+    Squirtle.flipTurns = false
 end
 
 ---@param args table<string>
@@ -308,19 +308,19 @@ local function main(args)
         end
     end
 
-    SquirtleV2.simulate = true
+    Squirtle.simulate = true
     sequence(state)
-    SquirtleV2.simulate = false
+    Squirtle.simulate = false
 
-    local requiredFuel = SquirtleV2.results.steps
-    local requiredItems = SquirtleV2.results.placed
+    local requiredFuel = Squirtle.results.steps
+    local requiredItems = Squirtle.results.placed
 
     if state.mode == "arches" and state.top == false then
         requiredItems[state.blocks.bricks] = requiredItems[state.blocks.bricks] + (state.pillar * state.times)
     end
 
-    SquirtleV2.refuel(requiredFuel)
-    SquirtleV2.requireItems(requiredItems)
+    Squirtle.refuel(requiredFuel)
+    Squirtle.requireItems(requiredItems)
 
     local note = ""
 

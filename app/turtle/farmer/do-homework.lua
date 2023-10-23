@@ -1,4 +1,4 @@
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 local Inventory = require "inventory.inventory"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
@@ -6,31 +6,31 @@ local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 ---@param buffer string
 ---@param fuel integer
 local function refuelFromBuffer(buffer, fuel)
-    print("refueling, have", SquirtleV2.getFuelLevel())
-    SquirtleV2.selectFirstEmptySlot()
+    print("refueling, have", Squirtle.getFuelLevel())
+    Squirtle.selectFirstEmptySlot()
 
     for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            SquirtleV2.suckSlotFromChest(buffer, slot)
-            SquirtleV2.refuelSlot() -- [todo] should provide count to not consume a whole stack
+            Squirtle.suckSlotFromChest(buffer, slot)
+            Squirtle.refuelSlot() -- [todo] should provide count to not consume a whole stack
         end
 
-        if SquirtleV2.getFuelLevel() >= fuel then
+        if Squirtle.getFuelLevel() >= fuel then
             break
         end
     end
 
-    print("refueled to", SquirtleV2.getFuelLevel())
+    print("refueled to", Squirtle.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not SquirtleV2.dump(buffer) then
+    if not Squirtle.dump(buffer) then
         error("buffer barrel full")
     end
 end
 
 local function compostSeeds()
-    while SquirtleV2.select("seeds") do
-        SquirtleV2.drop("bottom")
+    while Squirtle.select("seeds") do
+        Squirtle.drop("bottom")
     end
 end
 
@@ -45,14 +45,14 @@ end
 
 local function faceFirstCrop()
     for _ = 1, 4 do
-        local block = SquirtleV2.inspect()
+        local block = Squirtle.inspect()
 
         if block and isCrops(block) then
             return true
         end
         -- [todo] try to place a crop, maybe we have a dirt block in front that lost its crop
 
-        SquirtleV2.left()
+        Squirtle.left()
     end
 
     error("failed to find first crop")
@@ -66,74 +66,74 @@ return function()
         error("no I/O chest found")
     end
 
-    SquirtleV2.turn(ioChest)
+    Squirtle.turn(ioChest)
     ioChest = "front"
     print("i am home! doing home stuff")
 
-    if not SquirtleV2.dump(barrel) then
+    if not Squirtle.dump(barrel) then
         error("buffer barrel full :(")
     end
 
     -- first we make a single pushOutput() in case output wants seeds or poisonous taters
     print("pushing output once")
-    SquirtleV2.pushOutput(barrel, ioChest)
+    Squirtle.pushOutput(barrel, ioChest)
 
     local minFuel = 512
     print("pushing output...")
 
-    while not SquirtleV2.pushOutput(barrel, ioChest) do
+    while not Squirtle.pushOutput(barrel, ioChest) do
         os.sleep(7)
     end
 
-    while SquirtleV2.getFuelLevel() < minFuel do
-        print("trying to refuel to ", minFuel, ", have", SquirtleV2.getFuelLevel())
-        SquirtleV2.pullInput(ioChest, barrel)
+    while Squirtle.getFuelLevel() < minFuel do
+        print("trying to refuel to ", minFuel, ", have", Squirtle.getFuelLevel())
+        Squirtle.pullInput(ioChest, barrel)
         refuelFromBuffer(barrel, minFuel)
 
-        if SquirtleV2.getFuelLevel() < minFuel then
+        if Squirtle.getFuelLevel() < minFuel then
             os.sleep(3)
         end
     end
 
     print("pulling input...")
-    SquirtleV2.pullInput(ioChest, barrel)
+    Squirtle.pullInput(ioChest, barrel)
 
     print("sucking barrel...")
-    while SquirtleV2.suck(barrel) do
+    while Squirtle.suck(barrel) do
     end
 
     -- then we're gonna compost and drop any unwanted poisonous taters
-    SquirtleV2.back()
+    Squirtle.back()
 
-    while SquirtleV2.select("minecraft:poisonous_potato") do
+    while Squirtle.select("minecraft:poisonous_potato") do
         print("discarding poisonous potatoes")
-        SquirtleV2.drop("top")
+        Squirtle.drop("top")
     end
 
     -- [todo] possible optimization: only move to composter if we have seeds
-    if not SquirtleV2.inspect("bottom", "minecraft:composter") then
+    if not Squirtle.inspect("bottom", "minecraft:composter") then
         print("no composter, going back to barrel")
-        SquirtleV2.forward()
+        Squirtle.forward()
     else
         print("composting seeds")
         compostSeeds()
-        SquirtleV2.forward()
+        Squirtle.forward()
         print("draining dropper")
         drainDropper()
-        while SquirtleV2.suck(barrel) do
+        while Squirtle.suck(barrel) do
         end
     end
 
     -- [todo] hacky workaround to put back charcoal
-    for slot, stack in pairs(SquirtleV2.getStacks()) do
+    for slot, stack in pairs(Squirtle.getStacks()) do
         if stack.name == "minecraft:charcoal" then
-            SquirtleV2.selectSlot(slot)
-            SquirtleV2.drop(barrel)
+            Squirtle.selectSlot(slot)
+            Squirtle.drop(barrel)
         end
     end
 
     print("home stuff ready!")
     faceFirstCrop()
     waitUntilCropsReady("front", 2, (7 * 3) + 1)
-    SquirtleV2.up()
+    Squirtle.up()
 end

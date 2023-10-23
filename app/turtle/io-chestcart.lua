@@ -2,7 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 
 local findPeripheralSide = require "world.peripheral.find-side"
 local Redstone = require "world.redstone"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 local count = require "utils.count"
 local toInventory = require "inventory.to-inventory"
 local toIoInventory = require "inventory.to-io-inventory"
@@ -62,29 +62,29 @@ local function findChestSide()
 end
 
 local function dumpChestcartToBarrel()
-    while SquirtleV2.suck() do
+    while Squirtle.suck() do
     end
 
-    if not SquirtleV2.dump("bottom") then
+    if not Squirtle.dump("bottom") then
         error("buffer barrel full")
     end
 
-    if SquirtleV2.suck() then
+    if Squirtle.suck() then
         dumpChestcartToBarrel()
     end
 end
 
 local function dumpBarrelToChestcart()
-    while SquirtleV2.suck("bottom") do
+    while Squirtle.suck("bottom") do
     end
 
-    if not SquirtleV2.dump("front") then
+    if not Squirtle.dump("front") then
         -- [todo] recover from error. this should only happen when buffer already had items in it
         -- before chestcart arrived
         error("chestcart full")
     end
 
-    if SquirtleV2.suck("bottom") then
+    if Squirtle.suck("bottom") then
         dumpBarrelToChestcart()
     end
 end
@@ -94,7 +94,7 @@ local function waitForChestcart()
     print("waiting for chestcart...")
     os.pullEvent("redstone")
     print("chestcart is here! locking it in place...")
-    SquirtleV2.placeFront("minecraft:redstone_block")
+    Squirtle.placeFront("minecraft:redstone_block")
 end
 
 local function lookAtChestcart()
@@ -102,10 +102,10 @@ local function lookAtChestcart()
 
     if signal then
         -- turn towards the chestcart
-        SquirtleV2.turn(signal)
+        Squirtle.turn(signal)
     else
         -- unlock piston in case there is no chestcart
-        SquirtleV2.dig()
+        Squirtle.dig()
     end
 end
 
@@ -115,14 +115,14 @@ local function emptyChestcart()
         local chest = findChestSide()
 
         if chest == "left" then
-            SquirtleV2.turn("right")
+            Squirtle.turn("right")
         else
-            SquirtleV2.turn("left")
+            Squirtle.turn("left")
         end
     else
         dumpChestcartToBarrel()
         local chest = findChestSide()
-        SquirtleV2.turn(chest)
+        Squirtle.turn(chest)
     end
 end
 
@@ -153,12 +153,12 @@ local function fillAndSendOffChestcart()
         error("chestcart vanished :(")
     end
 
-    SquirtleV2.turn(signal)
+    Squirtle.turn(signal)
     print("filling chestcart...")
     dumpBarrelToChestcart()
     print("sending off chestcart!")
-    SquirtleV2.turn(signal)
-    SquirtleV2.dig()
+    Squirtle.turn(signal)
+    Squirtle.dig()
     os.sleep(3)
 end
 
@@ -195,12 +195,12 @@ end
 local function main(args)
     print("[io-chestcart v2.2.0] booting...")
 
-    if not SquirtleV2.inspect("bottom", "minecraft:barrel") then
+    if not Squirtle.inspect("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
     end
 
     while true do
-        local front = SquirtleV2.inspect()
+        local front = Squirtle.inspect()
 
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()

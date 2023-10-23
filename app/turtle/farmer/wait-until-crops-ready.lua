@@ -1,5 +1,5 @@
 local isCrops = require "farmer.is-crops"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 local cropsReadyAges = {
     ["minecraft:wheat"] = 7,
@@ -11,7 +11,7 @@ local cropsReadyAges = {
 ---@param side string
 ---@return integer
 local function getCropsRemainingAge(side)
-    local crops = SquirtleV2.inspect(side)
+    local crops = Squirtle.inspect(side)
 
     if not crops or not isCrops(crops) then
         error(string.format("expected block at %s to be crops", side))
@@ -31,7 +31,7 @@ end
 ---@param time? integer maximum amount of time to wait
 ---@return boolean ready if crops are ready
 return function(side, max, time)
-    while getCropsRemainingAge(side) > 0 and SquirtleV2.select("minecraft:bone_meal") and SquirtleV2.tryPlace(side) do
+    while getCropsRemainingAge(side) > 0 and Squirtle.select("minecraft:bone_meal") and Squirtle.tryPlace(side) do
     end
 
     local remainingAge = getCropsRemainingAge(side)

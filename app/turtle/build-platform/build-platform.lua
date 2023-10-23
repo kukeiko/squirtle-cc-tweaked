@@ -2,7 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local boot = require "build-platform.boot"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@class BuildPlatformAppState
 ---@field depth integer
@@ -18,7 +18,7 @@ local function placeBlock(side)
             if item.name ~= "minecraft:sand" and item.name ~= "minecraft:gravel" then
                 turtle.select(slot)
 
-                if SquirtleV2.tryPlace(side) then
+                if Squirtle.tryPlace(side) then
                     return true
                 end
             end
@@ -40,9 +40,9 @@ local function main(args)
 
     ---@param side string
     local function turnMove(side)
-        SquirtleV2.turn(side)
-        SquirtleV2.move("front")
-        SquirtleV2.turn(side)
+        Squirtle.turn(side)
+        Squirtle.move("front")
+        Squirtle.turn(side)
     end
 
     ---@param currentLine integer
@@ -66,7 +66,7 @@ local function main(args)
             end
 
             if _ ~= state.depth then
-                SquirtleV2.move()
+                Squirtle.move()
             end
         end
 

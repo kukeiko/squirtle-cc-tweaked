@@ -4,7 +4,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "utils"
 local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@class ColoredPoint
 ---@field vector Vector
@@ -18,7 +18,7 @@ local function main(args)
     local pointsCompact = textutils.unserializeJSON(file.readAll())
     file.close()
 
-    local _, facing = SquirtleV2.orientate(true)
+    local _, facing = Squirtle.orientate(true)
     ---@type table<string, integer>
     local blocks = {}
 
@@ -47,13 +47,13 @@ local function main(args)
         return {vector = point, block = block}
     end)
 
-    SquirtleV2.requireItems(blocks)
-    local start = SquirtleV2.locate(true)
+    Squirtle.requireItems(blocks)
+    local start = Squirtle.locate(true)
 
     for _, point in pairs(points) do
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
         local worldPoint = Vector.plus(start, above)
-        local success, message = SquirtleV2.navigate(worldPoint, nil, function()
+        local success, message = Squirtle.navigate(worldPoint, nil, function()
             return true
         end)
 
@@ -61,11 +61,11 @@ local function main(args)
             error(message)
         end
 
-        SquirtleV2.placeDown(point.block or defaultBlock)
+        Squirtle.placeDown(point.block or defaultBlock)
     end
 
-    SquirtleV2.navigate(start)
-    SquirtleV2.face(facing)
+    Squirtle.navigate(start)
+    Squirtle.face(facing)
 end
 
 return main(arg)

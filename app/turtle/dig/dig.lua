@@ -5,7 +5,7 @@ local Utils = require "utils"
 local World = require "geo.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 ---@class DigAppState
 ---@field world World
@@ -22,11 +22,11 @@ end
 ---@param position Vector
 local function digUpDownIfInBounds(world, position)
     if World.isInBoundsY(world, position.y + 1) then
-        SquirtleV2.tryDig("up")
+        Squirtle.tryDig("up")
     end
 
     if World.isInBoundsY(world, position.y - 1) then
-        SquirtleV2.tryDig("down")
+        Squirtle.tryDig("down")
     end
 end
 
@@ -51,11 +51,11 @@ local function loadIntoShulker(direction)
     local unloadedAll = true
 
     for slot = 1, 16 do
-        local stack = SquirtleV2.getStack(slot)
+        local stack = Squirtle.getStack(slot)
 
         if stack and not stack.name:match("shulker") then
-            SquirtleV2.selectSlot(slot)
-            if not SquirtleV2.drop(direction) then
+            Squirtle.selectSlot(slot)
+            if not Squirtle.drop(direction) then
                 unloadedAll = false
             end
         end
@@ -70,10 +70,10 @@ local function tryLoadShulkers()
     local placedSide = nil
 
     for slot = 1, 16 do
-        local stack = SquirtleV2.getStack(slot)
+        local stack = Squirtle.getStack(slot)
 
         if stack and stack.name:match("shulker") then
-            SquirtleV2.selectSlot(slot)
+            Squirtle.selectSlot(slot)
             placedSide = placeAnywhere()
 
             if not placedSide then
@@ -84,8 +84,8 @@ local function tryLoadShulkers()
                 return false
             else
                 local unloadedAll = loadIntoShulker(placedSide)
-                SquirtleV2.selectSlot(slot)
-                SquirtleV2.dig(placedSide)
+                Squirtle.selectSlot(slot)
+                Squirtle.dig(placedSide)
 
                 if unloadedAll then
                     return true
@@ -132,10 +132,10 @@ local function main(args)
         end)
     end
 
-    local restoreBreakable = SquirtleV2.setBreakable(isBreakable)
+    local restoreBreakable = Squirtle.setBreakable(isBreakable)
 
     while point do
-        if SquirtleV2.navigate(point, world, isBreakable) then
+        if Squirtle.navigate(point, world, isBreakable) then
             digUpDownIfInBounds(world, point)
 
             if state.hasShulkers and not shulkersFull and isGettingFull() then
@@ -153,8 +153,8 @@ local function main(args)
 
     restoreBreakable()
     print("[done] going home!")
-    SquirtleV2.navigate(start, world, isBreakable)
-    SquirtleV2.face(facing)
+    Squirtle.navigate(start, world, isBreakable)
+    Squirtle.face(facing)
 
     return true
 end

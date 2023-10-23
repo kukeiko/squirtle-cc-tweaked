@@ -1,24 +1,24 @@
-local SquirtleV2 = require "squirtle.squirtle-v2"
+local Squirtle = require "squirtle"
 
 local function digLeftAndRight()
-    SquirtleV2.left()
-    SquirtleV2.dig()
-    SquirtleV2.suck()
-    SquirtleV2.around()
-    SquirtleV2.dig()
-    SquirtleV2.suck()
-    SquirtleV2.left()
+    Squirtle.left()
+    Squirtle.dig()
+    Squirtle.suck()
+    Squirtle.around()
+    Squirtle.dig()
+    Squirtle.suck()
+    Squirtle.left()
 end
 
 local function digUpAndDown()
-    SquirtleV2.digUp()
-    SquirtleV2.digDown()
+    Squirtle.digUp()
+    Squirtle.digDown()
 end
 
 local function digSuckMove()
-    SquirtleV2.dig()
-    SquirtleV2.suck()
-    SquirtleV2.move()
+    Squirtle.dig()
+    Squirtle.suck()
+    Squirtle.move()
 end
 
 local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
@@ -33,22 +33,22 @@ local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
     digSuckMove()
     digUpAndDown()
     digLeftAndRight()
-    SquirtleV2.back(2)
+    Squirtle.back(2)
 end
 
 local function digAllSides()
     for _ = 1, 4 do
-        SquirtleV2.dig()
-        SquirtleV2.left()
+        Squirtle.dig()
+        Squirtle.left()
     end
 end
 
 ---@param minSaplings integer
 local function collectSaplings(minSaplings)
-    if not SquirtleV2.has("minecraft:birch_sapling", minSaplings) then
+    if not Squirtle.has("minecraft:birch_sapling", minSaplings) then
         for i = 1, 4 do
             moveOutAndCutLeaves(i % 2 == 1)
-            SquirtleV2.left()
+            Squirtle.left()
         end
     end
 end
@@ -57,21 +57,21 @@ end
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
-    while SquirtleV2.inspect("top", "minecraft:birch_log") do
-        SquirtleV2.up()
+    while Squirtle.inspect("top", "minecraft:birch_log") do
+        Squirtle.up()
 
-        if SquirtleV2.inspect("front", "minecraft:birch_leaves") then
+        if Squirtle.inspect("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    SquirtleV2.up() -- goto peak
+    Squirtle.up() -- goto peak
     digAllSides() -- dig peak
-    SquirtleV2.down(2)
+    Squirtle.down(2)
     collectSaplings(minSaplings)
-    SquirtleV2.down()
+    Squirtle.down()
     collectSaplings(minSaplings)
 
-    while SquirtleV2.tryDown() do
+    while Squirtle.tryDown() do
     end
 end
