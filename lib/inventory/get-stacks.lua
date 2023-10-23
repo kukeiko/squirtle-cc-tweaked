@@ -2,10 +2,10 @@ local getItemMaxCount = require "inventory.get-item-max-count"
 
 ---@param name string
 ---@param detailed? boolean
----@return table<integer, ItemStack>
+---@return ItemStacks
 return function(name, detailed)
     if not detailed then
-        ---@type table<integer, ItemStack>
+        ---@type ItemStacks
         local stacks = peripheral.call(name, "list")
 
         for slot, stack in pairs(stacks) do
@@ -15,7 +15,7 @@ return function(name, detailed)
         return stacks
     else
         local stacks = peripheral.call(name, "list")
-        ---@type table<integer, ItemStack>
+        ---@type ItemStacks
         local detailedStacks = {}
 
         for slot, _ in pairs(stacks) do

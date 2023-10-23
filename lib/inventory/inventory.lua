@@ -1,4 +1,6 @@
 local Utils = require "utils"
+local findSide = require "world.peripheral.find-side"
+local getStacks = require "inventory.get-stacks"
 
 ---@param stacks table<integer, ItemStack>
 ---@return table<string, ItemStack>
@@ -32,13 +34,40 @@ end
 local Inventory = {}
 
 ---@param name string
----@param stacks ItemStacks
+---@param stacks? ItemStacks
+---@param detailed? boolean
 ---@return Inventory
-function Inventory.create(name, stacks)
+function Inventory.create(name, stacks, detailed)
+    stacks = stacks or Inventory.getStacks(name, detailed)
+
     ---@type Inventory
     local inventory = {name = name, stacks = stacks, stock = stacksToStock(stacks), locked = false}
 
     return inventory
+end
+
+---@param name string
+---@param detailed? boolean
+---@return ItemStacks
+function Inventory.getStacks(name, detailed)
+    return getStacks(name, detailed)
+end
+
+---@return string?
+function Inventory.findChest()
+    return findSide("minecraft:chest")
+end
+
+---@param name string
+function Inventory.countItems(name)
+    local stock = stacksToStock(getStacks(name))
+    local count = 0
+
+    for _, itemStock in pairs(stock) do
+        count = count + itemStock.count
+    end
+
+    return count
 end
 
 return Inventory

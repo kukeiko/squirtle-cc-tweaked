@@ -1,7 +1,6 @@
 local selectItem = require "squirtle.backpack.select-item"
 local move = require "squirtle.move"
 local turn = require "squirtle.turn"
-local place = require "squirtle.place"
 local dig = require "squirtle.dig"
 
 ---@class Squirtle
@@ -52,7 +51,7 @@ end
 
 ---@param side? string
 function Squirtle:place(side)
-    return place(side)
+    error("not implemented")
 end
 
 return Squirtle

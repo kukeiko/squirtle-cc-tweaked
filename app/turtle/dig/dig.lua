@@ -4,7 +4,6 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "utils"
 local World = require "geo.world"
 local navigate = require "squirtle.navigate"
-local face = require "squirtle.face"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
 local drop = require "squirtle.drop"
@@ -157,7 +156,7 @@ local function main(args)
     restoreBreakable()
     print("[done] going home!")
     navigate(start, world, isBreakable)
-    face(facing)
+    SquirtleV2.face(facing)
 
     return true
 end

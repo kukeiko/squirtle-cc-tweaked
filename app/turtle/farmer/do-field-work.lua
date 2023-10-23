@@ -1,9 +1,6 @@
-local Backpack = require "squirtle.backpack"
-local isCrops = require "farmer.is-crops"
-local place = require "squirtle.place"
-local selectItem = require "squirtle.backpack.select-item"
-local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 local SquirtleV2 = require "squirtle.squirtle-v2"
+local isCrops = require "farmer.is-crops"
+local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
 local cropsToSeedsMap = {
     ["minecraft:wheat"] = "minecraft:wheat_seeds",
@@ -13,8 +10,8 @@ local cropsToSeedsMap = {
 }
 
 local function tryPlantAnything()
-    for slot = 1, Backpack.size() do
-        if Backpack.selectSlotIfNotEmpty(slot) then
+    for slot = 1, SquirtleV2.size() do
+        if SquirtleV2.selectSlotIfNotEmpty(slot) then
             if SquirtleV2.tryPlace("bottom") then
                 return
             end
@@ -31,7 +28,7 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    return selectItem(seeds)
+    return SquirtleV2.select(seeds)
 end
 
 ---@param block Block
@@ -40,7 +37,7 @@ local function harvestCrops(block)
         local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
 
         if not selectedSeed then
-            Backpack.selectFirstEmptySlot()
+            SquirtleV2.selectFirstEmptySlot()
             -- [todo] error handling
         end
 

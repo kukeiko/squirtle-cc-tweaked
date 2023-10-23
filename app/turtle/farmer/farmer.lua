@@ -1,9 +1,9 @@
 package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
+local SquirtleV2 = require "squirtle.squirtle-v2"
 local doHomework = require "farmer.do-homework"
 local doFieldWork = require "farmer.do-field-work"
-local SquirtleV2 = require "squirtle.squirtle-v2"
 local isCrops = require "farmer.is-crops"
 
 ---@param block Block
@@ -45,7 +45,7 @@ end
 -- a block to check if we reached home, which is gud.
 ---@param args table
 local function main(args)
-    print("[farmer v1.3.2] booting...")
+    print("[farmer v1.4.0] booting...")
     SquirtleV2.setBreakable(isCrops)
 
     while true do

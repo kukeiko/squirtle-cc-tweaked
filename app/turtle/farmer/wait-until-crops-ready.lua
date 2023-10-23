@@ -1,5 +1,3 @@
-local place = require "squirtle.place"
-local selectItem = require "squirtle.backpack.select-item"
 local isCrops = require "farmer.is-crops"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 
@@ -33,7 +31,7 @@ end
 ---@param time? integer maximum amount of time to wait
 ---@return boolean ready if crops are ready
 return function(side, max, time)
-    while getCropsRemainingAge(side) > 0 and selectItem("minecraft:bone_meal") and SquirtleV2.tryPlace(side) do
+    while getCropsRemainingAge(side) > 0 and SquirtleV2.select("minecraft:bone_meal") and SquirtleV2.tryPlace(side) do
     end
 
     local remainingAge = getCropsRemainingAge(side)

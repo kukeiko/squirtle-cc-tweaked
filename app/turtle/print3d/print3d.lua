@@ -9,7 +9,6 @@ local locate = require "squirtle.locate"
 local orientate = require "squirtle.orientate"
 local SquirtleV2 = require "squirtle.squirtle-v2"
 local requireItems = require "squirtle.require-items"
-local face = require "squirtle.face"
 
 ---@class ColoredPoint
 ---@field vector Vector
@@ -70,7 +69,7 @@ local function main(args)
     end
 
     navigate(start)
-    face(facing)
+    SquirtleV2.face(facing)
 end
 
 return main(arg)

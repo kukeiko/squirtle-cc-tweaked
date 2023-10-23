@@ -111,7 +111,8 @@ local function loadFromShulker(shulker, item)
     return false
 end
 
----[todo] consider adding requireItems() logic here
+-- [todo] consider adding requireItems() logic here
+-- [update] not every app would want that though, e.g. check out farmer app
 ---@param name string
 ---@param exact? boolean
 ---@return false|integer

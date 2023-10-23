@@ -1,6 +1,5 @@
 local Chest = require "world.chest"
 local Backpack = require "squirtle.backpack"
-local suck = require "squirtle.suck"
 local drop = require "squirtle.drop"
 local getStacks = require "inventory.get-stacks"
 local getSize = require "inventory.get-size"
@@ -11,6 +10,29 @@ local function firstEmptySlot(table, size)
             return index
         end
     end
+end
+
+local natives = {
+    top = turtle.suckUp,
+    up = turtle.suckUp,
+    front = turtle.suck,
+    forward = turtle.suck,
+    bottom = turtle.suckDown,
+    down = turtle.suckDown
+}
+
+---@param side? string
+---@param limit? integer
+---@return boolean,string?
+local function suck(side, limit)
+    side = side or "front"
+    local handler = natives[side]
+
+    if not handler then
+        error(string.format("suck() does not support side %s", side))
+    end
+
+    return handler(limit)
 end
 
 ---@param side string

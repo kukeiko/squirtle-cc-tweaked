@@ -2,12 +2,12 @@ local selectItem = require "squirtle.backpack.select-item"
 local findItem = require "squirtle.backpack.find"
 local turn = require "squirtle.turn"
 local Vector = require "elements.vector"
+local Side = require "elements.side"
 local Cardinal = require "elements.cardinal"
 local Fuel = require "squirtle.fuel"
 local refuel = require "squirtle.refuel"
 local requireItems = require "squirtle.require-items"
 local Utils = require "utils"
-local Backpack = require "squirtle.backpack"
 
 ---@class SquirtleV2SimulationResults
 ---@field steps integer
@@ -56,6 +56,14 @@ local natives = {
         forward = turtle.place,
         bottom = turtle.placeDown,
         down = turtle.placeDown
+    },
+    drop = {
+        top = turtle.dropUp,
+        up = turtle.dropUp,
+        front = turtle.drop,
+        forward = turtle.drop,
+        bottom = turtle.dropDown,
+        down = turtle.dropDown
     }
 }
 
@@ -89,7 +97,8 @@ local SquirtleV2 = {
     simulate = false,
     results = {placed = {}, steps = 0},
     position = Vector.create(0, 0, 0),
-    facing = Cardinal.south
+    facing = Cardinal.south,
+    inventorySize = 16
 }
 
 ---@param block Block
@@ -290,6 +299,83 @@ function SquirtleV2.around()
     SquirtleV2.turn("back")
 end
 
+---@param target integer
+---@param current? integer
+function SquirtleV2.face(target, current)
+    current = current or SquirtleV2.facing
+
+    if not current then
+        error("facing not available")
+    end
+
+    if (current + 2) % 4 == target then
+        turn("back")
+    elseif (current + 1) % 4 == target then
+        turn("right")
+    elseif (current - 1) % 4 == target then
+        turn("left")
+    end
+
+    return target
+end
+
+---@param refresh? boolean
+function SquirtleV2.locate(refresh)
+    if refresh then
+        local x, y, z = gps.locate()
+
+        if not x then
+            error("no gps available")
+        end
+
+        SquirtleV2.position = Vector.create(x, y, z)
+    end
+
+    return SquirtleV2.position
+end
+
+---@param side string
+---@param position Vector
+local function stepOut(side, position)
+    refuel(2)
+
+    if not SquirtleV2.tryMove(side) then
+        return false
+    end
+
+    local now = SquirtleV2.locate(true)
+    local cardinal = Cardinal.fromVector(Vector.minus(now, position))
+
+    SquirtleV2.facing = Cardinal.rotate(cardinal, side)
+
+    while not SquirtleV2.tryMove(Side.rotateAround(side)) do
+        print("can't move back, something is blocking me. sleeping 1s...")
+        os.sleep(1)
+    end
+
+    return true
+end
+
+---@param position Vector
+local function orientateSameLayer(position)
+    return stepOut("back", position) or stepOut("front", position)
+end
+
+---@param refresh? boolean
+---@return Vector position, integer facing
+function SquirtleV2.orientate(refresh)
+    local position = SquirtleV2.locate(refresh)
+    local facing = SquirtleV2.facing
+
+    if refresh or not facing then
+        if not orientateSameLayer(position) then
+            error("failed to orientate. possibly blocked in.")
+        end
+    end
+
+    return SquirtleV2.position, SquirtleV2.facing
+end
+
 ---@param side? string
 ---@return boolean, string?
 function SquirtleV2.tryDig(side)
@@ -436,6 +522,14 @@ function SquirtleV2.placeAnywhere()
     end
 end
 
+---@param side? string
+---@param count? integer
+---@return boolean, string?
+function SquirtleV2.drop(side, count)
+    side = side or "front"
+    return getNative("drop", side)(count)
+end
+
 ---@param name string|integer
 ---@param exact? boolean
 ---@return false|integer
@@ -471,7 +565,7 @@ end
 ---@return boolean
 function SquirtleV2.has(item, minCount)
     if type(minCount) == "number" then
-        return Backpack.getItemStock(item) >= minCount
+        return SquirtleV2.getItemStock(item) >= minCount
     else
         return findItem(item, true) ~= nil
     end
@@ -499,7 +593,7 @@ end
 local function getMissing(items)
     ---@type table<string, integer>
     local open = {}
-    local stock = Backpack.getStock()
+    local stock = SquirtleV2.getStock()
 
     for item, required in pairs(items) do
         local missing = required - (stock[item] or 0)
@@ -693,20 +787,29 @@ function SquirtleV2.requireItemsV2(items)
     end
 end
 
----@return table<string, integer>
-function SquirtleV2.getStock()
-    ---@type table<string, integer>
-    local stock = {}
-
-    for _, stack in pairs(Backpack.getStacks()) do
-        stock[stack.name] = (stock[stack.name] or 0) + stack.count
-    end
-
-    return stock
-end
-
 function SquirtleV2.condense()
-    Backpack.condense()
+    for slot = SquirtleV2.size(), 1, -1 do
+        local item = SquirtleV2.getStack(slot)
+
+        if item then
+            for targetSlot = 1, slot - 1 do
+                local candidate = SquirtleV2.getStack(targetSlot, true)
+
+                if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
+                    SquirtleV2.selectSlot(slot)
+                    SquirtleV2.transfer(targetSlot)
+
+                    if SquirtleV2.numInSlot(slot) == 0 then
+                        break
+                    end
+                elseif not candidate then
+                    SquirtleV2.selectSlot(slot)
+                    SquirtleV2.transfer(targetSlot)
+                    break
+                end
+            end
+        end
+    end
 end
 
 ---@param side? string
@@ -773,6 +876,161 @@ end
 ---@return boolean
 function SquirtleV2.refuelSlot(quantity)
     return turtle.refuel(quantity)
+end
+
+---@return integer
+function SquirtleV2.size()
+    return SquirtleV2.inventorySize
+end
+
+---@param slot integer
+---@param detailed? boolean
+---@return ItemStack?
+function SquirtleV2.getStack(slot, detailed)
+    return turtle.getItemDetail(slot, detailed)
+end
+
+---@param slot integer
+---@param count? integer
+function SquirtleV2.transfer(slot, count)
+    return turtle.transferTo(slot, count)
+end
+
+---@return ItemStack[]
+function SquirtleV2.getStacks()
+    local stacks = {}
+
+    for slot = 1, SquirtleV2.size() do
+        local item = SquirtleV2.getStack(slot)
+
+        if item then
+            stacks[slot] = item
+        end
+    end
+
+    return stacks
+end
+
+---@return boolean
+function SquirtleV2.isEmpty()
+    for slot = 1, SquirtleV2.size() do
+        if SquirtleV2.numInSlot(slot) > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@return table<string, integer>
+function SquirtleV2.getStock()
+    ---@type table<string, integer>
+    local stock = {}
+
+    for _, stack in pairs(SquirtleV2.getStacks()) do
+        stock[stack.name] = (stock[stack.name] or 0) + stack.count
+    end
+
+    return stock
+end
+
+---@param predicate string|function<boolean, ItemStack>
+function SquirtleV2.getItemStock(predicate)
+    if type(predicate) == "string" then
+        local name = predicate
+
+        ---@param stack ItemStack
+        ---@type function<boolean, ItemStack>
+        predicate = function(stack)
+            return stack.name == name
+        end
+    end
+
+    local stock = 0
+
+    for _, stack in pairs(SquirtleV2.getStacks()) do
+        if predicate(stack) then
+            stock = stock + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param slot integer
+function SquirtleV2.selectSlot(slot)
+    return turtle.select(slot)
+end
+
+---@param slot integer
+---@return integer
+function SquirtleV2.numInSlot(slot)
+    return turtle.getItemCount(slot)
+end
+
+---@return boolean
+function SquirtleV2.selectSlotIfNotEmpty(slot)
+    if SquirtleV2.numInSlot(slot) > 0 then
+        return SquirtleV2.selectSlot(slot)
+    else
+        return false
+    end
+end
+
+---@param name string
+---@param exact? boolean
+---@param startAtSlot? integer
+function SquirtleV2.find(name, exact, startAtSlot)
+    startAtSlot = startAtSlot or 1
+
+    for slot = startAtSlot, SquirtleV2.size() do
+        local item = SquirtleV2.getStack(slot)
+
+        if item and exact and item.name == name then
+            return slot
+        elseif item and not exact and string.find(item.name, name) then
+            return slot
+        end
+    end
+end
+
+---@param startAt? number
+function SquirtleV2.firstEmptySlot(startAt)
+    startAt = startAt or 1
+
+    for slot = startAt, SquirtleV2.size() do
+        if SquirtleV2.numInSlot(slot) == 0 then
+            return slot
+        end
+    end
+
+    return nil
+end
+
+---@return boolean|integer
+function SquirtleV2.selectFirstEmptySlot()
+    local slot = SquirtleV2.firstEmptySlot()
+
+    if not slot then
+        return false
+    end
+
+    SquirtleV2.selectSlot(slot)
+
+    return slot
+end
+
+---@param side string
+---@return boolean success if everything could be dumped
+function SquirtleV2.dump(side)
+    local items = SquirtleV2.getStacks()
+
+    for slot in pairs(items) do
+        SquirtleV2.selectSlot(slot)
+        SquirtleV2.drop(side)
+    end
+
+    return SquirtleV2.isEmpty()
 end
 
 return SquirtleV2
