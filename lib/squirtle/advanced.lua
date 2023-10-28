@@ -130,50 +130,48 @@ function Advanced.refuelTo(fuel)
         refuelWithHelpFromPlayer(fuel)
     end
 end
----@param side string
+
+---@param inventory string
 ---@param slot integer
 ---@param quantity? integer
 ---@return boolean, string?
-function Advanced.suckSlot(side, slot, quantity)
+function Advanced.suckSlot(inventory, slot, quantity)
     if slot == 1 then
-        return Elemental.suck(side, quantity)
+        return Elemental.suck(inventory, quantity)
     end
 
-    local items = Inventory.getStacks(side)
+    local items = Inventory.getStacks(inventory)
 
-    if items[1] ~= nil then
-        local firstEmptySlot = Utils.firstEmptySlot(items, Inventory.getSize(side))
+    if items[1] == nil then
+        Inventory.move(inventory, slot, 1, quantity)
+        local success, message = Elemental.suck(inventory, quantity)
+        Inventory.move(inventory, 1, slot)
 
-        if not firstEmptySlot and Basic.isFull() then
-            error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", side))
-        elseif not firstEmptySlot then
-            if quantity ~= nil and quantity < items[slot].count then
-                -- [todo] implement: if the turtle has at least 2 slots free, we can offload one from chest into 1st turtle slot,
-                -- move wanted item within chest, suck that into 2nd turtle slot, and move back item in 1st turtle slot
-                error("not yet implemented: container would still be full even after moving slot")
-            end
+        return success, message
+    end
 
-            -- temporarily load first container slot into turtle
-            local initialSlot = Elemental.getSelectedSlot()
-            Basic.selectFirstEmpty()
-            Elemental.suck(side)
+    local firstEmptySlot = Utils.firstEmptySlot(items, Inventory.getSize(inventory))
 
-            -- move item within inventory to first empty slot of inventory
-            Inventory.pushItems(side, side, slot, nil, 1)
-            -- [todo] if we want to be super strict, we would have to move the
-            -- item we just sucked in back to the first slot after sucking the requested item
-            Elemental.drop(side)
-            -- pushing back temporarily loaded item
-            Elemental.select(initialSlot)
-        else
-            Inventory.pushItems(side, side, 1, nil, firstEmptySlot)
-            Inventory.pushItems(side, side, slot, quantity, 1)
-        end
+    if not firstEmptySlot and Basic.isFull() then
+        error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
+    elseif firstEmptySlot then
+        Inventory.move(inventory, 1, firstEmptySlot)
+        Inventory.move(inventory, slot, 1, quantity)
+        local success, message = Elemental.suck(inventory, quantity)
+        Inventory.move(inventory, 1, slot)
+
+        return success, message
     else
-        Inventory.pushItems(side, side, slot, quantity, 1)
-    end
+        local initialSlot = Elemental.getSelectedSlot()
+        Basic.selectFirstEmpty()
+        Elemental.suck(inventory)
+        Inventory.move(inventory, slot, 1)
+        Elemental.drop(inventory)
+        local success, message = Elemental.suck(inventory, quantity)
+        Elemental.select(initialSlot)
 
-    return Elemental.suck(side, quantity)
+        return success, message
+    end
 end
 
 return Advanced

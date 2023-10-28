@@ -270,6 +270,16 @@ function Inventory.pushItems(from, to, fromSlot, limit, toSlot)
     return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
+---@param inventory string
+---@param fromSlot integer
+---@param toSlot? integer
+---@param quantity? integer
+---@return integer
+function Inventory.move(inventory, fromSlot, toSlot, quantity)
+    os.sleep(.5) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
+    return Inventory.pushItems(inventory, inventory, fromSlot, quantity, toSlot)
+end
+
 ---@param from string
 ---@param to string
 ---@param fromSlot integer
