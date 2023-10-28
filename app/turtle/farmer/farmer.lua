@@ -22,15 +22,15 @@ local function getBlockTurnSide(block)
 end
 
 local function moveNext()
-    while not Squirtle.tryMove() do
-        local block = Squirtle.inspect()
+    while not Squirtle.tryWalk() do
+        local block = Squirtle.probe()
 
         if not block then
             print("could not move even though front seems to be free")
 
             while not block do
                 os.sleep(1)
-                block = Squirtle.inspect()
+                block = Squirtle.probe()
             end
         end
 
@@ -45,15 +45,15 @@ end
 -- a block to check if we reached home, which is gud.
 ---@param args table
 local function main(args)
-    print("[farmer v1.4.0] booting...")
+    print("[farmer v1.5.0] booting...")
     Squirtle.setBreakable(isCrops)
 
     while true do
-        local block = Squirtle.inspect("bottom")
+        local block = Squirtle.probe("bottom")
 
         if block and block.name == "minecraft:chest" then
-            Squirtle.back()
-            Squirtle.down()
+            Squirtle.walk("back")
+            Squirtle.walk("down")
         else
             if block and block.name == "minecraft:barrel" then
                 doHomework()

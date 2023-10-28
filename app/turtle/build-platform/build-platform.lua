@@ -18,7 +18,7 @@ local function placeBlock(side)
             if item.name ~= "minecraft:sand" and item.name ~= "minecraft:gravel" then
                 turtle.select(slot)
 
-                if Squirtle.tryPlace(side) then
+                if Squirtle.tryPut(side) then
                     return true
                 end
             end

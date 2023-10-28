@@ -1,22 +1,22 @@
 local Squirtle = require "squirtle"
 
 local function digLeftAndRight()
-    Squirtle.left()
-    Squirtle.dig()
+    Squirtle.turn("left")
+    Squirtle.mine()
     Squirtle.suck()
-    Squirtle.around()
-    Squirtle.dig()
+    Squirtle.turn("back")
+    Squirtle.mine()
     Squirtle.suck()
-    Squirtle.left()
+    Squirtle.turn("left")
 end
 
 local function digUpAndDown()
-    Squirtle.digUp()
-    Squirtle.digDown()
+    Squirtle.dig("up")
+    Squirtle.dig("down")
 end
 
 local function digSuckMove()
-    Squirtle.dig()
+    Squirtle.mine()
     Squirtle.suck()
     Squirtle.move()
 end
@@ -33,13 +33,13 @@ local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
     digSuckMove()
     digUpAndDown()
     digLeftAndRight()
-    Squirtle.back(2)
+    Squirtle.walk("back", 2)
 end
 
 local function digAllSides()
     for _ = 1, 4 do
-        Squirtle.dig()
-        Squirtle.left()
+        Squirtle.mine()
+        Squirtle.turn("left")
     end
 end
 
@@ -48,7 +48,7 @@ local function collectSaplings(minSaplings)
     if not Squirtle.has("minecraft:birch_sapling", minSaplings) then
         for i = 1, 4 do
             moveOutAndCutLeaves(i % 2 == 1)
-            Squirtle.left()
+            Squirtle.turn("left")
         end
     end
 end
@@ -57,21 +57,21 @@ end
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
-    while Squirtle.inspect("top", "minecraft:birch_log") do
-        Squirtle.up()
+    while Squirtle.probe("top", "minecraft:birch_log") do
+        Squirtle.walk("up")
 
-        if Squirtle.inspect("front", "minecraft:birch_leaves") then
+        if Squirtle.probe("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    Squirtle.up() -- goto peak
+    Squirtle.walk("up") -- goto peak
     digAllSides() -- dig peak
-    Squirtle.down(2)
+    Squirtle.walk("down", 2)
     collectSaplings(minSaplings)
-    Squirtle.down()
+    Squirtle.walk("down")
     collectSaplings(minSaplings)
 
-    while Squirtle.tryDown() do
+    while Squirtle.tryWalk("down") do
     end
 end

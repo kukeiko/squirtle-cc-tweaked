@@ -22,15 +22,15 @@ local function getBlockTurnSide(block)
 end
 
 local function isHome()
-    return Squirtle.inspect("bottom", "minecraft:barrel") ~= nil
+    return Squirtle.probe("bottom", "minecraft:barrel") ~= nil
 end
 
 local function isAtWork()
-    return Squirtle.inspect("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
+    return Squirtle.probe("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
 
 local function isLookingAtTree()
-    return Squirtle.inspect("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
+    return Squirtle.probe("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
 end
 
 local function faceHomeExit()
@@ -39,7 +39,7 @@ local function faceHomeExit()
             return
         end
 
-        Squirtle.left()
+        Squirtle.turn("left")
     end
 
     error("could not face exit: no furnace found")
@@ -55,8 +55,8 @@ local function refuel(stash)
 
         for slot, stack in pairs(Inventory.getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
-                Squirtle.suckSlotFromChest("bottom", slot)
-                Squirtle.refuelSlot(math.ceil(Squirtle.missingFuel(minFuel) / 80))
+                Squirtle.suckSlot("bottom", slot)
+                Squirtle.refuel(math.ceil(Squirtle.missingFuel(minFuel) / 80))
             end
 
             if Squirtle.hasFuel(minFuel) then
@@ -140,14 +140,14 @@ end
 
 local function plantTree()
     print("planting tree...")
-    Squirtle.back()
-    Squirtle.placeFront("minecraft:birch_sapling")
+    Squirtle.walk("back")
+    Squirtle.put("front", "minecraft:birch_sapling")
 
-    while not Squirtle.inspect("front", "minecraft:birch_log") and Squirtle.has("minecraft:bone_meal") do
-        Squirtle.placeFront("minecraft:bone_meal")
+    while not Squirtle.probe("front", "minecraft:birch_log") and Squirtle.selectItem("minecraft:bone_meal") do
+        Squirtle.place()
     end
 
-    return Squirtle.inspect("front", "minecraft:birch_log")
+    return Squirtle.probe("front", "minecraft:birch_log")
 end
 
 local function shouldPlantTree()
@@ -160,17 +160,17 @@ local function shouldPlantTree()
 end
 
 local function refuelFromBackpack()
-    while Squirtle.getMissingFuel() > 0 and Squirtle.select("minecraft:stick") do
+    while Squirtle.getMissingFuel() > 0 and Squirtle.selectItem("minecraft:stick") do
         print("refueling from sticks...")
-        Squirtle.refuelSlot()
+        Squirtle.refuel()
     end
 
     local saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
 
     print("refueling from saplings...")
     while Squirtle.getMissingFuel() > 0 and saplingStock > 64 do
-        Squirtle.select("minecraft:birch_sapling")
-        Squirtle.refuelSlot(saplingStock - 64)
+        Squirtle.selectItem("minecraft:birch_sapling")
+        Squirtle.refuel(saplingStock - 64)
         saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
     end
 
@@ -182,7 +182,7 @@ local function doWork()
     print("doing work!")
     assert(isAtWork(), "expected to sit on top of dirt")
 
-    if Squirtle.inspect("top", "minecraft:birch_log") then
+    if Squirtle.probe("top", "minecraft:birch_log") then
         -- should only happen if turtle crashed while planting a tree
         harvestTree()
     end
@@ -190,12 +190,14 @@ local function doWork()
     while shouldPlantTree() do
         if plantTree() then
             Squirtle.select(1)
-            Squirtle.forward()
+            Squirtle.dig("front")
+            Squirtle.walk("forward")
             harvestTree()
             refuelFromBackpack()
         else
             -- this case should only happen when bone meal ran out before sapling could be grown
-            Squirtle.forward()
+            Squirtle.dig("front")
+            Squirtle.walk("forward")
             break
         end
     end
@@ -205,8 +207,8 @@ end
 
 local function moveNext()
     -- [todo] need to exclude logs from digging for tryForward to not dig an already grown tree
-    while not Squirtle.tryForward() do
-        local block = Squirtle.inspect()
+    while not Squirtle.tryWalk() do
+        local block = Squirtle.probe()
 
         if not block then
             error("could not move even though front seems to be free")
@@ -214,7 +216,7 @@ local function moveNext()
 
         if isLookingAtTree() then
             -- [todo] hack - should only happen if sapling got placed by player
-            Squirtle.dig()
+            Squirtle.mine()
         else
             Squirtle.turn(getBlockTurnSide(block))
         end
@@ -229,19 +231,19 @@ local function boot()
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
 
-        if Squirtle.inspect("top", "minecraft:birch_log") then
+        if Squirtle.probe("top", "minecraft:birch_log") then
             harvestTree()
         elseif isLookingAtTree() then
-            Squirtle.dig()
+            Squirtle.mine()
         else
-            while Squirtle.tryDown() do
+            while Squirtle.tryWalk("down") do
             end
 
-            if Squirtle.inspect("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence"}) then
+            if Squirtle.probe("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence"}) then
                 -- turtle crashed and landed on the one fence piece that directs it to the tree.
                 -- should be safe to move back one, go down, and then resume default move routine
-                Squirtle.back()
-                Squirtle.down()
+                Squirtle.walk("back")
+                Squirtle.walk("down")
             end
         end
     end
@@ -273,8 +275,8 @@ local function main(args)
             Squirtle.move()
         elseif isAtWork() then
             doWork()
-            Squirtle.left()
-            Squirtle.move()
+            Squirtle.turn("left")
+            Squirtle.walk()
         else
             moveNext()
         end

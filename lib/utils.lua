@@ -149,6 +149,14 @@ function Utils.first(tbl)
     end
 end
 
+function Utils.firstEmptySlot(table, size)
+    for index = 1, size do
+        if table[index] == nil then
+            return index
+        end
+    end
+end
+
 function Utils.waitForUserToHitEnter()
     while true do
         local _, key = os.pullEvent("key")

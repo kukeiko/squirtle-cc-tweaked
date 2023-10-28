@@ -1,4 +1,5 @@
 local Squirtle = require "squirtle"
+local SquirtleState = require "squirtle.state"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 local World = require "geo.world"
@@ -34,12 +35,13 @@ return function(args)
     print(numBlocks .. "x blocks, guessing " .. numBlocks / 32 .. " stacks")
 
     local requiredFuel = math.ceil((numBlocks + returnTripFuel) * 1.2)
-    Squirtle.refuel(requiredFuel)
+    Squirtle.refuelTo(requiredFuel)
 
     local position = Vector.create(0, 0, 0)
     local facing = Cardinal.north
-    Squirtle.facing = facing
-    Squirtle.position = position
+    -- [todo] shouldn't access it like this
+    SquirtleState.facing = facing
+    SquirtleState.position = position
 
     local worldX = 0
     local worldY = 0

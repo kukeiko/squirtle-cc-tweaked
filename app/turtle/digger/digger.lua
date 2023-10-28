@@ -78,12 +78,12 @@ end
 ---@param fuel integer
 local function refuelFromBuffer(buffer, fuel)
     print("refueling, have", Squirtle.getFuelLevel())
-    Squirtle.selectFirstEmptySlot()
+    Squirtle.selectFirstEmpty()
 
     for slot, stack in pairs(Inventory.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            Squirtle.suckSlotFromChest(buffer, slot)
-            Squirtle.refuelSlot() -- [todo] should provide count to not consume a whole stack
+            Squirtle.suckSlot(buffer, slot)
+            Squirtle.refuel() -- [todo] should provide count to not consume a whole stack
         end
 
         if Squirtle.getFuelLevel() >= fuel then
@@ -155,7 +155,7 @@ local function main(args)
     local previous = point
     local maxFailedNavigates = state.world.width * state.world.depth
     local numFailedNavigates = 0
-    Squirtle.selectSlot(1)
+    Squirtle.select(1)
 
     while point do
         if previous and previous.y ~= point.y then
@@ -175,18 +175,17 @@ local function main(args)
             if numFailedNavigates >= maxFailedNavigates then
                 print("can't dig further, going home")
                 Squirtle.navigate(state.home, nil, isBreakable)
-                error(
-                    "todo: implement 'blocked to dig further' case, which should allow for reprogramming minable blocks")
+                error("todo: implement 'blocked to dig further' case, which should allow for reprogramming minable blocks")
             end
         else
             numFailedNavigates = 0
 
-            if isBreakable(Squirtle.inspect("top")) then
-                Squirtle.digUp()
+            if isBreakable(Squirtle.probe("top")) then
+                Squirtle.dig("up")
             end
 
-            if isBreakable(Squirtle.inspect("bottom")) then
-                Squirtle.digDown()
+            if isBreakable(Squirtle.probe("bottom")) then
+                Squirtle.dig("down")
             end
         end
 
@@ -248,7 +247,7 @@ local function main(args)
             end
 
             print("unloaded all and have enough fuel - back to work!")
-            Squirtle.selectSlot(1)
+            Squirtle.select(1)
             Squirtle.navigate(state.checkpoint, nil, isBreakable)
         end
     end

@@ -93,7 +93,7 @@ local function waitForChestcart()
     print("waiting for chestcart...")
     os.pullEvent("redstone")
     print("chestcart is here! locking it in place...")
-    Squirtle.placeFront("minecraft:redstone_block")
+    Squirtle.put("front", "minecraft:redstone_block")
 end
 
 local function lookAtChestcart()
@@ -104,7 +104,7 @@ local function lookAtChestcart()
         Squirtle.turn(signal)
     else
         -- unlock piston in case there is no chestcart
-        Squirtle.dig()
+        Squirtle.mine()
     end
 end
 
@@ -157,7 +157,7 @@ local function fillAndSendOffChestcart()
     dumpBarrelToChestcart()
     print("sending off chestcart!")
     Squirtle.turn(signal)
-    Squirtle.dig()
+    Squirtle.mine()
     os.sleep(3)
 end
 
@@ -194,12 +194,12 @@ end
 local function main(args)
     print("[io-chestcart v2.2.0] booting...")
 
-    if not Squirtle.inspect("bottom", "minecraft:barrel") then
+    if not Squirtle.probe("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
     end
 
     while true do
-        local front = Squirtle.inspect()
+        local front = Squirtle.probe()
 
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()

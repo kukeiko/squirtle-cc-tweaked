@@ -1,237 +1,230 @@
 local Squirtle = require "squirtle"
+local SquirtleState = require "squirtle.state"
 
 ---@param state SiloAppState
 return function(state)
     local move = Squirtle.move
-    local forward = Squirtle.forward
-    local up = Squirtle.up
-    local down = Squirtle.down
-    local back = Squirtle.back
-    local right = Squirtle.right
-    local left = Squirtle.left
-    local placeFront = Squirtle.placeFront
-    local placeUp = Squirtle.placeUp
-    local placeDown = Squirtle.placeDown
-    local around = Squirtle.around
+    local turn = Squirtle.turn
+    local put = Squirtle.put
 
     local restoreBreakable = Squirtle.setBreakable(function()
         return true
     end)
 
     if state.lampLocation == "right" then
-        right()
-        forward(2)
-        left()
+        turn("right")
+        move("forward", 2)
+        turn("left")
     elseif state.lampLocation == "left" then
-        right()
-        forward(4)
-        left()
-        Squirtle.flipTurns = true
+        turn("right")
+        move("forward", 4)
+        turn("left")
+        SquirtleState.flipTurns = true
     end
 
     -- place center chests
     for _ = 1, (state.layers * 2) + 1 do
-        placeFront(state.blocks.chest)
-        up()
+        put("front", state.blocks.chest)
+        move("up")
     end
 
     -- place left support beam
-    forward()
-    right()
-    back(2)
-    placeUp(state.blocks.support)
-    down()
-    placeUp(state.blocks.support)
+    move("forward")
+    turn("right")
+    move("back", 2)
+    put("top", state.blocks.support)
+    move("down")
+    put("top", state.blocks.support)
 
     -- place left hoppers
     for _ = 1, state.layers do
-        down()
-        placeUp(state.blocks.support)
-        placeFront(state.blocks.hopper)
-        down()
-        placeUp(state.blocks.support)
+        move("down")
+        put("top", state.blocks.support)
+        put("front", state.blocks.hopper)
+        move("down")
+        put("top", state.blocks.support)
     end
 
     -- place bottom support beam
-    down()
-    placeUp(state.blocks.support)
-    right()
-    forward()
-    up()
+    move("down")
+    put("top", state.blocks.support)
+    turn("right")
+    move("forward")
+    move("up")
 
     -- right support
-    left()
-    forward(4)
-    left()
-    forward()
-    left()
+    turn("left")
+    move("forward", 4)
+    turn("left")
+    move("forward")
+    turn("left")
 
     for _ = 1, state.layers do
-        placeFront(state.blocks.hopper)
-        up()
-        placeDown(state.blocks.support)
-        up()
-        placeDown(state.blocks.support)
+        put("front", state.blocks.hopper)
+        move("up")
+        put("bottom", state.blocks.support)
+        move("up")
+        put("bottom", state.blocks.support)
     end
 
     for _ = 1, 2 do
-        up()
-        placeDown(state.blocks.support)
+        move("up")
+        put("bottom", state.blocks.support)
     end
 
     -- build top support
-    forward(2)
+    move("forward", 2)
 
     for i = 1, 5 do
-        placeFront(state.blocks.support)
+        put("front", state.blocks.support)
 
         if i ~= 5 then
-            back()
+            move("back")
         end
     end
 
     -- build right support incl. lights
     for _ = 1, (state.layers * 2) + 2 do
-        down()
-        placeUp(state.blocks.support)
-        placeFront(state.blocks.lamp)
+        move("down")
+        put("top", state.blocks.support)
+        put("front", state.blocks.lamp)
     end
 
     -- bottom piece of right support
-    down()
-    placeUp(state.blocks.support)
-    left()
-    forward()
-    up()
+    move("down")
+    put("top", state.blocks.support)
+    turn("left")
+    move("forward")
+    move("up")
 
     -- place remaining chests
-    right()
-    forward(3)
-    right()
+    turn("right")
+    move("forward", 3)
+    turn("right")
 
     for _ = 1, state.layers do
-        up()
-        placeFront(state.blocks.chest)
-        up()
+        move("up")
+        put("front", state.blocks.chest)
+        move("up")
     end
 
-    left()
-    forward(2)
-    right()
+    turn("left")
+    move("forward", 2)
+    turn("right")
 
     for i = 1, state.layers + 1 do
-        placeFront(state.blocks.chest)
+        put("front", state.blocks.chest)
 
         if i ~= state.layers + 1 then
-            down(2)
+            move("down", 2)
         end
     end
 
     -- move to backside
-    left()
-    forward()
-    down()
-    right()
-    forward()
-    forward()
-    up()
-    left()
-    back(2)
+    turn("left")
+    move("forward")
+    move("down")
+    turn("right")
+    move("forward")
+    move("forward")
+    move("up")
+    turn("left")
+    move("back", 2)
 
     local function placeBacksideBlocks()
-        placeDown(state.blocks.filler)
-        right()
-        forward()
-        placeDown(state.blocks.filler)
-        back()
-        left()
+        put("bottom", state.blocks.filler)
+        turn("right")
+        move("forward")
+        put("bottom", state.blocks.filler)
+        move("back")
+        turn("left")
 
         for _ = 1, 3 do
-            forward()
-            placeDown(state.blocks.backside)
+            move("forward")
+            put("bottom", state.blocks.backside)
         end
 
-        back()
+        move("back")
     end
 
     -- place outer redstone circuit from chest to lamps
     ---@param isBottomLayer boolean
     local function placeOuterRedstone(isBottomLayer)
         local function placeBottomLayerBlock()
-            down()
-            placeDown(state.blocks.filler)
-            up()
+            move("down")
+            put("bottom", state.blocks.filler)
+            move("up")
         end
 
-        right()
-        forward()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.comparator)
-        forward()
-        placeDown(state.blocks.filler)
-        right()
-        forward()
+        turn("right")
+        move("forward")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.comparator)
+        move("forward")
+        put("bottom", state.blocks.filler)
+        turn("right")
+        move("forward")
 
         if isBottomLayer then
             placeBottomLayerBlock()
         end
 
-        placeDown(state.blocks.repeater)
-        forward()
-        placeDown(state.blocks.filler)
-        forward()
+        put("bottom", state.blocks.repeater)
+        move("forward")
+        put("bottom", state.blocks.filler)
+        move("forward")
 
         if isBottomLayer then
             placeBottomLayerBlock()
         end
 
-        placeDown(state.blocks.repeater)
-        forward()
-        placeDown(state.blocks.filler)
-        right()
+        put("bottom", state.blocks.repeater)
+        move("forward")
+        put("bottom", state.blocks.filler)
+        turn("right")
 
         for _ = 1, 2 do
-            forward()
-            down()
-            placeDown(state.blocks.filler)
-            up()
-            placeDown(state.blocks.redstone)
+            move("forward")
+            move("down")
+            put("bottom", state.blocks.filler)
+            move("up")
+            put("bottom", state.blocks.redstone)
         end
 
-        right()
-        forward(2)
+        turn("right")
+        move("forward", 2)
         placeBacksideBlocks()
     end
 
     -- place inner redstone circuit from chest to lamps
     local function placeInnerRedstone()
-        back()
-        right()
-        forward()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.comparator)
-        forward()
-        placeDown(state.blocks.filler)
-        right()
-        forward()
-        placeDown(state.blocks.repeater)
-        forward()
-        placeDown(state.blocks.filler)
-        right()
-        forward()
-        down()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.repeater)
-        forward()
-        down()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.filler)
-        right()
-        forward()
+        move("back")
+        turn("right")
+        move("forward")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.comparator)
+        move("forward")
+        put("bottom", state.blocks.filler)
+        turn("right")
+        move("forward")
+        put("bottom", state.blocks.repeater)
+        move("forward")
+        put("bottom", state.blocks.filler)
+        turn("right")
+        move("forward")
+        move("down")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.repeater)
+        move("forward")
+        move("down")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.filler)
+        turn("right")
+        move("forward")
         placeBacksideBlocks()
     end
 
@@ -244,111 +237,111 @@ return function(state)
     end
 
     -- build input chest
-    forward()
-    left()
-    back()
-    down()
-    placeFront(state.blocks.hopper)
-    right()
-    forward(2)
-    left()
-    forward()
-    left()
-    placeFront(state.blocks.hopper)
+    move("forward")
+    turn("left")
+    move("back")
+    move("down")
+    put("front", state.blocks.hopper)
+    turn("right")
+    move("forward", 2)
+    turn("left")
+    move("forward")
+    turn("left")
+    put("front", state.blocks.hopper)
 
     -- redstone torch
-    down()
-    forward()
-    left()
-    placeFront(state.blocks.filler)
-    down()
-    placeUp(state.blocks.redstoneTorch)
+    move("down")
+    move("forward")
+    turn("left")
+    put("front", state.blocks.filler)
+    move("down")
+    put("top", state.blocks.redstoneTorch)
 
     -- "plus" construct
-    forward(2)
-    up()
-    placeDown(state.blocks.filler)
-    around()
-    up()
-    placeDown(state.blocks.repeater)
-    back()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.redstone)
+    move("forward", 2)
+    move("up")
+    put("bottom", state.blocks.filler)
+    turn("back")
+    move("up")
+    put("bottom", state.blocks.repeater)
+    move("back")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
 
     for _ = 1, 2 do
-        forward()
-        placeDown(state.blocks.filler)
+        move("forward")
+        put("bottom", state.blocks.filler)
     end
 
-    around()
-    up()
+    turn("back")
+    move("up")
 
     -- input chest connection to topmost redstone lamp
-    placeDown(state.blocks.comparator)
-    forward()
-    placeDown(state.blocks.redstone)
-    right()
-    forward()
-    down()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.redstone)
-    forward()
-    placeDown(state.blocks.repeater)
-    forward()
-    placeDown(state.blocks.filler)
-    forward()
-    placeDown(state.blocks.repeater)
-    forward()
-    placeDown(state.blocks.filler)
-    right()
-    forward()
-    down()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.repeater)
-    forward()
-    down()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.filler)
+    put("bottom", state.blocks.comparator)
+    move("forward")
+    put("bottom", state.blocks.redstone)
+    turn("right")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    put("bottom", state.blocks.repeater)
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("forward")
+    put("bottom", state.blocks.repeater)
+    move("forward")
+    put("bottom", state.blocks.filler)
+    turn("right")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.repeater)
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.filler)
 
     -- last row of chest backing blocks + input chest
-    right()
-    forward()
+    turn("right")
+    move("forward")
     placeBacksideBlocks()
-    forward(2)
-    left()
-    placeDown(state.blocks.chest)
+    move("forward", 2)
+    turn("left")
+    put("bottom", state.blocks.chest)
 
     -- go back home while placing last column of filler blocks
-    back()
-    left()
-    forward()
-    down()
+    move("back")
+    turn("left")
+    move("forward")
+    move("down")
 
     for _ = 1, (state.layers * 2) + 1 do
-        down()
-        placeUp(state.blocks.filler)
+        move("down")
+        put("top", state.blocks.filler)
     end
 
-    back()
-    placeFront(state.blocks.filler)
-    right()
-    forward()
-    down()
-    forward(2)
-    up()
+    move("back")
+    put("front", state.blocks.filler)
+    turn("right")
+    move("forward")
+    move("down")
+    move("forward", 2)
+    move("up")
 
     -- done!
     if state.lampLocation == "right" then
-        around()
+        turn("back")
     else
-        Squirtle.flipTurns = false
-        right()
+        SquirtleState.flipTurns = false
+        turn("right")
         move("forward", 6)
-        right()
+        turn("right")
     end
 
     restoreBreakable()

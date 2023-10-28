@@ -11,8 +11,8 @@ local cropsToSeedsMap = {
 
 local function tryPlantAnything()
     for slot = 1, Squirtle.size() do
-        if Squirtle.selectSlotIfNotEmpty(slot) then
-            if Squirtle.tryPlace("bottom") then
+        if Squirtle.selectIfNotEmpty(slot) then
+            if Squirtle.place("down") then
                 return
             end
         end
@@ -28,7 +28,7 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    return Squirtle.select(seeds)
+    return Squirtle.selectItem(seeds)
 end
 
 ---@param block Block
@@ -37,13 +37,13 @@ local function harvestCrops(block)
         local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
 
         if not selectedSeed then
-            Squirtle.selectFirstEmptySlot()
+            Squirtle.selectFirstEmpty()
             -- [todo] error handling
         end
 
         Squirtle.dig("down")
 
-        if not Squirtle.tryPlace("bottom") then
+        if not Squirtle.place("down") then
             tryPlantAnything()
         end
     end
@@ -54,7 +54,7 @@ return function(block)
     if block and isCrops(block) then
         harvestCrops(block)
     elseif not block then
-        turtle.digDown()
+        Squirtle.dig("down")
         tryPlantAnything()
     end
 end

@@ -2,6 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Squirtle = require "squirtle"
+local SquirtleState = require "squirtle.state"
 local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 
@@ -12,10 +13,10 @@ if not state then
     return nil
 end
 
-Squirtle.simulate = true
+SquirtleState.simulate = true
 sequence(state)
 -- [todo] also require fuel based on steps taken
-Squirtle.requireItems(Squirtle.results.placed)
+Squirtle.requireItems(SquirtleState.results.placed)
 print("all good now! building...")
-Squirtle.simulate = false
+SquirtleState.simulate = false
 sequence(state)

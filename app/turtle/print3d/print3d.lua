@@ -61,7 +61,7 @@ local function main(args)
             error(message)
         end
 
-        Squirtle.placeDown(point.block or defaultBlock)
+        Squirtle.put("bottom", point.block or defaultBlock)
     end
 
     Squirtle.navigate(start)

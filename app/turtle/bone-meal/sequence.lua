@@ -1,15 +1,8 @@
 local Squirtle = require "squirtle"
 
-local forward = Squirtle.forward
-local up = Squirtle.up
-local down = Squirtle.down
-local back = Squirtle.back
-local right = Squirtle.right
-local left = Squirtle.left
-local placeFront = Squirtle.placeFront
-local placeUp = Squirtle.placeUp
-local placeDown = Squirtle.placeDown
-local around = Squirtle.around
+local move = Squirtle.move
+local turn = Squirtle.turn
+local put = Squirtle.put
 
 local restoreBreakable = Squirtle.setBreakable(function()
     return true
@@ -18,426 +11,426 @@ end)
 ---@param state BoneMealAppState
 local function placeCollectorChest(state)
     -- place collector chest
-    forward(2)
-    right()
-    forward(4)
-    left()
-    forward()
-    placeFront(state.blocks.filler)
-    back()
-    placeFront(state.blocks.chest)
-    right()
-    forward()
-    left()
-    forward()
-    placeFront(state.blocks.filler)
-    back()
-    placeFront(state.blocks.chest)
+    move("forward", 2)
+    turn("right")
+    move("forward", 4)
+    turn("left")
+    move("forward")
+    put("front", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.chest)
+    turn("right")
+    move("forward")
+    turn("left")
+    move("forward")
+    put("front", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.chest)
 end
 
 ---@param state BoneMealAppState
 local function placeDroppersAndDispenser(state)
     -- place droppers + dispenser
-    up()
-    forward(2)
-    right()
-    up()
-    placeDown(state.blocks.dropper)
-    up()
-    placeDown(state.blocks.dropper)
-    up()
-    placeDown(state.blocks.dispenser)
+    move("up")
+    move("forward", 2)
+    turn("right")
+    move("up")
+    put("bottom", state.blocks.dropper)
+    move("up")
+    put("bottom", state.blocks.dropper)
+    move("up")
+    put("bottom", state.blocks.dispenser)
 end
 
 ---@param state BoneMealAppState
 local function placeObserver(state)
     -- place observer
-    forward()
-    right()
-    forward()
-    placeDown(state.blocks.observer)
+    move("forward")
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.observer)
 
     -- place observer redstone
-    back()
-    down()
-    down()
-    placeDown(state.blocks.filler)
-    placeFront(state.blocks.filler)
-    up()
-    placeDown(state.blocks.redstone)
-    left()
-    forward()
-    right()
-    forward()
-    left()
-    down()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.repeater)
-    forward()
-    placeDown(state.blocks.stickyPiston)
+    move("back")
+    move("down")
+    move("down")
+    put("bottom", state.blocks.filler)
+    put("front", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
+    turn("left")
+    move("forward")
+    turn("right")
+    move("forward")
+    turn("left")
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.repeater)
+    move("forward")
+    put("bottom", state.blocks.stickyPiston)
 end
 
 ---@param state BoneMealAppState
 local function placeChestHopperAndDropperRedstone(state)
     -- place chest hopper & dropper redstone
-    left()
-    forward(2)
-    down(2)
-    left()
-    forward(3)
+    turn("left")
+    move("forward", 2)
+    move("down", 2)
+    turn("left")
+    move("forward", 3)
 
-    down()
-    left()
-    placeFront(state.blocks.hopper)
-    right()
-    up()
+    move("down")
+    turn("left")
+    put("front", state.blocks.hopper)
+    turn("right")
+    move("up")
 
-    placeDown(state.blocks.filler)
-    right()
-    placeFront(state.blocks.filler)
-    up()
-    placeDown(state.blocks.comparator)
-    left()
-    forward()
-    down()
-    placeDown(state.blocks.filler)
-    right()
-    forward()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.redstone)
-    back()
-    placeDown(state.blocks.redstone)
-    back()
-    down()
-    placeDown(state.blocks.redstoneTorch)
+    put("bottom", state.blocks.filler)
+    turn("right")
+    put("front", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.comparator)
+    turn("left")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.filler)
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("back")
+    put("bottom", state.blocks.redstone)
+    move("back")
+    move("down")
+    put("bottom", state.blocks.redstoneTorch)
 end
 
 ---@param state BoneMealAppState
 local function placeCompostersAndHoppers(state)
     -- place composter hoppers
-    back(2)
-    right()
-    forward()
-    left()
-    placeFront(state.blocks.hopper)
-    left()
-    forward(2)
-    right()
-    forward()
-    right()
+    move("back", 2)
+    turn("right")
+    move("forward")
+    turn("left")
+    put("front", state.blocks.hopper)
+    turn("left")
+    move("forward", 2)
+    turn("right")
+    move("forward")
+    turn("right")
 
     for i = 1, 4 do
-        placeFront(state.blocks.hopper)
+        put("front", state.blocks.hopper)
 
         if i ~= 4 then
-            back()
+            move("back")
         end
     end
 
-    left()
-    forward(2)
-    right()
-    forward()
-    right()
-    placeFront(state.blocks.hopper)
+    turn("left")
+    move("forward", 2)
+    turn("right")
+    move("forward")
+    turn("right")
+    put("front", state.blocks.hopper)
 
     -- place composters
-    up(2)
+    move("up", 2)
 
     for _ = 1, 2 do
-        forward()
-        placeDown(state.blocks.composter)
+        move("forward")
+        put("bottom", state.blocks.composter)
     end
 
-    left()
+    turn("left")
 
     for _ = 1, 4 do
-        forward()
-        placeDown(state.blocks.composter)
+        move("forward")
+        put("bottom", state.blocks.composter)
     end
 end
 
 ---@param state BoneMealAppState
 local function placeFurnacesAndWall(state)
     -- place furnaces + wall
-    up()
-    right()
+    move("up")
+    turn("right")
 
     for i = 1, 3 do
-        forward()
+        move("forward")
 
         if i ~= 3 then
-            placeDown(state.blocks.filler)
+            put("bottom", state.blocks.filler)
         end
     end
 
-    right()
-    up()
-    forward()
+    turn("right")
+    move("up")
+    move("forward")
 
     for i = 1, 3 do
-        placeDown(state.blocks.furnace)
-        forward()
+        put("bottom", state.blocks.furnace)
+        move("forward")
     end
 
-    placeDown(state.blocks.filler)
-    forward()
-    placeDown(state.blocks.filler)
-    up()
-    around()
+    put("bottom", state.blocks.filler)
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("up")
+    turn("back")
 
     for i = 1, 5 do
-        placeDown(state.blocks.filler)
-        forward()
+        put("bottom", state.blocks.filler)
+        move("forward")
     end
 
-    down()
-    forward()
+    move("down")
+    move("forward")
 
     for i = 1, 3 do
-        placeDown(state.blocks.furnace)
-        forward()
+        put("bottom", state.blocks.furnace)
+        move("forward")
     end
 
-    placeDown(state.blocks.filler)
-    up()
-    around()
+    put("bottom", state.blocks.filler)
+    move("up")
+    turn("back")
 
     for i = 1, 4 do
-        placeDown(state.blocks.filler)
-        forward()
+        put("bottom", state.blocks.filler)
+        move("forward")
     end
 
-    down()
-    placeDown(state.blocks.filler)
-    up()
-    placeDown(state.blocks.filler)
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.filler)
 end
 
 ---@param state BoneMealAppState
 local function placeWaterHopperWall(state)
     -- build water hopper wall
-    forward(5)
-    right()
+    move("forward", 5)
+    turn("right")
 
     for i = 1, 8 do
-        forward()
-        placeDown(state.blocks.filler)
+        move("forward")
+        put("bottom", state.blocks.filler)
     end
 
-    forward()
-    down(3)
-    around()
+    move("forward")
+    move("down", 3)
+    turn("back")
 
     for i = 1, 8 do
-        forward()
+        move("forward")
 
         if (i > 1 and i < 5) or i == 7 then
-            left()
-            placeFront(state.blocks.filler)
-            right()
+            turn("left")
+            put("front", state.blocks.filler)
+            turn("right")
         elseif i == 5 or i == 6 then
-            left()
-            placeFront(state.blocks.hopper)
-            right()
+            turn("left")
+            put("front", state.blocks.hopper)
+            turn("right")
         end
 
-        placeUp(state.blocks.filler)
+        put("top", state.blocks.filler)
     end
 end
 
 ---@param state BoneMealAppState
 local function placeFloorLineTowardsWaterReservoir(state)
     -- build floor line towards water reservoir
-    left()
-    down()
+    turn("left")
+    move("down")
 
     for i = 1, 8 do
-        forward()
-        placeUp(state.blocks.filler)
+        move("forward")
+        put("top", state.blocks.filler)
     end
 end
 
 ---@param state BoneMealAppState
 local function placeRedstonePathToFloodGates(state)
     -- place redstone path to flood gates
-    down()
-    left()
-    forward(1)
-    placeFront(state.blocks.redstoneBlock)
-    right()
-    forward()
-    left()
-    forward()
-    right()
+    move("down")
+    turn("left")
+    move("forward", 1)
+    put("front", state.blocks.redstoneBlock)
+    turn("right")
+    move("forward")
+    turn("left")
+    move("forward")
+    turn("right")
 
     ---@param block string
     local function placeFloored(block)
-        down()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(block)
+        move("down")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", block)
     end
 
     placeFloored(state.blocks.redstone)
-    forward()
+    move("forward")
     placeFloored(state.blocks.comparator)
-    forward()
+    move("forward")
     placeFloored(state.blocks.redstone)
-    left()
-    forward()
+    turn("left")
+    move("forward")
     placeFloored(state.blocks.redstone)
-    left()
-    forward()
+    turn("left")
+    move("forward")
     placeFloored(state.blocks.comparator)
-    forward()
+    move("forward")
     placeFloored(state.blocks.redstone)
 
-    back(3)
-    down()
-    right()
+    move("back", 3)
+    move("down")
+    turn("right")
 
     for i = 1, 4 do
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.redstone)
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.redstone)
 
         if i ~= 4 then
-            forward()
+            move("forward")
         end
     end
 
-    left()
-    forward()
-    down()
-    placeDown(state.blocks.filler)
-    placeFront(state.blocks.filler)
-    up()
-    placeDown(state.blocks.repeater)
-    placeFront(state.blocks.redstoneTorch)
+    turn("left")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.filler)
+    put("front", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.repeater)
+    put("front", state.blocks.redstoneTorch)
 end
 
 ---@param state BoneMealAppState
 local function placeReservoirWallsAndFloor(state)
     -- place reservoir walls and floor
-    up()
-    forward(2)
-    right()
-    forward()
-    placeDown(state.blocks.filler)
-    back()
-    placeFront(state.blocks.filler)
-    placeDown(state.blocks.filler)
+    move("up")
+    move("forward", 2)
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+    put("bottom", state.blocks.filler)
 
     for i = 1, 6 do
-        back()
-        placeDown(state.blocks.filler)
+        move("back")
+        put("bottom", state.blocks.filler)
     end
 
-    up()
-    back()
-    right()
-    forward()
-    left()
-    placeDown(state.blocks.filler)
-    forward()
+    move("up")
+    move("back")
+    turn("right")
+    move("forward")
+    turn("left")
+    put("bottom", state.blocks.filler)
+    move("forward")
 
     for i = 1, 7 do
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(state.blocks.redstone)
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", state.blocks.redstone)
 
         if i ~= 7 then
-            forward()
-            down()
+            move("forward")
+            move("down")
         end
     end
 end
 
 ---@param state BoneMealAppState
 local function placeTrapdoors(state)
-    left()
-    forward()
-    down()
-    placeDown(state.blocks.trapdoor)
+    turn("left")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.trapdoor)
 
     for _ = 1, 6 do
-        left()
-        forward()
-        right()
-        placeDown(state.blocks.trapdoor)
+        turn("left")
+        move("forward")
+        turn("right")
+        put("bottom", state.blocks.trapdoor)
     end
 end
 
 ---@param state BoneMealAppState
 local function placeRemainingFloor(state)
-    forward()
-    down(2)
-    right()
-    forward()
-    left()
+    move("forward")
+    move("down", 2)
+    turn("right")
+    move("forward")
+    turn("left")
 
     for i = 1, 7 do
         if i ~= 4 then
-            placeDown(state.blocks.filler)
+            put("bottom", state.blocks.filler)
         end
 
         if i ~= 7 then
-            forward()
+            move("forward")
         end
     end
 
     -- place containing observer
-    right()
-    forward()
-    right()
+    turn("right")
+    move("forward")
+    turn("right")
 
     for i = 1, 6 do
-        placeDown(state.blocks.filler)
+        put("bottom", state.blocks.filler)
 
         if i == 4 then
-            up()
-            forward(2)
-            down()
+            move("up")
+            move("forward", 2)
+            move("down")
         elseif i ~= 6 then
-            forward()
+            move("forward")
         end
     end
 
     -- place line containing dispenser
-    left()
-    forward()
-    left()
+    turn("left")
+    move("forward")
+    turn("left")
 
     for i = 1, 7 do
         if i ~= 4 then
-            placeDown(state.blocks.filler)
+            put("bottom", state.blocks.filler)
         end
 
         if i ~= 7 then
-            forward()
+            move("forward")
         end
     end
 
     -- place remaining 4 lines
     for line = 1, 4 do
         if line % 2 == 1 then
-            right()
-            forward()
-            right()
+            turn("right")
+            move("forward")
+            turn("right")
         else
-            left()
-            forward()
-            left()
+            turn("left")
+            move("forward")
+            turn("left")
         end
 
         for i = 1, 7 do
-            placeDown(state.blocks.filler)
+            put("bottom", state.blocks.filler)
 
             if i ~= 7 then
-                forward()
+                move("forward")
             end
         end
     end
@@ -445,68 +438,68 @@ end
 
 ---@param state BoneMealAppState
 local function placePistonsAndWalls(state)
-    forward()
-    up()
-    left()
-    placeDown(state.blocks.filler)
-    back()
-    placeDown(state.blocks.filler)
-    placeFront(state.blocks.filler)
-    back()
-    placeFront(state.blocks.filler)
-    placeDown(state.blocks.filler)
-    back()
-    placeDown(state.blocks.filler)
+    move("forward")
+    move("up")
+    turn("left")
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("bottom", state.blocks.filler)
+    put("front", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("bottom", state.blocks.filler)
 
     -- place pistons
-    left()
-    forward()
-    down()
+    turn("left")
+    move("forward")
+    move("down")
 
     for i = 1, 7 do
-        right()
+        turn("right")
 
         if i == 4 then
-            forward(2)
-            placeFront(state.blocks.filler)
-            back(2)
-            placeFront(state.blocks.filler)
+            move("forward", 2)
+            put("front", state.blocks.filler)
+            move("back", 2)
+            put("front", state.blocks.filler)
         else
-            placeFront(state.blocks.piston)
+            put("front", state.blocks.piston)
         end
 
-        left()
-        forward()
+        turn("left")
+        move("forward")
     end
 
     -- place remaining wall
-    right()
-    forward()
-    placeFront(state.blocks.filler)
-    back()
-    placeFront(state.blocks.filler)
+    turn("right")
+    move("forward")
+    put("front", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
 
     -- place lever
-    right()
-    back()
-    up()
-    placeFront(state.blocks.filler)
-    up()
-    placeDown(state.blocks.redstoneTorch)
-    forward()
-    up()
-    placeDown(state.blocks.lever)
+    turn("right")
+    move("back")
+    move("up")
+    put("front", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstoneTorch)
+    move("forward")
+    move("up")
+    put("bottom", state.blocks.lever)
 
     -- place piston redstone
-    forward()
-    down()
+    move("forward")
+    move("down")
 
     ---@param block string
     local function placeFloored(block)
-        down()
-        placeDown(state.blocks.filler)
-        up()
-        placeDown(block)
+        move("down")
+        put("bottom", state.blocks.filler)
+        move("up")
+        put("bottom", block)
     end
 
     -- dust line directly connected to pistons
@@ -514,60 +507,60 @@ local function placePistonsAndWalls(state)
         placeFloored(state.blocks.redstone)
 
         if i ~= 8 then
-            forward()
+            move("forward")
         end
     end
 
     -- first line of repeaters
-    right()
-    forward()
-    right()
+    turn("right")
+    move("forward")
+    turn("right")
 
     for _ = 1, 6 do
         placeFloored(state.blocks.repeater)
-        forward()
+        move("forward")
     end
 
     placeFloored(state.blocks.redstone)
-    forward()
-    down()
+    move("forward")
+    move("down")
 
     for i = 1, 3 do
-        placeDown(state.blocks.filler)
+        put("bottom", state.blocks.filler)
 
         if i ~= 3 then
-            forward()
+            move("forward")
         end
     end
 
     -- repeater redstone dust connection
-    up()
-    placeDown(state.blocks.redstone)
-    left()
-    forward()
+    move("up")
+    put("bottom", state.blocks.redstone)
+    turn("left")
+    move("forward")
     placeFloored(state.blocks.redstone)
-    left()
-    forward()
+    turn("left")
+    move("forward")
 
     for _ = 1, 9 do
         placeFloored(state.blocks.repeater)
-        forward()
+        move("forward")
     end
 
     placeFloored(state.blocks.redstone)
-    left()
-    forward()
+    turn("left")
+    move("forward")
     placeFloored(state.blocks.redstone)
 
     -- place last floor line (that i forgot to add in previously)
-    forward(3)
-    down(4)
-    left()
-    forward(2)
+    move("forward", 3)
+    move("down", 4)
+    turn("left")
+    move("forward", 2)
 
     for i = 1, 7 do
-        placeUp(state.blocks.filler)
-        forward()
+        put("top", state.blocks.filler)
+        move("forward")
     end
 end
 

@@ -22,11 +22,11 @@ end
 ---@param position Vector
 local function digUpDownIfInBounds(world, position)
     if World.isInBoundsY(world, position.y + 1) then
-        Squirtle.tryDig("up")
+        Squirtle.tryMine("up")
     end
 
     if World.isInBoundsY(world, position.y - 1) then
-        Squirtle.tryDig("down")
+        Squirtle.tryMine("down")
     end
 end
 
@@ -54,7 +54,7 @@ local function loadIntoShulker(direction)
         local stack = Squirtle.getStack(slot)
 
         if stack and not stack.name:match("shulker") then
-            Squirtle.selectSlot(slot)
+            Squirtle.select(slot)
             if not Squirtle.drop(direction) then
                 unloadedAll = false
             end
@@ -73,7 +73,7 @@ local function tryLoadShulkers()
         local stack = Squirtle.getStack(slot)
 
         if stack and stack.name:match("shulker") then
-            Squirtle.selectSlot(slot)
+            Squirtle.select(slot)
             placedSide = placeAnywhere()
 
             if not placedSide then
@@ -84,8 +84,8 @@ local function tryLoadShulkers()
                 return false
             else
                 local unloadedAll = loadIntoShulker(placedSide)
-                Squirtle.selectSlot(slot)
-                Squirtle.dig(placedSide)
+                Squirtle.select(slot)
+                Squirtle.mine(placedSide)
 
                 if unloadedAll then
                     return true
