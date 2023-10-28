@@ -4,72 +4,28 @@ local Elemental = require "squirtle.elemental"
 local Basic = require "squirtle.basic"
 
 local bucket = "minecraft:bucket"
-local fuelItems = {
-    -- ["minecraft:lava_bucket"] = 1000,
-    ["minecraft:coal"] = 80,
-    ["minecraft:charcoal"] = 80,
-    ["minecraft:coal_block"] = 800
-    -- ["minecraft:bamboo"] = 2
-}
+local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
 
 ---@class Advanced : Basic
 local Advanced = {}
 setmetatable(Advanced, {__index = Basic})
 
----@param item string
----@return boolean
-local function isFuel(item)
-    return fuelItems[item] ~= nil
-end
-
----@param item string
----@return integer
-local function getRefuelAmount(item)
-    return fuelItems[item] or 0
-end
-
----@param stack table
----@return integer
-local function getStackRefuelAmount(stack)
-    return getRefuelAmount(stack.name) * stack.count
-end
-
 ---@param stacks ItemStack[]
 ---@param fuel number
----@param allowedOverFlow? number
+---@param allowLava? boolean
 ---@return ItemStack[] fuelStacks, number openFuel
-local function pickStacks(stacks, fuel, allowedOverFlow)
-    allowedOverFlow = math.max(allowedOverFlow or 1000, 0)
+local function pickFuelStacks(stacks, fuel, allowLava)
     local pickedStacks = {}
     local openFuel = fuel
 
-    -- [todo] try to order stacks based on type of item
-    -- for example, we may want to start with the smallest ones to minimize potential overflow
     for slot, stack in pairs(stacks) do
-        if isFuel(stack.name) then
-            local stackRefuelAmount = getStackRefuelAmount(stack)
-
-            if stackRefuelAmount <= openFuel then
-                pickedStacks[slot] = stack
-                openFuel = openFuel - stackRefuelAmount
-            else
-                -- [todo] can be shortened
-                -- actually, im not even sure we need the option to provide an allowed overflow
-                local itemRefuelAmount = getRefuelAmount(stack.name)
-                local numRequiredItems = math.floor(openFuel / itemRefuelAmount)
-                local numItemsToPick = numRequiredItems
-
-                if allowedOverFlow > 0 and ((numItemsToPick + 1) * itemRefuelAmount) - openFuel <= allowedOverFlow then
-                    numItemsToPick = numItemsToPick + 1
-                end
-                -- local numRequiredItems = math.ceil(openFuel / itemRefuelAmount)
-
-                -- if (numRequiredItems * itemRefuelAmount) - openFuel <= allowedOverFlow then
-                if numItemsToPick > 0 then
-                    pickedStacks[slot] = {name = stack.name, count = numItemsToPick}
-                    openFuel = openFuel - stackRefuelAmount
-                end
-            end
+        if fuelItems[stack.name] and (allowLava or stack.name ~= "minecraft:lava_bucket") then
+            local itemRefuelAmount = fuelItems[stack.name]
+            local numItems = math.ceil(openFuel / itemRefuelAmount)
+            stack = Utils.clone(stack)
+            stack.count = numItems
+            pickedStacks[slot] = stack
+            openFuel = openFuel - (numItems * itemRefuelAmount)
 
             if openFuel <= 0 then
                 break
@@ -77,13 +33,14 @@ local function pickStacks(stacks, fuel, allowedOverFlow)
         end
     end
 
-    return pickedStacks, openFuel
+    return pickedStacks, math.max(openFuel, 0)
 end
 
 ---@param fuel? integer
-local function refuelFromBackpack(fuel)
+---@param allowLava? boolean
+local function refuelFromBackpack(fuel, allowLava)
     fuel = fuel or Basic.missingFuel()
-    local fuelStacks = pickStacks(Basic.getStacks(), fuel)
+    local fuelStacks = pickFuelStacks(Basic.getStacks(), fuel, allowLava)
     local emptyBucketSlot = Basic.find(bucket)
 
     for slot, stack in pairs(fuelStacks) do
@@ -93,7 +50,7 @@ local function refuelFromBackpack(fuel)
         local remaining = Basic.getStack(slot)
 
         if remaining and remaining.name == bucket then
-            if (emptyBucketSlot == nil) or (not Basic.transferTo(emptyBucketSlot)) then
+            if not emptyBucketSlot or not Basic.transferTo(emptyBucketSlot) then
                 emptyBucketSlot = slot
             end
         end
@@ -105,7 +62,7 @@ local function refuelWithHelpFromPlayer(fuel)
     fuel = fuel or Basic.missingFuel()
     local _, y = term.getCursorPos()
 
-    while Basic.getFuelLevel() < fuel do
+    while not Basic.hasFuel(fuel) do
         term.setCursorPos(1, y)
         term.clearLine()
         local openFuel = fuel - Basic.getFuelLevel()
