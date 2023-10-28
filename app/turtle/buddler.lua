@@ -6,7 +6,7 @@ local function dig(direction)
     local success, block = inspectMap[direction]()
 
     while success and block.name:find("ore") do
-        os.sleep(3)
+        os.sleep(1)
         success, block = inspectMap[direction]()
     end
 
@@ -14,24 +14,61 @@ local function dig(direction)
     end
 end
 
-local function main(args)
-    local length = args[1] or 33
-    print("[buddler v2.0.0] length = ", length)
-
-    for i = 1, length do
-        dig("forward")
-        turtle.forward()
-        dig("down")
-
-        if i % 3 == 0 then
-            dig("up")
-            turtle.turnLeft()
-            dig("forward")
-            turtle.turnRight()
-            turtle.turnRight()
-            dig("forward")
-            turtle.turnLeft()
+local function selectTorch()
+    for slot = 1, 16 do
+        if turtle.getItemCount(slot) > 0 then
+            local item = turtle.getItemDetail(slot)
+            if item and item.name == "minecraft:torch" then
+                turtle.select(slot)
+                return true
+            end
         end
+    end
+
+    return false
+end
+
+local function digUpLeftRight()
+    dig("up")
+    turtle.turnLeft()
+    dig("forward")
+    turtle.turnRight()
+    turtle.turnRight()
+    dig("forward")
+    turtle.turnLeft()
+end
+
+local function forward()
+    dig("forward")
+    turtle.forward()
+    dig("down")
+end
+
+local function cycle()
+    for _ = 1, 3 do
+        for step = 1, 3 do
+            forward()
+
+            if step == 3 then
+                digUpLeftRight()
+            end
+        end
+    end
+
+    if selectTorch() then
+        turtle.placeDown()
+        turtle.select(1)
+    end
+end
+
+local function main(args)
+    print("[buddler v2.2.0] booting...")
+    turtle.select(1)
+    local cycles = args[1] or 11
+    print("[info] doing", cycles, "cycles")
+
+    for _ = 1, cycles do
+        cycle()
     end
 end
 
