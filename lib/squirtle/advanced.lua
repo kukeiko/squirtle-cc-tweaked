@@ -6,6 +6,11 @@ local Basic = require "squirtle.basic"
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
 
+---@return integer
+local function getTransferRate()
+    return 16
+end
+
 ---@class Advanced : Basic
 local Advanced = {}
 setmetatable(Advanced, {__index = Basic})
@@ -129,6 +134,103 @@ function Advanced.suckSlot(inventory, slot, quantity)
 
         return success, message
     end
+end
+
+-- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
+-- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32.
+-- [todo] also, I did not yet think about how keepStock (if provided) influences pullInput()
+-- in regards to the calculation of transferrable input
+---@param from Inventory|string
+---@param to InputOutputInventory|string
+---@param keepStock? table<string, integer>
+---@return boolean, table<string, integer>? transferred
+function Advanced.pushOutput(from, to, keepStock)
+    keepStock = keepStock or {}
+
+    if type(from) == "string" then
+        from = Inventory.create(from)
+    end
+
+    if type(to) == "string" then
+        to = Inventory.createInputOutput(to)
+    end
+
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, toStock in pairs(to.output.stock) do
+        local fromStock = from.stock[item]
+
+        if toStock.count < toStock.maxCount and fromStock and fromStock.count - (keepStock[item] or 0) > 0 then
+            transferrable[item] = math.min(toStock.maxCount - toStock.count, fromStock.count - (keepStock[item] or 0))
+        end
+    end
+
+    local transferred = Inventory.transferItems(from, to.output, transferrable, getTransferRate())
+    local transferredAll = true
+
+    for item, itemTransferred in pairs(transferred) do
+        if itemTransferred < transferrable[item] then
+            transferredAll = false
+        end
+    end
+
+    if Utils.count(transferred) == 0 then
+        return transferredAll, nil
+    end
+
+    return transferredAll, transferred
+end
+
+---@param from InputOutputInventory|string
+---@param to Inventory|string
+---@param transferredOutput? table<string, integer>
+---@return boolean, table<string, integer>? transferred
+function Advanced.pullInput(from, to, transferredOutput)
+    if type(from) == "string" then
+        from = Inventory.createInputOutput(from)
+    end
+
+    if type(to) == "string" then
+        to = Inventory.create(to)
+    end
+
+    transferredOutput = transferredOutput or {}
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, stock in pairs(from.input.stock) do
+        local transfer = stock.maxCount
+
+        if from.output.stock[item] then
+            transfer = transfer + from.output.stock[item].maxCount
+        end
+
+        transfer = transfer - (transferredOutput[item] or 0)
+
+        local toStock = to.stock[item]
+
+        if toStock then
+            transfer = transfer - toStock.count
+        end
+
+        transferrable[item] = math.min(stock.count, transfer)
+    end
+
+    local transferred = Inventory.transferItems(from.input, to, transferrable, getTransferRate(), true)
+    local transferredAll = true
+
+    for item, itemTransferred in pairs(transferred) do
+        if itemTransferred < transferrable[item] then
+            transferredAll = false
+        end
+    end
+
+    if Utils.count(transferred) == 0 then
+        return transferredAll, nil
+    end
+
+    return transferredAll, transferred
 end
 
 return Advanced
