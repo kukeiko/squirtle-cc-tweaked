@@ -1,5 +1,6 @@
 local Utils = require "utils"
 local findSide = require "world.peripheral.find-side"
+local InputOutputInventory = require "inventory.input-output-inventory"
 
 ---@param stacks table<integer, ItemStack>
 ---@return table<string, ItemStack>
@@ -31,6 +32,31 @@ local function getDefaultRate()
     return 8
 end
 
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return table<integer, ItemStack>, table<integer, ItemStack>
+local function toInputOutputStacks(stacks, nameTagSlot)
+    local inputStacks = {}
+    local outputStacks = {}
+
+    for slot, stack in pairs(stacks) do
+        if slot ~= nameTagSlot then
+            ---@type ItemStack
+            local stack = Utils.clone(stack)
+            stack.count = stack.count - 1
+            stack.maxCount = stack.maxCount - 1
+
+            if slot < nameTagSlot then
+                inputStacks[slot] = stack
+            elseif slot > nameTagSlot then
+                outputStacks[slot] = stack
+            end
+        end
+    end
+
+    return inputStacks, outputStacks
+end
+
 ---@class Inventory
 ---@field name string
 ---@field stock ItemStock
@@ -50,6 +76,30 @@ function Inventory.create(name, stacks, detailed)
     local inventory = {name = name, stacks = stacks, stock = stacksToStock(stacks), locked = false}
 
     return inventory
+end
+
+---@param name string
+---@param stacks? table<integer, ItemStack>
+---@param nameTagSlot? integer
+---@return InputOutputInventory
+function Inventory.createInputOutput(name, stacks, nameTagSlot)
+    if not stacks then
+        stacks = Inventory.getStacks(name)
+    end
+
+    if not nameTagSlot then
+        nameTagSlot = Inventory.findNameTag(name, {"I/O"}, stacks)
+
+        if not nameTagSlot then
+            error(("chest %s does not have an I/O name tag"):format(name))
+        end
+    end
+
+    local inputStacks, outputStacks = toInputOutputStacks(stacks, nameTagSlot)
+    local input = Inventory.create(name, inputStacks)
+    local output = Inventory.create(name, outputStacks)
+
+    return InputOutputInventory.create(name, input, output, "io")
 end
 
 ---@param item string
@@ -401,7 +451,7 @@ end
 ---@param total table<string, integer>
 ---@param rate? integer
 ---@param allowAllocate? boolean
----@return table<string,integer> transferred
+---@return table<string, integer> transferred
 function Inventory.transferItems(from, to, total, rate, allowAllocate)
     rate = rate or getDefaultRate()
 

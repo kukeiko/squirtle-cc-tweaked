@@ -79,6 +79,7 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("pushing output...")
+    -- [todo] keep 32 birch saplings
     Squirtle.pushOutput(stash, io)
     print("pulling input...")
     Squirtle.pullInput(io, stash)
@@ -98,6 +99,7 @@ local function doInputOutput(stash, io)
     print("output has space for charcoal, want to work now!")
     print("checking if we have enough input...")
 
+    -- [todo] creating inventory multiple times - maybe an "Inventory.refresh()" method would make sense?
     if Inventory.getItemStock(stash, "minecraft:bone_meal") < 64 then
         print("waiting for more bone meal...")
 

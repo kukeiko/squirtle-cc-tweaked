@@ -86,6 +86,7 @@ return function(furnace, stash, io)
         kickstartFurnaceFuel(furnace, 8)
 
         if Inventory.getItemStock(stash, "minecraft:birch_log") > 0 then
+            -- [todo] keep 32 birch saplings
             Squirtle.pushOutput(stash, io)
 
             if Inventory.getItemStock(stash, "minecraft:birch_log") > 0 then

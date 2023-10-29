@@ -67,7 +67,6 @@ return function(chest, stacks)
         inventory = createMonoTypeInventory(chest, stacks)
     else
         inventory = createMultiTypeInventory(chest, stacks)
-
     end
 
     return InputOutputInventory.create(chest, inventory, inventory, "storage")

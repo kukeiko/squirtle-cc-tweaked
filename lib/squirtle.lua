@@ -4,9 +4,9 @@ local findPath = require "geo.find-path"
 local Inventory = require "inventory.inventory"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
-local toIoInventory = require "inventory.to-io-inventory"
 local State = require "squirtle.state"
 local getNative = require "squirtle.get-native"
+local Elemental = require "squirtle.elemental"
 local Basic = require "squirtle.basic"
 local Advanced = require "squirtle.advanced"
 local Complex = require "squirtle.complex"
@@ -14,6 +14,11 @@ local Complex = require "squirtle.complex"
 ---@class Squirtle : Complex
 local Squirtle = {inventorySize = 16}
 setmetatable(Squirtle, {__index = Complex})
+
+---@return integer
+local function getTransferRate()
+    return 16
+end
 
 ---@param predicate? (fun(block: Block) : boolean) | string[]
 ---@return fun() : nil
@@ -187,14 +192,22 @@ function Squirtle.selectItem(name)
     return slot
 end
 
--- [todo] assumes that everything stacks to 64
+-- [todo] add remaining
+local itemMaxCounts = {["minecraft:lava_bucket"] = 1, ["minecraft:water_bucket"] = 1, ["minecraft:bucket"] = 16}
+
+---@param item string
+---@return integer
+local function getItemMaxCount(item)
+    return itemMaxCounts[item] or 64
+end
+
 ---@param items table<string, integer>
 ---@return integer
 local function itemsToStacks(items)
     local numStacks = 0
 
-    for _, numItems in pairs(items) do
-        numStacks = numStacks + math.ceil(numItems / 64)
+    for item, numItems in pairs(items) do
+        numStacks = numStacks + math.ceil(numItems / getItemMaxCount(item))
     end
 
     return numStacks
@@ -270,10 +283,10 @@ local function fillShulker(items, shulker)
         os.pullEvent("turtle_inventory")
 
         for slot = 1, 16 do
-            local item = turtle.getItemDetail(slot)
+            local item = Elemental.getStack(slot)
 
             if item and item.name ~= "minecraft:shulker_box" then
-                turtle.select(slot)
+                Elemental.select(slot)
                 Squirtle.drop(shulker)
             end
         end
@@ -283,7 +296,7 @@ end
 -- [todo] assumes that everything stacks to 64
 ---@param items table<string, integer>
 ---@param numStacks integer
----@return table<string, integer>,table<string, integer>
+---@return table<string, integer>, table<string, integer>
 local function sliceNumStacksFromItems(items, numStacks)
     ---@type table<string, integer>
     local sliced = {}
@@ -291,7 +304,7 @@ local function sliceNumStacksFromItems(items, numStacks)
     local leftOver = Utils.copy(items)
 
     for item, count in pairs(items) do
-        local slicedCount = math.min(count, remainingStacks * 64)
+        local slicedCount = math.min(count, remainingStacks * getItemMaxCount(item))
         sliced[item] = slicedCount
         leftOver[item] = leftOver[item] - slicedCount
 
@@ -299,7 +312,7 @@ local function sliceNumStacksFromItems(items, numStacks)
             leftOver[item] = nil
         end
 
-        remainingStacks = remainingStacks - math.ceil(slicedCount / 64)
+        remainingStacks = remainingStacks - math.ceil(slicedCount / getItemMaxCount(item))
 
         if remainingStacks == 0 then
             break
@@ -309,70 +322,89 @@ local function sliceNumStacksFromItems(items, numStacks)
     return sliced, leftOver
 end
 
--- [todo] assumes an empty inventory
+---@param items table<string, integer>
+local function requireItemsNoShulker(items)
+    while true do
+        ---@type table<string, integer>
+        local open = getMissing(items)
+
+        if Utils.count(open) == 0 then
+            term.clear()
+            term.setCursorPos(1, 1)
+            return nil
+        end
+
+        term.clear()
+        term.setCursorPos(1, 1)
+        print("Required Items")
+        local width = term.getSize()
+        print(string.rep("-", width))
+
+        for item, missing in pairs(open) do
+            print(string.format("%dx %s", missing, item))
+        end
+
+        os.pullEvent("turtle_inventory")
+    end
+end
+
+---@param items table<string, integer>
+local function requireItemsUsingShulker(items)
+    local numStacks = itemsToStacks(items)
+    -- shulkers have 27 slots, but we want to keep one slot empty per shulker
+    -- so that suckSlot() doesn't have to temporarily load an item
+    -- from the shulker into the turtle inventory
+    local numShulkers = math.ceil(numStacks / 26)
+
+    -- [todo] assumes an empty inventory
+    if numShulkers > 15 then
+        error("required items would need more than 15 shulker boxes")
+    end
+
+    requireItemsNoShulker({["minecraft:shulker_box"] = numShulkers})
+
+    local fullShulkers = {}
+    local theItems = Utils.copy(items)
+
+    for i = 1, numShulkers do
+        for slot = 1, 16 do
+            local item = Elemental.getStack(slot, true)
+
+            if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
+                Elemental.select(slot)
+                local placedSide = Basic.placeFrontTopOrBottom()
+
+                if not placedSide then
+                    error("no space to place shulker box")
+                end
+
+                local itemsForShulker, leftOver = sliceNumStacksFromItems(theItems, 26)
+                theItems = leftOver
+                fillShulker(itemsForShulker, placedSide)
+                Elemental.dig(placedSide)
+
+                local shulkerItem = Basic.getStack(slot, true)
+
+                if not shulkerItem then
+                    error("my shulker went poof :(")
+                end
+
+                fullShulkers[shulkerItem.nbt] = true
+            end
+        end
+    end
+end
+
 ---@param items table<string, integer>
 function Squirtle.requireItems(items)
     local numStacks = itemsToStacks(items)
 
+    -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,
+    -- yet we still count stacks of total items required)
     if numStacks <= 16 then
-        while true do
-            ---@type table<string, integer>
-            local open = getMissing(items)
-
-            if Utils.count(open) == 0 then
-                term.clear()
-                term.setCursorPos(1, 1)
-                return nil
-            end
-
-            term.clear()
-            term.setCursorPos(1, 1)
-            print("Required Items")
-            local width = term.getSize()
-            print(string.rep("-", width))
-
-            for item, missing in pairs(open) do
-                print(string.format("%dx %s", missing, item))
-            end
-
-            os.pullEvent("turtle_inventory")
-        end
+        requireItemsNoShulker(items)
     else
-        -- shulkers have 27 slots, but we want to keep one slot empty per shulker
-        -- so that suckSlotFromChest() doesn't have to temporarily load an item
-        -- from the shulker into the turtle inventory
-        local numShulkers = math.ceil(numStacks / 26)
-
-        if numShulkers > 15 then
-            error("required items would need more than 15 shulker boxes")
-        end
-
-        Squirtle.requireItems({["minecraft:shulker_box"] = numShulkers})
-
-        local fullShulkers = {}
-        local theItems = Utils.copy(items)
-
-        for i = 1, numShulkers do
-            for slot = 1, 16 do
-                local item = turtle.getItemDetail(slot, true)
-
-                if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
-                    turtle.select(slot)
-                    local placedSide = Basic.placeFrontTopOrBottom()
-
-                    if not placedSide then
-                        error("no space to place shulker box")
-                    end
-
-                    local itemsForShulker, leftOver = sliceNumStacksFromItems(theItems, 26)
-                    theItems = leftOver
-                    fillShulker(itemsForShulker, placedSide)
-                    Squirtle.dig(placedSide)
-                    local shulkerItem = turtle.getItemDetail(slot, true)
-                    fullShulkers[shulkerItem.nbt] = true
-                end
-            end
-        end
+        requireItemsUsingShulker(items)
     end
 end
 
@@ -476,113 +508,101 @@ function Squirtle.navigate(to, world, breakable)
     end
 end
 
----@param from string
----@param to string
----@return table<string, integer> transferredStock
-function Squirtle.pullInput(from, to)
-    local maxStock = Inventory.getInputStock(from)
-    local currentStock = Inventory.getStock(to)
-    -- [todo] i have the same name "stock" for two different data structures :/ (table<string, int> and table<string, ItemStack>)
-    ---@type table<string, integer>
-    local missingStock = {}
+-- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
+-- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32.
+-- [todo] also, I did not yet think about how keepStock (if provided) influences pullInput()
+-- in regards to the calculation of transferrable input
+---@param from Inventory|string
+---@param to InputOutputInventory|string
+---@param keepStock? table<string, integer>
+---@return boolean, table<string, integer>? transferred
+function Squirtle.pushOutput(from, to, keepStock)
+    keepStock = keepStock or {}
 
-    for item, stock in pairs(maxStock) do
-        missingStock[item] = stock.maxCount - ((currentStock[item] or {}).count or 0)
+    if type(from) == "string" then
+        from = Inventory.create(from)
+    end
+
+    if type(to) == "string" then
+        to = Inventory.createInputOutput(to)
     end
 
     ---@type table<string, integer>
-    local transferredStock = {}
+    local transferrable = {}
 
-    for slot, stack in pairs(Inventory.getInputStacks(from)) do
-        local stock = missingStock[stack.name]
+    for item, toStock in pairs(to.output.stock) do
+        local fromStock = from.stock[item]
 
-        if stock ~= nil and stock > 0 then
-            local limit = math.min(stack.count - 1, stock)
-            local transferred = Inventory.pullItems(to, from, slot, limit)
-            missingStock[stack.name] = stock - transferred
-
-            if transferred > 0 then
-                transferredStock[stack.name] = (transferredStock[stack.name] or 0) + transferred
-            end
+        if toStock.count < toStock.maxCount and fromStock and fromStock.count - (keepStock[item] or 0) > 0 then
+            transferrable[item] = math.min(toStock.maxCount - toStock.count, fromStock.count - (keepStock[item] or 0))
         end
     end
 
-    return transferredStock
+    local transferred = Inventory.transferItems(from, to.output, transferrable, getTransferRate())
+    local transferredAll = true
+
+    for item, itemTransferred in pairs(transferred) do
+        if itemTransferred < transferrable[item] then
+            transferredAll = false
+        end
+    end
+
+    if Utils.count(transferred) == 0 then
+        return transferredAll, nil
+    end
+
+    return transferredAll, transferred
 end
 
--- [note] copied from io-chestcart
----@param from InputOutputInventory
----@param to Inventory
+---@param from InputOutputInventory|string
+---@param to Inventory|string
 ---@param transferredOutput? table<string, integer>
----@param rate? integer
----@return table<string, integer> transferred
-function Squirtle.pullInput_v2(from, to, transferredOutput, rate)
+---@return boolean, table<string, integer>? transferred
+function Squirtle.pullInput(from, to, transferredOutput)
+    if type(from) == "string" then
+        from = Inventory.createInputOutput(from)
+    end
+
+    if type(to) == "string" then
+        to = Inventory.create(to)
+    end
+
     transferredOutput = transferredOutput or {}
     ---@type table<string, integer>
     local transferrable = {}
 
     for item, stock in pairs(from.input.stock) do
-        local maxStock = stock.maxCount
+        local transfer = stock.maxCount
 
         if from.output.stock[item] then
-            maxStock = maxStock + from.output.stock[item].maxCount
+            transfer = transfer + from.output.stock[item].maxCount
         end
 
-        maxStock = maxStock - (transferredOutput[item] or 0)
+        transfer = transfer - (transferredOutput[item] or 0)
 
         local toStock = to.stock[item]
 
         if toStock then
-            maxStock = maxStock - toStock.count
+            transfer = transfer - toStock.count
         end
 
-        transferrable[item] = math.min(stock.count, maxStock)
+        transferrable[item] = math.min(stock.count, transfer)
     end
 
-    return Inventory.transferItems(from.input, to, transferrable, rate, true)
-end
-
--- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
--- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32
----@param from string
----@param to string
----@param keepStock? table<string, integer>
----@return boolean, table<string, integer>
-function Squirtle.pushOutput(from, to, keepStock)
-    keepStock = keepStock or {}
-
-    ---@type  table<string, integer>
-    local transferredStock = {}
-    local fromStacks = Inventory.getStacks(from)
-    local fromInventory = Inventory.create(from, fromStacks)
-    local toInventory = toIoInventory(to)
+    local transferred = Inventory.transferItems(from.input, to, transferrable, getTransferRate(), true)
     local transferredAll = true
 
-    for item, stock in pairs(toInventory.output.stock) do
-        local fromStock = fromInventory.stock[item]
-
-        if fromStock then
-            local pushable = math.max(fromStock.count - (keepStock[item] or 0), 0)
-            local open = stock.maxCount - stock.count
-            local transfer = math.min(open, pushable)
-
-            while stock.count < stock.maxCount do
-                local transferred = Inventory.transferItem(fromInventory, toInventory.output, item, transfer, 16)
-                transferredStock[item] = (transferredStock[item] or 0) + transferred
-
-                if transferred ~= transfer then
-                    -- assuming chest is full or its state changed from an external source, in which case we just ignore it
-                    break
-                end
-            end
-
-            if fromStock.count - (keepStock[item] or 0) > 0 then
-                transferredAll = false
-            end
+    for item, itemTransferred in pairs(transferred) do
+        if itemTransferred < transferrable[item] then
+            transferredAll = false
         end
     end
 
-    return transferredAll, transferredStock
+    if Utils.count(transferred) == 0 then
+        return transferredAll, nil
+    end
+
+    return transferredAll, transferred
 end
 
 ---@param checkEarlyExit? fun() : boolean
