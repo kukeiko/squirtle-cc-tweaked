@@ -38,9 +38,9 @@ end
 ---@return Block? block
 function Elemental.probe(direction, name)
     direction = direction or "front"
-    local _, block = getNative("inspect", direction)()
+    local success, block = getNative("inspect", direction)()
 
-    if not block then
+    if not success then
         return nil
     end
 
@@ -119,6 +119,11 @@ end
 ---@return integer|"unlimited"
 function Elemental.getFuelLevel()
     return turtle.getFuelLevel()
+end
+
+---@return integer|"unlimited"
+function Elemental.getFuelLimit()
+    return turtle.getFuelLimit()
 end
 
 ---@param quantity? integer

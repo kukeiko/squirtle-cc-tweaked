@@ -158,7 +158,11 @@ end
 ---@param name string
 ---@return false|integer
 function Squirtle.selectItem(name)
-    local slot = Basic.find(name)
+    if State.simulate then
+        return false
+    end
+
+    local slot = Basic.find(name, true)
 
     if not slot then
         local nextShulkerSlot = 1
@@ -357,7 +361,6 @@ local function requireItemsUsingShulker(items)
     end
 
     requireItemsNoShulker({["minecraft:shulker_box"] = numShulkers})
-
     local fullShulkers = {}
     local theItems = Utils.copy(items)
 
@@ -405,39 +408,39 @@ end
 
 ---@param target Vector
 ---@return boolean, string?
-function Squirtle.moveToPoint(target)
+function Squirtle.walkToPoint(target)
     local delta = Vector.minus(target, Squirtle.locate())
 
     if delta.y > 0 then
-        if not Squirtle.tryMove("top", delta.y) then
+        if not Squirtle.tryWalk("top", delta.y) then
             return false, "top"
         end
     elseif delta.y < 0 then
-        if not Squirtle.tryMove("bottom", -delta.y) then
+        if not Squirtle.tryWalk("bottom", -delta.y) then
             return false, "bottom"
         end
     end
 
     if delta.x > 0 then
         Squirtle.face(Cardinal.east)
-        if not Squirtle.tryMove("front", delta.x) then
+        if not Squirtle.tryWalk("front", delta.x) then
             return false, "front"
         end
     elseif delta.x < 0 then
         Squirtle.face(Cardinal.west)
-        if not Squirtle.tryMove("front", -delta.x) then
+        if not Squirtle.tryWalk("front", -delta.x) then
             return false, "front"
         end
     end
 
     if delta.z > 0 then
         Squirtle.face(Cardinal.south)
-        if not Squirtle.tryMove("front", delta.z) then
+        if not Squirtle.tryWalk("front", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
         Squirtle.face(Cardinal.north)
-        if not Squirtle.tryMove("front", -delta.z) then
+        if not Squirtle.tryWalk("front", -delta.z) then
             return false, "front"
         end
     end
@@ -449,7 +452,7 @@ end
 ---@return boolean, string?, integer?
 local function walkPath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = Squirtle.moveToPoint(next)
+        local success, failedSide = Squirtle.walkToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -468,11 +471,11 @@ function Squirtle.navigate(to, world, breakable)
     end
 
     if not world then
-        local position = Squirtle.locate(true)
+        local position = Squirtle.locate()
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = Squirtle.orientate(true)
+    local from, facing = Squirtle.orientate()
 
     while true do
         local path, msg = findPath(from, to, facing, world)

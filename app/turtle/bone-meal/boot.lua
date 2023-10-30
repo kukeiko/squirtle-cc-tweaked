@@ -15,9 +15,15 @@ local state = {
         redstoneTorch = "minecraft:redstone_torch",
         stickyPiston = "minecraft:sticky_piston",
         filler = "minecraft:smooth_stone",
+        stone = "minecraft:stone",
         trapdoor = "minecraft:spruce_trapdoor",
         piston = "minecraft:piston",
-        lever = "minecraft:lever"
+        lever = "minecraft:lever",
+        bucket = "minecraft:bucket",
+        waterBucket = "minecraft:water_bucket",
+        lavaBucket = "minecraft:lava_bucket",
+        boneMeal = "minecraft:bone_meal",
+        moss = "minecraft:moss_block"
     }
 }
 

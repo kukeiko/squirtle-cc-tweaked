@@ -41,7 +41,7 @@ local function switchTrack(signal)
     local lockAnalogSide = SubwayService.lockAnalogSide
 
     if lockAnalogSide and turtle then
-        lockAnalogSide = Side.rotateAround(lockAnalogSide)
+        lockAnalogSide = Side.rotate180(lockAnalogSide)
     end
 
     if lockAnalogSide then

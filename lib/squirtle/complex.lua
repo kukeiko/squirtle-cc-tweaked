@@ -72,6 +72,7 @@ function Complex.walk(direction, steps)
     error(getGoErrorMessage("walk", direction, steps, stepsTaken, message))
 end
 
+-- [todo] moving back still seems buggy if blocks are in the way
 ---@param direction? string
 ---@param steps? integer
 ---@return boolean, integer, string?
@@ -151,7 +152,7 @@ end
 local function stepOut(position)
     Advanced.refuelTo(2)
 
-    if not Complex.tryMove("forward") then
+    if not Complex.tryWalk("forward") then
         return false
     end
 
@@ -167,6 +168,7 @@ local function stepOut(position)
 end
 
 ---@param position Vector
+---@return boolean
 local function orientateSameLayer(position)
     if stepOut(position) then
         return true

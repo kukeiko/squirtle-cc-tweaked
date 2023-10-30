@@ -1,8 +1,63 @@
+local Side = require "elements.side"
 local Squirtle = require "squirtle"
+local SquirtleState = require "squirtle.state"
 
 local move = Squirtle.move
 local turn = Squirtle.turn
 local put = Squirtle.put
+
+local strafe = function(direction)
+    Squirtle.turn(direction)
+    Squirtle.move("forward")
+    Squirtle.turn(Side.rotate180(direction))
+end
+
+---@param state BoneMealAppState
+local placeWater = function(state)
+    Squirtle.selectItem(state.blocks.waterBucket)
+    Squirtle.place("down")
+end
+
+---@param state BoneMealAppState
+local takeWater = function(state)
+    Squirtle.selectItem(state.blocks.bucket)
+    return Squirtle.place("down")
+end
+
+---@param state BoneMealAppState
+local placeLava = function(state)
+    Squirtle.selectItem(state.blocks.lavaBucket)
+    Squirtle.place("down")
+end
+
+---@param state BoneMealAppState
+---@param length integer
+---@param block? string
+local function putLine(state, length, block)
+    for i = 1, length do
+        put("bottom", block or state.blocks.filler)
+
+        if i ~= length then
+            move("forward")
+        end
+    end
+end
+
+---@param direction string
+local function moveToNextLine(direction)
+    turn(direction)
+    move("forward")
+    turn(direction)
+end
+
+---@param state BoneMealAppState
+---@param block string
+local function putFloored(state, block)
+    move("down")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", block)
+end
 
 local restoreBreakable = Squirtle.setBreakable(function()
     return true
@@ -10,26 +65,28 @@ end)
 
 ---@param state BoneMealAppState
 local function placeCollectorChest(state)
+    print("[place] collector chest")
     -- place collector chest
     move("forward", 2)
     turn("right")
     move("forward", 4)
     turn("left")
-    move("forward")
-    put("front", state.blocks.filler)
-    move("back")
-    put("front", state.blocks.chest)
-    turn("right")
-    move("forward")
-    turn("left")
-    move("forward")
-    put("front", state.blocks.filler)
-    move("back")
-    put("front", state.blocks.chest)
+
+    local function placeOneChest()
+        move("forward")
+        put("front", state.blocks.filler)
+        move("back")
+        put("front", state.blocks.chest)
+    end
+
+    placeOneChest()
+    strafe("right")
+    placeOneChest()
 end
 
 ---@param state BoneMealAppState
 local function placeDroppersAndDispenser(state)
+    print("[place] dropper + dispenser")
     -- place droppers + dispenser
     move("up")
     move("forward", 2)
@@ -44,6 +101,7 @@ end
 
 ---@param state BoneMealAppState
 local function placeObserver(state)
+    print("[place] observer")
     -- place observer
     move("forward")
     turn("right")
@@ -52,15 +110,12 @@ local function placeObserver(state)
 
     -- place observer redstone
     move("back")
-    move("down")
-    move("down")
+    move("down", 2)
     put("bottom", state.blocks.filler)
     put("front", state.blocks.filler)
     move("up")
     put("bottom", state.blocks.redstone)
-    turn("left")
-    move("forward")
-    turn("right")
+    strafe("left")
     move("forward")
     turn("left")
     move("down")
@@ -69,10 +124,504 @@ local function placeObserver(state)
     put("bottom", state.blocks.repeater)
     move("forward")
     put("bottom", state.blocks.stickyPiston)
+    move("forward")
+    move("down", 2)
+    turn("back")
+    put("front", state.blocks.redstoneBlock)
+
 end
 
 ---@param state BoneMealAppState
+local function placeRedstonePathToFloodGates(state)
+    -- place redstone path to flood gates
+    turn("left")
+    move("down")
+
+    for i = 1, 3 do
+        put("bottom", state.blocks.filler)
+
+        if i ~= 3 then
+            move("back")
+        end
+    end
+
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    put("bottom", state.blocks.comparator)
+    move("forward")
+    put("bottom", state.blocks.redstone)
+    moveToNextLine("left")
+    move("down")
+    putLine(state, 4)
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("back")
+    put("bottom", state.blocks.redstone)
+    move("back")
+    put("bottom", state.blocks.comparator)
+    move("back")
+    put("bottom", state.blocks.redstone)
+
+    move("forward", 2)
+    put("top", state.blocks.filler)
+    move("forward")
+    put("top", state.blocks.filler)
+    turn("left")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    turn("left")
+    put("front", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
+
+    move("forward")
+    move("up")
+    put("bottom", state.blocks.redstone)
+    moveToNextLine("left")
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    put("bottom", state.blocks.filler)
+    turn("left")
+    move("back")
+    put("front", state.blocks.redstoneTorch)
+end
+
+---@param state BoneMealAppState
+local function placeWaterReservoir(state)
+    print("[place] water reservoir")
+    -- place water reservoir
+    move("up")
+    move("forward", 2)
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+    put("bottom", state.blocks.filler)
+
+    for _ = 1, 6 do
+        move("back")
+        put("bottom", state.blocks.filler)
+    end
+
+    move("up")
+    move("back")
+    put("bottom", state.blocks.filler)
+    strafe("right")
+
+    for i = 1, 8 do
+        put("bottom", state.blocks.filler)
+
+        if i ~= 8 then
+            move("forward")
+        end
+    end
+
+    -- place trapdoor redstone dust line
+    move("up")
+
+    for i = 1, 7 do
+        put("bottom", state.blocks.redstone)
+
+        if i ~= 7 then
+            move("back")
+        end
+    end
+
+    -- place trapdoors
+    turn("left")
+    move("forward")
+    move("down")
+    put("bottom", state.blocks.trapdoor)
+
+    for _ = 1, 6 do
+        strafe("right")
+        put("bottom", state.blocks.trapdoor)
+    end
+
+    -- place water
+
+    turn("left")
+    placeWater(state)
+    move("forward", 2)
+    placeWater(state)
+
+    for _ = 1, 2 do
+        move("back")
+        takeWater(state)
+        move("forward", 3)
+        placeWater(state)
+    end
+
+    -- collect 2x water buckets for item collection water
+    move("back")
+    takeWater(state)
+
+    while not takeWater(state) do
+        os.sleep(.5)
+    end
+
+    move("forward")
+end
+
+---@param state BoneMealAppState
+local function placeFurnaceWall(state)
+    print("[place] furnaces + back wall")
+    move("forward")
+    turn("left")
+    move("back")
+    move("down")
+
+    for i = 1, 7 do
+        if i == 4 then
+            put("bottom", state.blocks.filler)
+        else
+            put("bottom", state.blocks.furnace)
+        end
+
+        move("back")
+        put("front", state.blocks.filler)
+    end
+end
+
+---@param state BoneMealAppState
+local function placeWaterItemCollection(state)
+    print("[place] water item collection")
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+    turn("right")
+    move("back")
+    put("front", state.blocks.filler)
+
+    for _ = 1, 8 do
+        put("bottom", state.blocks.filler)
+        move("back")
+        put("front", state.blocks.filler)
+    end
+
+    turn("left")
+    move("forward")
+    turn("left")
+    move("back")
+    put("bottom", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+    move("down")
+
+    if not SquirtleState.simulate then
+        redstone.setOutput("bottom", true)
+    end
+
+    for i = 1, 7 do
+        if i == 4 or i == 5 then
+            put("bottom", state.blocks.hopper)
+        else
+            put("bottom", state.blocks.filler)
+        end
+
+        if i ~= 7 then
+            move("back")
+        end
+    end
+
+    if not SquirtleState.simulate then
+        redstone.setOutput("bottom", false)
+    end
+
+    turn("left")
+    move("back")
+    turn("left")
+
+    for _ = 1, 8 do
+        put("bottom", state.blocks.filler)
+        move("back")
+        put("front", state.blocks.stone)
+    end
+
+    put("bottom", state.blocks.filler)
+    turn("right")
+    put("front", state.blocks.filler)
+    move("up")
+    put("front", state.blocks.filler)
+    turn("left")
+    move("forward", 2)
+    strafe("right")
+    placeWater(state)
+    move("forward", 2)
+    placeWater(state)
+    move("back")
+    takeWater(state)
+    move("forward")
+    takeWater(state)
+    move("forward", 4)
+    placeWater(state)
+end
+
+---@param state BoneMealAppState
+local function placeFloor(state)
+    turn("left")
+    move("forward", 2)
+    move("down")
+
+    putLine(state, 6)
+
+    moveToNextLine("left")
+    putLine(state, 6)
+
+    moveToNextLine("right")
+    putLine(state, 3)
+    -- avoid observer
+    move("up")
+    move("forward", 2)
+    move("down")
+    putLine(state, 2)
+
+    moveToNextLine("left")
+    putLine(state, 3)
+    move("forward")
+    Squirtle.selectItem(state.blocks.boneMeal)
+    Squirtle.drop("down")
+    move("forward")
+    putLine(state, 2)
+
+    for _ = 1, 2 do
+        moveToNextLine("right")
+        putLine(state, 6)
+        moveToNextLine("left")
+        putLine(state, 6)
+    end
+
+    moveToNextLine("right")
+    putLine(state, 6)
+end
+
+---@param state BoneMealAppState
+local function buildPistonSystem(state)
+    move("forward")
+    turn("right")
+    move("back")
+    put("front", state.blocks.filler)
+    move("back")
+    put("front", state.blocks.filler)
+
+    for i = 1, 8 do
+        strafe("right")
+        if i == 4 then
+            move("forward", 2)
+            put("front", state.blocks.filler)
+            move("back", 2)
+            put("front", state.blocks.filler)
+        elseif i == 8 then
+            put("front", state.blocks.filler)
+        else
+            put("front", state.blocks.piston)
+        end
+    end
+
+    move("up")
+    turn("left")
+    move("forward")
+    putLine(state, 7)
+    moveToNextLine("left")
+    putLine(state, 9)
+    moveToNextLine("right")
+    putLine(state, 11)
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("up")
+    put("bottom", state.blocks.redstone)
+    move("back")
+    put("bottom", state.blocks.redstone)
+    turn("right")
+    move("forward")
+    putLine(state, 9, state.blocks.repeater)
+    move("forward")
+    put("bottom", state.blocks.redstone)
+    moveToNextLine("left")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    putLine(state, 6, state.blocks.repeater)
+    move("forward")
+    put("bottom", state.blocks.redstone)
+    move("forward")
+    put("bottom", state.blocks.redstoneBlock)
+
+    move("forward")
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    turn("right")
+    move("back")
+    put("bottom", state.blocks.redstoneTorch)
+    move("forward")
+    move("forward")
+    putLine(state, 7, state.blocks.redstone)
+end
+
+---@param state BoneMealAppState
+local function buildPistonFluidsWall(state)
+    move("forward")
+    moveToNextLine("left")
+    putLine(state, 9)
+    turn("right")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("forward")
+    turn("right")
+    move("forward")
+    putLine(state, 7)
+    move("up")
+    turn("back")
+    putLine(state, 8)
+    turn("left")
+    move("forward")
+    put("bottom", state.blocks.filler)
+    move("forward")
+    turn("left")
+    putLine(state, 9)
+    turn("left")
+    move("forward")
+    putLine(state, 2)
+
+    -- place water + lava
+    move("back")
+    turn("left")
+    move("forward", 4)
+    move("down", 2)
+    placeWater(state)
+    move("up")
+    put("bottom", state.blocks.filler)
+    move("up")
+    placeLava(state)
+end
+
+---@param state BoneMealAppState
+local function buildStoneFloor(state)
+    move("forward", 3)
+    turn("right")
+    move("forward", 2)
+    move("down", 2)
+    turn("right")
+    putLine(state, 6, state.blocks.stone)
+    moveToNextLine("left")
+    putLine(state, 6, state.blocks.stone)
+    moveToNextLine("right")
+    putLine(state, 6, state.blocks.stone)
+    moveToNextLine("left")
+    putLine(state, 2, state.blocks.stone)
+    move("forward")
+    put("bottom", state.blocks.moss)
+    move("forward")
+    putLine(state, 3, state.blocks.stone)
+    moveToNextLine("right")
+    putLine(state, 2, state.blocks.stone)
+    move("forward", 2)
+    putLine(state, 3, state.blocks.stone)
+    moveToNextLine("left")
+    putLine(state, 6, state.blocks.stone)
+    moveToNextLine("right")
+    putLine(state, 6, state.blocks.stone)
+end
+
+---@param state BoneMealAppState
+local function buildCompostersAndHoppers(state)
+    print("[place] composter + hoppers")
+    move("up")
+    turn("left")
+    move("forward", 2)
+    move("down", 5)
+    move("back", 3)
+    turn("left")
+    move("forward", 2)
+    turn("left")
+    put("front", state.blocks.hopper)
+    turn("left")
+    move("forward", 2)
+    turn("right")
+    move("forward")
+    turn("right")
+
+    for i = 1, 4 do
+        put("front", state.blocks.hopper)
+
+        if i ~= 4 then
+            move("back")
+        end
+    end
+
+    turn("left")
+    move("forward", 2)
+    moveToNextLine("right")
+    put("front", state.blocks.hopper)
+    move("up")
+    turn("back")
+
+    -- making sure we do not load from shulker during hopper placement,
+    -- as the hoppers will suck items from the shulker
+    Squirtle.selectItem(state.blocks.composter)
+
+    if not SquirtleState.simulate then
+        redstone.setOutput("bottom", true)
+    end
+
+    move("back", 2)
+    put("front", state.blocks.composter)
+    turn("left")
+
+    for _ = 1, 3 do
+        move("back")
+        put("front", state.blocks.composter)
+    end
+
+    turn("back")
+    put("front", state.blocks.composter)
+    turn("right")
+    move("back")
+    put("front", state.blocks.composter)
+
+    if not SquirtleState.simulate then
+        redstone.setOutput("bottom", false)
+    end
+end
+
+---@param state BoneMealAppState
+local function buildDropperRedstone(state)
+    move("back")
+    move("down", 2)
+    strafe("left")
+    put("front", state.blocks.hopper)
+    move("up")
+    put("bottom", state.blocks.filler)
+    move("up")
+    turn("back")
+    put("bottom", state.blocks.comparator)
+    move("forward")
+    put("bottom", state.blocks.filler)
+    turn("left")
+    move("forward")
+    move("down")
+    turn("left")
+    putLine(state, 2)
+    move("forward")
+    put("bottom", state.blocks.redstoneTorch)
+    move("up")
+
+    for _ = 1, 2 do
+        move("back")
+        put("bottom", state.blocks.redstone)
+    end
+end
+--
+
+---@param state BoneMealAppState
 local function placeChestHopperAndDropperRedstone(state)
+    print("[place] chest/dropper redstone")
     -- place chest hopper & dropper redstone
     turn("left")
     move("forward", 2)
@@ -108,477 +657,19 @@ local function placeChestHopperAndDropperRedstone(state)
 end
 
 ---@param state BoneMealAppState
-local function placeCompostersAndHoppers(state)
-    -- place composter hoppers
-    move("back", 2)
-    turn("right")
-    move("forward")
-    turn("left")
-    put("front", state.blocks.hopper)
-    turn("left")
-    move("forward", 2)
-    turn("right")
-    move("forward")
-    turn("right")
-
-    for i = 1, 4 do
-        put("front", state.blocks.hopper)
-
-        if i ~= 4 then
-            move("back")
-        end
-    end
-
-    turn("left")
-    move("forward", 2)
-    turn("right")
-    move("forward")
-    turn("right")
-    put("front", state.blocks.hopper)
-
-    -- place composters
-    move("up", 2)
-
-    for _ = 1, 2 do
-        move("forward")
-        put("bottom", state.blocks.composter)
-    end
-
-    turn("left")
-
-    for _ = 1, 4 do
-        move("forward")
-        put("bottom", state.blocks.composter)
-    end
-end
-
----@param state BoneMealAppState
-local function placeFurnacesAndWall(state)
-    -- place furnaces + wall
-    move("up")
-    turn("right")
-
-    for i = 1, 3 do
-        move("forward")
-
-        if i ~= 3 then
-            put("bottom", state.blocks.filler)
-        end
-    end
-
-    turn("right")
-    move("up")
-    move("forward")
-
-    for i = 1, 3 do
-        put("bottom", state.blocks.furnace)
-        move("forward")
-    end
-
-    put("bottom", state.blocks.filler)
-    move("forward")
-    put("bottom", state.blocks.filler)
-    move("up")
-    turn("back")
-
-    for i = 1, 5 do
-        put("bottom", state.blocks.filler)
-        move("forward")
-    end
-
-    move("down")
-    move("forward")
-
-    for i = 1, 3 do
-        put("bottom", state.blocks.furnace)
-        move("forward")
-    end
-
-    put("bottom", state.blocks.filler)
-    move("up")
-    turn("back")
-
-    for i = 1, 4 do
-        put("bottom", state.blocks.filler)
-        move("forward")
-    end
-
-    move("down")
-    put("bottom", state.blocks.filler)
-    move("up")
-    put("bottom", state.blocks.filler)
-end
-
----@param state BoneMealAppState
-local function placeWaterHopperWall(state)
-    -- build water hopper wall
-    move("forward", 5)
-    turn("right")
-
-    for i = 1, 8 do
-        move("forward")
-        put("bottom", state.blocks.filler)
-    end
-
-    move("forward")
-    move("down", 3)
-    turn("back")
-
-    for i = 1, 8 do
-        move("forward")
-
-        if (i > 1 and i < 5) or i == 7 then
-            turn("left")
-            put("front", state.blocks.filler)
-            turn("right")
-        elseif i == 5 or i == 6 then
-            turn("left")
-            put("front", state.blocks.hopper)
-            turn("right")
-        end
-
-        put("top", state.blocks.filler)
-    end
-end
-
----@param state BoneMealAppState
-local function placeFloorLineTowardsWaterReservoir(state)
-    -- build floor line towards water reservoir
-    turn("left")
-    move("down")
-
-    for i = 1, 8 do
-        move("forward")
-        put("top", state.blocks.filler)
-    end
-end
-
----@param state BoneMealAppState
-local function placeRedstonePathToFloodGates(state)
-    -- place redstone path to flood gates
-    move("down")
-    turn("left")
-    move("forward", 1)
-    put("front", state.blocks.redstoneBlock)
-    turn("right")
-    move("forward")
-    turn("left")
-    move("forward")
-    turn("right")
-
-    ---@param block string
-    local function placeFloored(block)
-        move("down")
-        put("bottom", state.blocks.filler)
-        move("up")
-        put("bottom", block)
-    end
-
-    placeFloored(state.blocks.redstone)
-    move("forward")
-    placeFloored(state.blocks.comparator)
-    move("forward")
-    placeFloored(state.blocks.redstone)
-    turn("left")
-    move("forward")
-    placeFloored(state.blocks.redstone)
-    turn("left")
-    move("forward")
-    placeFloored(state.blocks.comparator)
-    move("forward")
-    placeFloored(state.blocks.redstone)
-
-    move("back", 3)
-    move("down")
-    turn("right")
-
-    for i = 1, 4 do
-        put("bottom", state.blocks.filler)
-        move("up")
-        put("bottom", state.blocks.redstone)
-
-        if i ~= 4 then
-            move("forward")
-        end
-    end
-
-    turn("left")
-    move("forward")
-    move("down")
-    put("bottom", state.blocks.filler)
-    put("front", state.blocks.filler)
-    move("up")
-    put("bottom", state.blocks.repeater)
-    put("front", state.blocks.redstoneTorch)
-end
-
----@param state BoneMealAppState
-local function placeReservoirWallsAndFloor(state)
-    -- place reservoir walls and floor
-    move("up")
-    move("forward", 2)
-    turn("right")
-    move("forward")
-    put("bottom", state.blocks.filler)
-    move("back")
-    put("front", state.blocks.filler)
-    put("bottom", state.blocks.filler)
-
-    for i = 1, 6 do
-        move("back")
-        put("bottom", state.blocks.filler)
-    end
-
-    move("up")
-    move("back")
-    turn("right")
-    move("forward")
-    turn("left")
-    put("bottom", state.blocks.filler)
-    move("forward")
-
-    for i = 1, 7 do
-        put("bottom", state.blocks.filler)
-        move("up")
-        put("bottom", state.blocks.redstone)
-
-        if i ~= 7 then
-            move("forward")
-            move("down")
-        end
-    end
-end
-
----@param state BoneMealAppState
-local function placeTrapdoors(state)
-    turn("left")
-    move("forward")
-    move("down")
-    put("bottom", state.blocks.trapdoor)
-
-    for _ = 1, 6 do
-        turn("left")
-        move("forward")
-        turn("right")
-        put("bottom", state.blocks.trapdoor)
-    end
-end
-
----@param state BoneMealAppState
-local function placeRemainingFloor(state)
-    move("forward")
-    move("down", 2)
-    turn("right")
-    move("forward")
-    turn("left")
-
-    for i = 1, 7 do
-        if i ~= 4 then
-            put("bottom", state.blocks.filler)
-        end
-
-        if i ~= 7 then
-            move("forward")
-        end
-    end
-
-    -- place containing observer
-    turn("right")
-    move("forward")
-    turn("right")
-
-    for i = 1, 6 do
-        put("bottom", state.blocks.filler)
-
-        if i == 4 then
-            move("up")
-            move("forward", 2)
-            move("down")
-        elseif i ~= 6 then
-            move("forward")
-        end
-    end
-
-    -- place line containing dispenser
-    turn("left")
-    move("forward")
-    turn("left")
-
-    for i = 1, 7 do
-        if i ~= 4 then
-            put("bottom", state.blocks.filler)
-        end
-
-        if i ~= 7 then
-            move("forward")
-        end
-    end
-
-    -- place remaining 4 lines
-    for line = 1, 4 do
-        if line % 2 == 1 then
-            turn("right")
-            move("forward")
-            turn("right")
-        else
-            turn("left")
-            move("forward")
-            turn("left")
-        end
-
-        for i = 1, 7 do
-            put("bottom", state.blocks.filler)
-
-            if i ~= 7 then
-                move("forward")
-            end
-        end
-    end
-end
-
----@param state BoneMealAppState
-local function placePistonsAndWalls(state)
-    move("forward")
-    move("up")
-    turn("left")
-    put("bottom", state.blocks.filler)
-    move("back")
-    put("bottom", state.blocks.filler)
-    put("front", state.blocks.filler)
-    move("back")
-    put("front", state.blocks.filler)
-    put("bottom", state.blocks.filler)
-    move("back")
-    put("bottom", state.blocks.filler)
-
-    -- place pistons
-    turn("left")
-    move("forward")
-    move("down")
-
-    for i = 1, 7 do
-        turn("right")
-
-        if i == 4 then
-            move("forward", 2)
-            put("front", state.blocks.filler)
-            move("back", 2)
-            put("front", state.blocks.filler)
-        else
-            put("front", state.blocks.piston)
-        end
-
-        turn("left")
-        move("forward")
-    end
-
-    -- place remaining wall
-    turn("right")
-    move("forward")
-    put("front", state.blocks.filler)
-    move("back")
-    put("front", state.blocks.filler)
-
-    -- place lever
-    turn("right")
-    move("back")
-    move("up")
-    put("front", state.blocks.filler)
-    move("up")
-    put("bottom", state.blocks.redstoneTorch)
-    move("forward")
-    move("up")
-    put("bottom", state.blocks.lever)
-
-    -- place piston redstone
-    move("forward")
-    move("down")
-
-    ---@param block string
-    local function placeFloored(block)
-        move("down")
-        put("bottom", state.blocks.filler)
-        move("up")
-        put("bottom", block)
-    end
-
-    -- dust line directly connected to pistons
-    for i = 1, 8 do
-        placeFloored(state.blocks.redstone)
-
-        if i ~= 8 then
-            move("forward")
-        end
-    end
-
-    -- first line of repeaters
-    turn("right")
-    move("forward")
-    turn("right")
-
-    for _ = 1, 6 do
-        placeFloored(state.blocks.repeater)
-        move("forward")
-    end
-
-    placeFloored(state.blocks.redstone)
-    move("forward")
-    move("down")
-
-    for i = 1, 3 do
-        put("bottom", state.blocks.filler)
-
-        if i ~= 3 then
-            move("forward")
-        end
-    end
-
-    -- repeater redstone dust connection
-    move("up")
-    put("bottom", state.blocks.redstone)
-    turn("left")
-    move("forward")
-    placeFloored(state.blocks.redstone)
-    turn("left")
-    move("forward")
-
-    for _ = 1, 9 do
-        placeFloored(state.blocks.repeater)
-        move("forward")
-    end
-
-    placeFloored(state.blocks.redstone)
-    turn("left")
-    move("forward")
-    placeFloored(state.blocks.redstone)
-
-    -- place last floor line (that i forgot to add in previously)
-    move("forward", 3)
-    move("down", 4)
-    turn("left")
-    move("forward", 2)
-
-    for i = 1, 7 do
-        put("top", state.blocks.filler)
-        move("forward")
-    end
-end
-
----@param state BoneMealAppState
 return function(state)
     placeCollectorChest(state)
     placeDroppersAndDispenser(state)
     placeObserver(state)
-    placeChestHopperAndDropperRedstone(state)
-    placeCompostersAndHoppers(state)
-    placeFurnacesAndWall(state)
-    placeWaterHopperWall(state)
-    placeFloorLineTowardsWaterReservoir(state)
     placeRedstonePathToFloodGates(state)
-    placeReservoirWallsAndFloor(state)
-    placeTrapdoors(state)
-    placeRemainingFloor(state)
-    placePistonsAndWalls(state)
-
+    placeWaterReservoir(state)
+    placeFurnaceWall(state)
+    placeWaterItemCollection(state)
+    placeFloor(state)
+    buildPistonSystem(state)
+    buildPistonFluidsWall(state)
+    buildStoneFloor(state)
+    buildCompostersAndHoppers(state)
+    buildDropperRedstone(state)
     restoreBreakable()
 end

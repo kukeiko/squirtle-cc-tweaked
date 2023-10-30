@@ -16,7 +16,13 @@ end
 SquirtleState.simulate = true
 sequence(state)
 -- [todo] also require fuel based on steps taken
+SquirtleState.results.placed[state.blocks.waterBucket] = 2
+SquirtleState.results.placed[state.blocks.lavaBucket] = 1
+SquirtleState.results.placed[state.blocks.boneMeal] = 64
+SquirtleState.simulate = false
 Squirtle.requireItems(SquirtleState.results.placed)
 print("all good now! building...")
-SquirtleState.simulate = false
+local home, facing = Squirtle.orientate(true)
 sequence(state)
+Squirtle.navigate(home)
+Squirtle.face(facing)

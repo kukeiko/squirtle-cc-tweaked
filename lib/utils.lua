@@ -28,24 +28,32 @@ function Utils.contains(list, value)
     return false
 end
 
+local function clone(value, seen)
+    if type(value) ~= "table" then
+        return value
+    end
+
+    if seen and seen[value] then
+        return seen[value]
+    end
+
+    local s = seen or {}
+    local res = setmetatable({}, getmetatable(value))
+    s[value] = res
+
+    for k, v in pairs(value) do
+        res[clone(k, s)] = clone(v, s)
+    end
+
+    return res
+end
+
 -- https://stackoverflow.com/a/26367080/1611592
 ---@generic T: table
 ---@param tbl T
 ---@return T
-function Utils.clone(tbl, seen)
-    if seen and seen[tbl] then
-        return seen[tbl]
-    end
-
-    local s = seen or {}
-    local res = setmetatable({}, getmetatable(tbl))
-    s[tbl] = res
-
-    for k, v in pairs(tbl) do
-        res[Utils.clone(k, s)] = Utils.clone(v, s)
-    end
-
-    return res
+function Utils.clone(tbl)
+    return clone(tbl, {})
 end
 
 function Utils.isEmpty(t)

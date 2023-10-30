@@ -279,6 +279,10 @@ function Basic.has(item, minCount)
 end
 
 function Basic.condense()
+    if State.simulate then
+        return nil
+    end
+
     for slot = Basic.size(), 1, -1 do
         local item = Basic.getStack(slot)
 

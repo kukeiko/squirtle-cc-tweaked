@@ -41,7 +41,7 @@ end
 
 ---@param side string
 ---@return string
-function Side.rotateAround(side)
+function Side.rotate180(side)
     return lookup[(lookup[side] + 2) % 4]
 end
 
