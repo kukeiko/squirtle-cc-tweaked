@@ -87,18 +87,20 @@ function Complex.tryMove(direction, steps)
 
     local remainingSteps = steps
     local isBack = direction == "back"
+    local didTurnBack = false
 
     while true do
         local success, stepsTaken = Complex.tryWalk(direction, remainingSteps)
 
         if success then
-            if isBack and remainingSteps ~= steps then
+            if isBack and didTurnBack then
                 Basic.turn("back")
             end
 
             return true, steps
         elseif isBack and direction ~= "forward" then
             Basic.turn("back")
+            didTurnBack = true
             direction = "forward"
         end
 
