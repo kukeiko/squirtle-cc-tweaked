@@ -25,7 +25,6 @@ return function(collection, inventory)
             missingStock[item].count = stock.maxCount - stock.count
         end
 
-        print(missingStock["minecraft:comparator"])
         transferStock(missingStock, collection:getInventories("storage"), {inventory}, collection)
     end, function()
         waitUntilDetached(inventory.name)

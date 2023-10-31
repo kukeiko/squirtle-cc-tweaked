@@ -61,11 +61,6 @@ end
 return function()
     local ioChest = Inventory.findChest()
     local barrel = "bottom"
-
-    if not ioChest then
-        error("no I/O chest found")
-    end
-
     Squirtle.turn(ioChest)
     ioChest = "front"
     print("i am home! doing home stuff")

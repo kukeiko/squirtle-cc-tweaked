@@ -86,7 +86,7 @@ local function refuelFromBuffer(buffer, fuel)
             Squirtle.refuel() -- [todo] should provide count to not consume a whole stack
         end
 
-        if Squirtle.getFuelLevel() >= fuel then
+        if Squirtle.hasFuel(fuel) then
             break
         end
     end
@@ -193,7 +193,7 @@ local function main(args)
         point = nextPoint(point, state.world, state.start)
 
         local gettingFull = Squirtle.getStack(16) ~= nil
-        local lowFuel = Squirtle.getFuelLevel() < 1000
+        local lowFuel = not Squirtle.hasFuel(1000)
         local minFuel = 1200
         local buffer = "top"
 
@@ -223,10 +223,6 @@ local function main(args)
             if args[1] == "io" then
                 local io = Inventory.findChest()
 
-                if not io then
-                    error("no chest found")
-                end
-
                 if not Squirtle.pushOutput(buffer, io) then
                     print("output full, waiting for it to drain...")
 
@@ -235,12 +231,12 @@ local function main(args)
                     until Squirtle.pushOutput(buffer, io)
                 end
 
-                while Squirtle.getFuelLevel() < minFuel do
+                while not Squirtle.hasFuel(minFuel) do
                     print("trying to refuel to ", minFuel, ", have", Squirtle.getFuelLevel())
                     Squirtle.pullInput(io, buffer)
                     refuelFromBuffer(buffer, minFuel)
 
-                    if Squirtle.getFuelLevel() < minFuel then
+                    if not Squirtle.hasFuel(minFuel) then
                         os.sleep(3)
                     end
                 end

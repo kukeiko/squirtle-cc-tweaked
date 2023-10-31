@@ -1,14 +1,8 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local findPeripheralSide = require "world.peripheral.find-side"
 local Redstone = require "world.redstone"
 local Squirtle = require "squirtle"
 local Inventory = require "inventory.inventory"
-local count = require "utils.count"
-
-local function findChestSide()
-    return findPeripheralSide("minecraft:chest")
-end
 
 local function dumpChestcartToBarrel()
     while Squirtle.suck() do
@@ -61,7 +55,7 @@ end
 local function emptyChestcart()
     if not Redstone.getInput("front") then
         print("looking at rail, but no chestcart here. turning towards piston")
-        local chest = findChestSide()
+        local chest = Inventory.findChest()
 
         if chest == "left" then
             Squirtle.turn("right")
@@ -70,7 +64,7 @@ local function emptyChestcart()
         end
     else
         dumpChestcartToBarrel()
-        local chest = findChestSide()
+        local chest = Inventory.findChest()
         Squirtle.turn(chest)
     end
 end
@@ -112,7 +106,7 @@ local function fillAndSendOffChestcart()
 end
 
 local function doIO()
-    local io = findChestSide()
+    local io = Inventory.findChest()
 
     if not hasTransferrableStock(io) then
         print("waiting until there are items to transfer...")
@@ -145,14 +139,14 @@ local function main(args)
 
     while true do
         local front = Squirtle.probe()
-
+        
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()
         elseif front and front.name == "minecraft:detector_rail" then
             emptyChestcart()
         elseif front and front.name == "minecraft:chest" then
             doIO()
-        elseif not front and findChestSide() == "back" then
+        elseif not front and Inventory.findChest() == "back" then
             waitForChestcart()
         end
     end

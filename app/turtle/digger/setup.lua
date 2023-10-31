@@ -42,10 +42,6 @@ local function readMineableBlocks()
     local mineable = {}
     local chest = Inventory.findChest()
 
-    if not chest then
-        error("no chest found")
-    end
-
     for _, stack in pairs(Inventory.getOutputStacks(chest)) do
         mineable[stack.name] = true -- [todo] value doesn't matter (typed it to unknown) - can we find a use?
     end
@@ -61,8 +57,8 @@ return function()
     print("use a/d keys to let me look towards 1st digging direction, then hit enter")
     local firstDirection = getDirection()
     local firstLength = readNumber("how far should I dig towards " .. Cardinal.getName(firstDirection), 1)
-    local firstOffset = readNumber("how many steps should i take towards " .. Cardinal.getName(firstDirection) ..
-                                       " before I start digging?")
+    local firstOffset =
+        readNumber("how many steps should i take towards " .. Cardinal.getName(firstDirection) .. " before I start digging?")
 
     print("now towards the 2nd digging direction")
     local secondDirection = getDirection()

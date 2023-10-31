@@ -78,6 +78,9 @@ function Inventory.create(name, stacks, detailed)
     return inventory
 end
 
+-- [todo] confusing: InputOutputInventory.create(...) works quite differently.
+-- solution: rename methods - maybe "readInputOutput()" to identify input/output inventories via nametag slot,
+-- and have "createInputOutput()" just be a constructor (like what InputOutputInventory.create() already is)
 ---@param name string
 ---@param stacks? table<integer, ItemStack>
 ---@param nameTagSlot? integer
@@ -156,9 +159,15 @@ function Inventory.getInputStock(name)
     return stacksToStock(Inventory.getInputStacks(name, true))
 end
 
----@return string?
+---@return string
 function Inventory.findChest()
-    return findSide("minecraft:chest")
+    local chest = findSide("minecraft:chest")
+
+    if chest then
+        return chest
+    end
+
+    error("no chest found")
 end
 
 ---@param chest string
