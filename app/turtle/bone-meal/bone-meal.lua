@@ -6,7 +6,7 @@ local SquirtleState = require "squirtle.state"
 local boot = require "bone-meal.boot"
 local sequence = require "bone-meal.sequence"
 
-print("[bone-meal v1.0.0] booting...")
+print("[bone-meal v2.0.0] booting...")
 local state = boot(arg)
 
 if not state then

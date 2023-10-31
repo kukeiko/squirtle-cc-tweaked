@@ -617,44 +617,6 @@ local function buildDropperRedstone(state)
         put("bottom", state.blocks.redstone)
     end
 end
---
-
----@param state BoneMealAppState
-local function placeChestHopperAndDropperRedstone(state)
-    print("[place] chest/dropper redstone")
-    -- place chest hopper & dropper redstone
-    turn("left")
-    move("forward", 2)
-    move("down", 2)
-    turn("left")
-    move("forward", 3)
-
-    move("down")
-    turn("left")
-    put("front", state.blocks.hopper)
-    turn("right")
-    move("up")
-
-    put("bottom", state.blocks.filler)
-    turn("right")
-    put("front", state.blocks.filler)
-    move("up")
-    put("bottom", state.blocks.comparator)
-    turn("left")
-    move("forward")
-    move("down")
-    put("bottom", state.blocks.filler)
-    turn("right")
-    move("forward")
-    put("bottom", state.blocks.filler)
-    move("up")
-    put("bottom", state.blocks.redstone)
-    move("back")
-    put("bottom", state.blocks.redstone)
-    move("back")
-    move("down")
-    put("bottom", state.blocks.redstoneTorch)
-end
 
 ---@param state BoneMealAppState
 return function(state)
