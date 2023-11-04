@@ -50,8 +50,40 @@ end
 ---@param item string
 ---@param transfer integer
 local function toPrintTransferString(from, to, item, transfer)
-    return
-        string.format("%s > %s: %dx %s", removePrefix(from.name), removePrefix(to.name), transfer, removePrefix(item))
+    return string.format("%s > %s: %dx %s", removePrefix(from.name), removePrefix(to.name), transfer, removePrefix(item))
+end
+
+---@param collection InventoryCollection
+---@param output Inventory
+---@param input Inventory
+---@param item string
+---@param quantity integer
+---@return integer transferred
+local function transferToInputInventory(collection, output, input, item, quantity)
+    local missingStock = input.stock[item].maxCount - input.stock[item].count
+    local availableStock = output.stock[item].count
+    local transfer = math.min(quantity, missingStock, availableStock)
+    print(toPrintTransferString(output, input, item, transfer))
+
+    collection:lock(output, input)
+    local transferred = Inventory.transferItem(output, input, item, transfer)
+    collection:unlock(output, input)
+
+    return transferred
+end
+
+---@param collection InventoryCollection
+---@param outputInventories Inventory[]
+---@return Inventory, integer
+local function getNextOutputInventory(collection, outputInventories)
+    return collection:waitUntilAnyUnlocked(table.unpack(outputInventories))
+end
+
+---@param collection InventoryCollection
+---@param inputInventories Inventory[]
+---@return Inventory, integer
+local function getNextInputInventory(collection, inputInventories)
+    return collection:waitUntilAnyUnlocked(table.unpack(inputInventories))
 end
 
 ---@param stock ItemStack
@@ -88,7 +120,7 @@ local function transferStock(stock, from, to, collection)
         local transferPerOutput = (transferTarget - transferredTotal) / #outputInventories
 
         while #outputInventories > 0 do
-            local output, outputIndex = collection:waitUntilAnyUnlocked(table.unpack(outputInventories))
+            local output, outputIndex = getNextOutputInventory(collection, outputInventories)
             local sameInventory, sameInventoryIndex = Utils.find(inputInventories, function(item)
                 return item.name == output.name
             end)
@@ -98,28 +130,16 @@ local function transferStock(stock, from, to, collection)
 
                 if #inputInventories > 0 then
                     table.insert(nextCycleInputInventories, sameInventory)
-                    os.sleep(1)
+                    os.sleep(1) -- [todo] why sleep?
                 end
             end
 
             local transferPerInput = math.max(1, math.floor(transferPerOutput / #inputInventories))
 
-            while #inputInventories > 0 do
-                local input, inputIndex = collection:waitUntilAnyUnlocked(table.unpack(inputInventories))
-                local missingStock = input.stock[stock.name].maxCount - input.stock[stock.name].count
-                local availableStock = output.stock[stock.name].count
-                local transfer = math.min(transferPerInput, missingStock, availableStock)
-                print(toPrintTransferString(output, input, stock.name, transfer))
-
-                collection:lock(output, input)
-                local transferred = Inventory.transferItem(output, input, stock.name, transfer)
-                collection:unlock(output, input)
+            while #inputInventories > 0 and transferredTotal < transferTarget do
+                local input, inputIndex = getNextInputInventory(collection, inputInventories)
+                local transferred = transferToInputInventory(collection, output, input, stock.name, transferPerInput)
                 transferredTotal = transferredTotal + transferred
-
-                if (transferredTotal >= transferTarget) or transferred ~= transfer then
-                    print("[transfer] amount mismatch")
-                    return transferredTotal
-                end
 
                 table.remove(inputInventories, inputIndex)
 
