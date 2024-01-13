@@ -31,7 +31,7 @@ return function(collection, inventory, timeout)
                     collection:add(refreshed)
                     inventory = refreshed
                     local outputStock = inventory.output.stock
-                    local inputInventories = collection:getInventories()
+                    local inputInventories = collection:getInventories("storage", "io")
                     transferStock(outputStock, {inventory}, inputInventories, collection)
                     os.sleep(timeout)
                 end

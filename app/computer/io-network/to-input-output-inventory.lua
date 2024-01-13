@@ -3,6 +3,8 @@ local readInputOutputChest = require "io-network.read.read-io-chest"
 local readStorageChest = require "io-network.read.read-storage-chest"
 local readDrainInventory = require "io-network.read.read-drain-inventory"
 local readFurnace = require "io-network.read.read-furnace"
+local readFurnaceInputInventory = require "io-network.read.read-furnace-input-inventory"
+local readFurnaceOutputInventory = require "io-network.read.read-furnace-output-inventory"
 local readSiloInventory = require "io-network.read.read-silo-inventory"
 
 local baseTypeLookup = {
@@ -29,7 +31,8 @@ return function(name)
         return shulker
     else
         local stacks = Inventory.getStacks(name)
-        local nameTagSlot, nameTagName = Inventory.findNameTag(name, {"I/O", "Drain"}, stacks)
+        local tagNames = {"I/O", "Drain", "Silo", "Crafter", "Furnace: Input", "Furnace: Output"}
+        local nameTagSlot, nameTagName = Inventory.findNameTag(name, tagNames, stacks)
 
         if nameTagSlot and nameTagName then
             if nameTagName == "I/O" then
@@ -38,6 +41,12 @@ return function(name)
                 return readDrainInventory(name, {nameTagSlot})
             elseif nameTagName == "Silo" then
                 return readSiloInventory(name, {nameTagSlot})
+            -- elseif nameTagName == "Crafter" then
+            --     return Inventory.readCrafterInventory(name)
+            elseif nameTagName == "Furnace: Input" then
+                return readFurnaceInputInventory(name)
+            elseif nameTagName == "Furnace: Output" then
+                return readFurnaceOutputInventory(name)
             end
         else
             return readStorageChest(name, stacks)

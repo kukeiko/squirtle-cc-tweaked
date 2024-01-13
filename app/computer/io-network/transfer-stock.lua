@@ -1,97 +1,32 @@
 local Utils = require "utils"
 local Inventory = require "inventory.inventory"
 
----@param inventories Inventory[]
----@param item string
----@param provide boolean?
----@return Inventory[]
-local function filterInventories(inventories, item, provide)
-    local others = {}
-    provide = provide or false
-
-    for _, candidate in ipairs(inventories) do
-        local stock = candidate.stock[item];
-
-        if stock and ((provide and stock.count > 0) or (not provide and stock.count < stock.maxCount)) then
-            table.insert(others, candidate)
-        end
-    end
-
-    return others
-end
-
----@param inventory Inventory
----@param item string
----@return boolean
-local function canProvideItem(inventory, item)
-    local stock = inventory.stock[item]
-
-    return stock and stock.count > 0
-end
-
----@param inventory Inventory
----@param item string
----@return boolean
-local function hasSpaceForItem(inventory, item)
-    local stock = inventory.stock[item]
-
-    return stock and stock.count < stock.maxCount
-end
-
----@param name string
----@return string
-local function removePrefix(name)
-    local str = string.gsub(name, "minecraft:", "")
-    return str
-end
-
----@param from Inventory
----@param to Inventory
----@param item string
----@param transfer integer
-local function toPrintTransferString(from, to, item, transfer)
-    return string.format("%s > %s: %dx %s", removePrefix(from.name), removePrefix(to.name), transfer, removePrefix(item))
-end
-
 ---@param collection InventoryCollection
 ---@param output Inventory
 ---@param input Inventory
 ---@param item string
 ---@param quantity integer
+---@param allowAllocate? boolean
 ---@return integer transferred
-local function transferToInputInventory(collection, output, input, item, quantity)
-    local missingStock = input.stock[item].maxCount - input.stock[item].count
+local function transferToInputInventory(collection, output, input, item, quantity, allowAllocate)
+    local missingStock = Inventory.getSpaceForItem(input, item)
     local availableStock = output.stock[item].count
     local transfer = math.min(quantity, missingStock, availableStock)
-    print(toPrintTransferString(output, input, item, transfer))
-
+    -- os.sleep(1)
     collection:lock(output, input)
-    local transferred = Inventory.transferItem(output, input, item, transfer)
+    local transferred = Inventory.transferItem(output, input, item, transfer, nil, allowAllocate)
     collection:unlock(output, input)
 
     return transferred
-end
-
----@param collection InventoryCollection
----@param outputInventories Inventory[]
----@return Inventory, integer
-local function getNextOutputInventory(collection, outputInventories)
-    return collection:waitUntilAnyUnlocked(table.unpack(outputInventories))
-end
-
----@param collection InventoryCollection
----@param inputInventories Inventory[]
----@return Inventory, integer
-local function getNextInputInventory(collection, inputInventories)
-    return collection:waitUntilAnyUnlocked(table.unpack(inputInventories))
 end
 
 ---@param stock ItemStack
 ---@param from InputOutputInventory[]
 ---@param to InputOutputInventory[]
 ---@param collection InventoryCollection
+---@param allowAllocate? boolean
 ---@return integer
-local function transferStock(stock, from, to, collection)
+local function transferStock(stock, from, to, collection, allowAllocate)
     if stock.count < 0 then
         return 0
     end
@@ -108,8 +43,8 @@ local function transferStock(stock, from, to, collection)
 
     local transferredTotal = 0
 
-    outputInventories = filterInventories(outputInventories, stock.name, true)
-    inputInventories = filterInventories(inputInventories, stock.name, false)
+    outputInventories = Inventory.filterCanProvideItem(outputInventories, stock.name)
+    inputInventories = Inventory.filterHasSpaceForItem(inputInventories, stock.name)
 
     ---@type Inventory[]
     local nextCycleOutputInventories = {}
@@ -120,7 +55,7 @@ local function transferStock(stock, from, to, collection)
         local transferPerOutput = (transferTarget - transferredTotal) / #outputInventories
 
         while #outputInventories > 0 do
-            local output, outputIndex = getNextOutputInventory(collection, outputInventories)
+            local output, outputIndex = collection:waitUntilAnyUnlocked(table.unpack(outputInventories))
             local sameInventory, sameInventoryIndex = Utils.find(inputInventories, function(item)
                 return item.name == output.name
             end)
@@ -137,13 +72,17 @@ local function transferStock(stock, from, to, collection)
             local transferPerInput = math.max(1, math.floor(transferPerOutput / #inputInventories))
 
             while #inputInventories > 0 and transferredTotal < transferTarget do
-                local input, inputIndex = getNextInputInventory(collection, inputInventories)
-                local transferred = transferToInputInventory(collection, output, input, stock.name, transferPerInput)
+                local input, inputIndex = collection:waitUntilAnyUnlocked(table.unpack(inputInventories))
+                -- [todo] we're not dealing with the case where 0 was transferred,
+                -- which can be caused by interference from the player.
+                -- we need to either remove the output or the input inventory from the list of inventories
+                -- for the next cycle, otherwise we run into an endless loop.
+                local transferred = transferToInputInventory(collection, output, input, stock.name, transferPerInput, allowAllocate)
                 transferredTotal = transferredTotal + transferred
 
                 table.remove(inputInventories, inputIndex)
 
-                if hasSpaceForItem(input, stock.name) then
+                if Inventory.hasSpaceForItem(input, stock.name) then
                     table.insert(nextCycleInputInventories, input)
                 end
             end
@@ -155,7 +94,7 @@ local function transferStock(stock, from, to, collection)
 
             table.remove(outputInventories, outputIndex)
 
-            if canProvideItem(output, stock.name) then
+            if Inventory.canProvideItem(output, stock.name) then
                 table.insert(nextCycleOutputInventories, output)
             end
         end
@@ -173,8 +112,9 @@ end
 ---@param from InputOutputInventory[]
 ---@param to InputOutputInventory[]
 ---@param collection InventoryCollection
-return function(stock, from, to, collection)
+---@param allowAllocate? boolean
+return function(stock, from, to, collection, allowAllocate)
     for _, itemStock in pairs(stock) do
-        transferStock(itemStock, from, to, collection)
+        transferStock(itemStock, from, to, collection, allowAllocate)
     end
 end

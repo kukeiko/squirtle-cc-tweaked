@@ -1,6 +1,14 @@
 local Utils = require "utils"
-local findSide = require "world.peripheral.find-side"
 local InputOutputInventory = require "inventory.input-output-inventory"
+local InventoryElemental = require "inventory.inventory-elemental"
+local InventoryComplex = require "inventory.inventory-complex"
+
+---@class Inventory
+---@field name string
+---@field stock ItemStock
+---@field stacks ItemStacks
+---@field slots integer[]
+---@field locked boolean
 
 ---@param stacks table<integer, ItemStack>
 ---@return table<string, ItemStack>
@@ -23,13 +31,6 @@ local function stacksToStock(stacks)
     end
 
     return stock
-end
-
----@type table<string, integer>
-local itemMaxCounts = {}
-
-local function getDefaultRate()
-    return 8
 end
 
 ---@param stacks table<integer, ItemStack>
@@ -57,23 +58,29 @@ local function toInputOutputStacks(stacks, nameTagSlot)
     return inputStacks, outputStacks
 end
 
----@class Inventory
----@field name string
----@field stock ItemStock
----@field stacks ItemStacks
----@field locked boolean
-
+---@class InventoryApi:InventoryComplex
 local Inventory = {}
+setmetatable(Inventory, {__index = InventoryComplex})
 
 ---@param name string
 ---@param stacks? ItemStacks
 ---@param detailed? boolean
+-- [todo] slots
+---@param slots? integer[]
+---@param allowedSlotItems? table<integer, string[]>
 ---@return Inventory
-function Inventory.create(name, stacks, detailed)
+function Inventory.create(name, stacks, detailed, slots, allowedSlotItems)
     stacks = stacks or Inventory.getStacks(name, detailed)
 
     ---@type Inventory
-    local inventory = {name = name, stacks = stacks, stock = stacksToStock(stacks), locked = false}
+    local inventory = {
+        name = name,
+        stacks = stacks,
+        stock = stacksToStock(stacks),
+        locked = false,
+        slots = slots or {},
+        allowedSlotItems = allowedSlotItems or {}
+    }
 
     return inventory
 end
@@ -105,48 +112,6 @@ function Inventory.createInputOutput(name, stacks, nameTagSlot)
     return InputOutputInventory.create(name, input, output, "io")
 end
 
----@param item string
----@param chest string
----@param slot integer
-function Inventory.getItemMaxCount(item, chest, slot)
-    if not itemMaxCounts[item] then
-        ---@type ItemStack|nil
-        local detailedStack = peripheral.call(chest, "getItemDetail", slot)
-
-        if detailedStack then
-            itemMaxCounts[item] = detailedStack.maxCount
-        end
-    end
-
-    return itemMaxCounts[item]
-end
-
----@param name string
----@param detailed? boolean
----@return ItemStacks
-function Inventory.getStacks(name, detailed)
-    if not detailed then
-        ---@type ItemStacks
-        local stacks = peripheral.call(name, "list")
-
-        for slot, stack in pairs(stacks) do
-            stack.maxCount = Inventory.getItemMaxCount(stack.name, name, slot)
-        end
-
-        return stacks
-    else
-        local stacks = peripheral.call(name, "list")
-        ---@type ItemStacks
-        local detailedStacks = {}
-
-        for slot, _ in pairs(stacks) do
-            detailedStacks[slot] = peripheral.call(name, "getItemDetail", slot)
-        end
-
-        return detailedStacks
-    end
-end
-
 ---@param name string
 ---@return ItemStock
 function Inventory.getStock(name)
@@ -157,23 +122,6 @@ end
 ---@return ItemStock
 function Inventory.getInputStock(name)
     return stacksToStock(Inventory.getInputStacks(name, true))
-end
-
----@return string
-function Inventory.findChest()
-    local chest = findSide("minecraft:chest")
-
-    if chest then
-        return chest
-    end
-
-    error("no chest found")
-end
-
----@param chest string
----@return integer
-function Inventory.getSize(chest)
-    return peripheral.call(chest, "size")
 end
 
 ---@param name string
@@ -213,19 +161,6 @@ function Inventory.getItemStock(side, predicate)
     return stock
 end
 
----@param a ItemStock
----@param b ItemStock
----@return ItemStock
-function Inventory.subtractStock(a, b)
-    local result = Utils.clone(a)
-
-    for item, stock in pairs(b) do
-        result[item].count = (result[item].count) - stock.count
-    end
-
-    return result
-end
-
 ---@param name string
 ---@param detailed? boolean
 ---@return ItemStacks
@@ -247,19 +182,11 @@ function Inventory.getInputStacks(name, detailed)
 
     if detailed then
         for slot in pairs(inputStacks) do
-            inputStacks[slot] = Inventory.getStack(name, slot, true)
+            inputStacks[slot] = InventoryElemental.getStack(name, slot)
         end
     end
 
     return inputStacks
-end
-
----@param side string
----@param slot integer
----@param detailed? boolean
----@return ItemStack
-function Inventory.getStack(side, slot, detailed)
-    return peripheral.call(side, "getItemDetail", slot, detailed)
 end
 
 ---@param name string
@@ -269,9 +196,9 @@ end
 function Inventory.findNameTag(name, tagNames, stacks)
     for slot, stack in pairs(stacks) do
         if stack.name == "minecraft:name_tag" then
-            local stack = Inventory.getStack(name, slot, true)
+            local stack = InventoryElemental.getStack(name, slot)
 
-            if Utils.indexOf(tagNames, stack.displayName) then
+            if Utils.indexOf(tagNames, stack.displayName) > 0 then
                 return slot, stack.displayName
             end
         end
@@ -298,7 +225,7 @@ function Inventory.getOutputStacks(name, detailed)
 
     if detailed then
         for slot in pairs(outputStacks) do
-            outputStacks[slot] = Inventory.getStack(name, slot, true)
+            outputStacks[slot] = InventoryElemental.getStack(name, slot)
         end
     end
 
@@ -319,163 +246,46 @@ function Inventory.getOutputMissingStock(name)
     return missingStock
 end
 
----@param from string
----@param to string
----@param fromSlot integer
----@param limit? integer
----@param toSlot? integer
----@return integer
-function Inventory.pushItems(from, to, fromSlot, limit, toSlot)
-    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
-end
+---@param name string
+---@return InputOutputInventory
+function Inventory.readCrafterInventory(name)
+    local stacks = Inventory.getStacks(name)
+    local tagSlot = Inventory.findNameTag(name, {"Crafter"}, stacks)
 
----@param inventory string
----@param fromSlot integer
----@param toSlot? integer
----@param quantity? integer
----@return integer
-function Inventory.move(inventory, fromSlot, toSlot, quantity)
-    os.sleep(.5) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
-    return Inventory.pushItems(inventory, inventory, fromSlot, quantity, toSlot)
-end
-
----@param from string
----@param to string
----@param fromSlot integer
----@param limit? integer
----@param toSlot? integer
----@return integer
-function Inventory.pullItems(from, to, fromSlot, limit, toSlot)
-    return peripheral.call(from, "pullItems", to, fromSlot, limit, toSlot)
-end
-
----@param stacks table<integer, ItemStack>
----@param item string
----@return integer? slot, ItemStack? stack
-local function nextFromStack(stacks, item)
-    for slot, stack in pairs(stacks) do
-        if stack.count > 0 and stack.name == item then
-            return slot, stack
-        end
+    if not tagSlot then
+        error("no Crafter tag found")
     end
-end
 
----@param stacks table<integer, ItemStack>
----@param item string
----@return integer? slot, ItemStack? stack
-local function nextToStack(stacks, item, sample, size)
-    for slot, stack in pairs(stacks) do
-        if stack.count < stack.maxCount and stack.name == item then
-            return slot, stack
-        end
-    end
-end
+    local inputSlotOffset = 3
+    local outputSlotOffset = 6
 
----@param inventory Inventory
----@param sample ItemStack
----@return integer? slot, ItemStack? stack
-local function allocateNextToStack(inventory, sample)
-    -- [todo] doesn't work with i/o inventories - it doesn't have to currently, but still.
-    local size = Inventory.getSize(inventory.name)
-    for slot = 1, size do
-        local stack = inventory.stacks[slot]
+    ---@param offset integer
+    ---@param allStacks table<integer, ItemStack>
+    local function toInventory(offset, allStacks)
+        ---@type table<integer, ItemStack>
+        local stacks = {}
+        ---@type integer[]
+        local slots = {}
 
-        if not stack then
-            ---@type ItemStack
-            stack = Utils.copy(sample)
-            stack.count = 0
-            inventory.stacks[slot] = stack
+        for i = 1, 9 do
+            local line = math.ceil(i / 3)
+            local offsetRight = (line - 1) * (9 - (offset + 3))
+            local slot = i + (offset * line) + offsetRight
 
-            local stock = inventory.stock[sample.name]
+            table.insert(slots, slot)
 
-            if not stock then
-                ---@type ItemStack
-                stock = Utils.copy(sample)
-                stock.count = 0
-                stock.maxCount = 0
-                inventory.stock[sample.name] = stock
+            if allStacks[slot] then
+                stacks[slot] = allStacks[slot]
             end
-
-            stock.maxCount = stock.maxCount + sample.maxCount
-
-            return slot, inventory.stacks[slot]
-        end
-    end
-end
-
----@param from Inventory
----@param to Inventory
----@param item string
----@param total integer
----@param rate? integer
----@param allowAllocate? boolean
----@return integer transferredTotal
-function Inventory.transferItem(from, to, item, total, rate, allowAllocate)
-    rate = rate or getDefaultRate()
-
-    local transferredTotal = 0
-    local fromSlot, fromStack = nextFromStack(from.stacks, item)
-    local fromStock = from.stock[item]
-    local toSlot, toStack = nextToStack(to.stacks, item)
-
-    if not toSlot and allowAllocate and fromStack then
-        toSlot, toStack = allocateNextToStack(to, fromStack)
-    end
-
-    local toStock = to.stock[item]
-
-    while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
-        local space = toStack.maxCount - toStack.count
-        local stock = fromStack.count
-        local open = total - transferredTotal
-        local transfer = math.min(space, open, rate, stock)
-        local transferred = Inventory.pushItems(from.name, to.name, fromSlot, transfer, toSlot)
-
-        fromStack.count = fromStack.count - transferred
-        fromStock.count = fromStock.count - transferred
-        toStack.count = toStack.count + transferred
-        toStock.count = toStock.count + transferred
-
-        os.sleep(.5)
-
-        transferredTotal = transferredTotal + transferred
-
-        if transferred ~= transfer then
-            return transferredTotal
         end
 
-        fromSlot, fromStack = nextFromStack(from.stacks, item)
-        toSlot, toStack = nextToStack(to.stacks, item)
-
-        if not toSlot and allowAllocate and fromStack then
-            toSlot, toStack = allocateNextToStack(to, fromStack)
-        end
+        return Inventory.create(name, stacks, false, slots)
     end
 
-    return transferredTotal
-end
+    local inputInventory = toInventory(inputSlotOffset, stacks)
+    local outputInventory = toInventory(outputSlotOffset, stacks)
 
----@param from Inventory
----@param to Inventory
----@param total table<string, integer>
----@param rate? integer
----@param allowAllocate? boolean
----@return table<string, integer> transferred
-function Inventory.transferItems(from, to, total, rate, allowAllocate)
-    rate = rate or getDefaultRate()
-
-    ---@type table<string, integer>
-    local transferredTotal = {}
-
-    for item, itemTotal in pairs(total) do
-        local transferred = Inventory.transferItem(from, to, item, itemTotal, rate, allowAllocate)
-
-        if transferred > 0 then
-            transferredTotal[item] = transferred
-        end
-    end
-
-    return transferredTotal
+    return InputOutputInventory.create(name, inputInventory, outputInventory, "crafter", tagSlot)
 end
 
 return Inventory

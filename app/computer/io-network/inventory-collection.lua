@@ -1,4 +1,7 @@
 local Utils = require "utils"
+local readFurnace = require "io-network.read.read-furnace"
+local readFurnaceInputInventory = require "io-network.read.read-furnace-input-inventory"
+local readFurnaceOutputInventory = require "io-network.read.read-furnace-output-inventory"
 
 ---@class InventoryCollection
 ---@field inventories table<string, InputOutputInventory>
@@ -99,14 +102,15 @@ function InventoryCollection:waitUntilAllUnlocked(...)
     end
 end
 
----@param type InputOutputInventoryType?
+---@param ... InputOutputInventoryType?
 ---@return InputOutputInventory[]
-function InventoryCollection:getInventories(type)
+function InventoryCollection:getInventories(...)
     ---@type InputOutputInventory[]
     local array = {}
+    local types = {...}
 
     for _, inventory in pairs(self.inventories) do
-        if not type or (type and inventory.type == type) then
+        if #types == 0 or (Utils.indexOf(types, inventory.type) > 0) then
             table.insert(array, inventory)
         end
     end
@@ -114,24 +118,26 @@ function InventoryCollection:getInventories(type)
     return array
 end
 
----@param item string
----@param inventoryTypes InputOutputInventoryType[]?
----@return Inventory[]
-function InventoryCollection:getInputsAcceptingItem(item, inventoryTypes)
-    inventoryTypes = inventoryTypes or allTypes
+---@param ... InputOutputInventoryType?
+function InventoryCollection:refreshInventories(...)
+    -- [todo] lock inventories before refreshing
+    for _, ioType in pairs({...}) do
+        for _, inventory in pairs(self:getInventories(ioType)) do
+            if ioType == "furnace-input" then
+                inventory = readFurnaceInputInventory(inventory.name)
+            elseif ioType == "furnace-output" then
+                inventory = readFurnaceOutputInventory(inventory.name)
+            elseif ioType == "furnace" then
+                inventory = readFurnace(inventory.name)
+            else
+                -- [todo] implement remaining types
+                error(string.format("refresh for type %s not yet supported", ioType))
+            end
 
-    ---@type Inventory[]
-    local inventories = {}
-
-    for _, inventory in pairs(self.inventories) do
-        local stock = inventory.input.stock[item]
-
-        if Utils.indexOf(inventoryTypes, inventory.type) > 0 and stock and stock.count < stock.maxCount then
-            table.insert(inventories, inventory)
+            self:remove(inventory.name)
+            self:add(inventory)
         end
     end
-
-    return inventories
 end
 
 return InventoryCollection

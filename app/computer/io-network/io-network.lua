@@ -8,6 +8,8 @@ local toInputOutputInventory = require "io-network.to-input-output-inventory"
 local singleOutputWorker = require "io-network.workers.single-output-worker"
 local bundledOutputWorker = require "io-network.workers.bundled-output-worker"
 local shulkerWorker = require "io-network.workers.shulker-worker"
+local furnaceWorker = require "io-network.workers.furnace-worker"
+-- local craftingWorker = require "io-network.workers.crafting-worker"
 local refreshStoragesWorker = require "io-network.workers.refresh-storages-worker"
 
 ---@class InputOutputInventoriesByType
@@ -25,6 +27,8 @@ local refreshStoragesWorker = require "io-network.workers.refresh-storages-worke
 -- but also evenly from outputs, so that e.g. the 4 lumberjack farms all start working
 -- at the same time whenever charcoal is being transported away (and their outputs were full)
 
+--- Creates an IO Inventory object for the given inventory peripheral and adds it to the collection.
+--- If the inventory is a Drain, IO or Shulker inventory, the corresponding worker is also started.
 ---@param name string
 ---@param collection InventoryCollection
 local function attachInventory(name, collection)
@@ -43,7 +47,7 @@ local function attachInventory(name, collection)
 end
 
 local function main(args)
-    print("[io-network v4.0.1] booting...")
+    print("[io-network v4.2.0] booting...")
     local timeout = tonumber(args[1] or 30) or 30
     local modem = findPeripheralSide("modem")
 
@@ -70,9 +74,15 @@ local function main(args)
             collection:remove(name)
         end
     end, function()
-        bundledOutputWorker(collection, "furnace", 7)
+        -- [todo] why sleep? I think it was to have inventories be initialized before the worker runs.
+        -- if that is the case, then it doesn't work reliably: I had a case where it didn't find any input
+        -- inventories during first cycle of the furnace worker.
+        os.sleep(1)
+        furnaceWorker(collection, 7)
     end, function()
         bundledOutputWorker(collection, "silo", 7)
+    end, function()
+        -- craftingWorker(collection)
     end, function()
         refreshStoragesWorker(collection, timeout)
     end)

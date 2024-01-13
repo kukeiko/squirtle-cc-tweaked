@@ -53,7 +53,7 @@ return function(collection, type, timeout)
             end)
 
             local outputStock = mergeStocks(outputStocks)
-            transferStock(outputStock, refreshed, collection:getInventories(), collection)
+            transferStock(outputStock, refreshed, collection:getInventories("storage", "io"), collection)
 
             os.sleep(timeout)
         end)
