@@ -1,0 +1,16 @@
+[
+    {
+        "item": "minecraft:glass_pane",
+        "count": 16,
+        "ingredients": {
+            "minecraft:glass": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ]
+        }
+    }
+]

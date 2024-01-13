@@ -61,4 +61,19 @@ function DatabaseService.getSubwayTrack(stationId, signal)
     return track
 end
 
+---@return CraftingRecipe[]
+function DatabaseService.getCraftingRecipes()
+    return readEntities("crafting-recipes")
+end
+
+---@param item string
+---@return CraftingRecipe?
+function DatabaseService.getCraftingRecipe(item)
+    local recipe = Utils.find(DatabaseService.getCraftingRecipes(), function(recipe)
+        return recipe.item == item
+    end)
+
+    return recipe
+end
+
 return DatabaseService

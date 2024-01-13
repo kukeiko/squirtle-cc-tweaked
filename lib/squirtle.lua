@@ -94,6 +94,10 @@ function Squirtle.dump(side)
     return Squirtle.isEmpty()
 end
 
+function Squirtle.lookAtChest()
+    Squirtle.turn(Inventory.findChest())
+end
+
 ---@param alsoIgnoreSlot integer
 ---@return integer?
 local function nextSlotThatIsNotShulker(alsoIgnoreSlot)

@@ -182,6 +182,43 @@ function Advanced.pushOutput(from, to, keepStock)
     return transferredAll, transferred
 end
 
+-- in regards to the calculation of transferrable input
+---@param from Inventory|string
+---@param to InputOutputInventory|string
+---@return boolean, table<string, integer>? transferred
+function Advanced.dumpOutput(from, to)
+    if type(from) == "string" then
+        from = Inventory.create(from)
+    end
+
+    if type(to) == "string" then
+        -- [todo] only supports I/O chests currently
+        to = Inventory.createInputOutput(to)
+    end
+
+    ---@type table<string, integer>
+    local transferrable = {}
+
+    for item, stock in pairs(from.stock) do
+        transferrable[item] = stock.count
+    end
+
+    local transferred = Inventory.transferItems(from, to.output, transferrable, getTransferRate(), true)
+    local transferredAll = true
+
+    for item, itemTransferred in pairs(transferred) do
+        if itemTransferred < transferrable[item] then
+            transferredAll = false
+        end
+    end
+
+    if Utils.count(transferred) == 0 then
+        return transferredAll, nil
+    end
+
+    return transferredAll, transferred
+end
+
 ---@param from InputOutputInventory|string
 ---@param to Inventory|string
 ---@param transferredOutput? table<string, integer>

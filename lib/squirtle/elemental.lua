@@ -132,12 +132,6 @@ function Elemental.refuel(quantity)
     return turtle.refuel(quantity)
 end
 
----@param quantity? integer
----@return boolean, string?
-function Elemental.craft(quantity)
-    return turtle.craft(quantity)
-end
-
 ---@return integer
 function Elemental.size()
     return 16
