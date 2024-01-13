@@ -34,18 +34,42 @@ local function selectLavaBucket()
     return false
 end
 
+local function bottomChestHasEmptyBuckets()
+    local numBuckets = 0
+
+    ---@type ItemStack[]
+    local stacks = peripheral.call("bottom", "list")
+
+    for _, stack in pairs(stacks) do
+        if stack.name == "minecraft:bucket" then
+            numBuckets = numBuckets + stack.count
+        end
+    end
+
+    -- we always want to keep 1 bucket in the chest so that io-network can fill it up
+    return numBuckets > 1
+end
+
 local function waitUntilEmptyBucketSelected()
     if selectEmptyBucket() then
         return
     end
 
-    print("[help] need empty bucket please!")
+    if not bottomChestHasEmptyBuckets() then
+        print("[waiting] for empty buckets")
 
-    repeat
-        os.pullEvent("turtle_inventory")
-    until selectEmptyBucket()
+        while not bottomChestHasEmptyBuckets() do
+            os.sleep(3)
+        end
+    end
 
-    print("[ok] thanks <3")
+    turtle.suckDown(1)
+
+    if not selectEmptyBucket() then
+        error("expected to suck an empty bucket from bottom")
+    end
+
+    print("[ok] got empty bucket!")
 end
 
 local function collectAll()
@@ -84,7 +108,7 @@ local function dumpLavaBucketsIntoChest()
 end
 
 local function main()
-    print("[lava v1.0.0] booting...")
+    print("[lava v1.1.0] booting...")
     lookAtChest() -- looking at chest so that collectAll() turns the right number of times
     print("[ready] to collect!")
 
