@@ -1,5 +1,5 @@
 local Utils = require "utils"
-local toInputOutputInventory = require "io-network.to-input-output-inventory"
+local Inventory = require "inventory.inventory"
 local transferStock = require "io-network.transfer-stock"
 
 ---@param stocks ItemStock[]
@@ -35,7 +35,7 @@ return function(collection, type, timeout)
             local refreshed = {}
 
             for _, output in pairs(outputs) do
-                local refreshedOutput = toInputOutputInventory(output.name)
+                local refreshedOutput = Inventory.readInputOutput(output.name)
 
                 if refreshedOutput and refreshedOutput.type == type then
                     table.insert(refreshed, refreshedOutput)

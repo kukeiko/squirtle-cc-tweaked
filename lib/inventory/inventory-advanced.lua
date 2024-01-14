@@ -5,7 +5,13 @@ local InventoryBasic = require "inventory.inventory-basic"
 -- [note] refuel numbers not actually used
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
 
----@class InventoryAdvanced:InventoryBasic
+local baseTypeLookup = {
+    ["minecraft:chest"] = "minecraft:chest",
+    ["minecraft:furna"] = "minecraft:furnace",
+    ["minecraft:shulk"] = "minecraft:shulker_box"
+}
+
+---@class InventoryAdvanced : InventoryBasic
 local InventoryAdvanced = {}
 setmetatable(InventoryAdvanced, {__index = InventoryBasic})
 
@@ -216,6 +222,7 @@ function InventoryAdvanced.transferItem(from, to, item, total, rate, allowAlloca
     return transferredTotal
 end
 
+-- [todo] I'm wondering if i should move transferItem() to the complex layer.
 ---@param from Inventory
 ---@param to Inventory
 ---@param total table<string, integer>
@@ -237,6 +244,345 @@ function InventoryAdvanced.transferItems(from, to, total, rate, allowAllocate)
     end
 
     return transferredTotal
+end
+
+---@param name string
+---@param stacks? ItemStacks
+-- [todo] slots
+---@param slots? integer[]
+---@return Inventory
+function InventoryAdvanced.create(name, stacks, slots)
+    stacks = stacks or InventoryBasic.getStacks(name)
+    local stock = InventoryElemental.stacksToStock(stacks)
+
+    ---@type Inventory
+    local inventory = {name = name, stacks = stacks, stock = stock, slots = slots or {}}
+
+    return inventory
+end
+
+---@param name string
+---@param input Inventory
+---@param output Inventory
+---@param type InputOutputInventoryType?
+---@param tagSlot? integer
+---@return InputOutputInventory
+function InventoryAdvanced.createInputOutput(name, input, output, type, tagSlot)
+    ---@type InputOutputInventory
+    -- [todo] tagSlot
+    local inventory = {name = name, input = input, output = output, type = type or "io", tagSlot = tagSlot or -1}
+
+    return inventory
+end
+
+---@param stacks ItemStacks
+---@return boolean
+local function isMonoTypeStacks(stacks)
+    if Utils.isEmpty(stacks) then
+        return false
+    end
+
+    local name
+
+    for _, stack in pairs(stacks) do
+        if not name then
+            name = stack.name
+        elseif name and stack.name ~= name then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@param chest string
+---@param stacks table<integer, ItemStack>
+---@return Inventory
+local function createMonoTypeInventory(chest, stacks)
+    local first = Utils.first(stacks)
+    ---@type ItemStack
+    local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+
+    for slot = 1, InventoryElemental.getSize(chest) do
+        local stack = stacks[slot]
+
+        if stack then
+            stack.maxCount = stack.maxCount - 1
+            stack.count = stack.count - 1
+        else
+            stacks[slot] = Utils.copy(template)
+        end
+    end
+
+    return InventoryAdvanced.create(chest, stacks)
+end
+
+---@param chest string
+---@param stacks table<integer, ItemStack>
+---@return Inventory
+local function createMultiTypeInventory(chest, stacks)
+    for _, stack in pairs(stacks) do
+        stack.maxCount = stack.maxCount - 1
+        stack.count = stack.count - 1
+    end
+
+    return InventoryAdvanced.create(chest, stacks)
+end
+
+---@param chest string
+---@param stacks table<integer, ItemStack>
+---@return InputOutputInventory
+function InventoryAdvanced.readStorage(chest, stacks)
+    ---@type Inventory
+    local inventory
+
+    if isMonoTypeStacks(stacks) then
+        inventory = createMonoTypeInventory(chest, stacks)
+    else
+        inventory = createMultiTypeInventory(chest, stacks)
+    end
+
+    return InventoryAdvanced.createInputOutput(chest, inventory, inventory, "storage")
+end
+
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return table<integer, ItemStack>, table<integer, ItemStack>
+local function toInputOutputStacks(stacks, nameTagSlot)
+    local inputStacks = {}
+    local outputStacks = {}
+
+    for slot, stack in pairs(stacks) do
+        if slot ~= nameTagSlot then
+            ---@type ItemStack
+            local stack = Utils.clone(stack)
+            stack.count = stack.count - 1
+            stack.maxCount = stack.maxCount - 1
+
+            if slot < nameTagSlot then
+                inputStacks[slot] = stack
+            elseif slot > nameTagSlot then
+                outputStacks[slot] = stack
+            end
+        end
+    end
+
+    return inputStacks, outputStacks
+end
+
+---@param name string
+---@param stacks? table<integer, ItemStack>
+---@param nameTagSlot? integer
+---@return InputOutputInventory
+function InventoryAdvanced.readInputOutput_chest(name, stacks, nameTagSlot)
+    if not stacks then
+        stacks = InventoryBasic.getStacks(name)
+    end
+
+    if not nameTagSlot then
+        nameTagSlot = InventoryBasic.findNameTag(name, {"I/O"}, stacks)
+
+        if not nameTagSlot then
+            error(("chest %s does not have an I/O name tag"):format(name))
+        end
+    end
+
+    local inputStacks, outputStacks = toInputOutputStacks(stacks, nameTagSlot)
+    local input = InventoryAdvanced.create(name, inputStacks)
+    local output = InventoryAdvanced.create(name, outputStacks)
+
+    return InventoryAdvanced.createInputOutput(name, input, output, "io")
+end
+
+---@param name string
+---@return InputOutputInventory
+function InventoryAdvanced.readFurnace(name)
+    local stacks = InventoryBasic.getStacks(name)
+    local inputStack = stacks[1]
+    local fuelStack = stacks[2]
+    local outputStack = stacks[3]
+
+    ---@type ItemStack[]
+    local inputStacks = {inputStack, fuelStack}
+
+    ---@type ItemStack[]
+    local outputStacks = {nil, nil, outputStack}
+
+    local input = InventoryAdvanced.create(name, inputStacks)
+    local output = InventoryAdvanced.create(name, outputStacks)
+
+    return InventoryAdvanced.createInputOutput(name, input, output, "furnace")
+end
+
+---@param chest string
+---@param ignoredSlots? table<integer>
+---@return InputOutputInventory
+function InventoryAdvanced.readFurnaceInput(chest, ignoredSlots)
+    ignoredSlots = ignoredSlots or {}
+    local stacks = InventoryBasic.getStacks(chest, true)
+
+    local nameTag, nameTagSlot = Utils.find(stacks, function(item)
+        return item.name == "minecraft:name_tag" and item.displayName == "Furnace: Input"
+    end)
+
+    if not nameTag or not nameTagSlot then
+        error("failed to find furnace input name tag")
+    end
+
+    stacks[nameTagSlot] = nil
+
+    for slot in pairs(ignoredSlots) do
+        stacks[slot] = nil
+    end
+
+    local input = InventoryAdvanced.create(chest, {})
+    local output = InventoryAdvanced.create(chest, stacks)
+
+    return InventoryAdvanced.createInputOutput(chest, input, output, "furnace-input")
+end
+
+---@param chest string
+---@param ignoredSlots? table<integer>
+---@return InputOutputInventory
+function InventoryAdvanced.readFurnaceOutput(chest, ignoredSlots)
+    ignoredSlots = ignoredSlots or {}
+    local stacks = InventoryBasic.getStacks(chest)
+
+    for slot in pairs(ignoredSlots) do
+        stacks[slot] = nil
+    end
+
+    local input = InventoryAdvanced.create(chest, stacks)
+    local output = InventoryAdvanced.create(chest, {})
+
+    return InventoryAdvanced.createInputOutput(chest, input, output, "furnace-output")
+end
+
+---@param chest string
+---@param ignoredSlots? table<integer>
+---@return InputOutputInventory
+function InventoryAdvanced.readDrain(chest, ignoredSlots)
+    ignoredSlots = ignoredSlots or {}
+    local stacks = InventoryBasic.getStacks(chest, true)
+
+    local nameTag, nameTagSlot = Utils.find(stacks, function(item)
+        return item.name == "minecraft:name_tag" and item.displayName == "Drain"
+    end)
+
+    if not nameTag or not nameTagSlot then
+        error("failed to find drain name tag")
+    end
+
+    stacks[nameTagSlot] = nil
+
+    for slot in pairs(ignoredSlots) do
+        stacks[slot] = nil
+    end
+
+    local input = InventoryAdvanced.create(chest, {})
+    local output = InventoryAdvanced.create(chest, stacks)
+
+    return InventoryAdvanced.createInputOutput(chest, input, output, "drain")
+end
+
+---@param chest string
+---@param ignoredSlots? table<integer>
+---@return InputOutputInventory
+function InventoryAdvanced.readSilo(chest, ignoredSlots)
+    ignoredSlots = ignoredSlots or {}
+    local stacks = InventoryBasic.getStacks(chest)
+
+    for slot in pairs(ignoredSlots) do
+        stacks[slot] = nil
+    end
+
+    local input = InventoryAdvanced.create(chest, {})
+    local output = InventoryAdvanced.create(chest, stacks)
+
+    return InventoryAdvanced.createInputOutput(chest, input, output, "silo")
+end
+
+---@param name string
+---@return InputOutputInventory
+function InventoryAdvanced.readCrafterInventory(name)
+    local stacks = InventoryBasic.getStacks(name)
+    local tagSlot = InventoryBasic.findNameTag(name, {"Crafter"}, stacks)
+
+    if not tagSlot then
+        error("no Crafter tag found")
+    end
+
+    local inputSlotOffset = 3
+    local outputSlotOffset = 6
+
+    ---@param offset integer
+    ---@param allStacks table<integer, ItemStack>
+    local function toInventory(offset, allStacks)
+        ---@type table<integer, ItemStack>
+        local stacks = {}
+        ---@type integer[]
+        local slots = {}
+
+        for i = 1, 9 do
+            local line = math.ceil(i / 3)
+            local offsetRight = (line - 1) * (9 - (offset + 3))
+            local slot = i + (offset * line) + offsetRight
+
+            table.insert(slots, slot)
+
+            if allStacks[slot] then
+                stacks[slot] = allStacks[slot]
+            end
+        end
+
+        return InventoryAdvanced.create(name, stacks, slots)
+    end
+
+    local inputInventory = toInventory(inputSlotOffset, stacks)
+    local outputInventory = toInventory(outputSlotOffset, stacks)
+
+    return InventoryAdvanced.createInputOutput(name, inputInventory, outputInventory, "crafter", tagSlot)
+end
+
+---@param name string
+---@return InputOutputInventory?
+function InventoryAdvanced.readInputOutput(name)
+    local baseType = baseTypeLookup[string.sub(name, 1, 15)]
+
+    if not baseType then
+        return nil
+    end
+
+    if baseType == "minecraft:furnace" then
+        return InventoryAdvanced.readFurnace(name)
+    elseif baseType == "minecraft:shulker_box" then
+        local shulker = InventoryAdvanced.readStorage(name, InventoryBasic.getStacks(name))
+        shulker.type = "shulker"
+
+        return shulker
+    else
+        local stacks = InventoryBasic.getStacks(name)
+        local tagNames = {"I/O", "Drain", "Silo", "Crafter", "Furnace: Input", "Furnace: Output"}
+        local nameTagSlot, nameTagName = InventoryBasic.findNameTag(name, tagNames, stacks)
+
+        if nameTagSlot and nameTagName then
+            if nameTagName == "I/O" then
+                return InventoryAdvanced.readInputOutput_chest(name, stacks, nameTagSlot)
+            elseif nameTagName == "Drain" then
+                return InventoryAdvanced.readDrain(name, {nameTagSlot})
+            elseif nameTagName == "Silo" then
+                return InventoryAdvanced.readSilo(name, {nameTagSlot})
+            elseif nameTagName == "Crafter" then
+                return InventoryAdvanced.readCrafterInventory(name)
+            elseif nameTagName == "Furnace: Input" then
+                return InventoryAdvanced.readFurnaceInput(name)
+            elseif nameTagName == "Furnace: Output" then
+                return InventoryAdvanced.readFurnaceOutput(name)
+            end
+        else
+            return InventoryAdvanced.readStorage(name, stacks)
+        end
+    end
 end
 
 return InventoryAdvanced

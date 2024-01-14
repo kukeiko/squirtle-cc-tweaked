@@ -14,12 +14,5 @@ function InputOutputInventory.create(name, input, output, type, tagSlot)
     return inventory
 end
 
----@alias InputOutputInventoryType "storage" | "io" | "drain" | "furnace" | "silo" | "shulker" | "crafter" | "furnace-input" | "furnace-output"
----@class InputOutputInventory
----@field name string
----@field tagSlot integer
----@field input Inventory
----@field output Inventory
----@field type InputOutputInventoryType
 
 return InputOutputInventory

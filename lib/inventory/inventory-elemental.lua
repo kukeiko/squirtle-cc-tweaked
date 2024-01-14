@@ -1,12 +1,26 @@
 local Utils = require "utils"
 
+---@class Inventory
+---@field name string
+---@field stock ItemStock
+---@field stacks ItemStacks
+---@field slots integer[]
+
+---@alias InputOutputInventoryType "storage" | "io" | "drain" | "furnace" | "silo" | "shulker" | "crafter" | "furnace-input" | "furnace-output"
+---@class InputOutputInventory
+---@field name string
+---@field tagSlot integer
+---@field input Inventory
+---@field output Inventory
+---@field type InputOutputInventoryType
+
 ---@class InventoryElemental
 local InventoryElemental = {}
 
----@param chest string
+---@param inventory string
 ---@return integer
-function InventoryElemental.getSize(chest)
-    return peripheral.call(chest, "size")
+function InventoryElemental.getSize(inventory)
+    return peripheral.call(inventory, "size")
 end
 
 ---@param inventory Inventory
@@ -98,6 +112,29 @@ function InventoryElemental.mergeStocks(stocks)
     end
 
     return merged
+end
+
+---@param stacks table<integer, ItemStack>
+---@return table<string, ItemStack>
+function InventoryElemental.stacksToStock(stacks)
+    ---@type table<string, ItemStack>
+    local stock = {}
+
+    for _, stack in pairs(stacks) do
+        local itemStock = stock[stack.name]
+
+        if not itemStock then
+            itemStock = Utils.copy(stack)
+            itemStock.count = 0
+            itemStock.maxCount = 0
+            stock[stack.name] = itemStock
+        end
+
+        itemStock.count = itemStock.count + stack.count
+        itemStock.maxCount = itemStock.maxCount + stack.maxCount
+    end
+
+    return stock
 end
 
 return InventoryElemental

@@ -1,7 +1,5 @@
 local Utils = require "utils"
-local readFurnace = require "io-network.read.read-furnace"
-local readFurnaceInputInventory = require "io-network.read.read-furnace-input-inventory"
-local readFurnaceOutputInventory = require "io-network.read.read-furnace-output-inventory"
+local Inventory = require "inventory.inventory"
 
 ---@class InventoryCollection
 ---@field inventories table<string, InputOutputInventory>
@@ -124,11 +122,11 @@ function InventoryCollection:refreshInventories(...)
     for _, ioType in pairs({...}) do
         for _, inventory in pairs(self:getInventories(ioType)) do
             if ioType == "furnace-input" then
-                inventory = readFurnaceInputInventory(inventory.name)
+                inventory = Inventory.readFurnaceInput(inventory.name)
             elseif ioType == "furnace-output" then
-                inventory = readFurnaceOutputInventory(inventory.name)
+                inventory = Inventory.readFurnaceOutput(inventory.name)
             elseif ioType == "furnace" then
-                inventory = readFurnace(inventory.name)
+                inventory = Inventory.readFurnace(inventory.name)
             else
                 -- [todo] implement remaining types
                 error(string.format("refresh for type %s not yet supported", ioType))

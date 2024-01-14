@@ -72,7 +72,7 @@ end
 ---@param name string
 ---@return boolean
 local function hasTransferrableStock(name)
-    local ioInventory = Inventory.createInputOutput(name)
+    local ioInventory = Inventory.createInputOutput_old(name)
 
     for _, stock in pairs(ioInventory.input.stock) do
         if (stock.count > 0) then

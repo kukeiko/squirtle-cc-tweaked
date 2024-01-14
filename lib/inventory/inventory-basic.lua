@@ -9,7 +9,7 @@ local itemMaxCounts = {}
 local fuelItems = {["minecraft:lava_bucket"] = 1, ["minecraft:coal"] = 64, ["minecraft:charcoal"] = 64, ["minecraft:coal_block"] = 64}
 local smeltableItems = {["minecraft:cobblestone"] = "minecraft:stone", ["minecraft:stone"] = "minecraft:smooth_stone"}
 
----@class InventoryBasic:InventoryElemental
+---@class InventoryBasic : InventoryElemental
 local InventoryBasic = {}
 setmetatable(InventoryBasic, {__index = InventoryElemental})
 
@@ -144,6 +144,22 @@ end
 ---@return boolean
 function InventoryBasic.isFurnace(inventory)
     return InventoryBasic.getBlockType(inventory) == "minecraft:furnace"
+end
+
+---@param name string
+---@param tagNames table<string>
+---@param stacks table<integer, ItemStack>
+---@return integer? slot, string? name
+function InventoryBasic.findNameTag(name, tagNames, stacks)
+    for slot, stack in pairs(stacks) do
+        if stack.name == "minecraft:name_tag" then
+            local stack = InventoryElemental.getStack(name, slot)
+
+            if Utils.indexOf(tagNames, stack.displayName) > 0 then
+                return slot, stack.displayName
+            end
+        end
+    end
 end
 
 return InventoryBasic

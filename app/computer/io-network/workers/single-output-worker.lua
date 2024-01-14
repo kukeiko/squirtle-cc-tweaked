@@ -1,6 +1,6 @@
-local toInputOutputInventory = require "io-network.to-input-output-inventory"
-local transferStock = require "io-network.transfer-stock"
 local EventLoop = require "event-loop"
+local transferStock = require "io-network.transfer-stock"
+local Inventory = require "inventory.inventory"
 
 ---@param name string
 local function waitUntilDetached(name)
@@ -20,7 +20,7 @@ return function(collection, inventory, timeout)
     parallel.waitForAny(function()
         pcall(function()
             while true do
-                local refreshed = toInputOutputInventory(inventory.name)
+                local refreshed = Inventory.readInputOutput(inventory.name)
 
                 if not refreshed or refreshed.type ~= inventory.type then
                     print("[debug] type changed")

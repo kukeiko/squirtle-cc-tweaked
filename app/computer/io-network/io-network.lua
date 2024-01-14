@@ -3,8 +3,8 @@ package.path = package.path .. ";/app/computer/?.lua"
 
 local EventLoop = require "event-loop"
 local findPeripheralSide = require "world.peripheral.find-side"
+local Inventory = require "inventory.inventory"
 local InventoryCollection = require "io-network.inventory-collection"
-local toInputOutputInventory = require "io-network.to-input-output-inventory"
 local singleOutputWorker = require "io-network.workers.single-output-worker"
 local bundledOutputWorker = require "io-network.workers.bundled-output-worker"
 local shulkerWorker = require "io-network.workers.shulker-worker"
@@ -32,7 +32,7 @@ local refreshStoragesWorker = require "io-network.workers.refresh-storages-worke
 ---@param name string
 ---@param collection InventoryCollection
 local function attachInventory(name, collection)
-    local ioInventory = toInputOutputInventory(name)
+    local ioInventory = Inventory.readInputOutput(name)
 
     if ioInventory then
         collection:add(ioInventory)
@@ -47,7 +47,7 @@ local function attachInventory(name, collection)
 end
 
 local function main(args)
-    print("[io-network v4.2.0] booting...")
+    print("[io-network v4.3.0-dev] booting...")
     local timeout = tonumber(args[1] or 30) or 30
     local modem = findPeripheralSide("modem")
 

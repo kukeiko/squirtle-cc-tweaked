@@ -1,5 +1,5 @@
 local EventLoop = require "event-loop"
-local toInputOutputInventory = require "io-network.to-input-output-inventory"
+local Inventory = require "inventory.inventory"
 
 ---@param collection InventoryCollection
 ---@param timeout integer
@@ -20,7 +20,7 @@ return function(collection, timeout)
         local storages = collection:getInventories("storage")
 
         for _, storage in pairs(storages) do
-            local refreshed = toInputOutputInventory(storage.name)
+            local refreshed = Inventory.readInputOutput(storage.name)
 
             if refreshed and refreshed.type ~= "storage" then
                 print("[refresh] type changed")

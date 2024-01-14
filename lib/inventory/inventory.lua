@@ -3,35 +3,7 @@ local InputOutputInventory = require "inventory.input-output-inventory"
 local InventoryElemental = require "inventory.inventory-elemental"
 local InventoryComplex = require "inventory.inventory-complex"
 
----@class Inventory
----@field name string
----@field stock ItemStock
----@field stacks ItemStacks
----@field slots integer[]
----@field locked boolean
 
----@param stacks table<integer, ItemStack>
----@return table<string, ItemStack>
-local function stacksToStock(stacks)
-    ---@type table<string, ItemStack>
-    local stock = {}
-
-    for _, stack in pairs(stacks) do
-        local itemStock = stock[stack.name]
-
-        if not itemStock then
-            itemStock = Utils.copy(stack)
-            itemStock.count = 0
-            itemStock.maxCount = 0
-            stock[stack.name] = itemStock
-        end
-
-        itemStock.count = itemStock.count + stack.count
-        itemStock.maxCount = itemStock.maxCount + stack.maxCount
-    end
-
-    return stock
-end
 
 ---@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
@@ -62,29 +34,6 @@ end
 local Inventory = {}
 setmetatable(Inventory, {__index = InventoryComplex})
 
----@param name string
----@param stacks? ItemStacks
----@param detailed? boolean
--- [todo] slots
----@param slots? integer[]
----@param allowedSlotItems? table<integer, string[]>
----@return Inventory
-function Inventory.create(name, stacks, detailed, slots, allowedSlotItems)
-    stacks = stacks or Inventory.getStacks(name, detailed)
-
-    ---@type Inventory
-    local inventory = {
-        name = name,
-        stacks = stacks,
-        stock = stacksToStock(stacks),
-        locked = false,
-        slots = slots or {},
-        allowedSlotItems = allowedSlotItems or {}
-    }
-
-    return inventory
-end
-
 -- [todo] confusing: InputOutputInventory.create(...) works quite differently.
 -- solution: rename methods - maybe "readInputOutput()" to identify input/output inventories via nametag slot,
 -- and have "createInputOutput()" just be a constructor (like what InputOutputInventory.create() already is)
@@ -92,7 +41,7 @@ end
 ---@param stacks? table<integer, ItemStack>
 ---@param nameTagSlot? integer
 ---@return InputOutputInventory
-function Inventory.createInputOutput(name, stacks, nameTagSlot)
+function Inventory.createInputOutput_old(name, stacks, nameTagSlot)
     if not stacks then
         stacks = Inventory.getStacks(name)
     end
@@ -115,18 +64,18 @@ end
 ---@param name string
 ---@return ItemStock
 function Inventory.getStock(name)
-    return stacksToStock(Inventory.getStacks(name))
+    return InventoryElemental.stacksToStock(Inventory.getStacks(name))
 end
 
 ---@param name string
 ---@return ItemStock
 function Inventory.getInputStock(name)
-    return stacksToStock(Inventory.getInputStacks(name, true))
+    return InventoryElemental.stacksToStock(Inventory.getInputStacks(name, true))
 end
 
 ---@param name string
 function Inventory.countItems(name)
-    local stock = stacksToStock(Inventory.getStacks(name))
+    local stock = InventoryElemental.stacksToStock(Inventory.getStacks(name))
     local count = 0
 
     for _, itemStock in pairs(stock) do
@@ -189,6 +138,7 @@ function Inventory.getInputStacks(name, detailed)
     return inputStacks
 end
 
+-- [todo] copied to InventoryBasic
 ---@param name string
 ---@param tagNames table<string>
 ---@param stacks table<integer, ItemStack>
@@ -237,55 +187,13 @@ end
 function Inventory.getOutputMissingStock(name)
     ---@type table<string, integer>
     local missingStock = {}
-    local stock = stacksToStock(Inventory.getOutputStacks(name))
+    local stock = InventoryElemental.stacksToStock(Inventory.getOutputStacks(name))
 
     for item, stack in pairs(stock) do
         missingStock[item] = stack.maxCount - stack.count
     end
 
     return missingStock
-end
-
----@param name string
----@return InputOutputInventory
-function Inventory.readCrafterInventory(name)
-    local stacks = Inventory.getStacks(name)
-    local tagSlot = Inventory.findNameTag(name, {"Crafter"}, stacks)
-
-    if not tagSlot then
-        error("no Crafter tag found")
-    end
-
-    local inputSlotOffset = 3
-    local outputSlotOffset = 6
-
-    ---@param offset integer
-    ---@param allStacks table<integer, ItemStack>
-    local function toInventory(offset, allStacks)
-        ---@type table<integer, ItemStack>
-        local stacks = {}
-        ---@type integer[]
-        local slots = {}
-
-        for i = 1, 9 do
-            local line = math.ceil(i / 3)
-            local offsetRight = (line - 1) * (9 - (offset + 3))
-            local slot = i + (offset * line) + offsetRight
-
-            table.insert(slots, slot)
-
-            if allStacks[slot] then
-                stacks[slot] = allStacks[slot]
-            end
-        end
-
-        return Inventory.create(name, stacks, false, slots)
-    end
-
-    local inputInventory = toInventory(inputSlotOffset, stacks)
-    local outputInventory = toInventory(outputSlotOffset, stacks)
-
-    return InputOutputInventory.create(name, inputInventory, outputInventory, "crafter", tagSlot)
 end
 
 return Inventory
