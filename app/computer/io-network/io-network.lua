@@ -9,19 +9,8 @@ local singleOutputWorker = require "io-network.workers.single-output-worker"
 local bundledOutputWorker = require "io-network.workers.bundled-output-worker"
 local shulkerWorker = require "io-network.workers.shulker-worker"
 local furnaceWorker = require "io-network.workers.furnace-worker"
--- local craftingWorker = require "io-network.workers.crafting-worker"
+local craftingWorker = require "io-network.workers.crafting-worker"
 local refreshStoragesWorker = require "io-network.workers.refresh-storages-worker"
-
----@class InputOutputInventoriesByType
----@field storage InputOutputInventory[]
----@field io InputOutputInventory[]
----@field drain InputOutputInventory[]
----@field furnace InputOutputInventory[]
----@field silo InputOutputInventory[]
-
----@class FoundInventory
----@field name string
----@field type string
 
 -- [todo] we should not only spread an item (e.g. charcoal) evenly amongst inputs,
 -- but also evenly from outputs, so that e.g. the 4 lumberjack farms all start working
@@ -32,7 +21,7 @@ local refreshStoragesWorker = require "io-network.workers.refresh-storages-worke
 ---@param name string
 ---@param collection InventoryCollection
 local function attachInventory(name, collection)
-    local ioInventory = Inventory.readInputOutput(name)
+    local ioInventory = Inventory.read(name)
 
     if ioInventory then
         collection:add(ioInventory)
@@ -82,7 +71,7 @@ local function main(args)
     end, function()
         bundledOutputWorker(collection, "silo", 7)
     end, function()
-        -- craftingWorker(collection)
+        craftingWorker(collection)
     end, function()
         refreshStoragesWorker(collection, timeout)
     end)

@@ -20,7 +20,7 @@ return function(collection, inventory, timeout)
     parallel.waitForAny(function()
         pcall(function()
             while true do
-                local refreshed = Inventory.readInputOutput(inventory.name)
+                local refreshed = Inventory.read(inventory.name)
 
                 if not refreshed or refreshed.type ~= inventory.type then
                     print("[debug] type changed")

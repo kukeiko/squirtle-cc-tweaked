@@ -35,7 +35,7 @@ return function(collection, type, timeout)
             local refreshed = {}
 
             for _, output in pairs(outputs) do
-                local refreshedOutput = Inventory.readInputOutput(output.name)
+                local refreshedOutput = Inventory.read(output.name)
 
                 if refreshedOutput and refreshedOutput.type == type then
                     table.insert(refreshed, refreshedOutput)

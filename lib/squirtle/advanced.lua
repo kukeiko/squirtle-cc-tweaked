@@ -152,7 +152,7 @@ function Advanced.pushOutput(from, to, keepStock)
     end
 
     if type(to) == "string" then
-        to = Inventory.createInputOutput_old(to)
+        to = Inventory.readInputOutput(to)
     end
 
     ---@type table<string, integer>
@@ -193,7 +193,7 @@ function Advanced.dumpOutput(from, to)
 
     if type(to) == "string" then
         -- [todo] only supports I/O chests currently
-        to = Inventory.createInputOutput_old(to)
+        to = Inventory.readInputOutput(to)
     end
 
     ---@type table<string, integer>
@@ -225,7 +225,7 @@ end
 ---@return boolean, table<string, integer>? transferred
 function Advanced.pullInput(from, to, transferredOutput)
     if type(from) == "string" then
-        from = Inventory.createInputOutput_old(from)
+        from = Inventory.readInputOutput(from)
     end
 
     if type(to) == "string" then

@@ -374,7 +374,7 @@ end
 ---@param stacks? table<integer, ItemStack>
 ---@param nameTagSlot? integer
 ---@return InputOutputInventory
-function InventoryAdvanced.readInputOutput_chest(name, stacks, nameTagSlot)
+function InventoryAdvanced.readInputOutput(name, stacks, nameTagSlot)
     if not stacks then
         stacks = InventoryBasic.getStacks(name)
     end
@@ -546,7 +546,7 @@ end
 
 ---@param name string
 ---@return InputOutputInventory?
-function InventoryAdvanced.readInputOutput(name)
+function InventoryAdvanced.read(name)
     local baseType = baseTypeLookup[string.sub(name, 1, 15)]
 
     if not baseType then
@@ -567,7 +567,7 @@ function InventoryAdvanced.readInputOutput(name)
 
         if nameTagSlot and nameTagName then
             if nameTagName == "I/O" then
-                return InventoryAdvanced.readInputOutput_chest(name, stacks, nameTagSlot)
+                return InventoryAdvanced.readInputOutput(name, stacks, nameTagSlot)
             elseif nameTagName == "Drain" then
                 return InventoryAdvanced.readDrain(name, {nameTagSlot})
             elseif nameTagName == "Silo" then

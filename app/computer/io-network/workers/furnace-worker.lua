@@ -1,8 +1,5 @@
 local Utils = require "utils"
 local Inventory = require "inventory.inventory"
-local readFurnace = require "io-network.read.read-furnace"
-local readFurnaceInputInventory = require "io-network.read.read-furnace-input-inventory"
-local readFurnaceOutputInventory = require "io-network.read.read-furnace-output-inventory"
 local transferStock = require "io-network.transfer-stock"
 
 -- [note] refuel numbers not actually used
@@ -29,8 +26,8 @@ return function(collection, timeout)
 
             print(string.format("[found] %d inputs and %d furnaces", #inputs, #furnaces))
 
-            local inputStock = Inventory.mergeStocks(Utils.map(inputs, function(item)
-                return item.output.stock
+            local inputStock = Inventory.mergeStocks(Utils.map(inputs, function(input)
+                return input.output.stock
             end))
 
             -- take out any empty buckets
@@ -56,7 +53,13 @@ return function(collection, timeout)
                 end
             end
 
+            local furnaceOutputStock = Inventory.mergeStocks(Utils.map(furnaces, function(furnace)
+                return furnace.output.stock
+            end))
+
             -- move smelted items to "Furnace: Output" chests
+            -- [todo] does not yet work because "InventoryBasic.hasSpaceForItem()" returns 0
+            -- transferStock(furnaceOutputStock, furnaces, outputs, collection, true)
             for _, furnace in pairs(furnaces) do
                 local outputStack = furnace.output.stacks[3]
 
