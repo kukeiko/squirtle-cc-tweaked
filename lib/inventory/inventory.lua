@@ -1,4 +1,3 @@
-local Utils = require "utils"
 local InventoryBasic = require "inventory.inventory-basic"
 local InventoryElemental = require "inventory.inventory-elemental"
 local InventoryComplex = require "inventory.inventory-complex"
@@ -6,18 +5,6 @@ local InventoryComplex = require "inventory.inventory-complex"
 ---@class InventoryApi:InventoryComplex
 local Inventory = {}
 setmetatable(Inventory, {__index = InventoryComplex})
-
----@param name string
----@return ItemStock
-function Inventory.getStock(name)
-    return InventoryElemental.stacksToStock(Inventory.getStacks(name))
-end
-
----@param name string
----@return ItemStock
-function Inventory.getInputStock(name)
-    return InventoryElemental.stacksToStock(Inventory.getInputStacks(name, true))
-end
 
 ---@param name string
 function Inventory.countItems(name)
@@ -54,34 +41,6 @@ function Inventory.getItemStock(side, predicate)
     end
 
     return stock
-end
-
----@param name string
----@param detailed? boolean
----@return ItemStacks
-function Inventory.getInputStacks(name, detailed)
-    ---@type ItemStacks
-    local inputStacks = {}
-    local stacks = Inventory.getStacks(name)
-    local nameTagSlot = InventoryBasic.findNameTag(name, {"I/O"}, stacks)
-
-    if nameTagSlot then
-        for slot, stack in pairs(stacks) do
-            if slot < nameTagSlot then
-                inputStacks[slot] = stack
-            end
-        end
-    elseif Inventory.getSize(name) > 27 then -- 2+ wide - assumed to be a storage chest (=> input)
-        inputStacks = stacks
-    end
-
-    if detailed then
-        for slot in pairs(inputStacks) do
-            inputStacks[slot] = InventoryElemental.getStack(name, slot)
-        end
-    end
-
-    return inputStacks
 end
 
 ---@param name string
