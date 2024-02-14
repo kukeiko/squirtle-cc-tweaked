@@ -10,7 +10,7 @@ local processIo = require "io-network.process-io"
 local processQuickAccess = require "io-network.process-quick-access"
 
 local function main(args)
-    print("[io-network v5.0.0-dev.6] booting...")
+    print("[io-network v5.0.0] booting...")
 
     os.sleep(3)
     local run = true
