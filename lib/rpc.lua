@@ -1,12 +1,5 @@
 local EventLoop = require "event-loop"
 
----@return table
-local function getWirelessModem()
-    return peripheral.find("modem", function(name, modem)
-        return modem.isWireless()
-    end) or error("no wireless modem equipped")
-end
-
 ---@class RpcPingPacket
 ---@field type "ping"
 ---@field service string
@@ -47,15 +40,32 @@ local function nextCallId()
     return tostring(callId)
 end
 
+---@return table
+local function getWirelessModem()
+    return peripheral.find("modem", function(name, modem)
+        return modem.isWireless()
+    end) or error("no wireless modem equipped")
+end
+
+---@param name? string
+---@return table
+local function getModem(name)
+    if not name then
+        return getWirelessModem()
+    else
+        return peripheral.wrap(name)
+    end
+end
+
 ---@class Rpc
 local Rpc = {}
 
----@generic T
----@param service T | Service
+---@param service Service
+---@param modemName? string 
 ---@param maxDistance? number
----@return (T|RpcClient)?, number?
-function Rpc.nearest(service, maxDistance)
-    local modem = getWirelessModem()
+---@return { host:string, distance:number }[]
+local function findAllHosts(service, modemName, maxDistance)
+    local modem = getModem(modemName)
     modem.open(channel)
 
     ---@type { host:string, distance:number }[]
@@ -84,6 +94,17 @@ function Rpc.nearest(service, maxDistance)
             end
         end
     end)
+
+    return hosts
+end
+
+---@generic T
+---@param service T | Service
+---@param modem? string
+---@param maxDistance? number
+---@return (T|RpcClient)?, number?
+function Rpc.nearest(service, modem, maxDistance)
+    local hosts = findAllHosts(service, modem, maxDistance)
 
     ---@type { host:string, distance:number }?
     local best = nil
@@ -101,39 +122,11 @@ end
 
 ---@generic T
 ---@param service T | Service
+---@param modem? string
 ---@param maxDistance? number
 ---@return (T|RpcClient)[]
-function Rpc.all(service, maxDistance)
-    local modem = getWirelessModem()
-    modem.open(channel)
-
-    ---@type { host:string, distance:number }[]
-    local hosts = {}
-
-    parallel.waitForAny(function()
-        os.sleep(0.25)
-    end, function()
-        ---@type RpcPingPacket
-        local ping = {type = "ping", service = service.name}
-        modem.transmit(channel, channel, ping)
-
-        while true do
-            local event = table.pack(EventLoop.pull("modem_message"))
-            local message = event[5]
-            local distance = event[6]
-
-            if type(message) == "table" and message.type == "pong" and message.service == service.name then
-                if maxDistance then
-                    if distance <= maxDistance then
-                        table.insert(hosts, {host = message.host, distance = distance})
-                    end
-                else
-                    table.insert(hosts, {host = message.host, distance = distance})
-                end
-            end
-        end
-    end)
-
+function Rpc.all(service, modem, maxDistance)
+    local hosts = findAllHosts(service, modem, maxDistance)
     ---@type RpcClient[]
     local clients = {}
 
@@ -145,8 +138,9 @@ function Rpc.all(service, maxDistance)
 end
 
 ---@param service Service
-function Rpc.server(service)
-    local modem = getWirelessModem()
+---@param modemName? string
+function Rpc.server(service, modemName)
+    local modem = getModem(modemName)
     modem.open(channel)
 
     EventLoop.run(function()
