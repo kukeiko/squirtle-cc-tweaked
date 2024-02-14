@@ -16,7 +16,7 @@ end
 ---@param world World
 ---@param layerHeight integer
 ---@return integer
-function getNumLayers(world, layerHeight)
+local function getNumLayers(world, layerHeight)
     return math.ceil(world.height / layerHeight)
 end
 
@@ -25,12 +25,10 @@ end
 ---@param start Vector
 ---@param layerHeight integer
 ---@return integer
-function getCurrentLayer(point, world, start, layerHeight)
+local function getCurrentLayer(point, world, start, layerHeight)
     if layerHeight >= world.height then
         return 1
-    end
-
-    if isStartInBottomPlane(world, start) then
+    elseif isStartInBottomPlane(world, start) then
         return math.floor((point.y - world.y) / layerHeight) + 1
     else
         return math.floor(((world.y + world.height - 1) - point.y) / layerHeight) + 1
@@ -42,7 +40,7 @@ end
 ---@param start Vector
 ---@param layerHeight integer
 ---@return integer
-function getLayerTargetY(layer, world, start, layerHeight)
+local function getLayerTargetY(layer, world, start, layerHeight)
     if isStartInBottomPlane(world, start) then
         local targetY = math.floor(layerHeight / 2) + ((layer - 1) * layerHeight) + world.y
 
@@ -52,7 +50,7 @@ function getLayerTargetY(layer, world, start, layerHeight)
             return targetY
         end
     else
-        local targetY = (world.y + world.height - 1) - math.floor(layerHeight / 2) + ((layer - 1) * layerHeight)
+        local targetY = (world.y + world.height - 1) - (math.floor(layerHeight / 2) + ((layer - 1) * layerHeight))
 
         if not World.isInBoundsY(world, targetY) then
             return world.y
@@ -70,7 +68,7 @@ end
 return function(point, world, start, layerHeight)
     layerHeight = layerHeight or 3
 
-    -- first we try to move to the correct y position, based on which layer we are in
+    -- first we try to move to the correct y position of the layer we are in
     local currentLayer = getCurrentLayer(point, world, start, layerHeight)
     local targetY = getLayerTargetY(currentLayer, world, start, layerHeight)
 
@@ -82,7 +80,7 @@ return function(point, world, start, layerHeight)
         end
     end
 
-    -- then we snake through the plane for digging
+    -- then we snake through the layer for digging
     local delta = Vector.create(0, 0, 0)
 
     if start.x == world.x then

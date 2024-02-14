@@ -7,7 +7,7 @@ local World = require "geo.world"
 local Squirtle = require "squirtle"
 local AppState = require "app-state"
 local boot = require "digger.boot"
-local Inventory = require "inventory.inventory"
+local Inventory = require "inventory"
 
 ---@class DiggerAppState
 ---@field home Vector
@@ -223,13 +223,7 @@ local function main(args)
             if args[1] == "io" then
                 local io = Inventory.findChest()
 
-                if not Squirtle.pushOutput(buffer, io) then
-                    print("output full, waiting for it to drain...")
-
-                    repeat
-                        os.sleep(7)
-                    until Squirtle.pushOutput(buffer, io)
-                end
+                Squirtle.pushAllOutput(buffer, io)
 
                 while not Squirtle.hasFuel(minFuel) do
                     print("trying to refuel to ", minFuel, ", have", Squirtle.getFuelLevel())

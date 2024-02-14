@@ -6,7 +6,7 @@ local SquirtleState = require "squirtle.state"
 local boot = require "bone-meal.boot"
 local sequence = require "bone-meal.sequence"
 
-print("[bone-meal v2.0.0] booting...")
+print("[bone-meal v2.1.0] booting...")
 local state = boot(arg)
 
 if not state then
@@ -21,8 +21,8 @@ SquirtleState.results.placed[state.blocks.lavaBucket] = 1
 SquirtleState.results.placed[state.blocks.boneMeal] = 64
 SquirtleState.simulate = false
 Squirtle.requireItems(SquirtleState.results.placed)
-print("all good now! building...")
-local home, facing = Squirtle.orientate(true)
+print("[ok] all good now! building...")
+local home, facing = Squirtle.orientate()
 sequence(state)
 Squirtle.navigate(home)
 Squirtle.face(facing)

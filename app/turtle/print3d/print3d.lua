@@ -10,6 +10,8 @@ local Squirtle = require "squirtle"
 ---@field vector Vector
 ---@field block string?
 
+-- https://3dviewer.net/ for rotating
+-- https://drububu.com/miscellaneous/voxelizer/?out=obj for voxelizing
 local function main(args)
     print("[print3d v1.3.0]")
     local filename = args[1] or "seahorse-colored_27.t3d"

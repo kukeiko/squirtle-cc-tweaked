@@ -264,12 +264,10 @@ function Basic.has(item, minCount)
     if type(minCount) == "number" then
         return Basic.getItemStock(item) >= minCount
     else
-        startAtSlot = startAtSlot or 1
+        for slot = 1, Basic.size() do
+            local stack = Basic.getStack(slot)
 
-        for slot = startAtSlot, Basic.size() do
-            local item = Basic.getStack(slot)
-
-            if item and item.name == item then
+            if stack and stack.name == item then
                 return true
             end
         end

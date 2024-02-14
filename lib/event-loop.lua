@@ -103,9 +103,30 @@ function EventLoop.run(...)
         return createThread(fn)
     end)
 
-    os.queueEvent("event-loop:bootstrap")
+    -- os.queueEvent("event-loop:bootstrap")
+
+    threads = runThreads(threads, {})
 
     while #threads > 0 do
+        threads = runThreads(threads, table.pack(os.pullEvent()))
+    end
+end
+
+---@param ... function
+function EventLoop.waitForAny(...)
+    local anyFinished = false
+    local threads = Utils.map({...}, function(fn)
+        return createThread(function()
+            fn()
+            anyFinished = true
+        end)
+    end)
+
+    -- os.queueEvent("event-loop:bootstrap")
+
+    threads = runThreads(threads, {})
+
+    while not anyFinished do
         threads = runThreads(threads, table.pack(os.pullEvent()))
     end
 end

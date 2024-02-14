@@ -93,10 +93,55 @@ function Rpc.nearest(service, maxDistance)
             best = hosts[i]
         end
     end
-    
+
     if best then
         return Rpc.client(service, best.host), best.distance
     end
+end
+
+---@generic T
+---@param service T | Service
+---@param maxDistance? number
+---@return (T|RpcClient)[]
+function Rpc.all(service, maxDistance)
+    local modem = getWirelessModem()
+    modem.open(channel)
+
+    ---@type { host:string, distance:number }[]
+    local hosts = {}
+
+    parallel.waitForAny(function()
+        os.sleep(0.25)
+    end, function()
+        ---@type RpcPingPacket
+        local ping = {type = "ping", service = service.name}
+        modem.transmit(channel, channel, ping)
+
+        while true do
+            local event = table.pack(EventLoop.pull("modem_message"))
+            local message = event[5]
+            local distance = event[6]
+
+            if type(message) == "table" and message.type == "pong" and message.service == service.name then
+                if maxDistance then
+                    if distance <= maxDistance then
+                        table.insert(hosts, {host = message.host, distance = distance})
+                    end
+                else
+                    table.insert(hosts, {host = message.host, distance = distance})
+                end
+            end
+        end
+    end)
+
+    ---@type RpcClient[]
+    local clients = {}
+
+    for i = 1, #hosts do
+        table.insert(clients, Rpc.client(service, hosts[i].host))
+    end
+
+    return clients
 end
 
 ---@param service Service
@@ -106,10 +151,12 @@ function Rpc.server(service)
 
     EventLoop.run(function()
         while true do
+            ---@param modem string
+            ---@param message RpcRequestPacket|RpcPingPacket
             EventLoop.pull("modem_message", function(_, modem, _, _, message)
                 -- todo: make type safe
-                if type(message) == "table" and message.type == "request" and message.service == service.name and
-                    message.host == service.host and type(service[message.method]) == "function" then
+                if type(message) == "table" and message.type == "request" and message.service == service.name and message.host ==
+                    service.host and type(service[message.method]) == "function" then
                     local response = table.pack(service[message.method](table.unpack(message.arguments)))
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response}
@@ -140,22 +187,14 @@ function Rpc.client(service, host)
                 local callId = nextCallId()
 
                 ---@type RpcRequestPacket
-                local packet = {
-                    type = "request",
-                    callId = callId,
-                    host = host,
-                    service = service.name,
-                    method = k,
-                    arguments = {...}
-                }
+                local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
 
                 modem.transmit(channel, channel, packet)
 
                 while true do
                     local event = {EventLoop.pull("modem_message")}
-                    local message = event[5]
+                    local message = event[5] --[[@as RpcResponsePacket]]
 
-                    -- todo: make type safe
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
                         return table.unpack(message.response)
                     end

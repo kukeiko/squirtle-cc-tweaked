@@ -13,7 +13,7 @@ local function refuel(level)
     shell.run("refuel", "all")
 
     while not Squirtle.hasFuel(level) do
-        print(string.format("[help] not enough fuel, need %d more.", Squirtle.getMissingFuel(level)))
+        print(string.format("[help] not enough fuel, need %d more.", Squirtle.missingFuel(level)))
         print("please put some into inventory")
         os.pullEvent("turtle_inventory")
         shell.run("refuel", "all")

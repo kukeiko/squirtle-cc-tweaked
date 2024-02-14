@@ -1,7 +1,7 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local Squirtle = require "squirtle"
-local Inventory = require "inventory.inventory"
+local Inventory = require "inventory"
 local CraftingInventory = require "inventory.crafting-inventory"
 
 ---@param chest string 
@@ -13,7 +13,7 @@ end
 
 ---@param chest string
 local function recipeHasItems(chest)
-    local inventory = Inventory.readCrafterInventory(chest)
+    local inventory = Inventory.read(chest, "crafter")
 
     for _, stack in pairs(inventory.input.stacks) do
         if stack and stack.count > 0 then
@@ -31,7 +31,7 @@ end
 
 ---@param chest string
 local function suckRecipe(chest)
-    local inventory = Inventory.readCrafterInventory(chest)
+    local inventory = Inventory.read(chest, "crafter")
 
     for turtleSlot, inventorySlot in pairs(inventory.input.slots) do
         local stack = inventory.input.stacks[inventorySlot]
@@ -85,7 +85,7 @@ local function main()
             while not (Squirtle.isEmpty() and barrelIsEmpty("bottom")) do
                 print("dumping...")
                 Squirtle.dump("bottom")
-                Squirtle.dumpOutput("bottom", Inventory.readCrafterInventory("back"))
+                -- Squirtle.dumpOutput("bottom", Inventory.read("back", "crafter"))
                 os.sleep(3)
             end
 

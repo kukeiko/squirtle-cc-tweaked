@@ -64,6 +64,7 @@ local function loadIntoShulker(direction)
     return unloadedAll
 end
 
+-- [todo] move to Squirtle
 ---@return boolean unloadedAll
 local function tryLoadShulkers()
     ---@type string?
@@ -99,7 +100,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[dig v3.0.0] booting...")
+    print("[dig v3.2.1] booting...")
     local state = boot(args)
 
     if not state then
@@ -138,16 +139,20 @@ local function main(args)
         if Squirtle.navigate(point, world, isBreakable) then
             digUpDownIfInBounds(world, point)
 
-            if state.hasShulkers and not shulkersFull and isGettingFull() then
+            -- [todo] this is not ideal yet considering the following case:
+            -- turtle is digging, and at some point fills up all shulkers
+            -- then, player gives the turtle an empty shulker box
+            -- => because it set the "shulkersFull" flag to true, it'll never try to fill the newly given, empty shulker again.
+            if isGettingFull() and Squirtle.has("minecraft:shulker_box") and not shulkersFull then
                 shulkersFull = not tryLoadShulkers()
-                turtle.select(1)
+                Squirtle.select(1)
             end
         end
 
         point = nextPoint(point, world, start)
     end
 
-    if state.hasShulkers and not shulkersFull then
+    if not shulkersFull then
         tryLoadShulkers()
     end
 

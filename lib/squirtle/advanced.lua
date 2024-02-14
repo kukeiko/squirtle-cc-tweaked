@@ -1,15 +1,11 @@
 local Utils = require "utils"
-local Inventory = require "inventory.inventory"
+local InventoryPeripheral = require "inventory.inventory-peripheral"
+local Inventory = require "inventory"
 local Elemental = require "squirtle.elemental"
 local Basic = require "squirtle.basic"
 
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
-
----@return integer
-local function getTransferRate()
-    return 16
-end
 
 ---@class Advanced : Basic
 local Advanced = {}
@@ -102,32 +98,32 @@ function Advanced.suckSlot(inventory, slot, quantity)
         return Elemental.suck(inventory, quantity)
     end
 
-    local items = Inventory.getStacks(inventory)
+    local items = InventoryPeripheral.getStacks(inventory)
 
     if items[1] == nil then
-        Inventory.move(inventory, slot, 1, quantity)
+        InventoryPeripheral.move(inventory, slot, 1, quantity)
         local success, message = Elemental.suck(inventory, quantity)
-        Inventory.move(inventory, 1, slot)
+        InventoryPeripheral.move(inventory, 1, slot)
 
         return success, message
     end
 
-    local firstEmptySlot = Utils.firstEmptySlot(items, Inventory.getSize(inventory))
+    local firstEmptySlot = Utils.firstEmptySlot(items, InventoryPeripheral.getSize(inventory))
 
     if not firstEmptySlot and Basic.isFull() then
         error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
     elseif firstEmptySlot then
-        Inventory.move(inventory, 1, firstEmptySlot)
-        Inventory.move(inventory, slot, 1, quantity)
+        InventoryPeripheral.move(inventory, 1, firstEmptySlot)
+        InventoryPeripheral.move(inventory, slot, 1, quantity)
         local success, message = Elemental.suck(inventory, quantity)
-        Inventory.move(inventory, 1, slot)
+        InventoryPeripheral.move(inventory, 1, slot)
 
         return success, message
     else
         local initialSlot = Elemental.getSelectedSlot()
         Basic.selectFirstEmpty()
         Elemental.suck(inventory)
-        Inventory.move(inventory, slot, 1)
+        InventoryPeripheral.move(inventory, slot, 1)
         Elemental.drop(inventory)
         local success, message = Elemental.suck(inventory, quantity)
         Elemental.select(initialSlot)
@@ -136,138 +132,55 @@ function Advanced.suckSlot(inventory, slot, quantity)
     end
 end
 
--- [todo] keepStock is not used yet anywhere; but i want to keep it because it should (imo)
--- be used @ lumberjack to push birch-saplings, but make sure to always keep at least 32.
--- [todo] also, I did not yet think about how keepStock (if provided) influences pullInput()
--- in regards to the calculation of transferrable input
----@param from Inventory|string
----@param to InputOutputInventory|string
----@param keepStock? table<string, integer>
----@return boolean, table<string, integer>? transferred
-function Advanced.pushOutput(from, to, keepStock)
-    keepStock = keepStock or {}
-
-    if type(from) == "string" then
-        from = Inventory.create(from)
-    end
-
-    if type(to) == "string" then
-        to = Inventory.readInputOutput(to)
-    end
-
-    ---@type table<string, integer>
-    local transferrable = {}
-
-    for item, toStock in pairs(to.output.stock) do
-        local fromStock = from.stock[item]
-
-        if toStock.count < toStock.maxCount and fromStock and fromStock.count - (keepStock[item] or 0) > 0 then
-            transferrable[item] = math.min(toStock.maxCount - toStock.count, fromStock.count - (keepStock[item] or 0))
-        end
-    end
-
-    local transferred = Inventory.transferItems(from, to.output, transferrable, getTransferRate())
-    local transferredAll = true
-
-    for item, itemTransferred in pairs(transferred) do
-        if itemTransferred < transferrable[item] then
-            transferredAll = false
-        end
-    end
-
-    if Utils.count(transferred) == 0 then
-        return transferredAll, nil
-    end
-
-    return transferredAll, transferred
+---@param from string
+---@param to string
+---@return ItemStock transferredTotal, ItemStock open
+function Advanced.pushOutput(from, to)
+    return Inventory.transferFromTag(from, to, "output", "output")
 end
 
--- in regards to the calculation of transferrable input
----@param from Inventory|string
----@param to InputOutputInventory|string
----@return boolean, table<string, integer>? transferred
-function Advanced.dumpOutput(from, to)
-    if type(from) == "string" then
-        from = Inventory.create(from)
+---@param from string
+---@param to string
+function Advanced.pushAllOutput(from, to)
+    local _, open = Advanced.pushOutput(from, to)
+
+    if Utils.count(open) > 0 then
+        print("output full, waiting...")
     end
 
-    if type(to) == "string" then
-        -- [todo] only supports I/O chests currently
-        to = Inventory.readInputOutput(to)
+    while Utils.count(open) > 0 do
+        os.sleep(7)
+        _, open = Advanced.pushOutput(from, to)
     end
-
-    ---@type table<string, integer>
-    local transferrable = {}
-
-    for item, stock in pairs(from.stock) do
-        transferrable[item] = stock.count
-    end
-
-    local transferred = Inventory.transferItems(from, to.output, transferrable, getTransferRate(), true)
-    local transferredAll = true
-
-    for item, itemTransferred in pairs(transferred) do
-        if itemTransferred < transferrable[item] then
-            transferredAll = false
-        end
-    end
-
-    if Utils.count(transferred) == 0 then
-        return transferredAll, nil
-    end
-
-    return transferredAll, transferred
 end
 
----@param from InputOutputInventory|string
----@param to Inventory|string
----@param transferredOutput? table<string, integer>
----@return boolean, table<string, integer>? transferred
+---@param from string
+---@param to string
+---@param transferredOutput? ItemStock
+---@return ItemStock transferredTotal, ItemStock open
 function Advanced.pullInput(from, to, transferredOutput)
-    if type(from) == "string" then
-        from = Inventory.readInputOutput(from)
-    end
-
-    if type(to) == "string" then
-        to = Inventory.create(to)
-    end
-
+    local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
+    local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
+    local toStock = Inventory.getStockByTag(to, "input")
     transferredOutput = transferredOutput or {}
-    ---@type table<string, integer>
-    local transferrable = {}
 
-    for item, stock in pairs(from.input.stock) do
-        local transfer = stock.maxCount
+    ---@type ItemStock
+    local total = {}
 
-        if from.output.stock[item] then
-            transfer = transfer + from.output.stock[item].maxCount
+    -- in case the chest we're pulling from has the same item in input as it does in output,
+    -- we need to make sure to not pull more input than is allowed by checking what parts of
+    -- the "to" chest are output stock.
+    for item, maxInputStock in pairs(fromMaxInputStock) do
+        local inputInToStock = toStock[item] or 0
+
+        if fromMaxOutputStock[item] and toStock[item] then
+            inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
         end
 
-        transfer = transfer - (transferredOutput[item] or 0)
-
-        local toStock = to.stock[item]
-
-        if toStock then
-            transfer = transfer - toStock.count
-        end
-
-        transferrable[item] = math.min(stock.count, transfer)
+        total[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
     end
 
-    local transferred = Inventory.transferItems(from.input, to, transferrable, getTransferRate(), true)
-    local transferredAll = true
-
-    for item, itemTransferred in pairs(transferred) do
-        if itemTransferred < transferrable[item] then
-            transferredAll = false
-        end
-    end
-
-    if Utils.count(transferred) == 0 then
-        return transferredAll, nil
-    end
-
-    return transferredAll, transferred
+    return Inventory.transferFromTag(from, to, "input", "input", total)
 end
 
 return Advanced

@@ -2,7 +2,7 @@ local Vector = require "elements.vector"
 local World = require "geo.world"
 local Cardinal = require "elements.cardinal"
 local Squirtle = require "squirtle"
-local Inventory = require "inventory.inventory"
+local Inventory = require "inventory"
 
 local function getDirection()
     while true do
@@ -42,9 +42,9 @@ local function readMineableBlocks()
     local mineable = {}
     local chest = Inventory.findChest()
 
-    for _, stack in pairs(Inventory.getOutputStacks(chest)) do
-        mineable[stack.name] = true -- [todo] value doesn't matter (typed it to unknown) - can we find a use?
-    end
+    -- for _, stack in pairs(Inventory.getOutputStacks(chest)) do
+    --     mineable[stack.name] = true -- [todo] value doesn't matter (typed it to unknown) - can we find a use?
+    -- end
 
     return mineable
 end

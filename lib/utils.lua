@@ -78,6 +78,47 @@ function Utils.map(list, mapper)
     return mapped
 end
 
+---@generic V, K, U
+---@param list table<K, V>
+---@param mapper fun(item: V, index: K): U
+---@return U[]
+function Utils.map_v2(list, mapper)
+    local mapped = {}
+
+    for key, value in pairs(list) do
+        table.insert(mapped, mapper(value, key))
+    end
+
+    return mapped
+end
+
+---@generic K, V
+---@param list table<K, V>
+---@return K[]
+function Utils.getKeys(list)
+    local keys = {}
+
+    for key in pairs(list) do
+        table.insert(keys, key)
+    end
+
+    return keys
+end
+
+---@generic T
+---@param list T[]
+---@param mapper fun(item: T, index: number): integer
+---@return integer
+function Utils.sum(list, mapper)
+    local sum = 0
+
+    for i = 1, #list do
+        sum = sum + mapper(list[i], i)
+    end
+
+    return sum
+end
+
 ---@generic T
 ---@param list T[]
 ---@param property string
@@ -124,6 +165,41 @@ function Utils.find(list, predicate)
             return list[i], i
         end
     end
+end
+
+---@generic T
+---@param list T[]
+---@param first integer
+---@param last integer
+---@return T[]
+function Utils.slice(list, first, last)
+    local sliced = {}
+
+    if last > #list then
+        last = #list
+    end
+
+    for i = first or 1, last or #list do
+        sliced[#sliced + 1] = list[i]
+    end
+
+    return sliced
+end
+
+---@generic T
+---@param ... T[]
+---@return T[]
+function Utils.concat(...)
+    local lists = {...}
+    local concatenated = {}
+
+    for _, list in ipairs(lists) do
+        for _, value in pairs(list) do
+            table.insert(concatenated, value)
+        end
+    end
+
+    return concatenated
 end
 
 function Utils.reverse(list)

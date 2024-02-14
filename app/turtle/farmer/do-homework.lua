@@ -1,5 +1,5 @@
 local Squirtle = require "squirtle"
-local Inventory = require "inventory.inventory"
+local Inventory = require "inventory"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
@@ -72,13 +72,10 @@ return function()
     -- first we make a single pushOutput() in case output wants seeds or poisonous taters
     print("pushing output once")
     Squirtle.pushOutput(barrel, ioChest)
+    print("pushing output...")
+    Squirtle.pushAllOutput(barrel, ioChest)
 
     local minFuel = 512
-    print("pushing output...")
-
-    while not Squirtle.pushOutput(barrel, ioChest) do
-        os.sleep(7)
-    end
 
     while not Squirtle.hasFuel(minFuel) do
         print("trying to refuel to", minFuel, "have", Squirtle.getFuelLevel())

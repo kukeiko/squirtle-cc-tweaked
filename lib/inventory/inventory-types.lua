@@ -1,0 +1,31 @@
+---@class ItemStack
+---@field name string
+---@field count integer
+---@field nbt? string
+---@field maxCount? integer
+---@field displayName? string
+---@field tags? table<string, boolean>
+---@alias ItemStacks table<integer, ItemStack>
+---@alias ItemStock table<string, integer>
+---
+---@class Inventory
+---@field name string
+---@field stacks ItemStacks
+---@field slots table<integer, InventorySlot>
+---@field allowAllocate boolean
+---@field type InventoryType
+---
+---@alias InventoryType "storage" | "io" | "drain" | "furnace" | "silo" | "shulker" | "crafter" | "furnace-input" | "furnace-output" | "furnace-configuration" | "buffer" | "quick-access"
+---@alias InventorySlotTag "input" | "output" | "fuel" | "nameTag" | "configuration"
+---
+---@class InventorySlot
+---@field index integer
+---@field tags InventorySlotTags
+---@field permanent? boolean
+---
+---@class InventorySlotTags
+---@field input? true
+---@field output? true
+---@field nameTag? true
+---@field fuel? true
+---@field configuration? true

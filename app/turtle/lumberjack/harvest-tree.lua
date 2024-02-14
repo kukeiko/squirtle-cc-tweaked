@@ -2,10 +2,11 @@ local Squirtle = require "squirtle"
 
 local function digLeftAndRight()
     Squirtle.turn("left")
-    Squirtle.mine()
+    Squirtle.tryMine()
     Squirtle.suck()
-    Squirtle.turn("back")
-    Squirtle.mine()
+    Squirtle.turn("right")
+    Squirtle.turn("right")
+    Squirtle.tryMine()
     Squirtle.suck()
     Squirtle.turn("left")
 end
@@ -16,7 +17,7 @@ local function digUpAndDown()
 end
 
 local function digSuckMove()
-    Squirtle.mine()
+    Squirtle.tryMine()
     Squirtle.suck()
     Squirtle.move()
 end
@@ -38,7 +39,7 @@ end
 
 local function digAllSides()
     for _ = 1, 4 do
-        Squirtle.mine()
+        Squirtle.tryMine()
         Squirtle.turn("left")
     end
 end
@@ -58,18 +59,18 @@ return function(minSaplings)
     minSaplings = minSaplings or 32
 
     while Squirtle.probe("top", "minecraft:birch_log") do
-        Squirtle.walk("up")
+        Squirtle.move("up")
 
         if Squirtle.probe("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    Squirtle.walk("up") -- goto peak
+    Squirtle.move("up") -- goto peak
     digAllSides() -- dig peak
-    Squirtle.walk("down", 2)
+    Squirtle.move("down", 2)
     collectSaplings(minSaplings)
-    Squirtle.walk("down")
+    Squirtle.move("down")
     collectSaplings(minSaplings)
 
     while Squirtle.tryWalk("down") do

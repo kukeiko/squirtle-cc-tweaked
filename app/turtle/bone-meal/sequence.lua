@@ -65,6 +65,7 @@ end)
 
 ---@param state BoneMealAppState
 local function placeCollectorChest(state)
+    move("bottom", 6)
     print("[place] collector chest")
     -- place collector chest
     move("forward", 2)
@@ -354,11 +355,10 @@ local function placeWaterItemCollection(state)
     placeWater(state)
     move("forward", 2)
     placeWater(state)
+    takeWater(state)
     move("back")
     takeWater(state)
-    move("forward")
-    takeWater(state)
-    move("forward", 4)
+    move("forward", 5)
     placeWater(state)
 end
 

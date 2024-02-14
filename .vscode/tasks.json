@@ -29,6 +29,26 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/dig"
         },
         {
+            "label": "build turtle:bone-meal",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/bone-meal/bone-meal.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/bone-meal"
+        },
+        {
+            "label": "build computer:bone-meal",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/bone-meal.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/bone-meal"
+        },
+        {
+            "label": "build pocket:bone-meal",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/bone-meal.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/bone-meal"
+        },
+        {
+            "label": "build turtle:wall",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/wall.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/wall"
+        },
+        {
             "label": "build turtle:build-platform",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/build-platform"

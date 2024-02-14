@@ -1,8 +1,9 @@
 package.path = package.path .. ";/lib/?.lua"
 
+local Utils = require "utils"
 local Redstone = require "world.redstone"
 local Squirtle = require "squirtle"
-local Inventory = require "inventory.inventory"
+local Inventory = require "inventory"
 
 local function dumpChestcartToBarrel()
     while Squirtle.suck() do
@@ -72,7 +73,7 @@ end
 ---@param name string
 ---@return boolean
 local function hasTransferrableStock(name)
-    local ioInventory = Inventory.readInputOutput(name)
+    local ioInventory = Inventory.read(name, "io")
 
     for _, stock in pairs(ioInventory.input.stock) do
         if (stock.count > 0) then
@@ -117,10 +118,10 @@ local function doIO()
     end
 
     print("transferring items...")
-    local _, transferredOutput = Squirtle.pushOutput("bottom", io)
-    local _, transferredInput = Squirtle.pullInput(io, "bottom", transferredOutput)
+    local transferredOutput = Squirtle.pushOutput("bottom", io)
+    local transferredInput = Squirtle.pullInput(io, "bottom", transferredOutput)
 
-    if not transferredInput and not transferredOutput then
+    if Utils.count(transferredInput) == 0 and Utils.count(transferredOutput) == 0 then
         print("nothing transferred, sleeping 7s...")
         os.sleep(7)
     end
@@ -139,7 +140,7 @@ local function main(args)
 
     while true do
         local front = Squirtle.probe()
-        
+
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()
         elseif front and front.name == "minecraft:detector_rail" then

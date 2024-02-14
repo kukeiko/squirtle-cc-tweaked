@@ -53,8 +53,6 @@ function Elemental.probe(direction, name)
     elseif type(name) == "table" and Utils.indexOf(name, block.name) > 0 then
         return block
     end
-
-    error(string.format("expected string or table for 'name', got: %s", type(name)))
 end
 
 ---@param direction? string
