@@ -5,7 +5,8 @@ local baseTypeLookup = {
     ["minecraft:chest"] = "minecraft:chest",
     ["minecraft:furna"] = "minecraft:furnace",
     ["minecraft:shulk"] = "minecraft:shulker_box",
-    ["minecraft:barre"] = "minecraft:barrel"
+    ["minecraft:barre"] = "minecraft:barrel",
+    ["minecraft:hoppe"] = "minecraft:hopper"
 }
 
 ---@class InventoryReader
@@ -234,6 +235,7 @@ local function createFurnaceOutput(name, stacks, nameTagSlot)
             tags.nameTag = true
         else
             tags.input = true
+            tags.output = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -287,7 +289,80 @@ local function createFurnaceConfiguration(name, stacks, nameTagSlot)
         slots[slot] = {index = slot, tags = tags}
     end
 
-    return construct(name, "furnace-configuration", stacks, slots)
+    return construct(name, "furnace-config", stacks, slots)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+local function createComposterInput(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "composter-input", stacks, slots, true)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+local function createComposterConfiguration(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.configuration = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "composter-config", stacks, slots)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+local function createTrash(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+            tags.output = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "trash", stacks, slots, true)
 end
 
 ---@param name string
@@ -357,12 +432,16 @@ function InventoryReader.read(name, expected)
             local tagNames = {
                 "I/O",
                 "Drain",
+                "Dump",
                 "Silo",
                 "Crafter",
                 "Furnace: Input",
                 "Furnace: Output",
-                "Furnace: Configuration",
-                "Quick Access"
+                "Furnace: Config",
+                "Quick Access",
+                "Composter: Input",
+                "Composter: Config",
+                "Trash"
             }
             local nameTagSlot, nameTagName = findNameTag(name, tagNames, stacks)
 
@@ -371,7 +450,7 @@ function InventoryReader.read(name, expected)
 
                 if nameTagName == "I/O" then
                     return createIo(name, stacks, nameTagSlot)
-                elseif nameTagName == "Drain" then
+                elseif nameTagName == "Drain" or nameTagName == "Dump" then
                     return createDrain(name, stacks, nameTagSlot)
                 elseif nameTagName == "Silo" then
                     return createSilo(name, stacks, nameTagSlot)
@@ -381,10 +460,16 @@ function InventoryReader.read(name, expected)
                     return createFurnaceInput(name, stacks, nameTagSlot)
                 elseif nameTagName == "Furnace: Output" then
                     return createFurnaceOutput(name, stacks, nameTagSlot)
-                elseif nameTagName == "Furnace: Configuration" then
+                elseif nameTagName == "Furnace: Config" then
                     return createFurnaceConfiguration(name, stacks, nameTagSlot)
                 elseif nameTagName == "Quick Access" then
                     return createQuickAccess(name, stacks, nameTagSlot)
+                elseif nameTagName == "Composter: Config" then
+                    return createComposterConfiguration(name, stacks, nameTagSlot)
+                elseif nameTagName == "Composter: Input" then
+                    return createComposterInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Trash" then
+                    return createTrash(name, stacks, nameTagSlot)
                 end
             elseif baseType == "minecraft:barrel" then
                 return createBuffer(name, stacks)

@@ -15,7 +15,9 @@
 ---@field allowAllocate boolean
 ---@field type InventoryType
 ---
----@alias InventoryType "storage" | "io" | "drain" | "furnace" | "silo" | "shulker" | "crafter" | "furnace-input" | "furnace-output" | "furnace-configuration" | "buffer" | "quick-access"
+---@alias FurnaceInventoryTypes "furnace" | "furnace-config" | "furnace-input" | "furnace-output"
+---@alias ComposterInventoryTypes "composter-config" | "composter-input"
+---@alias InventoryType "storage" | "io" | "drain" | "silo" | "shulker" | "crafter" | "buffer" | "quick-access" | "trash"| FurnaceInventoryTypes | ComposterInventoryTypes
 ---@alias InventorySlotTag "input" | "output" | "fuel" | "nameTag" | "configuration"
 ---
 ---@class InventorySlot

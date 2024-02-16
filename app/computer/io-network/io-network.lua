@@ -8,13 +8,14 @@ local processDrains = require "io-network.process-drains"
 local processFurnaces = require "io-network.process-furnaces"
 local processIo = require "io-network.process-io"
 local processQuickAccess = require "io-network.process-quick-access"
+local processShulkers = require "io-network.process-shulkers"
+local processTrash = require "io-network.process-trash"
 
 local function main(args)
-    print("[io-network v5.0.0] booting...")
+    print("[io-network v5.2.0] booting...")
 
     os.sleep(3)
     local run = true
-
     InventoryCollection.useCache = true
 
     EventLoop.run(function()
@@ -42,6 +43,16 @@ local function main(args)
         while run do
             processQuickAccess()
             os.sleep(10)
+        end
+    end, function()
+        while run do
+            processShulkers()
+            os.sleep(3)
+        end
+    end, function()
+        while run do
+            processTrash()
+            os.sleep(30)
         end
     end, function()
         while run do

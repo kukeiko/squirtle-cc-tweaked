@@ -27,36 +27,35 @@ local function getFurnacesForSmelting(furnaces, item, maxCount)
 end
 
 return function()
-    local outputs = Inventory.getInventories("furnace-output", true)
-    local furnaces = Inventory.getInventories("furnace", true)
+    pcall(function()
+        local outputs = Inventory.getInventories("furnace-output", true)
+        local furnaces = Inventory.getInventories("furnace", true)
+        local storages = Inventory.getInventories("storage")
+        Inventory.distributeFromTag(furnaces, storages, "output", "input")
+        Inventory.distributeFromTag(furnaces, outputs, "output", "input")
+        Inventory.distributeFromTag(outputs, storages, "output", "input")
+        Inventory.distributeItem(furnaces, storages, "minecraft:bucket", "fuel", "input")
 
-    print(string.format("[found] %d furnaces, %d outputs", #furnaces, #outputs))
-    print("[move] smelted to output")
-    Inventory.distributeFromTag(furnaces, outputs, "output", "input")
+        print("[move] fuel from input")
+        local inputs = Inventory.getInventories("furnace-input", true)
 
-    print("[move] empty buckets to storages")
-    local storages = Inventory.getInventories("storage")
-    Inventory.distributeItem(furnaces, storages, "minecraft:bucket", "fuel", "input")
-
-    print("[move] fuel from input")
-    local inputs = Inventory.getInventories("furnace-input", true)
-
-    for _, fuelItem in ipairs(fuelItems) do
-        Inventory.distributeItem(inputs, furnaces, fuelItem, "output", "fuel")
-    end
-
-    local configurations = Inventory.getInventories("furnace-configuration", true)
-
-    if #configurations > 0 then
-        local config = Inventory.getStockByTagMultiInventory(configurations, "configuration")
-
-        print("[move] smelted to output")
-        for smeltableItem, maxFurnaces in pairs(config) do
-            local targetFurnaces = getFurnacesForSmelting(furnaces, smeltableItem, maxFurnaces)
-            print(string.format("[config] %dx %s, %dx available", maxFurnaces, smeltableItem, #targetFurnaces))
-            Inventory.distributeItem(inputs, targetFurnaces, smeltableItem, "output", "input")
+        for _, fuelItem in ipairs(fuelItems) do
+            Inventory.distributeItem(inputs, furnaces, fuelItem, "output", "fuel")
         end
-    else
-        print("[info] no furnace configuration found")
-    end
+
+        local configurations = Inventory.getInventories("furnace-config", true)
+
+        if #configurations > 0 then
+            local config = Inventory.getStockByTagMultiInventory(configurations, "configuration")
+
+            print("[move] smelted to output")
+            for smeltableItem, maxFurnaces in pairs(config) do
+                local targetFurnaces = getFurnacesForSmelting(furnaces, smeltableItem, maxFurnaces)
+                print(string.format("[config] %dx %s, %dx available", maxFurnaces, smeltableItem, #targetFurnaces))
+                Inventory.distributeItem(inputs, targetFurnaces, smeltableItem, "output", "input")
+            end
+        else
+            print("[info] no furnace configuration found")
+        end
+    end)
 end

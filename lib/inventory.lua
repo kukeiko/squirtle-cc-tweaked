@@ -322,7 +322,7 @@ function Inventory.transferItem(from, to, item, fromTag, toTag, total, rate)
     InventoryCollection.lock(from, to)
     local transferredTotal = 0
 
-    local success, e = pcall(function()
+    pcall(function()
         rate = rate or getDefaultRate()
         local fromSlot, fromStack = nextFromStack(fromInventory, item, fromTag)
         local toSlot = nextToSlot(toInventory, item, toTag)
@@ -368,10 +368,6 @@ function Inventory.transferItem(from, to, item, fromTag, toTag, total, rate)
     end)
 
     InventoryCollection.unlock(from, to)
-
-    if not success then
-        error(e)
-    end
 
     return transferredTotal
 end

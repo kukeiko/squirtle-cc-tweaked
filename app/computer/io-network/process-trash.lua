@@ -2,8 +2,8 @@ local Inventory = require "inventory"
 
 return function()
     pcall(function()
-        local quickAccesses = Inventory.getInventories("quick-access", true)
+        local trash = Inventory.getInventories("trash", true)
         local storages = Inventory.getInventories("storage")
-        Inventory.distributeFromTag(storages, quickAccesses, "output", "input")
+        Inventory.distributeFromTag(trash, storages, "output", "input")
     end)
 end
