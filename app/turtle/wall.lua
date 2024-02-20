@@ -42,8 +42,8 @@ end
 ---@param state WallAppState
 local function sequence(state)
     Squirtle.turn("back")
-
     local patternIndex = 1
+
     for line = 1, state.height do
         for column = 1, state.depth do
             local item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
@@ -51,6 +51,9 @@ local function sequence(state)
             if column ~= state.depth then
                 Squirtle.move("back")
                 Squirtle.put("front", item)
+            elseif line == state.height then
+                -- exit out without placing the last block so the turtle is easier to find for the player to pick up again
+                return
             else
                 Squirtle.move("up")
                 Squirtle.put("bottom", item)
@@ -74,7 +77,7 @@ local function printUsage()
     print("wall <depth> <height>")
 end
 
-print("[wall v1.0.1] booting...")
+print("[wall v1.1.0-dev.1] booting...")
 local depth = tonumber(arg[1])
 local height = tonumber(arg[2])
 
