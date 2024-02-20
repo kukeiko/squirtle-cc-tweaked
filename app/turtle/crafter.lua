@@ -16,25 +16,25 @@ local function findItem(name, chest)
     end
 end
 
-local function assertHasCraftingTable()
+local function wrapCraftingTable()
     local left = peripheral.getType("left")
 
     if left == "workbench" then
-        return
+        return peripheral.wrap("left")
     end
 
     local right = peripheral.getType("right")
 
     if right == "workbench" then
-        return
+        return peripheral.wrap("right")
     end
 
     error("no workbench equipped :(")
 end
 
 local function main(args)
-    print("[crafter v1.0.0] booting...")
-    assertHasCraftingTable()
+    print("[crafter v1.0.1] booting...")
+    local workbench = wrapCraftingTable()
     local barrel = findSide("minecraft:barrel")
 
     if not barrel then
@@ -78,10 +78,9 @@ local function main(args)
             end
         end
 
-        turtle.craft()
+        workbench.craft()
         Squirtle.dump("front")
     end
-
 end
 
 return main(arg)
