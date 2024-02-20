@@ -27,7 +27,7 @@ local function getFurnacesForSmelting(furnaces, item, maxCount)
 end
 
 return function()
-    pcall(function()
+    local success, e =  pcall(function()
         local outputs = Inventory.getInventories("furnace-output", true)
         local furnaces = Inventory.getInventories("furnace", true)
         local storages = Inventory.getInventories("storage")
@@ -58,4 +58,8 @@ return function()
             print("[info] no furnace configuration found")
         end
     end)
+
+    if not success then
+        print(e)
+    end
 end

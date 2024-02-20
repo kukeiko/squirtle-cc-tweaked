@@ -1,7 +1,7 @@
 local Inventory = require "inventory"
 
 return function()
-    pcall(function()
+    local success, e = pcall(function()
         local drains = Inventory.getInventories("drain", true)
 
         local quickAccesses = Inventory.getInventories("quick-access")
@@ -26,14 +26,19 @@ return function()
 
         local trash = Inventory.getInventories("trash", true)
         local storedStock = Inventory.getStockByTagMultiInventory(storages, "input")
+        local quickAccessStock = Inventory.getStockByTagMultiInventory(quickAccesses, "input")
         -- [todo] should we also include furnace configs?
         local composterConfiguredStock = Inventory.getStockByTagMultiInventory(composterConfigs, "configuration")
         local dumpedStock = Inventory.getStockByTagMultiInventory(drains, "output")
 
         for dumpedItem, dumpedCount in pairs(dumpedStock) do
-            if not storedStock[dumpedItem] and not composterConfiguredStock[dumpedItem] then
+            if not storedStock[dumpedItem] and not composterConfiguredStock[dumpedItem] and not quickAccessStock[dumpedItem] then
                 Inventory.distributeItem(drains, trash, dumpedItem, "output", "input", dumpedCount)
             end
         end
     end)
+
+    if not success then
+        print(e)
+    end
 end

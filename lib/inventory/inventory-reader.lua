@@ -366,6 +366,12 @@ local function createTrash(name, stacks, nameTagSlot)
 end
 
 ---@param name string
+---@return Inventory
+local function createIgnore(name)
+    return construct(name, "ignore", {}, {})
+end
+
+---@param name string
 ---@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
 ---@return Inventory
@@ -473,6 +479,8 @@ function InventoryReader.read(name, expected)
                 end
             elseif baseType == "minecraft:barrel" then
                 return createBuffer(name, stacks)
+            elseif baseType == "minecraft:hopper" then
+                return createIgnore(name)
             else
                 return createStorage(name, stacks)
             end

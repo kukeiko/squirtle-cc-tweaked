@@ -12,7 +12,7 @@ local processShulkers = require "io-network.process-shulkers"
 local processTrash = require "io-network.process-trash"
 
 local function main(args)
-    print("[io-network v5.3.0] booting...")
+    print("[io-network v5.3.1-dev.5] booting...")
 
     os.sleep(3)
     local run = true
@@ -40,16 +40,22 @@ local function main(args)
             os.sleep(3)
         end
     end, function()
+        os.sleep(3)
+
         while run do
             processQuickAccess()
             os.sleep(10)
         end
     end, function()
+        os.sleep(3)
+
         while run do
             processShulkers()
             os.sleep(3)
         end
     end, function()
+        os.sleep(3)
+
         while run do
             processTrash()
             os.sleep(30)

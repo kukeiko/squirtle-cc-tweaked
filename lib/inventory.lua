@@ -490,13 +490,33 @@ end
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
 --- Call "Inventory.stop()" inside another coroutine to stop.
 function Inventory.start()
+
     EventLoop.run(function()
+        EventLoop.waitForAny(function()
+            EventLoop.pull("inventory:stop")
+        end, function()
+            while true do
+                EventLoop.pull("peripheral", function(_, name)
+                    if InventoryReader.isInventoryType(name) then
+                        -- print("[mount]", name)
+                        InventoryCollection.mount(name)
+                    end
+                end)
+            end
+        end)
+    end, function()
         --- Jumpstart collecting all peripherals that are connected via a modem.
         --- Queues "peripheral" events so we can mount found inventories using the handler that listens to those events.
         local modem = findPeripheralSide("modem")
 
         if modem then
-            for _, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
+            for i, name in pairs(peripheral.call(modem, "getNamesRemote") or {}) do
+                -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
+                -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
+                if i % 32 == 0 then
+                    os.sleep(1)
+                end
+
                 EventLoop.queue("peripheral", name)
             end
         end
@@ -507,19 +527,6 @@ function Inventory.start()
     end, function()
         EventLoop.pull("inventory:stop")
         InventoryCollection.clear()
-    end, function()
-        EventLoop.waitForAny(function()
-            EventLoop.pull("inventory:stop")
-        end, function()
-            while true do
-                EventLoop.pull("peripheral", function(_, name)
-                    if InventoryReader.isInventoryType(name) then
-                        print("[mount]", name)
-                        InventoryCollection.mount(name)
-                    end
-                end)
-            end
-        end)
     end, function()
         EventLoop.waitForAny(function()
             EventLoop.pull("inventory:stop")
