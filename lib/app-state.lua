@@ -37,4 +37,13 @@ local function loadAppState(appName, defaultState)
     return state
 end
 
-return {load = loadAppState, save = saveAppState}
+---@param appName string
+local function delete(appName)
+    local path = getAppStateFilepath(appName)
+
+    if fs.exists(path) then
+        fs.delete(path)
+    end
+end
+
+return {load = loadAppState, save = saveAppState, delete = delete}

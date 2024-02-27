@@ -10,10 +10,31 @@ local SimulationResults = {placed = {}, steps = 0}
 ---@field breakable? fun(block: Block) : boolean
 ---@field facing integer
 ---@field position Vector
+---@field orientationMethod "move"|"disk-drive"
+---@field breakDirection? "top"|"front"|"bottom"
 ---@field flipTurns boolean
 ---@field simulate boolean
 ---@field results Simulated
-local State = {facing = Cardinal.south, position = Vector.create(0, 0, 0), flipTurns = false, simulate = false, results = SimulationResults}
+---@field simulateUntilPosition Vector?
+---@field simulation Simulation
+local State = {
+    facing = Cardinal.south,
+    position = Vector.create(0, 0, 0),
+    orientationMethod = "move",
+    flipTurns = false,
+    simulate = false,
+    results = SimulationResults,
+    simulation = {}
+}
+
+---@class Simulation
+---@field current SimulationDetails?
+---@field initial SimulationDetails?
+---@field target SimulationDetails?
+
+---@class SimulationDetails
+---@field fuel integer
+---@field facing integer
 
 ---@param block Block
 ---@return boolean
@@ -51,6 +72,56 @@ function State.setBreakable(predicate)
     end
 
     return restore
+end
+
+---@return boolean
+function State.isResuming()
+    return (State.simulation.initial and State.simulation.current and State.simulation.target) ~= nil
+end
+
+---@return boolean
+function State.checkResumeEnd()
+    if State.simulation.target and State.simulationCurrentMatchesTarget() then
+        State.simulate = false
+        State.simulation = {}
+
+        return true
+    end
+
+    return false
+end
+
+---@return boolean
+function State.simulationCurrentMatchesTarget()
+    local facing = State.simulation.current.facing == State.simulation.target.facing
+    local fuel = State.simulation.current.fuel == State.simulation.target.fuel
+
+    -- print(State.simulation.current.fuel, State.simulation.target.fuel)
+
+    return facing and fuel
+end
+
+function State.fuelTargetReached()
+    return State.simulation.current.fuel == State.simulation.target.fuel
+end
+
+function State.facingTargetReached()
+    return State.simulation.current.facing == State.simulation.target.facing
+end
+
+function State.advanceFuel()
+    if State.simulation.current then
+        State.simulation.current.fuel = State.simulation.current.fuel - 1
+        State.checkResumeEnd()
+    end
+end
+
+---@param direction string
+function State.advanceTurn(direction)
+    if State.simulation.current then
+        State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
+        State.checkResumeEnd()
+    end
 end
 
 return State

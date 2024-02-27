@@ -218,14 +218,15 @@ local function requireItemsUsingShulker(items)
 end
 
 ---@param items table<string, integer>
-return function(items)
+---@param shulker boolean?
+return function(items, shulker)
     local numStacks = itemsToStacks(items)
 
     -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,
     -- yet we still count stacks of total items required)
-    if numStacks <= Elemental.size() then
-        requireItemsNoShulker(items)
-    else
+    if shulker or numStacks > Elemental.size() then
         requireItemsUsingShulker(items)
+    else
+        requireItemsNoShulker(items)
     end
 end

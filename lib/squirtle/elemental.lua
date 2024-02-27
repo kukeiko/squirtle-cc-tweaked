@@ -8,29 +8,25 @@ local Elemental = {}
 
 ---@param direction string
 function Elemental.turn(direction)
-    -- [todo] not checking here (or anywhere else) if "direction" arg is valid
-    if State.simulate then
-        return nil
-    end
-
-    if direction == "front" then
-        return nil
-    elseif direction == "back" then
+    if direction == "back" then
         Elemental.turn("left")
         Elemental.turn("left")
-        return nil
-    end
+    elseif direction == "left" or direction == "right" then
+        if State.flipTurns then
+            if direction == "left" then
+                direction = "right"
+            elseif direction == "right" then
+                direction = "left"
+            end
+        end
 
-    if State.flipTurns then
-        if direction == "left" then
-            direction = "right"
-        elseif direction == "right" then
-            direction = "left"
+        if State.simulate then
+            State.advanceTurn(direction)
+        else
+            getNative("turn", direction)()
+            State.facing = Cardinal.rotate(State.facing, direction)
         end
     end
-
-    getNative("turn", direction)()
-    State.facing = Cardinal.rotate(State.facing, direction)
 end
 
 ---@param direction? string
@@ -117,6 +113,17 @@ end
 ---@return integer|"unlimited"
 function Elemental.getFuelLevel()
     return turtle.getFuelLevel()
+end
+
+---@return integer
+function Elemental.getNonInfiniteFuelLevel()
+    local fuel = Elemental.getFuelLevel()
+
+    if type(fuel) ~= "number" then
+        error("expected to not use unlimited fuel configuration")
+    end
+
+    return fuel
 end
 
 ---@return integer|"unlimited"

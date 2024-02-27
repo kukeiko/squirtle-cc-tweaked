@@ -20,7 +20,7 @@
     "Lua.diagnostics.disable": [
         "lowercase-global",
         "undefined-field",
-        "redefined-local"
+        "redefined-local",
     ],
     "vscode-lua-format.configPath": "vscode-lua-format.config",
     "Lua.completion.autoRequire": false

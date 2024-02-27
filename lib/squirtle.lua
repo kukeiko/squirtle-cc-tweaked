@@ -1,3 +1,4 @@
+local Utils = require "utils"
 local World = require "geo.world"
 local findPath = require "geo.find-path"
 local Inventory = require "inventory"
@@ -6,12 +7,11 @@ local Vector = require "elements.vector"
 local State = require "squirtle.state"
 local getNative = require "squirtle.get-native"
 local Basic = require "squirtle.basic"
-local Advanced = require "squirtle.advanced"
 local Complex = require "squirtle.complex"
 local requireItems = require "squirtle.require-items"
 
 ---@class Squirtle : Complex
-local Squirtle = {inventorySize = 16}
+local Squirtle = {}
 setmetatable(Squirtle, {__index = Complex})
 
 ---@param predicate? (fun(block: Block) : boolean) | string[]
@@ -63,14 +63,17 @@ function Squirtle.tryPut(side, block)
     while Squirtle.tryMine(side) do
     end
 
+    -- [todo] band-aid fix
+    while turtle.attack() do
+        os.sleep(1)
+    end
+
     return native()
 end
 
 ---@param side? string
 ---@param block? string
 function Squirtle.put(side, block)
-    requireItem = requireItem or true
-
     if State.simulate then
         return simulatePut(block)
     end
@@ -97,106 +100,10 @@ function Squirtle.lookAtChest()
     Squirtle.turn(Inventory.findChest())
 end
 
----@param alsoIgnoreSlot integer
----@return integer?
-local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
-    for slot = 1, 16 do
-        if alsoIgnoreSlot ~= slot then
-            local item = Basic.getStack(slot)
-
-            if item and item.name ~= "minecraft:shulker_box" then
-                return slot
-            end
-        end
-    end
-end
-
----@param shulker integer
----@param item string
----@return boolean
-local function loadFromShulker(shulker, item)
-    Basic.select(shulker)
-
-    local placedSide = Basic.placeFrontTopOrBottom()
-
-    if not placedSide then
-        return false
-    end
-
-    while not peripheral.isPresent(placedSide) do
-        os.sleep(.1)
-    end
-
-    local stacks = Inventory.getStacks(placedSide)
-
-    for stackSlot, stack in pairs(stacks) do
-        if stack.name == item then
-            Advanced.suckSlot(placedSide, stackSlot)
-            local emptySlot = Squirtle.firstEmptySlot()
-
-            if not emptySlot then
-                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
-
-                if not slotToPutIntoShulker then
-                    error("i seem to be full with shulkers")
-                end
-
-                Basic.select(slotToPutIntoShulker)
-                Squirtle.drop(placedSide)
-                Basic.select(shulker)
-            end
-
-            -- [todo] cannot use Squirtle.dig() cause breaking shulkers might not be allowed
-            Squirtle.dig(placedSide)
-
-            return true
-        end
-    end
-
-    Squirtle.dig(placedSide)
-
-    return false
-end
-
----@param name string
----@return false|integer
-function Squirtle.selectItem(name)
-    if State.simulate then
-        return false
-    end
-
-    local slot = Basic.find(name, true)
-
-    if not slot then
-        local nextShulkerSlot = 1
-
-        while true do
-            local shulker = Squirtle.find("minecraft:shulker_box", true, nextShulkerSlot)
-
-            if not shulker then
-                break
-            end
-
-            if loadFromShulker(shulker, name) then
-                -- [note] we can return "shulker" here because the item loaded from the shulker box ends
-                -- up in the slot the shulker originally was
-                return shulker
-            end
-
-            nextShulkerSlot = nextShulkerSlot + 1
-        end
-
-        return false
-    end
-
-    Squirtle.select(slot)
-
-    return slot
-end
-
 ---@param items table<string, integer>
-function Squirtle.requireItems(items)
-    requireItems(items)
+---@param shulker boolean?
+function Squirtle.requireItems(items, shulker)
+    requireItems(items, shulker)
 end
 
 ---@param target Vector
@@ -342,6 +249,54 @@ function Squirtle.navigateTunnel(checkEarlyExit)
 
         if checkEarlyExit ~= nil and checkEarlyExit() then
             return checkEarlyExit()
+        end
+    end
+end
+
+---@param initial SimulationDetails?
+---@param target SimulationDetails?
+function Squirtle.simulate(initial, target)
+    State.simulate = true
+    State.simulation.initial = initial
+    State.simulation.target = target
+
+    if initial then
+        State.simulation.current = Utils.clone(initial)
+    else
+        State.simulation.current = nil
+    end
+
+    State.checkResumeEnd()
+end
+
+---@class SquirtleConfigOptions
+---@field orientate? "move"|"disk-drive"
+---@field breakDirection? "top"|"front"|"bottom"
+---@param options SquirtleConfigOptions
+function Squirtle.configure(options)
+    if options.orientate then
+        State.orientationMethod = options.orientate
+    end
+
+    if options.breakDirection then
+        State.breakDirection = options.breakDirection
+    end
+end
+
+function Squirtle.recover()
+    local diskDriveDirections = {"top", "bottom"}
+
+    for _, direction in pairs(diskDriveDirections) do
+        if Basic.probe(direction, "computercraft:disk_drive") then
+            Basic.dig(direction)
+        end
+    end
+
+    local shulkerDirections = {"top", "bottom", "front"}
+
+    for _, direction in pairs(shulkerDirections) do
+        if Basic.probe(direction, "minecraft:shulker_box") then
+            Basic.dig(direction)
         end
     end
 end

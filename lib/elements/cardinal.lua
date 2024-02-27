@@ -60,6 +60,15 @@ function Cardinal.getName(cardinal)
     return names[cardinal] or tostring(cardinal);
 end
 
+function Cardinal.fromName(name)
+    for cardinal, candidate in pairs(names) do
+        if candidate:lower() == name:lower() then
+            return cardinal
+        end
+    end
+
+    error(string.format("%s is not a valid cardinal name", name))
+end
 -- [todo] why did i comment this out?
 -- function Cardinal.rotate(cardinal, rotation)
 --     return (cardinal + rotation) % 4

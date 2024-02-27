@@ -25,6 +25,7 @@ local EventLoop = require "event-loop"
 
 ---@class RpcClient
 ---@field host string
+---@field distance number?
 
 ---@class Service
 ---@field host string
@@ -171,7 +172,7 @@ end
 ---@return T|RpcClient
 function Rpc.client(service, host)
     ---@type RpcClient
-    local client = {host = host}
+    local client = {host = host, distance = nil}
     local modem = getWirelessModem()
     modem.open(channel)
 
@@ -188,8 +189,10 @@ function Rpc.client(service, host)
                 while true do
                     local event = {EventLoop.pull("modem_message")}
                     local message = event[5] --[[@as RpcResponsePacket]]
+                    local distance = event[6] --[[@as number|nil]]
 
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
+                        client.distance = distance
                         return table.unpack(message.response)
                     end
                 end

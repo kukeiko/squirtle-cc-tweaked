@@ -1,3 +1,7 @@
+-- pocket requires SquirtleService, which requires full Squirtle code.
+-- as a workaround, use empty table to prevent error on startup
+local turtle = turtle or {}
+
 local natives = {
     turn = {left = turtle.turnLeft, right = turtle.turnRight},
     go = {

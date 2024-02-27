@@ -41,6 +41,17 @@ function Basic.placeFrontTopOrBottom()
     end
 end
 
+---@return string? direction
+function Basic.placeTopOrBottom()
+    local directions = {"top", "bottom"}
+
+    for _, direction in pairs(directions) do
+        if Elemental.place(direction) then
+            return direction
+        end
+    end
+end
+
 ---@param direction? string
 ---@return boolean, string?
 function Basic.mine(direction)

@@ -49,6 +49,16 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/wall.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/wall"
         },
         {
+            "label": "build turtle:pyramid",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/pyramid.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/pyramid"
+        },
+        {
+            "label": "build turtle:pyramid:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/pyramid.lua -p app/turtle/?.lua -p lib/?.lua -o ../6/pyramid"
+        },
+        {
             "label": "build turtle:copper",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/copper.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/copper"
@@ -62,6 +72,16 @@
             "label": "build turtle:farmer",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/farmer"
+        },
+        {
+            "label": "build pocket:turtle:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p lib/?.lua -o ../23/turtle"
+        },
+        {
+            "label": "build pocket:turtle",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p lib/?.lua -o dist/pocket/turtle"
         },
         {
             "label": "build pocket:subway:dev",

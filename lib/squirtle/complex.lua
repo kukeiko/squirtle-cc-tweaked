@@ -2,8 +2,10 @@ local Vector = require "elements.vector"
 local Cardinal = require "elements.cardinal"
 local State = require "squirtle.state"
 local getNative = require "squirtle.get-native"
+local Elemental = require "squirtle.elemental"
 local Basic = require "squirtle.basic"
 local Advanced = require "squirtle.advanced"
+local Inventory = require "inventory"
 
 ---@class Complex : Advanced
 local Complex = {}
@@ -72,53 +74,88 @@ function Complex.walk(direction, steps)
     error(getGoErrorMessage("walk", direction, steps, stepsTaken, message))
 end
 
--- [todo] moving back still seems buggy if blocks are in the way
----@param direction? string
----@param steps? integer
+---@param steps integer?
 ---@return boolean, integer, string?
-function Complex.tryMove(direction, steps)
-    direction = direction or "forward"
+local function tryMoveBack(steps)
     steps = steps or 1
-
-    if State.simulate then
-        State.results.steps = State.results.steps + 1
-        return true, steps
-    end
-
-    local remainingSteps = steps
-    local isBack = direction == "back"
+    local native = getNative("go", "back")
     local didTurnBack = false
 
-    while true do
-        local success, stepsTaken = Complex.tryWalk(direction, remainingSteps)
-
-        if success then
-            if isBack and didTurnBack then
-                Basic.turn("back")
-            end
-
-            return true, steps
-        elseif isBack and direction ~= "forward" then
-            Basic.turn("back")
-            didTurnBack = true
-            direction = "forward"
+    for step = 1, steps do
+        if State.isResuming() and not State.facingTargetReached() and State.fuelTargetReached() then
+            -- we seem to be in correct position but the facing is off, meaning that there must've been
+            -- a block that caused us to turn to try and mine it. in order to resume, we'll just
+            -- stop the simulation and orient the turtle towards the initial state, so that the
+            -- turning code gets run from start.
+            State.simulate = false
+            Basic.face(State.simulation.current.facing)
         end
 
-        remainingSteps = remainingSteps - stepsTaken
+        if State.simulate then
+            State.advanceFuel()
+        else
+            while not native() do
+                if not didTurnBack then
+                    Basic.turn("right")
+                    Basic.turn("right")
+                    direction = "forward"
+                    native = getNative("go", "forward")
+                    didTurnBack = true
+                end
 
-        while Basic.tryMine(direction) do
-        end
+                while Basic.tryMine(direction) do
+                end
 
-        local block = Basic.probe(direction)
+                local block = Basic.probe(direction)
 
-        if block then
-            if isBack then
-                Basic.turn("back")
+                if block and not State.canBreak(block) then
+                    Basic.turn("left")
+                    Basic.turn("left")
+
+                    return false, step - 1, string.format("blocked by %s", block.name)
+                end
             end
-
-            return false, steps - remainingSteps, string.format("blocked by %s", block.name)
         end
     end
+
+    if didTurnBack then
+        Basic.turn("left")
+        Basic.turn("left")
+    end
+
+    return true, steps
+end
+
+---@param direction string?
+---@param steps integer?
+---@return boolean, integer, string?
+function Complex.tryMove(direction, steps)
+    if direction == "back" then
+        return tryMoveBack(steps)
+    end
+
+    direction = direction or "forward"
+    steps = steps or 1
+    local native = getNative("go", direction)
+
+    for step = 1, steps do
+        if State.simulate then
+            State.advanceFuel()
+        else
+            while not native() do
+                while Basic.tryMine(direction) do
+                end
+
+                local block = Basic.probe(direction)
+
+                if block and not State.canBreak(block) then
+                    return false, step - 1, string.format("blocked by %s", block.name)
+                end
+            end
+        end
+    end
+
+    return true, steps
 end
 
 ---@param direction? string
@@ -133,6 +170,111 @@ function Complex.move(direction, steps)
     end
 
     error(getGoErrorMessage("move", direction, steps, stepsTaken, message))
+end
+
+---@param alsoIgnoreSlot integer
+---@return integer?
+local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
+    for slot = 1, 16 do
+        if alsoIgnoreSlot ~= slot then
+            local item = Basic.getStack(slot)
+
+            if item and item.name ~= "minecraft:shulker_box" then
+                return slot
+            end
+        end
+    end
+end
+
+---@param shulker integer
+---@param item string
+---@return boolean
+local function loadFromShulker(shulker, item)
+    Basic.select(shulker)
+
+    local placedSide = Basic.placeFrontTopOrBottom()
+
+    if not placedSide then
+        if not State.breakDirection then
+            return false
+        end
+
+        Complex.mine(State.breakDirection)
+        placedSide = Basic.placeFrontTopOrBottom()
+
+        if not placedSide then
+            return false
+        end
+    end
+
+    while not peripheral.isPresent(placedSide) do
+        os.sleep(.1)
+    end
+
+    local stacks = Inventory.getStacks(placedSide)
+
+    for stackSlot, stack in pairs(stacks) do
+        if stack.name == item then
+            Advanced.suckSlot(placedSide, stackSlot)
+            local emptySlot = Basic.firstEmptySlot()
+
+            if not emptySlot then
+                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
+
+                if not slotToPutIntoShulker then
+                    error("i seem to be full with shulkers")
+                end
+
+                Basic.select(slotToPutIntoShulker)
+                Elemental.drop(placedSide)
+                Basic.select(shulker)
+            end
+
+            Elemental.dig(placedSide)
+
+            return true
+        end
+    end
+
+    Elemental.dig(placedSide)
+
+    return false
+end
+
+---@param name string
+---@return false|integer
+function Complex.selectItem(name)
+    if State.simulate then
+        return false
+    end
+
+    local slot = Basic.find(name, true)
+
+    if not slot then
+        local nextShulkerSlot = 1
+
+        while true do
+            local shulker = Basic.find("minecraft:shulker_box", true, nextShulkerSlot)
+
+            if not shulker then
+                break
+            end
+
+            if loadFromShulker(shulker, name) then
+                -- [note] we can return "shulker" here because the item loaded from the shulker box ends
+                -- up in the slot the shulker originally was
+                return shulker
+            end
+
+            nextShulkerSlot = nextShulkerSlot + 1
+        end
+
+        return false
+    end
+
+    Elemental.select(slot)
+
+    return slot
 end
 
 ---@param refresh? boolean
@@ -200,6 +342,54 @@ local function orientateSameLayer(position)
     return false
 end
 
+---@return integer
+local function orientateUsingDiskDrive()
+    if not Complex.selectItem("computercraft:disk_drive") then
+        error("no disk drive in inventory")
+    end
+
+    local direction = Basic.placeTopOrBottom()
+
+    if not direction then
+        while Basic.tryMine("top") do
+        end
+
+        if not Basic.probe("top") then
+            direction = "top"
+        else
+            while Basic.tryMine("bottom") do
+            end
+
+            if not Basic.probe("bottom") then
+                direction = "bottom"
+            else
+                error("no space to put the disk drive")
+            end
+        end
+
+        Basic.place(direction)
+    end
+
+    while not peripheral.isPresent(direction) do
+        os.sleep(.1)
+    end
+
+    local diskDrive = Basic.probe(direction, "computercraft:disk_drive")
+
+    if not diskDrive then
+        error("placed a disk-drive, but now it's gone")
+    end
+
+    if not diskDrive.state.facing then
+        error("expected disk drive to have state.facing property")
+    end
+
+    local facing = Cardinal.rotateAround(Cardinal.fromName(diskDrive.state.facing))
+    Basic.dig(direction)
+
+    return facing
+end
+
 ---@param refresh? boolean
 ---@return Vector position, integer facing
 function Complex.orientate(refresh)
@@ -207,8 +397,12 @@ function Complex.orientate(refresh)
     local facing = State.facing
 
     if refresh or not facing then
-        if not orientateSameLayer(position) then
-            error("failed to orientate. possibly blocked in.")
+        if State.orientationMethod == "move" then
+            if not orientateSameLayer(position) then
+                error("failed to orientate. possibly blocked in.")
+            end
+        else
+            State.facing = orientateUsingDiskDrive()
         end
     end
 
