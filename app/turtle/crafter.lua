@@ -3,6 +3,11 @@ package.path = package.path .. ";/lib/?.lua"
 local findSide = require "world.peripheral.find-side"
 local Squirtle = require "squirtle"
 
+local function printUsage()
+    print("Usage: crafter <source> <target>")
+    print("- source and target must be one of: top, bottom, front")
+end
+
 ---@param name string
 ---@param chest string
 ---@return integer?
@@ -13,6 +18,33 @@ local function findItem(name, chest)
         if item.name == name then
             return slot
         end
+    end
+end
+
+---@param side string
+local function dropSide(side)
+    if side == "top" then
+        turtle.dropUp()
+    elseif side == "bottom" then
+        turtle.dropDown()
+    elseif side == "front" then
+        turtle.drop()
+    else
+        error(string.format("invalid drop side: %s", side))
+    end
+end
+
+---@param side string
+---@param quantity integer?
+local function suckSide(side, quantity)
+    if side == "top" then
+        turtle.suckUp(quantity)
+    elseif side == "bottom" then
+        turtle.suckDown(quantity)
+    elseif side == "front" then
+        turtle.suck(quantity)
+    else
+        error(string.format("invalid suck side: %s", side))
     end
 end
 
@@ -32,54 +64,72 @@ local function wrapCraftingTable()
     error("no workbench equipped :(")
 end
 
+---@param barrel string
+---@param source string
+local function loadRecipe(barrel, source)
+    for i = 1, 9 do
+        local recipeSlot = i + (6 * math.ceil(i / 3))
+        ---@type ItemStack
+        local recipeItem = peripheral.call(barrel, "getItemDetail", recipeSlot)
+
+        if recipeItem then
+            local inventorySlot = i + math.ceil(i / 3) - 1
+            ---@type ItemStack
+            local inventoryItem = turtle.getItemDetail(inventorySlot)
+
+            if not inventoryItem then
+                ---@type ItemStack
+                local suckItem = peripheral.call(barrel, "getItemDetail", 1)
+
+                if not suckItem then
+                    local slot = findItem(recipeItem.name, source)
+
+                    while not slot do
+                        os.sleep(3)
+                        slot = findItem(recipeItem.name, source)
+                    end
+
+                    peripheral.call(source, "pushItems", barrel, slot, 1, 1)
+                end
+
+                turtle.select(inventorySlot)
+                suckSide(barrel, 1)
+            end
+        end
+    end
+end
+
+---@param args string[]
 local function main(args)
-    print("[crafter v1.0.1] booting...")
+    print("[crafter v2.0.0-dev.0] booting...")
     local workbench = wrapCraftingTable()
+    local source = args[1]
+    local target = args[2]
+
+    if not source or not target then
+        return printUsage()
+    end
+
     local barrel = findSide("minecraft:barrel")
 
     if not barrel then
         error("no barrel found :(")
     end
 
-    local sourceChest = "top"
-    local offset = 6
+    if source == barrel or target == barrel then
+        error("barrel can not be the source or target")
+    end
+
+    local craftTargetSlot = 16
 
     while true do
-        for i = 1, 9 do
-            local recipeSlot = i + (offset * math.ceil(i / 3))
-            local recipeItem = peripheral.call(barrel, "getItemDetail", recipeSlot)
-
-            if recipeItem then
-                local targetSlot = recipeSlot - 3
-                local targetItem = peripheral.call(barrel, "getItemDetail", targetSlot)
-                local invItem = turtle.getItemDetail(i + math.ceil(i / 3) - 1)
-
-                if not targetItem and not invItem then
-                    while true do
-                        local slot = findItem(recipeItem.name, sourceChest)
-
-                        if slot then
-                            peripheral.call(sourceChest, "pushItems", barrel, slot, 1, targetSlot)
-                            break
-                        end
-
-                        os.sleep(7)
-                    end
-                end
-            end
+        if turtle.getItemCount(craftTargetSlot) > 0 then
+            dropSide(target)
+        else
+            loadRecipe(barrel, source)
+            turtle.select(craftTargetSlot)
+            workbench.craft()
         end
-
-        for i = 1, 9 do
-            if not turtle.getItemDetail(i + math.ceil(i / 3) - 1) then
-                local fromSlot = (i + (offset * math.ceil(i / 3))) - 3
-                peripheral.call(barrel, "pushItems", barrel, fromSlot, 1, 1)
-                turtle.select(i + math.ceil(i / 3) - 1)
-                turtle.suckDown(1)
-            end
-        end
-
-        workbench.craft()
-        Squirtle.dump("front")
     end
 end
 
