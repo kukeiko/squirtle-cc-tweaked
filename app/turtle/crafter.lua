@@ -1,7 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
 local findSide = require "world.peripheral.find-side"
-local Squirtle = require "squirtle"
 
 local function printUsage()
     print("Usage: crafter <source> <target>")
@@ -101,7 +100,7 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[crafter v2.0.0] booting...")
+    print("[crafter v2.0.1-dev.0] booting...")
     local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]
