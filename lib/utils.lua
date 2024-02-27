@@ -250,10 +250,20 @@ function Utils.waitForUserToHitEnter()
     end
 end
 
-function Utils.writeAutorunFile(args)
-    local file = fs.open("startup/" .. args[1] .. ".autorun.lua", "w")
+---@param ... string|number
+function Utils.writeStartupFile(...)
+    local args = {...}
+    local file = fs.open("startup", "w")
     file.write("shell.run(\"" .. table.concat(args, " ") .. "\")")
     file.close()
+end
+
+function Utils.deleteStartupFile()
+    local path = "startup"
+
+    if fs.exists(path) then
+        fs.delete(path)
+    end
 end
 
 ---@param path string
