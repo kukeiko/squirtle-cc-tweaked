@@ -204,7 +204,7 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[pyramid v1.0.0-dev.10] booting...")
+    print("[pyramid v1.0.0] booting...")
 
     EventLoop.run(function()
         SquirtleService.host = os.getComputerLabel()
