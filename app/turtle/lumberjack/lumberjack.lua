@@ -235,7 +235,7 @@ local function doWork()
 end
 
 local function main()
-    print("[lumberjack v2.0.0] booting...")
+    print("[lumberjack v2.0.1-dev.0] booting...")
     Squirtle.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
 
     -- recover from an interrupted state
@@ -248,7 +248,7 @@ local function main()
             Squirtle.mine()
             Squirtle.move()
         else
-            while Squirtle.tryWalk("down") do
+            while Squirtle.tryMove("down") do
             end
 
             if Squirtle.probe("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence", "minecraft:stone_brick_wall"}) then
