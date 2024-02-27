@@ -4,7 +4,7 @@ local Vector = require "elements.vector"
 local Rpc = require "rpc"
 local SquirtleService = require "services.squirtle-service"
 
-print("[turtle v1.0.0-dev.0] booting...")
+print("[turtle v1.0.0] booting...")
 local squirtles = Rpc.all(SquirtleService)
 
 for _, squirtle in pairs(squirtles) do
