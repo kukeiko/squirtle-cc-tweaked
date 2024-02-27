@@ -97,6 +97,7 @@ local function tryLoadShulkers()
 
     return false
 end
+
 ---@param args table<string>
 ---@return boolean
 local function main(args)
