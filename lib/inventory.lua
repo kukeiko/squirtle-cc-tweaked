@@ -490,7 +490,6 @@ end
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
 --- Call "Inventory.stop()" inside another coroutine to stop.
 function Inventory.start()
-
     EventLoop.run(function()
         EventLoop.waitForAny(function()
             EventLoop.pull("inventory:stop")

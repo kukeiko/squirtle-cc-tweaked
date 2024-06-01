@@ -36,11 +36,11 @@ end
 
 local function drainDropper()
     repeat
-        local bufferCount = Inventory.countItems("bottom")
+        local totalItemStock = Inventory.getItemsStock("bottom")
         redstone.setOutput("bottom", true)
         os.sleep(.25)
         redstone.setOutput("bottom", false)
-    until Inventory.countItems("bottom") == bufferCount
+    until Inventory.getItemsStock("bottom") == totalItemStock
 end
 
 local function faceFirstCrop()

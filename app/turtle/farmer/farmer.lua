@@ -45,7 +45,7 @@ end
 -- a block to check if we reached home, which is gud.
 ---@param args table
 local function main(args)
-    print("[farmer v1.5.0] booting...")
+    print("[farmer v1.5.1] booting...")
     Squirtle.setBreakable(isCrops)
 
     while true do
