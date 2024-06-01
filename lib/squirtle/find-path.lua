@@ -1,4 +1,4 @@
-local World = require "geo.world"
+local World = require "elements.world"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
 
@@ -129,8 +129,7 @@ return function(start, goal, orientation, world)
                 requiresTurn = true
             end
 
-            if closed[neighbourKey] == nil and World.isInBounds(world, neighbour) and
-                not World.isBlocked(world, neighbour) then
+            if closed[neighbourKey] == nil and World.isInBounds(world, neighbour) and not World.isBlocked(world, neighbour) then
                 local tentativePastCost = pastCost[currentKey] + 1
 
                 if (requiresTurn) then
@@ -175,9 +174,8 @@ return function(start, goal, orientation, world)
                     naturals[neighbourKey] = neighbour
                 else
                     -- check blockade
-                    local check = Vector.plus(reverseMap[currentKey], Vector.minus(
-                                                  Cardinal.toVector(neighbourOrientation),
-                                                  Cardinal.toVector(orientation)))
+                    local check = Vector.plus(reverseMap[currentKey],
+                                              Vector.minus(Cardinal.toVector(neighbourOrientation), Cardinal.toVector(orientation)))
 
                     -- if (world[checkKey] == nil) then
                     if not World.isBlocked(world, check) then

@@ -1,6 +1,6 @@
 local Utils = require "utils"
 local EventLoop = require "event-loop"
-local findPeripheralSide = require "world.peripheral.find-side"
+local findPeripheralSide = require "peripherals.find-side"
 local InventoryPeripheral = require "inventory.inventory-peripheral"
 local InventoryReader = require "inventory.inventory-reader"
 local InventoryCollection = require "inventory.inventory-collection"

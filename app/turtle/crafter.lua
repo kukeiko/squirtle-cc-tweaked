@@ -1,6 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
-local findSide = require "world.peripheral.find-side"
+local findSide = require "peripherals.find-side"
 
 local function printUsage()
     print("Usage: crafter <source> <target>")

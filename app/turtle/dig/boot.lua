@@ -2,7 +2,7 @@ local Squirtle = require "squirtle"
 local SquirtleState = require "squirtle.state"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"
-local World = require "geo.world"
+local World = require "elements.world"
 
 local function printUsage()
     print("Usage:")

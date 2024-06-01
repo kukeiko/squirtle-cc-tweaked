@@ -1,5 +1,5 @@
 local Vector = require "elements.vector"
-local World = require "geo.world"
+local World = require "elements.world"
 local Cardinal = require "elements.cardinal"
 local Squirtle = require "squirtle"
 local Inventory = require "inventory"

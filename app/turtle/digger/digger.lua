@@ -3,7 +3,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
 local Vectors = require "elements.vector"
-local World = require "geo.world"
+local World = require "elements.world"
 local Squirtle = require "squirtle"
 local AppState = require "app-state"
 local boot = require "digger.boot"

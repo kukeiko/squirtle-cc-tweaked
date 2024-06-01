@@ -1,6 +1,6 @@
 local Utils = require "utils"
-local World = require "geo.world"
-local findPath = require "geo.find-path"
+local World = require "elements.world"
+local findPath = require "squirtle.find-path"
 local Inventory = require "inventory"
 local Cardinal = require "elements.cardinal"
 local Vector = require "elements.vector"

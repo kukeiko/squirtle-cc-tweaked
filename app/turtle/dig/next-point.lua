@@ -1,5 +1,5 @@
 local Vector = require "elements.vector"
-local World = require "geo.world"
+local World = require "elements.world"
 
 ---@param world World
 ---@param start Vector

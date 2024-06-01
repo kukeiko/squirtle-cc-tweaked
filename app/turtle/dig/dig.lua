@@ -2,7 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "utils"
-local World = require "geo.world"
+local World = require "elements.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
 local Squirtle = require "squirtle"
