@@ -25,6 +25,17 @@ function InventoryCollection.getInventory(name)
     return InventoryCollection.refresh(name)
 end
 
+---@param inventoryType InventoryType
+---@param label string
+---@return Inventory?
+function InventoryCollection.findInventoryByTypeAndLabel(inventoryType, label)
+    for _, inventory in pairs(inventories) do
+        if inventory.type == inventoryType and inventory.label == label then
+            return inventory
+        end
+    end
+end
+
 --- Reads & adds the inventory to the collection if it doesn't already exist.
 ---@param name string
 ---@param expected? InventoryType

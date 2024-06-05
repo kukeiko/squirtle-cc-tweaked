@@ -13,17 +13,13 @@ local baseTypeLookup = {
 local InventoryReader = {}
 
 ---@param name string
----@param tagNames table<string>
 ---@param stacks table<integer, ItemStack>
 ---@return integer? slot, string? name
-local function findNameTag(name, tagNames, stacks)
+local function findNameTag(name, stacks)
     for slot, stack in pairs(stacks) do
-        if stack.name == "minecraft:name_tag" then
+        if stack.name == "minecraft:name_tag" and stack.nbt ~= nil then
             local stack = InventoryPeripheral.getStack(name, slot)
-
-            if Utils.indexOf(tagNames, stack.displayName) > 0 then
-                return slot, stack.displayName
-            end
+            return slot, stack.displayName
         end
     end
 end
@@ -48,15 +44,22 @@ local function isMonoTypeStacks(stacks)
     return true
 end
 
+---@param nameTagName string
+---@return string|nil, string|nil
+local function parseLabeledNameTag(nameTagName)
+    return string.match(nameTagName, "(%w+): ([%w%s]+)")
+end
+
 ---@param name string
 ---@param type InventoryType
 ---@param stacks ItemStacks
 ---@param slots table<integer, InventorySlot>
 ---@param allowAllocate? boolean
+---@param label? string
 ---@return Inventory
-function construct(name, type, stacks, slots, allowAllocate)
+function construct(name, type, stacks, slots, allowAllocate, label)
     ---@type Inventory
-    local inventory = {name = name, type = type, stacks = stacks, allowAllocate = allowAllocate or false, slots = slots}
+    local inventory = {name = name, type = type, stacks = stacks, allowAllocate = allowAllocate or false, slots = slots, label = label}
 
     return inventory
 end
@@ -180,7 +183,8 @@ local function createBuffer(name, stacks, nameTagSlot)
         if slot == nameTagSlot then
             tags.nameTag = true
         else
-            tags.buffer = true
+            tags.input = true
+            tags.output = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -203,6 +207,32 @@ local function createTurtleBuffer(name, stacks)
     end
 
     return construct(name, "turtle-buffer", stacks, slots, true)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@param label string
+---@return Inventory
+local function createStash(name, stacks, nameTagSlot, label)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+            tags.output = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "stash", stacks, slots, true, label)
 end
 
 ---@param name string
@@ -459,21 +489,7 @@ function InventoryReader.read(name, expected)
 
             return shulker
         else
-            local tagNames = {
-                "I/O",
-                "Drain",
-                "Dump",
-                "Silo",
-                "Crafter",
-                "Furnace: Input",
-                "Furnace: Output",
-                "Furnace: Config",
-                "Quick Access",
-                "Composter: Input",
-                "Composter: Config",
-                "Trash"
-            }
-            local nameTagSlot, nameTagName = findNameTag(name, tagNames, stacks)
+            local nameTagSlot, nameTagName = findNameTag(name, stacks)
 
             if nameTagSlot and nameTagName then
                 stacks[nameTagSlot] = nil
@@ -502,6 +518,12 @@ function InventoryReader.read(name, expected)
                     return createTrash(name, stacks, nameTagSlot)
                 elseif nameTagName == "Buffer" then
                     return createBuffer(name, stacks, nameTagSlot)
+                else
+                    local tagName, label = parseLabeledNameTag(nameTagName)
+
+                    if tagName == "Stash" and label ~= nil then
+                        return createStash(name, stacks, nameTagSlot, label)
+                    end
                 end
             elseif baseType == "minecraft:barrel" then
                 return createTurtleBuffer(name, stacks)

@@ -2,8 +2,10 @@ package.path = package.path .. ";/lib/?.lua"
 package.path = package.path .. ";/app/computer/?.lua"
 
 local EventLoop = require "event-loop"
+local Rpc = require "rpc"
 local Inventory = require "inventory"
 local InventoryCollection = require "inventory.inventory-collection"
+local StorageService = require "services.storage-service"
 local processDrains = require "io-network.process-drains"
 local processFurnaces = require "io-network.process-furnaces"
 local processIo = require "io-network.process-io"
@@ -12,7 +14,7 @@ local processShulkers = require "io-network.process-shulkers"
 local processTrash = require "io-network.process-trash"
 
 local function main(args)
-    print("[io-network v5.3.1] booting...")
+    print("[io-network v6.0.0-dev] booting...")
 
     os.sleep(3)
     local run = true
@@ -20,6 +22,8 @@ local function main(args)
 
     EventLoop.run(function()
         Inventory.start()
+    end, function()
+        Rpc.server(StorageService)
     end, function()
         os.sleep(3)
         while run do

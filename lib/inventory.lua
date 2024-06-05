@@ -19,6 +19,17 @@ function Inventory.getInventories(type, refresh)
     return InventoryCollection.getInventories(type, refresh)
 end
 
+---@param inventoryType InventoryType
+---@param label string
+---@return string?
+function Inventory.findInventoryByTypeAndLabel(inventoryType, label)
+    local inventory = InventoryCollection.findInventoryByTypeAndLabel(inventoryType, label)
+
+    if inventory then
+        return inventory.name
+    end
+end
+
 ---@param slot InventorySlot
 ---@param stack? ItemStack
 ---@param tag InventorySlotTag
@@ -471,16 +482,16 @@ end
 
 ---@param from string[]
 ---@param to string[]
+---@param items ItemStock
 ---@param fromTag InventorySlotTag
 ---@param toTag InventorySlotTag
 ---@return ItemStock transferredTotal
-function Inventory.distributeFromTag(from, to, fromTag, toTag)
-    local totalStock = Inventory.getStockByTagMultiInventory(from, fromTag)
+function Inventory.distributeItems(from, to, items, fromTag, toTag)
     ---@type ItemStock
     local totalTransferred = {}
 
-    for item, stock in pairs(totalStock) do
-        local transferred = Inventory.distributeItem(from, to, item, fromTag, toTag, stock)
+    for item, quantity in pairs(items) do
+        local transferred = Inventory.distributeItem(from, to, item, fromTag, toTag, quantity)
 
         if transferred > 0 then
             totalTransferred[item] = transferred
@@ -488,6 +499,17 @@ function Inventory.distributeFromTag(from, to, fromTag, toTag)
     end
 
     return totalTransferred
+end
+
+---@param from string[]
+---@param to string[]
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@return ItemStock transferredTotal
+function Inventory.distributeFromTag(from, to, fromTag, toTag)
+    local totalStock = Inventory.getStockByTagMultiInventory(from, fromTag)
+
+    return Inventory.distributeItems(from, to, totalStock, fromTag, toTag)
 end
 
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
