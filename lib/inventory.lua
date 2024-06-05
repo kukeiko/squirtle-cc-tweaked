@@ -454,6 +454,10 @@ function Inventory.distributeItem(from, to, item, fromTag, toTag, total)
                 if fromName ~= toName then
                     local transferred = Inventory.transferItem(fromName, toName, item, fromTag, toTag, transferPerInput)
                     totalTransferred = totalTransferred + transferred
+
+                    if totalTransferred == total then
+                        return totalTransferred
+                    end
                 end
             end
         end
