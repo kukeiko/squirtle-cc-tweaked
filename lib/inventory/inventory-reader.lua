@@ -106,7 +106,7 @@ local function createQuickAccess(name, stacks, nameTagSlot)
     ---@type table<integer, InventorySlot>
     local slots = {}
 
-    for slot, stack in pairs(stacks) do
+    for slot, _ in pairs(stacks) do
         if slot ~= nameTagSlot then
             slots[slot] = {index = slot, tags = {input = true}}
         end
@@ -167,8 +167,32 @@ end
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
 ---@return Inventory
-local function createBuffer(name, stacks)
+local function createBuffer(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.buffer = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "buffer", stacks, slots, true)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@return Inventory
+local function createTurtleBuffer(name, stacks)
     ---@type table<integer, InventorySlot>
     local slots = {}
 
@@ -178,7 +202,7 @@ local function createBuffer(name, stacks)
         slots[slot] = {index = slot, tags = tags}
     end
 
-    return construct(name, "buffer", stacks, slots, true)
+    return construct(name, "turtle-buffer", stacks, slots, true)
 end
 
 ---@param name string
@@ -476,9 +500,11 @@ function InventoryReader.read(name, expected)
                     return createComposterInput(name, stacks, nameTagSlot)
                 elseif nameTagName == "Trash" then
                     return createTrash(name, stacks, nameTagSlot)
+                elseif nameTagName == "Buffer" then
+                    return createBuffer(name, stacks, nameTagSlot)
                 end
             elseif baseType == "minecraft:barrel" then
-                return createBuffer(name, stacks)
+                return createTurtleBuffer(name, stacks)
             elseif baseType == "minecraft:hopper" then
                 return createIgnore(name)
             else
