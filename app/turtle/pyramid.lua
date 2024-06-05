@@ -204,10 +204,9 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[pyramid v1.0.0] booting...")
+    print("[pyramid v2.0.0-dev] booting...")
 
     EventLoop.run(function()
-        SquirtleService.host = os.getComputerLabel()
         Rpc.server(SquirtleService)
     end, function()
         local success, e = pcall(function(...)

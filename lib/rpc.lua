@@ -141,8 +141,10 @@ end
 ---@param service Service
 ---@param modemName? string
 function Rpc.server(service, modemName)
+    service.host = os.getComputerLabel()
     local modem = getModem(modemName)
     modem.open(channel)
+    print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
 
     EventLoop.run(function()
         while true do

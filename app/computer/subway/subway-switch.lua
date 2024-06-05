@@ -4,21 +4,19 @@ local SubwayService = require "services.subway-service"
 
 local function printUsage()
     print("Usage:")
-    print("subway-switch <host> [signal-duration] [max-distance]")
+    print("subway-switch [signal-duration] [max-distance]")
 end
 
 local function main(args)
-    print("[subway-switch v1.0.1] booting...")
+    print("[subway-switch v2.0.0-dev] booting...")
 
-    SubwayService.host = args[1]
-    SubwayService.signalDuration = tonumber(args[2]) or 2
-    SubwayService.maxDistance = tonumber(args[3]) or 3
+    SubwayService.signalDuration = tonumber(args[1]) or 2
+    SubwayService.maxDistance = tonumber(args[2]) or 3
 
     if not SubwayService.host then
         return printUsage()
     end
 
-    print("[host]", SubwayService.host)
     print("[signal-duration]", SubwayService.signalDuration)
     print("[max-distance]", SubwayService.maxDistance)
 
