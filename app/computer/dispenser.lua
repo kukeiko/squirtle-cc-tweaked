@@ -7,7 +7,7 @@ local SearchableList = require "ui.searchable-list"
 local readInteger = require "ui.read-integer"
 
 EventLoop.run(function()
-    print("[dispenser v1.0.0-dev] booting...")
+    print("[dispenser v1.0.0] booting...")
 
     local storage = Rpc.nearest(StorageService)
 
