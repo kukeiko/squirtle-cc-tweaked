@@ -161,7 +161,7 @@ end
 function Advanced.pullInput(from, to, transferredOutput)
     local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
     local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
-    local toStock = Inventory.getStockByTag(to, "input")
+    local toStock = Inventory.getInventoryStockByTag(to, "input")
     transferredOutput = transferredOutput or {}
 
     ---@type ItemStock

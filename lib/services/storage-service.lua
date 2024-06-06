@@ -18,8 +18,7 @@ function StorageService.transferStockToStash(stashLabel, itemStock)
         error(string.format("stash %s doesn't exist", stashLabel))
     end
 
-    local storages = InventoryApi.getInventories("storage")
-    return InventoryApi.distributeItems(storages, {stash}, itemStock, "output", "input")
+    return InventoryApi.distributeItems(InventoryApi.getInventories(), {stash}, itemStock, "withdraw", "input")
 end
 
 ---@param stashLabel string
@@ -34,7 +33,7 @@ end
 
 ---@return ItemStock
 function StorageService.getStock()
-    return InventoryApi.getStockByInventoryTypeAndTag("storage", "output")
+    return InventoryApi.getStockByTag("withdraw")
 end
 
 function StorageService.getItemDisplayNames()

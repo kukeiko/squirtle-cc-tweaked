@@ -20,7 +20,7 @@
 ---@alias ComposterInventoryTypes "composter-config" | "composter-input"
 ---[todo] use enum instead
 ---@alias InventoryType "storage" | "io" | "drain" | "silo" | "shulker" | "crafter" | "buffer" | "turtle-buffer" |"stash" | "quick-access" | "trash" | "ignore" | FurnaceInventoryTypes | ComposterInventoryTypes
----@alias InventorySlotTag "input" | "output" | "fuel" | "nameTag" | "configuration" | "buffer"
+---@alias InventorySlotTag "input" | "output" | "fuel" | "nameTag" | "configuration" | "buffer" | "withdraw"
 ---
 ---@class InventorySlot
 ---@field index integer
@@ -33,3 +33,4 @@
 ---@field nameTag? true
 ---@field fuel? true
 ---@field configuration? true
+---@field withdraw? true

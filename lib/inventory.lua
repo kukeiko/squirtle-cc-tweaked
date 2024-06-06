@@ -131,11 +131,17 @@ function Inventory.getItemsStock(name)
     return stock
 end
 
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getStockByTag(tag)
+    return InventoryCollection.getStockByTag(tag)
+end
+
 ---@param name string
 ---@param tag InventorySlotTag
 ---@return ItemStock
-function Inventory.getStockByTag(name, tag)
-    return InventoryCollection.getStockByTag(name, tag)
+function Inventory.getInventoryStockByTag(name, tag)
+    return InventoryCollection.getInventoryStockByTag(name, tag)
 end
 
 ---@param inventoryType InventoryType
@@ -220,7 +226,7 @@ function Inventory.getStockByTagMultiInventory(inventories, tag)
     local totalStock = {}
 
     for _, name in ipairs(inventories) do
-        local stock = InventoryCollection.getStockByTag(name, tag)
+        local stock = InventoryCollection.getInventoryStockByTag(name, tag)
 
         for item, itemStock in pairs(stock) do
             totalStock[item] = (totalStock[item] or 0) + itemStock

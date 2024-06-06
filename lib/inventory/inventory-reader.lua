@@ -79,7 +79,7 @@ local function createStorage(name, stacks)
         for index = 1, InventoryPeripheral.getSize(name) do
             ---@type InventorySlot
             -- [todo] find references on "tags" doesn't work? (when using it on the type in inventory-elemental.lua file)
-            local slot = {index = index, tags = {input = true, output = true}, permanent = true}
+            local slot = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
             slots[index] = slot
             local stack = stacks[index]
 
@@ -92,7 +92,7 @@ local function createStorage(name, stacks)
         end
     else
         for index, stack in pairs(stacks) do
-            slots[index] = {index = index, tags = {input = true, output = true}, permanent = true}
+            slots[index] = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
             stack.maxCount = stack.maxCount - 1
             stack.count = stack.count - 1
         end
@@ -111,7 +111,7 @@ local function createQuickAccess(name, stacks, nameTagSlot)
 
     for slot, _ in pairs(stacks) do
         if slot ~= nameTagSlot then
-            slots[slot] = {index = slot, tags = {input = true}}
+            slots[slot] = {index = slot, tags = {input = true, withdraw = true}}
         end
     end
 
@@ -134,7 +134,7 @@ local function createIo(name, stacks, nameTagSlot)
             if slot < nameTagSlot then
                 slots[slot] = {index = slot, permanent = true, tags = {input = true}}
             elseif slot > nameTagSlot then
-                slots[slot] = {index = slot, permanent = true, tags = {output = true}}
+                slots[slot] = {index = slot, permanent = true, tags = {output = true, withdraw = true}}
             end
         else
             slots[slot] = {index = slot, tags = {nameTag = true}}
@@ -160,6 +160,7 @@ local function createDrain(name, stacks, nameTagSlot)
             tags.nameTag = true
         else
             tags.output = true
+            tags.withdraw = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -226,7 +227,6 @@ local function createStash(name, stacks, nameTagSlot, label)
             tags.nameTag = true
         else
             tags.input = true
-            tags.output = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -251,6 +251,7 @@ local function createSilo(name, stacks, nameTagSlot)
             tags.nameTag = true
         else
             tags.output = true
+            tags.withdraw = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -268,7 +269,7 @@ local function createFurnace(name, stacks)
 
     slots[1] = {index = 1, tags = {input = true}}
     slots[2] = {index = 2, tags = {fuel = true}}
-    slots[3] = {index = 3, tags = {output = true}}
+    slots[3] = {index = 3, tags = {output = true, withdraw = true}}
 
     return construct(name, "furnace", {stacks[1], stacks[2], stacks[3]}, slots, true)
 end
@@ -290,6 +291,7 @@ local function createFurnaceOutput(name, stacks, nameTagSlot)
         else
             tags.input = true
             tags.output = true
+            tags.withdraw = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -314,6 +316,7 @@ local function createFurnaceInput(name, stacks, nameTagSlot)
             tags.nameTag = true
         else
             tags.output = true
+            tags.withdraw = true
         end
 
         slots[slot] = {index = slot, tags = tags}
@@ -411,6 +414,7 @@ local function createTrash(name, stacks, nameTagSlot)
         else
             tags.input = true
             tags.output = true
+            tags.withdraw = true
         end
 
         slots[slot] = {index = slot, tags = tags}

@@ -186,14 +186,12 @@ function InventoryCollection.getInventories(type, refresh)
     local array = {}
 
     for name, inventory in pairs(inventories) do
-        if inventory.type == type then
+        if type == nil or inventory.type == type then
             if refresh then
                 inventory = InventoryCollection.refresh(name)
             end
 
-            if inventory.type == type then
-                table.insert(array, name)
-            end
+            table.insert(array, name)
         end
     end
 
@@ -203,7 +201,7 @@ end
 ---@param name string
 ---@param tag InventorySlotTag
 ---@return ItemStock
-function InventoryCollection.getStockByTag(name, tag)
+function InventoryCollection.getInventoryStockByTag(name, tag)
     ---@type ItemStock
     local stock = {}
     local inventory = InventoryCollection.getInventory(name)
@@ -219,6 +217,21 @@ function InventoryCollection.getStockByTag(name, tag)
     return stock
 end
 
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getStockByTag(tag)
+    ---@type ItemStock
+    local stock = {}
+
+    for _, inventory in pairs(inventories) do
+        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(inventory.name, tag)) do
+            stock[item] = (stock[item] or 0) + quantity
+        end
+    end
+
+    return stock
+end
+
 ---@param inventoryType InventoryType
 ---@param slotTag InventorySlotTag
 ---@return ItemStock
@@ -228,7 +241,7 @@ function InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTa
     local stock = {}
 
     for _, name in pairs(inventories) do
-        for item, quantity in pairs(InventoryCollection.getStockByTag(name, slotTag)) do
+        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(name, slotTag)) do
             stock[item] = (stock[item] or 0) + quantity
         end
     end
