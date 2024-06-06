@@ -13,17 +13,18 @@ EventLoop.run(function()
 
     while true do
         local stock = storage.getStock()
+        local itemDisplayNames = storage.getItemDisplayNames()
         local nonEmptyStock = Utils.filterMap(stock, function(quantity)
             return quantity > 0
         end)
 
         local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
             ---@type SearchableListOption
-            return {id = item, name = item, suffix = tostring(quantity)}
+            return {id = item, name = itemDisplayNames[item] or item, suffix = tostring(quantity)}
         end)
 
         table.sort(options, function(a, b)
-            return a.id < b.id
+            return a.name < b.name
         end)
 
         local commonTitle = "What item would you like transferred?"

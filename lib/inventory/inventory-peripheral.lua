@@ -4,6 +4,14 @@ local InventoryPeripheral = {}
 ---@type table<string, integer>
 local itemMaxCounts = {}
 
+---@type table<string, string>
+local itemDisplayNames = {}
+
+-- [todo] not the best place, but works for now
+function InventoryPeripheral.getItemDisplayNames()
+    return itemDisplayNames
+end
+
 ---@param item string
 ---@param chest string
 ---@param slot integer
@@ -14,6 +22,7 @@ local function getItemMaxCount(item, chest, slot)
 
         if detailedStack then
             itemMaxCounts[item] = detailedStack.maxCount
+            itemDisplayNames[item] = detailedStack.displayName
         end
     end
 

@@ -1,4 +1,5 @@
 local InventoryApi = require "inventory"
+local InventoryPeripheral = require "inventory.inventory-peripheral"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
@@ -34,6 +35,10 @@ end
 ---@return ItemStock
 function StorageService.getStock()
     return InventoryApi.getStockByInventoryTypeAndTag("storage", "output")
+end
+
+function StorageService.getItemDisplayNames()
+    return InventoryPeripheral.getItemDisplayNames()
 end
 
 return StorageService
