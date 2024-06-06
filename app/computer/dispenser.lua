@@ -7,8 +7,10 @@ local SearchableList = require "ui.searchable-list"
 local readInteger = require "ui.read-integer"
 
 EventLoop.run(function()
-    print("[dispenser v1.0.0] booting...")
+    print("[dispenser v1.0.1-dev] booting...")
 
+    -- [todo] hack to wait for StorageService to be up and running
+    os.sleep(7)
     local storage = Rpc.nearest(StorageService)
 
     while true do
