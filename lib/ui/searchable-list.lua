@@ -1,4 +1,5 @@
 local EventLoop = require "event-loop"
+local Utils = require "utils"
 
 ---@class SearchableList
 ---@field options SearchableListOption[]
@@ -42,41 +43,40 @@ function SearchableList:run()
     while (true) do
         self:draw()
 
-        local _, key = EventLoop.pull("key")
+        local event, value = EventLoop.pull()
         local filterDirty = false
 
-        if (key == keys.f4) then
-            break
-        elseif (key == keys.enter) then
-            if (#self.list > 0) then
-                result = self.list[self.index]
+        if event == "key" then
+            if (value == keys.f4) then
                 break
-            end
-        elseif (key == keys.backspace) then
-            local len = #self.searchText
-            if (len ~= 0) then
-                self.searchText = self.searchText:sub(1, len - 1)
-                filterDirty = true
-            end
-        elseif (key == keys.up) then
-            self.index = self.index - 1
-            if (self.index < 1) then
-                if (#self.list == 0) then
+            elseif (value == keys.enter) then
+                if (#self.list > 0) then
+                    result = self.list[self.index]
+                    break
+                end
+            elseif (value == keys.backspace) then
+                local len = #self.searchText
+                if (len ~= 0) then
+                    self.searchText = self.searchText:sub(1, len - 1)
+                    filterDirty = true
+                end
+            elseif (value == keys.up) then
+                self.index = self.index - 1
+                if (self.index < 1) then
+                    if (#self.list == 0) then
+                        self.index = 1
+                    else
+                        self.index = #self.list
+                    end
+                end
+            elseif (value == keys.down) then
+                self.index = self.index + 1
+                if (self.index > #self.list) then
                     self.index = 1
-                else
-                    self.index = #self.list
                 end
             end
-        elseif (key == keys.down) then
-            self.index = self.index + 1
-            if (self.index > #self.list) then
-                self.index = 1
-            end
-        elseif (key == keys.space) then
-            self.searchText = self.searchText .. " "
-            filterDirty = true
-        elseif (keys.getName(key):match("^%a$")) then
-            self.searchText = self.searchText .. keys.getName(key)
+        elseif event == "char" then
+            self.searchText = self.searchText .. value
             filterDirty = true
             self.index = 1
         end
@@ -159,9 +159,15 @@ function SearchableList:draw()
         win.setCursorPos(1, i + 2)
 
         if (self.index - listOffset == i) then
-            win.write("> " .. option.name)
+            win.write("> ")
         else
-            win.write("  " .. option.name)
+            win.write("  ")
+        end
+
+        if drawScroller then
+            win.write(Utils.ellipsis(option.name, w - 4))
+        else
+            win.write(Utils.ellipsis(option.name, w - 3))
         end
 
         if drawScroller then

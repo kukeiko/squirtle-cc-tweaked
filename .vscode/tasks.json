@@ -14,6 +14,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/io-network"
         },
         {
+            "label": "build computer:dispenser",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p lib/?.lua -o dist/computer/dispenser"
+        },
+        {
             "label": "build turtle:lumberjack",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p lib/?.lua -o dist/turtle/lumberjack"

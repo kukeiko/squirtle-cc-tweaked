@@ -302,4 +302,39 @@ function Utils.writeJson(path, data)
     file.close()
 end
 
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.padLeft(str, length, char)
+    return string.rep(char or " ", length - #str) .. str
+end
+
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.padRight(str, length, char)
+    return str .. string.rep(char or " ", length - #str)
+end
+
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.pad(str, length, char)
+    return Utils.padLeft(Utils.padRight(str, (length / 2) + #str, char or " "), length, char or " ")
+end
+
+---@param str string
+---@param length integer
+---@return string
+function Utils.ellipsis(str, length)
+    if #str > length then
+        return string.sub(str, 1, length - 3) .. "..."
+    else
+        return str
+    end
+end
+
 return Utils
