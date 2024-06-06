@@ -141,10 +141,9 @@ function SearchableList:draw()
     local drawScroller = #list > listHeight
     local scrollerWidth = 0
     local headerHeight = 2
-    local indicatorWith = 2
 
     if drawScroller then
-        scrollerWidth = 2
+        scrollerWidth = 3
     end
 
     if #list > listHeight then
@@ -167,13 +166,13 @@ function SearchableList:draw()
         win.setCursorPos(1, i + headerHeight)
 
         if (self.index - listOffset == i) then
-            win.write("> ")
+            win.setTextColor(colors.white)
         else
-            win.write("  ")
+            win.setTextColor(colors.lightGray)
         end
 
         local suffix = option.suffix or ""
-        local labelMaxLength = w - (#suffix + 2) - indicatorWith - scrollerWidth
+        local labelMaxLength = w - (#suffix + 1) - scrollerWidth
         local label = Utils.padRight(Utils.ellipsis(option.name, labelMaxLength), labelMaxLength) .. " " .. suffix
         win.write(label)
 
@@ -186,6 +185,8 @@ function SearchableList:draw()
                 win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.gray))
             end
         end
+
+        win.setTextColor(colors.white)
     end
 end
 
