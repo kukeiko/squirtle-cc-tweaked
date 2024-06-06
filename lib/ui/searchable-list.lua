@@ -13,6 +13,7 @@ local SearchableList = {}
 ---@class SearchableListOption
 ---@field id string
 ---@field name string
+---@field suffix? string
 
 ---@param options SearchableListOption[]
 ---@param title? string
@@ -138,6 +139,13 @@ function SearchableList:draw()
     local listOffset = 0
     local listOffsetMax = #list - listHeight
     local drawScroller = #list > listHeight
+    local scrollerWidth = 0
+    local headerHeight = 2
+    local indicatorWith = 2
+
+    if drawScroller then
+        scrollerWidth = 2
+    end
 
     if #list > listHeight then
         local half = math.floor(listHeight / 2)
@@ -156,7 +164,7 @@ function SearchableList:draw()
             break
         end
 
-        win.setCursorPos(1, i + 2)
+        win.setCursorPos(1, i + headerHeight)
 
         if (self.index - listOffset == i) then
             win.write("> ")
@@ -164,14 +172,13 @@ function SearchableList:draw()
             win.write("  ")
         end
 
-        if drawScroller then
-            win.write(Utils.ellipsis(option.name, w - 4))
-        else
-            win.write(Utils.ellipsis(option.name, w - 3))
-        end
+        local suffix = option.suffix or ""
+        local labelMaxLength = w - (#suffix + 2) - indicatorWith - scrollerWidth
+        local label = Utils.padRight(Utils.ellipsis(option.name, labelMaxLength), labelMaxLength) .. " " .. suffix
+        win.write(label)
 
         if drawScroller then
-            win.setCursorPos(w - 1, i + 2)
+            win.setCursorPos(w - 1, i + headerHeight)
 
             if i == scrollerIndex then
                 win.write("\140")

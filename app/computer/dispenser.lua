@@ -17,14 +17,9 @@ EventLoop.run(function()
             return quantity > 0
         end)
 
-        local width = term.getSize()
         local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
-            -- [todo] string manipulation knows too much about SearchableList rendering (indicator width, scroller width, ...)
-            local quantityText = tostring(quantity) .. " "
-            local nameText = Utils.padRight(Utils.ellipsis(item, width - #quantityText - 5), width - #quantityText - 5)
-
             ---@type SearchableListOption
-            return {id = item, name = string.format("%s %s", nameText, quantityText)}
+            return {id = item, name = item, suffix = tostring(quantity)}
         end)
 
         table.sort(options, function(a, b)
