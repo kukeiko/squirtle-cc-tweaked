@@ -7,7 +7,7 @@ local SearchableList = require "ui.searchable-list"
 local readInteger = require "ui.read-integer"
 
 EventLoop.run(function()
-    print("[dispenser v1.0.1-dev] booting...")
+    print("[dispenser v1.0.1] booting...")
 
     -- [todo] hack to wait for StorageService to be up and running
     os.sleep(7)
