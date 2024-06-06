@@ -31,4 +31,9 @@ function StorageService.transferItemToStash(stashLabel, item, total)
     return transferred[item] or 0
 end
 
+---@return ItemStock
+function StorageService.getStock()
+    return InventoryApi.getStockByInventoryTypeAndTag("storage", "output")
+end
+
 return StorageService

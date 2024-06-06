@@ -135,19 +135,14 @@ end
 ---@param tag InventorySlotTag
 ---@return ItemStock
 function Inventory.getStockByTag(name, tag)
-    ---@type ItemStock
-    local stock = {}
-    local inventory = InventoryCollection.getInventory(name)
+    return InventoryCollection.getStockByTag(name, tag)
+end
 
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack and slot.tags[tag] then
-            stock[stack.name] = (stock[stack.name] or 0) + stack.count
-        end
-    end
-
-    return stock
+---@param inventoryType InventoryType
+---@param slotTag InventorySlotTag
+---@return ItemStock
+function Inventory.getStockByInventoryTypeAndTag(inventoryType, slotTag)
+    return InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
 end
 
 ---@param name string
@@ -225,7 +220,7 @@ function Inventory.getStockByTagMultiInventory(inventories, tag)
     local totalStock = {}
 
     for _, name in ipairs(inventories) do
-        local stock = Inventory.getStockByTag(name, tag)
+        local stock = InventoryCollection.getStockByTag(name, tag)
 
         for item, itemStock in pairs(stock) do
             totalStock[item] = (totalStock[item] or 0) + itemStock
@@ -390,7 +385,7 @@ end
 ---@param total? ItemStock
 ---@return ItemStock transferredTotal, ItemStock open
 function Inventory.transferFromTag(from, to, fromTag, toTag, total)
-    local itemStock = Inventory.getStockByTag(from, fromTag)
+    local itemStock = Inventory.InventoryCollection(from, fromTag)
     ---@type ItemStock
     local transferredTotal = {}
     ---@type ItemStock

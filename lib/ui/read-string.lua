@@ -6,7 +6,7 @@ local EventLoop = require "event-loop"
 
 ---@param value string
 ---@param win table
-local function writeValue(value, win)
+local function drawValue(value, win)
     local offset = 0
     local width = win.getSize()
 
@@ -29,7 +29,7 @@ return function(value, options)
     w = w - (x - 1)
 
     local win = window.create(term.current(), x, y, w, 1)
-    writeValue(value, win)
+    drawValue(value, win)
     win.setCursorBlink(true)
 
     while true do
@@ -49,6 +49,6 @@ return function(value, options)
             value = value .. key
         end
 
-        writeValue(value, win)
+        drawValue(value, win)
     end
 end

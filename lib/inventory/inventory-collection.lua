@@ -200,4 +200,40 @@ function InventoryCollection.getInventories(type, refresh)
     return array
 end
 
+---@param name string
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getStockByTag(name, tag)
+    ---@type ItemStock
+    local stock = {}
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param inventoryType InventoryType
+---@param slotTag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
+    local inventories = InventoryCollection.getInventories(inventoryType)
+    ---@type ItemStock
+    local stock = {}
+
+    for _, name in pairs(inventories) do
+        for item, quantity in pairs(InventoryCollection.getStockByTag(name, slotTag)) do
+            stock[item] = (stock[item] or 0) + quantity
+        end
+    end
+
+    return stock
+end
+
 return InventoryCollection

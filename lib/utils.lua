@@ -155,6 +155,22 @@ function Utils.filter(list, predicate)
     return filtered
 end
 
+---@generic V, K
+---@param list table<K, V>
+---@param predicate fun(item: V, index: K): boolean
+---@return table<K, V>
+function Utils.filterMap(list, predicate)
+    local filtered = {}
+
+    for key, value in pairs(list) do
+        if predicate(value, key) then
+            filtered[key] = value
+        end
+    end
+
+    return filtered
+end
+
 ---@generic T
 ---@param list T[]
 ---@param predicate fun(item: T, index: number): boolean

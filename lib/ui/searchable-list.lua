@@ -135,17 +135,43 @@ function SearchableList:draw()
 
     local listHeight = h - 2
     local list = self.list
+    local listOffset = 0
+    local listOffsetMax = #list - listHeight
+    local drawScroller = #list > listHeight
+
+    if #list > listHeight then
+        local half = math.floor(listHeight / 2)
+
+        if self.index > half then
+            listOffset = math.min(self.index - half, listOffsetMax)
+        end
+    end
+
+    local scrollerIndex = math.max(1, math.floor(listHeight * (listOffset / listOffsetMax)))
 
     for i = 1, listHeight do
-        if (not list[i]) then
+        local option = list[i + listOffset]
+
+        if (not option) then
             break
         end
 
         win.setCursorPos(1, i + 2)
-        if (self.index == i) then
-            win.write("> " .. list[i].name)
+
+        if (self.index - listOffset == i) then
+            win.write("> " .. option.name)
         else
-            win.write("  " .. list[i].name)
+            win.write("  " .. option.name)
+        end
+
+        if drawScroller then
+            win.setCursorPos(w - 1, i + 2)
+
+            if i == scrollerIndex then
+                win.write("\140")
+            else
+                win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.gray))
+            end
         end
     end
 end
