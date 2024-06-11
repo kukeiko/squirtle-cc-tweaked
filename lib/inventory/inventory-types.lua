@@ -19,7 +19,7 @@
 ---@alias FurnaceInventoryTypes "furnace" | "furnace-config" | "furnace-input" | "furnace-output"
 ---@alias ComposterInventoryTypes "composter-config" | "composter-input"
 ---[todo] use enum instead
----@alias InventoryType "storage" | "io" | "drain" | "silo" | "shulker" | "crafter" | "buffer" | "turtle-buffer" |"stash" | "quick-access" | "trash" | "ignore" | FurnaceInventoryTypes | ComposterInventoryTypes
+---@alias InventoryType "storage" | "io" | "drain" | "silo" | "silo:input" | "silo:output" | "shulker" | "crafter" | "buffer" | "turtle-buffer" |"stash" | "quick-access" | "trash" | "ignore" | FurnaceInventoryTypes | ComposterInventoryTypes
 ---@alias InventorySlotTag "input" | "output" | "fuel" | "nameTag" | "configuration" | "buffer" | "withdraw"
 ---
 ---@class InventorySlot

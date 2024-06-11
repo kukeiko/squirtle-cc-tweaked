@@ -12,9 +12,10 @@ local processIo = require "io-network.process-io"
 local processQuickAccess = require "io-network.process-quick-access"
 local processShulkers = require "io-network.process-shulkers"
 local processTrash = require "io-network.process-trash"
+local processSiloOutputs = require "io-network.process-silo-outputs"
 
 local function main(args)
-    print("[io-network v6.1.0] booting...")
+    print("[io-network v6.2.0-dev] booting...")
 
     os.sleep(3)
     local run = true
@@ -63,6 +64,13 @@ local function main(args)
         while run do
             processTrash()
             os.sleep(30)
+        end
+    end, function()
+        os.sleep(3)
+
+        while run do
+            processSiloOutputs()
+            os.sleep(10)
         end
     end, function()
         while run do

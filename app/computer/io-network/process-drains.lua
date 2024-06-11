@@ -13,6 +13,9 @@ return function()
         local storages = Inventory.getInventories("storage")
         Inventory.distributeFromTag(drains, storages, "output", "input")
 
+        local siloInputs = Inventory.getInventories("silo:input")
+        Inventory.distributeFromTag(drains, siloInputs, "output", "input")
+
         local composterConfigs = Inventory.getInventories("composter-config", true)
 
         if #composterConfigs > 0 then

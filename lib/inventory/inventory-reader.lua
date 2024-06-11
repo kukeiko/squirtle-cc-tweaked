@@ -262,6 +262,61 @@ end
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+local function createSiloInput(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+    local first = Utils.first(stacks)
+    ---@type ItemStack
+    local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+
+    for index = 1, InventoryPeripheral.getSize(name) do
+        if index == nameTagSlot then
+            slots[index] = {index = index, tags = {nameTag = true}}
+        else
+            slots[index] = {index = index, tags = {input = true}}
+            local stack = stacks[index]
+
+            if stack then
+                stack.maxCount = stack.maxCount - 1
+                stack.count = stack.count - 1
+            else
+                stacks[index] = Utils.copy(template)
+            end
+        end
+    end
+
+    return construct(name, "silo:input", stacks, slots)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+local function createSiloOutput(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "silo:output", stacks, slots)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
 ---@return Inventory
 local function createFurnace(name, stacks)
     ---@type table<integer, InventorySlot>
@@ -504,6 +559,10 @@ function InventoryReader.read(name, expected)
                     return createDrain(name, stacks, nameTagSlot)
                 elseif nameTagName == "Silo" then
                     return createSilo(name, stacks, nameTagSlot)
+                elseif nameTagName == "Silo: Input" then
+                    return createSiloInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Silo: Output" then
+                    return createSiloOutput(name, stacks, nameTagSlot)
                 elseif nameTagName == "Crafter" then
                     return createCrafterInventory(name, stacks, nameTagSlot)
                 elseif nameTagName == "Furnace: Input" then
