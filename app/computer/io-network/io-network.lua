@@ -15,7 +15,7 @@ local processTrash = require "io-network.process-trash"
 local processSiloOutputs = require "io-network.process-silo-outputs"
 
 local function main(args)
-    print("[io-network v6.2.0-dev] booting...")
+    print("[io-network v6.2.0] booting...")
 
     os.sleep(3)
     local run = true
