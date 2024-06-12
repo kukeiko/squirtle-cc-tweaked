@@ -4,10 +4,6 @@ local InventoryPeripheral = require "inventory.inventory-peripheral"
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
 
-function StorageService.foo()
-    return "foo"
-end
-
 ---@param stashLabel string
 ---@param itemStock ItemStock
 ---@return ItemStock

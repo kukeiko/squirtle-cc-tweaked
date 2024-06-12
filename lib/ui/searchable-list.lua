@@ -36,10 +36,32 @@ function SearchableList.new(options, title)
     return instance
 end
 
+---@param options SearchableListOption[]
+function SearchableList:setOptions(options)
+    local selectedId = (self.options[self.index] or {}).id
+    self.options = options
+    local newIndex = Utils.findIndex(options, function(item, index)
+        return item.id == selectedId
+    end)
+
+    self:filter()
+
+    if newIndex then
+        self.index = newIndex
+
+        if self.index > #self.list then
+            self.index = 1
+        end
+    end
+
+    self:draw()
+end
+
 ---@return SearchableListOption?
 function SearchableList:run()
     ---@type SearchableListOption?
     local result = nil
+    self.window.setCursorBlink(false)
 
     while (true) do
         self:draw()

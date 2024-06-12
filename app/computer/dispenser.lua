@@ -6,47 +6,91 @@ local StorageService = require "services.storage-service"
 local SearchableList = require "ui.searchable-list"
 local readInteger = require "ui.read-integer"
 
-EventLoop.run(function()
-    print("[dispenser v1.1.0] booting...")
+---@param storage StorageService|RpcClient
+---@return SearchableListOption[]
+function getListOptions(storage)
+    local stock = storage.getStock()
+    local itemDisplayNames = storage.getItemDisplayNames()
+    local nonEmptyStock = Utils.filterMap(stock, function(quantity)
+        return quantity > 0
+    end)
 
-    -- [todo] hack to wait for StorageService to be up and running
-    os.sleep(3)
+    local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
+        ---@type SearchableListOption
+        return {id = item, name = itemDisplayNames[item] or item, suffix = tostring(quantity)}
+    end)
+
+    table.sort(options, function(a, b)
+        return a.name < b.name
+    end)
+
+    return options
+end
+
+function getListTitle()
+    local commonTitle = "What item would you like transferred?"
+    local titles = {"What item ya be needin'?", "I've got the goods!", commonTitle, commonTitle, commonTitle}
+
+    return titles[math.random(#titles)]
+end
+
+EventLoop.run(function()
+    print("[dispenser v1.2.0-dev] connecting to storage service...")
+
     local storage = Rpc.nearest(StorageService)
 
-    while true do
-        local stock = storage.getStock()
-        local itemDisplayNames = storage.getItemDisplayNames()
-        local nonEmptyStock = Utils.filterMap(stock, function(quantity)
-            return quantity > 0
-        end)
+    while not storage do
+        os.sleep(3)
+        storage = Rpc.nearest(StorageService)
+    end
 
-        local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
-            ---@type SearchableListOption
-            return {id = item, name = itemDisplayNames[item] or item, suffix = tostring(quantity)}
-        end)
+    local rebootAfter = 30
+    local refreshStockEvery = 3
+    local shutOffTimer = os.startTimer(rebootAfter)
+    local userInteractionEvents = {char = true, key = true}
+    local options = getListOptions(storage)
+    local title = getListTitle()
+    local searchableList = SearchableList.new(options, title)
 
-        table.sort(options, function(a, b)
-            return a.name < b.name
-        end)
+    EventLoop.run(function()
+        while true do
+            local event = EventLoop.pull()
 
-        local commonTitle = "What item would you like transferred?"
-        local titles = {"What item ya be needin'?", "I've got the goods!", commonTitle, commonTitle, commonTitle}
-
-        local searchableList = SearchableList.new(options, titles[math.random(#titles)])
-        local item = searchableList:run()
-
-        if item then
-            print("How many?")
-            local quantity = readInteger()
-
-            if quantity and quantity > 0 then
-                term.clear()
-                term.setCursorPos(1, 1)
-                print("Transferring...")
-                storage.transferItemToStash(os.getComputerLabel(), item.id, quantity)
-                print("Done!")
-                os.sleep(1)
+            if userInteractionEvents[event] then
+                shutOffTimer = os.startTimer(rebootAfter)
             end
         end
-    end
+    end, function()
+        while true do
+            local _, pulledTimerId = EventLoop.pull("timer")
+
+            if pulledTimerId == shutOffTimer then
+                os.shutdown()
+            end
+        end
+    end, function()
+        while true do
+            os.sleep(refreshStockEvery)
+            searchableList:setOptions(getListOptions(storage))
+        end
+    end, function()
+        while true do
+            local item = searchableList:run()
+
+            if item then
+                print("How many?")
+                local quantity = readInteger()
+
+                if quantity and quantity > 0 then
+                    term.clear()
+                    term.setCursorPos(1, 1)
+                    print("Transferring...")
+                    storage.transferItemToStash(os.getComputerLabel(), item.id, quantity)
+                    print("Done!")
+                    os.sleep(1)
+                end
+            end
+        end
+    end)
+
 end)

@@ -185,6 +185,18 @@ end
 
 ---@generic T
 ---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return integer?
+function Utils.findIndex(list, predicate)
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            return i
+        end
+    end
+end
+
+---@generic T
+---@param list T[]
 ---@param first integer
 ---@param last integer
 ---@return T[]
