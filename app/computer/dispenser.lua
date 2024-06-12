@@ -35,7 +35,7 @@ function getListTitle()
 end
 
 EventLoop.run(function()
-    print("[dispenser v1.2.0-dev] connecting to storage service...")
+    print("[dispenser v1.2.0] connecting to storage service...")
 
     local storage = Rpc.nearest(StorageService)
 
