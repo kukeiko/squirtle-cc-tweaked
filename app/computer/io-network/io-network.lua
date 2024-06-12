@@ -75,8 +75,10 @@ local function main(args)
     end, function()
         while run do
             os.sleep(10)
-            print("[refresh] storages")
+            print("[refresh] storages & silos")
             Inventory.refreshByType("storage")
+            Inventory.refreshByType("silo:input")
+            Inventory.refreshByType("silo:output")
         end
     end, function()
         local _, key = EventLoop.pull("key")
