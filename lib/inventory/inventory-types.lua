@@ -34,3 +34,4 @@
 ---@field fuel? true
 ---@field configuration? true
 ---@field withdraw? true
+---@field buffer? true

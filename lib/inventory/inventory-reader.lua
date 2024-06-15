@@ -196,22 +196,6 @@ end
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
----@return Inventory
-local function createTurtleBuffer(name, stacks)
-    ---@type table<integer, InventorySlot>
-    local slots = {}
-
-    for slot = 1, InventoryPeripheral.getSize(name) do
-        ---@type InventorySlotTags
-        local tags = {output = true, input = true}
-        slots[slot] = {index = slot, tags = tags}
-    end
-
-    return construct(name, "turtle-buffer", stacks, slots, true)
-end
-
----@param name string
----@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
 ---@param label string
 ---@return Inventory
@@ -233,6 +217,31 @@ local function createStash(name, stacks, nameTagSlot, label)
     end
 
     return construct(name, "stash", stacks, slots, true, label)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@param label string
+---@return Inventory
+local function createTurtleBufffer(name, stacks, nameTagSlot, label)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.buffer = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return construct(name, "turtle-buffer", stacks, slots, true, label)
 end
 
 ---@param name string
@@ -586,11 +595,11 @@ function InventoryReader.read(name, expected)
 
                     if tagName == "Stash" and label ~= nil then
                         return createStash(name, stacks, nameTagSlot, label)
+                    elseif tagName == "Buffer" and label ~= nil then
+                        return createTurtleBufffer(name, stacks, nameTagSlot, label)
                     end
                 end
-            elseif baseType == "minecraft:barrel" then
-                return createTurtleBuffer(name, stacks)
-            elseif baseType == "minecraft:hopper" then
+            elseif baseType == "minecraft:barrel" or baseType == "minecraft:hopper" then
                 return createIgnore(name)
             else
                 return createStorage(name, stacks)
