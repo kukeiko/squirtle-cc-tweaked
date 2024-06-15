@@ -89,7 +89,12 @@ function InventoryCollection.refreshByType(type)
         end
     end)
 
-    EventLoop.run(table.unpack(fns))
+    local chunkedFns = Utils.chunk(fns, 32)
+
+    for _, chunk in pairs(chunkedFns) do
+        EventLoop.run(table.unpack(chunk))
+        os.sleep(1)
+    end
 end
 
 function InventoryCollection.clear()

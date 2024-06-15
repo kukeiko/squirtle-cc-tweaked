@@ -261,6 +261,35 @@ function Utils.first(tbl)
     end
 end
 
+---@generic T
+---@param tbl T[]
+---@return T[][]
+function Utils.chunk(tbl, size)
+    assert(size ~= 0, "size can't be 0")
+
+    if #tbl == 0 then
+        return {}
+    elseif size >= #tbl then
+        return {tbl}
+    end
+
+    local chunked = {}
+    local chunk = {}
+
+    for i = 1, #tbl do
+        table.insert(chunk, tbl[i])
+
+        if i == size then
+            table.insert(chunked, chunk)
+            chunk = {}
+        end
+    end
+
+    table.insert(chunked, chunk)
+
+    return chunked
+end
+
 function Utils.firstEmptySlot(table, size)
     for index = 1, size do
         if table[index] == nil then
