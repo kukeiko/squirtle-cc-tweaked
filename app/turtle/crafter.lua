@@ -120,7 +120,7 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[crafter v2.1.0-dev] booting...")
+    print("[crafter v2.1.0] booting...")
     local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]
