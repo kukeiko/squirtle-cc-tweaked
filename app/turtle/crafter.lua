@@ -1,5 +1,6 @@
 package.path = package.path .. ";/lib/?.lua"
 
+local EventLoop = require "event-loop"
 local findSide = require "peripherals.find-side"
 
 local function printUsage()
@@ -47,6 +48,7 @@ local function suckSide(side, quantity)
     end
 end
 
+-- [todo] why not just use peripheral.find("workbench")?
 local function wrapCraftingTable()
     local left = peripheral.getType("left")
 
@@ -98,9 +100,27 @@ local function loadRecipe(barrel, source)
     end
 end
 
+---@param barrel string
+---@return table<string, true>
+function getRecipeItems(barrel)
+    ---@type table<string, true>
+    local items = {}
+
+    for i = 1, 9 do
+        local recipeSlot = i + (6 * math.ceil(i / 3))
+        local stack = peripheral.call(barrel, "getItemDetail", recipeSlot)
+
+        if stack then
+            items[stack.name] = true
+        end
+    end
+
+    return items
+end
+
 ---@param args string[]
 local function main(args)
-    print("[crafter v2.0.1] booting...")
+    print("[crafter v2.1.0-dev] booting...")
     local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]
@@ -121,15 +141,32 @@ local function main(args)
 
     local craftTargetSlot = 16
 
-    while true do
-        if turtle.getItemCount(craftTargetSlot) > 0 then
-            dropSide(target)
-        else
-            loadRecipe(barrel, source)
-            turtle.select(craftTargetSlot)
-            workbench.craft()
+    EventLoop.run(function()
+        while true do
+            if turtle.getItemCount(craftTargetSlot) > 0 then
+                dropSide(target)
+            else
+                loadRecipe(barrel, source)
+                turtle.select(craftTargetSlot)
+                workbench.craft()
+            end
         end
-    end
+    end, function()
+        while true do
+            local recipeItems = getRecipeItems(barrel)
+            ---@type table<integer, ItemStack>
+            local sourceItems = peripheral.call(source, "list")
+
+            for slot, sourceItem in pairs(sourceItems) do
+                if not recipeItems[sourceItem.name] then
+                    peripheral.call(source, "pushItems", target, slot)
+                end
+            end
+
+            os.sleep(7)
+        end
+    end)
+
 end
 
 return main(arg)
