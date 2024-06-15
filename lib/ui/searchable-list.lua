@@ -8,6 +8,7 @@ local Utils = require "utils"
 ---@field title? string
 ---@field index integer
 ---@field window table
+---@field isRunning boolean
 local SearchableList = {}
 
 ---@class SearchableListOption
@@ -28,7 +29,8 @@ function SearchableList.new(options, title)
         searchText = "",
         index = 1,
         window = window.create(term.current(), 1, 1, w, h),
-        title = title
+        title = title,
+        isRunning = false
     }
 
     setmetatable(instance, {__index = SearchableList})
@@ -54,7 +56,9 @@ function SearchableList:setOptions(options)
         end
     end
 
-    self:draw()
+    if self.isRunning then
+        self:draw()
+    end
 end
 
 ---@return SearchableListOption?
@@ -62,6 +66,7 @@ function SearchableList:run()
     ---@type SearchableListOption?
     local result = nil
     self.window.setCursorBlink(false)
+    self.isRunning = true
 
     while (true) do
         self:draw()
@@ -111,6 +116,7 @@ function SearchableList:run()
 
     self.window.clear()
     self.window.setCursorPos(1, 1)
+    self.isRunning = false
 
     return result
 end
