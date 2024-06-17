@@ -1,7 +1,6 @@
 while true do
-    if turtle.getItemCount(16) == 64 then
-        print("All done!")
-        break
+    while turtle.getItemCount(16) == 64 do
+        os.sleep(3)
     end
 
     turtle.dig()
