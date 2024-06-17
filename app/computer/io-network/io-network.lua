@@ -16,64 +16,51 @@ local processSiloOutputs = require "io-network.process-silo-outputs"
 
 local function main(args)
     print("[io-network v6.3.0-dev] booting...")
-
-    os.sleep(3)
-    local run = true
     InventoryCollection.useCache = true
+    Inventory.discover()
+    print("[io-network] ready!")
 
-    EventLoop.run(function()
+    EventLoop.runUntil("io-network:stop", function()
         Inventory.start()
     end, function()
         Rpc.server(StorageService)
     end, function()
-        os.sleep(3)
-        while run do
+        while true do
             processDrains()
             os.sleep(3)
         end
     end, function()
-        os.sleep(3)
-        while run do
+        while true do
             processFurnaces()
             os.sleep(30)
         end
     end, function()
-        os.sleep(3)
-
-        while run do
+        while true do
             processIo()
             os.sleep(3)
         end
     end, function()
-        os.sleep(3)
-
-        while run do
+        while true do
             processQuickAccess()
             os.sleep(10)
         end
     end, function()
-        os.sleep(3)
-
-        while run do
+        while true do
             processShulkers()
             os.sleep(3)
         end
     end, function()
-        os.sleep(3)
-
-        while run do
+        while true do
             processTrash()
             os.sleep(30)
         end
     end, function()
-        os.sleep(3)
-
-        while run do
+        while true do
             processSiloOutputs()
             os.sleep(10)
         end
     end, function()
-        while run do
+        while true do
             os.sleep(10)
             print("[refresh] storages & silos")
             Inventory.refreshByType("storage")
@@ -83,11 +70,13 @@ local function main(args)
     end, function()
         local _, key = EventLoop.pull("key")
 
-        if key == keys.q then
-            run = false
+        if key == keys.f4 then
+            print("[stop] io-network")
             Inventory.stop()
+            EventLoop.queue("io-network:stop")
         end
     end)
+
 end
 
 return main(arg)

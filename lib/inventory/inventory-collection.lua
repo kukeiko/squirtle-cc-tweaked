@@ -178,7 +178,7 @@ function InventoryCollection.waitUntilAllUnlocked(...)
             return nil
         end
 
-        print("[locked]")
+        print("[locked]", table.concat({...}, ", "))
         os.sleep(3)
     end
 end

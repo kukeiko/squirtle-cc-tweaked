@@ -2,7 +2,8 @@ local ccPretty = "cc.pretty"
 local Pretty = require(ccPretty)
 local copy = require "utils.copy"
 local indexOf = require "utils.index-of"
-local Utils = {copy = copy, indexOf = indexOf}
+local printProgress = require "utils.print-progress"
+local Utils = {copy = copy, indexOf = indexOf, printProgress = printProgress}
 
 ---@param list table
 ---@param values table

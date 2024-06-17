@@ -46,10 +46,13 @@ end
 function Inventory.canProvideItem(name, item, tag)
     local inventory = InventoryCollection.getInventory(name)
 
+    if inventory.items and not inventory.items[item] then
+        return false
+    end
+
     for index, slot in pairs(inventory.slots) do
         local stack = inventory.stacks[index]
 
-        -- if stack and slot.tags[tag] and stack.count > 0 and stack.name == item then
         if Inventory.slotCanProvideItem(slot, stack, tag, item) then
             return true
         end
@@ -74,6 +77,10 @@ end
 ---@return boolean
 function Inventory.canTakeItem(name, item, tag)
     local inventory = InventoryCollection.getInventory(name)
+
+    if not inventory.allowAllocate and inventory.items and not inventory.items[item] then
+        return false
+    end
 
     for index, slot in pairs(inventory.slots) do
         if Inventory.slotCanTakeItem(slot, inventory.stacks[index], tag, inventory.allowAllocate, item) then
@@ -508,56 +515,75 @@ end
 ---@param toTag InventorySlotTag
 ---@return ItemStock transferredTotal
 function Inventory.distributeFromTag(from, to, fromTag, toTag)
-    local totalStock = Inventory.getStockByTagMultiInventory(from, fromTag)
+    if #from == 0 or #to == 0 then
+        return {}
+    end
 
-    return Inventory.distributeItems(from, to, totalStock, fromTag, toTag)
+    local fromStock = Inventory.getStockByTagMultiInventory(from, fromTag)
+    local toStock = Inventory.getStockByTagMultiInventory(to, toTag)
+
+    ---@type ItemStock
+    local filteredFromStock = {}
+
+    for item, quantity in pairs(fromStock) do
+        if toStock[item] then
+            filteredFromStock[item] = quantity
+        end
+    end
+
+    return Inventory.distributeItems(from, to, filteredFromStock, fromTag, toTag)
+end
+
+local function onPeripheralEventMountInventory()
+    while true do
+        EventLoop.pull("peripheral", function(_, name)
+            if InventoryReader.isInventoryType(name) then
+                InventoryCollection.mount(name)
+            end
+        end)
+    end
+end
+
+function Inventory.discover()
+    print("[inventory] mounting connected inventories...")
+    EventLoop.waitForAny(function()
+        onPeripheralEventMountInventory()
+    end, function()
+        local names = peripheral.getNames()
+        local x, y = Utils.printProgress(0, #names)
+
+        for i, name in pairs(names) do
+            EventLoop.queue("peripheral", name)
+            x, y = Utils.printProgress(i, #names, x, y)
+
+            -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
+            -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
+            if i % 64 == 0 then
+                os.sleep(1)
+            end
+        end
+    end)
 end
 
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
 --- Call "Inventory.stop()" inside another coroutine to stop.
 function Inventory.start()
-    EventLoop.run(function()
-        EventLoop.waitForAny(function()
-            EventLoop.pull("inventory:stop")
-        end, function()
-            while true do
-                EventLoop.pull("peripheral", function(_, name)
-                    if InventoryReader.isInventoryType(name) then
-                        InventoryCollection.mount(name)
-                    end
-                end)
-            end
-        end)
+    EventLoop.runUntil("inventory:stop", function()
+        onPeripheralEventMountInventory()
     end, function()
-        for i, name in pairs(peripheral.getNames()) do
-            -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
-            -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
-            if i % 32 == 0 then
-                os.sleep(1)
-            end
-
-            EventLoop.queue("peripheral", name)
+        while true do
+            EventLoop.pull("peripheral_detach", function(_, name)
+                if InventoryCollection.isMounted(name) then
+                    print("[unmount]", name)
+                    InventoryCollection.remove(name)
+                end
+            end)
         end
-    end, function()
-        EventLoop.pull("inventory:stop")
-        InventoryCollection.clear()
-    end, function()
-        EventLoop.waitForAny(function()
-            EventLoop.pull("inventory:stop")
-        end, function()
-            while true do
-                EventLoop.pull("peripheral_detach", function(_, name)
-                    if InventoryCollection.isMounted(name) then
-                        print("[unmount]", name)
-                        InventoryCollection.remove(name)
-                    end
-                end)
-            end
-        end)
     end)
 end
 
 function Inventory.stop()
+    InventoryCollection.clear()
     EventLoop.queue("inventory:stop")
 end
 

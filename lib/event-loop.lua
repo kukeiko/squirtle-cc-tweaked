@@ -20,7 +20,13 @@ end
 ---@param thread EventLoopThread
 ---@param event table
 local function runThread(thread, event)
+    local start = os.epoch("utc")
     local result = table.pack(coroutine.resume(thread.coroutine, table.unpack(event)))
+    local duration = os.epoch("utc") - start
+
+    if duration >= 250 then
+        print(string.format("[event-loop] thread took %dms", duration))
+    end
 
     if not result[1] then
         error(result[2])
@@ -110,6 +116,14 @@ function EventLoop.run(...)
     while #threads > 0 do
         threads = runThreads(threads, table.pack(os.pullEvent()))
     end
+end
+
+---@param event string
+---@param ... function
+function EventLoop.runUntil(event, ...)
+    EventLoop.waitForAny(function()
+        EventLoop.pull(event)
+    end, EventLoop.run(...))
 end
 
 ---@param ... function

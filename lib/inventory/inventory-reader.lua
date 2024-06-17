@@ -56,10 +56,19 @@ end
 ---@param slots table<integer, InventorySlot>
 ---@param allowAllocate? boolean
 ---@param label? string
+---@param items? table<string, true>
 ---@return Inventory
-function construct(name, type, stacks, slots, allowAllocate, label)
+function construct(name, type, stacks, slots, allowAllocate, label, items)
     ---@type Inventory
-    local inventory = {name = name, type = type, stacks = stacks, allowAllocate = allowAllocate or false, slots = slots, label = label}
+    local inventory = {
+        name = name,
+        type = type,
+        stacks = stacks,
+        allowAllocate = allowAllocate or false,
+        slots = slots,
+        label = label,
+        items = items
+    }
 
     return inventory
 end
@@ -70,9 +79,12 @@ end
 local function createStorage(name, stacks)
     ---@type table<integer, InventorySlot>
     local slots = {}
+    ---@type table<string, true>
+    local items = {}
 
     if isMonoTypeStacks(stacks) then
         local first = Utils.first(stacks)
+        items[first.name] = true
         ---@type ItemStack
         local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
 
@@ -95,10 +107,11 @@ local function createStorage(name, stacks)
             slots[index] = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
             stack.maxCount = stack.maxCount - 1
             stack.count = stack.count - 1
+            items[stack.name] = true
         end
     end
 
-    return construct(name, "storage", stacks, slots, false)
+    return construct(name, "storage", stacks, slots, false, nil, items)
 end
 
 ---@param name string
@@ -277,13 +290,17 @@ local function createSiloInput(name, stacks, nameTagSlot)
     ---@type table<integer, InventorySlot>
     local slots = {}
     local first = Utils.first(stacks)
-    ---@type ItemStack
-    local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+    ---@type ItemStack?
+    local template
+
+    if first then
+        template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+    end
 
     for index = 1, InventoryPeripheral.getSize(name) do
         if index == nameTagSlot then
             slots[index] = {index = index, tags = {nameTag = true}}
-        else
+        elseif template then
             slots[index] = {index = index, tags = {input = true}}
             local stack = stacks[index]
 
