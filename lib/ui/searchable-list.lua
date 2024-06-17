@@ -67,6 +67,8 @@ function SearchableList:run()
     local result = nil
     self.window.setCursorBlink(false)
     self.isRunning = true
+    self.searchText = ""
+    self:filter()
 
     while (true) do
         self:draw()
