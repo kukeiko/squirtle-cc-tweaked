@@ -40,7 +40,7 @@ EventLoop.run(function()
     local storage = Rpc.nearest(StorageService)
 
     while not storage do
-        os.sleep(3)
+        os.sleep(0.25)
         storage = Rpc.nearest(StorageService)
     end
 
