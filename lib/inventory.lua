@@ -520,14 +520,20 @@ function Inventory.distributeFromTag(from, to, fromTag, toTag)
     end
 
     local fromStock = Inventory.getStockByTagMultiInventory(from, fromTag)
-    local toStock = Inventory.getStockByTagMultiInventory(to, toTag)
-
     ---@type ItemStock
     local filteredFromStock = {}
 
-    for item, quantity in pairs(fromStock) do
-        if toStock[item] then
-            filteredFromStock[item] = quantity
+    if Utils.find(to, function(name)
+        return InventoryCollection.getInventory(name).allowAllocate
+    end) then
+        filteredFromStock = fromStock
+    else
+        local toStock = Inventory.getStockByTagMultiInventory(to, toTag)
+
+        for item, quantity in pairs(fromStock) do
+            if toStock[item] then
+                filteredFromStock[item] = quantity
+            end
         end
     end
 

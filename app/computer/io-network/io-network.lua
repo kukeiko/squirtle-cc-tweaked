@@ -15,7 +15,7 @@ local processTrash = require "io-network.process-trash"
 local processSiloOutputs = require "io-network.process-silo-outputs"
 
 local function main(args)
-    print("[io-network v6.3.0] booting...")
+    print("[io-network v6.3.1-dev] booting...")
     InventoryCollection.useCache = true
     Inventory.discover()
     print("[io-network] ready!")
