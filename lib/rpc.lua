@@ -20,7 +20,8 @@ local EventLoop = require "event-loop"
 
 ---@class RpcResponsePacket
 ---@field callId string
----@field response table
+---@field success boolean
+---@field response table|string
 ---@field type "response"
 
 ---@class RpcClient
@@ -154,9 +155,12 @@ function Rpc.server(service, modemName)
                 -- todo: make type safe
                 if type(message) == "table" and message.type == "request" and message.service == service.name and message.host ==
                     service.host and type(service[message.method]) == "function" then
-                    local response = table.pack(service[message.method](table.unpack(message.arguments)))
+                    local success, response = pcall(function()
+                        return table.pack(service[message.method](table.unpack(message.arguments)))
+                    end)
+
                     ---@type RpcResponsePacket
-                    local packet = {callId = message.callId, type = "response", response = response}
+                    local packet = {callId = message.callId, type = "response", response = response, success = success}
                     peripheral.call(modem, "transmit", channel, channel, packet)
                 elseif type(message) == "table" and message.type == "ping" and message.service == service.name then
                     ---@type RpcPongPacket
@@ -195,7 +199,12 @@ function Rpc.client(service, host)
 
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
                         client.distance = distance
-                        return table.unpack(message.response)
+
+                        if message.success then
+                            return table.unpack(message.response --[[@as table]] )
+                        else
+                            error(message.response)
+                        end
                     end
                 end
             end
