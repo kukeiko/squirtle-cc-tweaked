@@ -15,7 +15,7 @@ local function findItem(name, chest)
     local items = peripheral.call(chest, "list")
 
     for slot, item in pairs(items) do
-        if item.name == name then
+        if item.name == name and item.count > 1 then
             return slot
         end
     end
@@ -118,6 +118,25 @@ function getRecipeItems(barrel)
     return items
 end
 
+---@param source string
+---@param target string
+---@param barrel string
+local function moveNonRecipeItemsFromSourceToTarget(source, target, barrel)
+    while true do
+        local recipeItems = getRecipeItems(barrel)
+        ---@type table<integer, ItemStack>
+        local sourceItems = peripheral.call(source, "list")
+
+        for slot, sourceItem in pairs(sourceItems) do
+            if not recipeItems[sourceItem.name] then
+                peripheral.call(source, "pushItems", target, slot)
+            end
+        end
+
+        os.sleep(7)
+    end
+end
+
 ---@param args string[]
 local function main(args)
     print("[crafter v2.1.0] booting...")
@@ -152,19 +171,7 @@ local function main(args)
             end
         end
     end, function()
-        while true do
-            local recipeItems = getRecipeItems(barrel)
-            ---@type table<integer, ItemStack>
-            local sourceItems = peripheral.call(source, "list")
-
-            for slot, sourceItem in pairs(sourceItems) do
-                if not recipeItems[sourceItem.name] then
-                    peripheral.call(source, "pushItems", target, slot)
-                end
-            end
-
-            os.sleep(7)
-        end
+        moveNonRecipeItemsFromSourceToTarget(source, target, barrel)
     end)
 
 end
