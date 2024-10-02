@@ -128,7 +128,7 @@ local function moveNonRecipeItemsFromSourceToTarget(source, target, barrel)
         local sourceItems = peripheral.call(source, "list")
 
         for slot, sourceItem in pairs(sourceItems) do
-            if not recipeItems[sourceItem.name] then
+            if not recipeItems[sourceItem.name] and sourceItem.name ~= "minecraft:name_tag" then
                 peripheral.call(source, "pushItems", target, slot)
             end
         end
