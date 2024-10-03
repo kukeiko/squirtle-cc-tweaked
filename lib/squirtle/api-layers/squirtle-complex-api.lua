@@ -2,14 +2,14 @@ local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
-local Elemental = require "lib.squirtle.elemental"
-local Basic = require "lib.squirtle.basic"
-local Advanced = require "lib.squirtle.advanced"
+local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
+local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
+local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Inventory = require "lib.inventory.inventory-api"
 
----@class Complex : Advanced
-local Complex = {}
-setmetatable(Complex, {__index = Advanced})
+---@class SquirtleComplexApi : SquirtleAdvancedApi
+local SquirtleComplexApi = {}
+setmetatable(SquirtleComplexApi, {__index = Advanced})
 
 ---@param action string
 ---@param direction string
@@ -30,7 +30,7 @@ end
 ---@param direction? string
 ---@param steps? integer
 ---@return boolean, integer, string?
-function Complex.tryWalk(direction, steps)
+function SquirtleComplexApi.tryWalk(direction, steps)
     direction = direction or "forward"
     local native = getNative("go", direction)
     steps = steps or 1
@@ -62,10 +62,10 @@ end
 
 ---@param direction? string
 ---@param steps? integer
-function Complex.walk(direction, steps)
+function SquirtleComplexApi.walk(direction, steps)
     direction = direction or "forward"
     steps = steps or 1
-    local success, stepsTaken, message = Complex.tryWalk(direction, steps)
+    local success, stepsTaken, message = SquirtleComplexApi.tryWalk(direction, steps)
 
     if success then
         return nil
@@ -129,7 +129,7 @@ end
 ---@param direction string?
 ---@param steps integer?
 ---@return boolean, integer, string?
-function Complex.tryMove(direction, steps)
+function SquirtleComplexApi.tryMove(direction, steps)
     if direction == "back" then
         return tryMoveBack(steps)
     end
@@ -160,10 +160,10 @@ end
 
 ---@param direction? string
 ---@param steps? integer
-function Complex.move(direction, steps)
+function SquirtleComplexApi.move(direction, steps)
     direction = direction or "forward"
     steps = steps or 1
-    local success, stepsTaken, message = Complex.tryMove(direction, steps)
+    local success, stepsTaken, message = SquirtleComplexApi.tryMove(direction, steps)
 
     if success then
         return nil
@@ -199,7 +199,7 @@ local function loadFromShulker(shulker, item)
             return false
         end
 
-        Complex.mine(State.breakDirection)
+        SquirtleComplexApi.mine(State.breakDirection)
         placedSide = Basic.placeFrontTopOrBottom()
 
         if not placedSide then
@@ -243,7 +243,7 @@ end
 
 ---@param name string
 ---@return false|integer
-function Complex.selectItem(name)
+function SquirtleComplexApi.selectItem(name)
     if State.simulate then
         return false
     end
@@ -278,7 +278,7 @@ function Complex.selectItem(name)
 end
 
 ---@param refresh? boolean
-function Complex.locate(refresh)
+function SquirtleComplexApi.locate(refresh)
     if refresh then
         local x, y, z = gps.locate()
 
@@ -296,14 +296,14 @@ end
 local function stepOut(position)
     Advanced.refuelTo(2)
 
-    if not Complex.tryWalk("forward") then
+    if not SquirtleComplexApi.tryWalk("forward") then
         return false
     end
 
-    local now = Complex.locate(true)
+    local now = SquirtleComplexApi.locate(true)
     State.facing = Cardinal.fromVector(Vector.minus(now, position))
 
-    while not Complex.tryWalk("back") do
+    while not SquirtleComplexApi.tryWalk("back") do
         print("can't move back, something is blocking me. sleeping 1s...")
         os.sleep(1)
     end
@@ -344,7 +344,7 @@ end
 
 ---@return integer
 local function orientateUsingDiskDrive()
-    if not Complex.selectItem("computercraft:disk_drive") then
+    if not SquirtleComplexApi.selectItem("computercraft:disk_drive") then
         error("no disk drive in inventory")
     end
 
@@ -392,8 +392,8 @@ end
 
 ---@param refresh? boolean
 ---@return Vector position, integer facing
-function Complex.orientate(refresh)
-    local position = Complex.locate(refresh)
+function SquirtleComplexApi.orientate(refresh)
+    local position = SquirtleComplexApi.locate(refresh)
     local facing = State.facing
 
     if refresh or not facing then
@@ -409,4 +409,4 @@ function Complex.orientate(refresh)
     return State.position, State.facing
 end
 
-return Complex
+return SquirtleComplexApi

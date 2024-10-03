@@ -6,17 +6,17 @@ local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
-local Basic = require "lib.squirtle.basic"
-local Complex = require "lib.squirtle.complex"
+local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
+local Complex = require "lib.squirtle.api-layers.squirtle-complex-api"
 local requireItems = require "lib.squirtle.require-items"
 
----@class Squirtle : Complex
-local Squirtle = {}
-setmetatable(Squirtle, {__index = Complex})
+---@class SquirtleApi : SquirtleComplexApi
+local SquirtleApi = {}
+setmetatable(SquirtleApi, {__index = Complex})
 
 ---@param predicate? (fun(block: Block) : boolean) | string[]
 ---@return fun() : nil
-function Squirtle.setBreakable(predicate)
+function SquirtleApi.setBreakable(predicate)
     return State.setBreakable(predicate)
 end
 
@@ -42,7 +42,7 @@ end
 ---@param side? string
 ---@param block? string
 ---@return boolean
-function Squirtle.tryPut(side, block)
+function SquirtleApi.tryPut(side, block)
     side = side or "front"
     local native = getNative("place", side)
 
@@ -51,8 +51,8 @@ function Squirtle.tryPut(side, block)
     end
 
     if block then
-        while not Squirtle.selectItem(block) do
-            Squirtle.requireItems({[block] = 1})
+        while not SquirtleApi.selectItem(block) do
+            SquirtleApi.requireItems({[block] = 1})
         end
     end
 
@@ -60,7 +60,7 @@ function Squirtle.tryPut(side, block)
         return true
     end
 
-    while Squirtle.tryMine(side) do
+    while SquirtleApi.tryMine(side) do
     end
 
     -- [todo] band-aid fix
@@ -73,74 +73,74 @@ end
 
 ---@param side? string
 ---@param block? string
-function Squirtle.put(side, block)
+function SquirtleApi.put(side, block)
     if State.simulate then
         return simulatePut(block)
     end
 
-    if not Squirtle.tryPut(side, block) then
+    if not SquirtleApi.tryPut(side, block) then
         error("failed to place")
     end
 end
 
 ---@param side string
 ---@return boolean success if everything could be dumped
-function Squirtle.dump(side)
-    local items = Squirtle.getStacks()
+function SquirtleApi.dump(side)
+    local items = SquirtleApi.getStacks()
 
     for slot in pairs(items) do
-        Squirtle.select(slot)
-        Squirtle.drop(side)
+        SquirtleApi.select(slot)
+        SquirtleApi.drop(side)
     end
 
-    return Squirtle.isEmpty()
+    return SquirtleApi.isEmpty()
 end
 
-function Squirtle.lookAtChest()
-    Squirtle.turn(Inventory.findChest())
+function SquirtleApi.lookAtChest()
+    SquirtleApi.turn(Inventory.findChest())
 end
 
 ---@param items table<string, integer>
 ---@param shulker boolean?
-function Squirtle.requireItems(items, shulker)
+function SquirtleApi.requireItems(items, shulker)
     requireItems(items, shulker)
 end
 
 ---@param target Vector
 ---@return boolean, string?
-function Squirtle.walkToPoint(target)
-    local delta = Vector.minus(target, Squirtle.locate())
+function SquirtleApi.walkToPoint(target)
+    local delta = Vector.minus(target, SquirtleApi.locate())
 
     if delta.y > 0 then
-        if not Squirtle.tryWalk("top", delta.y) then
+        if not SquirtleApi.tryWalk("top", delta.y) then
             return false, "top"
         end
     elseif delta.y < 0 then
-        if not Squirtle.tryWalk("bottom", -delta.y) then
+        if not SquirtleApi.tryWalk("bottom", -delta.y) then
             return false, "bottom"
         end
     end
 
     if delta.x > 0 then
-        Squirtle.face(Cardinal.east)
-        if not Squirtle.tryWalk("front", delta.x) then
+        SquirtleApi.face(Cardinal.east)
+        if not SquirtleApi.tryWalk("front", delta.x) then
             return false, "front"
         end
     elseif delta.x < 0 then
-        Squirtle.face(Cardinal.west)
-        if not Squirtle.tryWalk("front", -delta.x) then
+        SquirtleApi.face(Cardinal.west)
+        if not SquirtleApi.tryWalk("front", -delta.x) then
             return false, "front"
         end
     end
 
     if delta.z > 0 then
-        Squirtle.face(Cardinal.south)
-        if not Squirtle.tryWalk("front", delta.z) then
+        SquirtleApi.face(Cardinal.south)
+        if not SquirtleApi.tryWalk("front", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
-        Squirtle.face(Cardinal.north)
-        if not Squirtle.tryWalk("front", -delta.z) then
+        SquirtleApi.face(Cardinal.north)
+        if not SquirtleApi.tryWalk("front", -delta.z) then
             return false, "front"
         end
     end
@@ -152,7 +152,7 @@ end
 ---@return boolean, string?, integer?
 local function walkPath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = Squirtle.walkToPoint(next)
+        local success, failedSide = SquirtleApi.walkToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -165,17 +165,17 @@ end
 ---@param to Vector
 ---@param world? World
 ---@param breakable? function
-function Squirtle.navigate(to, world, breakable)
+function SquirtleApi.navigate(to, world, breakable)
     breakable = breakable or function(...)
         return false
     end
 
     if not world then
-        local position = Squirtle.locate()
+        local position = SquirtleApi.locate()
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = Squirtle.orientate()
+    local from, facing = SquirtleApi.orientate()
 
     while true do
         local path, msg = findPath(from, to, facing, world)
@@ -185,18 +185,18 @@ function Squirtle.navigate(to, world, breakable)
         end
 
         local distance = Vector.manhattan(from, to)
-        Squirtle.refuelTo(distance)
+        SquirtleApi.refuelTo(distance)
         local success, failedSide = walkPath(path)
 
         if success then
             return true
         elseif failedSide then
-            from, facing = Squirtle.orientate()
-            local block = Squirtle.probe(failedSide)
+            from, facing = SquirtleApi.orientate()
+            local block = SquirtleApi.probe(failedSide)
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
 
             if block and breakable(block) then
-                Squirtle.mine(failedSide)
+                SquirtleApi.mine(failedSide)
             elseif block then
                 World.setBlock(world, scannedLocation)
             else
@@ -208,28 +208,28 @@ end
 
 ---@param checkEarlyExit? fun() : boolean
 ---@return boolean
-function Squirtle.navigateTunnel(checkEarlyExit)
+function SquirtleApi.navigateTunnel(checkEarlyExit)
     local forbidden
 
     while true do
         local strategy
 
-        if Squirtle.tryWalk("forward") then
+        if SquirtleApi.tryWalk("forward") then
             strategy = "forward"
             forbidden = "back"
-        elseif forbidden ~= "up" and Squirtle.tryWalk("up") then
+        elseif forbidden ~= "up" and SquirtleApi.tryWalk("up") then
             strategy = "up"
             forbidden = "down"
-        elseif forbidden ~= "down" and Squirtle.tryWalk("down") then
+        elseif forbidden ~= "down" and SquirtleApi.tryWalk("down") then
             strategy = "down"
             forbidden = "up"
-        elseif Squirtle.turn("left") and Squirtle.tryWalk("forward") then
+        elseif SquirtleApi.turn("left") and SquirtleApi.tryWalk("forward") then
             strategy = "forward"
             forbidden = "back"
-        elseif Squirtle.turn("left") and forbidden ~= "back" and Squirtle.tryWalk("forward") then
+        elseif SquirtleApi.turn("left") and forbidden ~= "back" and SquirtleApi.tryWalk("forward") then
             strategy = "forward"
             forbidden = "back"
-        elseif Squirtle.turn("left") and Squirtle.tryWalk("forward") then
+        elseif SquirtleApi.turn("left") and SquirtleApi.tryWalk("forward") then
             strategy = "forward"
             forbidden = "back"
         else
@@ -237,13 +237,13 @@ function Squirtle.navigateTunnel(checkEarlyExit)
         end
 
         if strategy == "forward" then
-            while Squirtle.tryWalk("forward") do
+            while SquirtleApi.tryWalk("forward") do
             end
         elseif strategy == "up" then
-            while Squirtle.tryWalk("up") do
+            while SquirtleApi.tryWalk("up") do
             end
         elseif strategy == "down" then
-            while Squirtle.tryWalk("down") do
+            while SquirtleApi.tryWalk("down") do
             end
         end
 
@@ -255,7 +255,7 @@ end
 
 ---@param initial SimulationDetails?
 ---@param target SimulationDetails?
-function Squirtle.simulate(initial, target)
+function SquirtleApi.simulate(initial, target)
     State.simulate = true
     State.simulation.initial = initial
     State.simulation.target = target
@@ -273,7 +273,7 @@ end
 ---@field orientate? "move"|"disk-drive"
 ---@field breakDirection? "top"|"front"|"bottom"
 ---@param options SquirtleConfigOptions
-function Squirtle.configure(options)
+function SquirtleApi.configure(options)
     if options.orientate then
         State.orientationMethod = options.orientate
     end
@@ -283,7 +283,7 @@ function Squirtle.configure(options)
     end
 end
 
-function Squirtle.recover()
+function SquirtleApi.recover()
     local diskDriveDirections = {"top", "bottom"}
 
     for _, direction in pairs(diskDriveDirections) do
@@ -301,4 +301,4 @@ function Squirtle.recover()
     end
 end
 
-return Squirtle
+return SquirtleApi

@@ -1,6 +1,6 @@
 local Utils = require "lib.common.utils"
-local Elemental = require "lib.squirtle.elemental"
-local Basic = require "lib.squirtle.basic"
+local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
+local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 
 -- [todo] add remaining
 local itemMaxCounts = {["minecraft:lava_bucket"] = 1, ["minecraft:water_bucket"] = 1, ["minecraft:bucket"] = 16}

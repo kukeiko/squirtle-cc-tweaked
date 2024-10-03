@@ -1,14 +1,14 @@
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
-local Elemental = require "lib.squirtle.elemental"
+local SquirtleElementalApi = require "lib.squirtle.api-layers.squirtle-elemental-api"
 
----@class Basic:Elemental
-local Basic = {}
-setmetatable(Basic, {__index = Elemental})
+---@class SquirtleBasicApi : SquirtleElementalApi
+local SquirtleBasicApi = {}
+setmetatable(SquirtleBasicApi, {__index = SquirtleElementalApi})
 
 ---@param target integer
 ---@param current? integer
-function Basic.face(target, current)
+function SquirtleBasicApi.face(target, current)
     if State.simulate then
         return nil
     end
@@ -20,33 +20,33 @@ function Basic.face(target, current)
     end
 
     if (current + 2) % 4 == target then
-        Elemental.turn("back")
+        SquirtleElementalApi.turn("back")
     elseif (current + 1) % 4 == target then
-        Elemental.turn("right")
+        SquirtleElementalApi.turn("right")
     elseif (current - 1) % 4 == target then
-        Elemental.turn("left")
+        SquirtleElementalApi.turn("left")
     end
 
     return target
 end
 
 ---@return string? direction
-function Basic.placeFrontTopOrBottom()
+function SquirtleBasicApi.placeFrontTopOrBottom()
     local directions = {"front", "top", "bottom"}
 
     for _, direction in pairs(directions) do
-        if Elemental.place(direction) then
+        if SquirtleElementalApi.place(direction) then
             return direction
         end
     end
 end
 
 ---@return string? direction
-function Basic.placeTopOrBottom()
+function SquirtleBasicApi.placeTopOrBottom()
     local directions = {"top", "bottom"}
 
     for _, direction in pairs(directions) do
-        if Elemental.place(direction) then
+        if SquirtleElementalApi.place(direction) then
             return direction
         end
     end
@@ -54,8 +54,8 @@ end
 
 ---@param direction? string
 ---@return boolean, string?
-function Basic.mine(direction)
-    local success, message = Basic.tryMine(direction)
+function SquirtleBasicApi.mine(direction)
+    local success, message = SquirtleBasicApi.tryMine(direction)
 
     -- if there is no message, then there just wasn't anything to dig, meaning every other case is interpreted as an error
     if not success and message then
@@ -67,14 +67,14 @@ end
 
 ---@param direction? string
 ---@return boolean, string?
-function Basic.tryMine(direction)
+function SquirtleBasicApi.tryMine(direction)
     if State.simulate then
         return true
     end
 
     direction = direction or "forward"
     local native = getNative("dig", direction)
-    local block = Elemental.probe(direction)
+    local block = SquirtleElementalApi.probe(direction)
 
     if not block then
         return false
@@ -95,29 +95,29 @@ end
 
 ---@param fuel integer
 ---@return boolean
-function Basic.hasFuel(fuel)
-    local level = Elemental.getFuelLevel()
+function SquirtleBasicApi.hasFuel(fuel)
+    local level = SquirtleElementalApi.getFuelLevel()
 
     return level == "unlimited" or level >= fuel
 end
 
 ---@param limit? integer
 ---@return integer
-function Basic.missingFuel(limit)
-    local current = Elemental.getFuelLevel()
+function SquirtleBasicApi.missingFuel(limit)
+    local current = SquirtleElementalApi.getFuelLevel()
 
     if current == "unlimited" then
         return 0
     end
 
-    return (limit or Elemental.getFuelLimit()) - current
+    return (limit or SquirtleElementalApi.getFuelLimit()) - current
 end
 
 ---@param slot integer
 ---@return boolean
-function Basic.selectIfNotEmpty(slot)
-    if Elemental.getItemCount(slot) > 0 then
-        return Elemental.select(slot)
+function SquirtleBasicApi.selectIfNotEmpty(slot)
+    if SquirtleElementalApi.getItemCount(slot) > 0 then
+        return SquirtleElementalApi.select(slot)
     else
         return false
     end
@@ -125,18 +125,18 @@ end
 
 ---@param startAt? number
 ---@return integer
-function Basic.selectEmpty(startAt)
+function SquirtleBasicApi.selectEmpty(startAt)
     startAt = startAt or turtle.getSelectedSlot()
 
-    for i = 0, Basic.size() - 1 do
+    for i = 0, SquirtleBasicApi.size() - 1 do
         local slot = startAt + i
 
-        if slot > Basic.size() then
-            slot = slot - Basic.size()
+        if slot > SquirtleBasicApi.size() then
+            slot = slot - SquirtleBasicApi.size()
         end
 
-        if Basic.getItemCount(slot) == 0 then
-            Basic.select(slot)
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
+            SquirtleBasicApi.select(slot)
 
             return slot
         end
@@ -146,17 +146,17 @@ function Basic.selectEmpty(startAt)
 end
 
 ---@return integer
-function Basic.selectFirstEmpty()
-    return Basic.selectEmpty(1)
+function SquirtleBasicApi.selectFirstEmpty()
+    return SquirtleBasicApi.selectEmpty(1)
 end
 
 ---@param startAt? number
-function Basic.firstEmptySlot(startAt)
+function SquirtleBasicApi.firstEmptySlot(startAt)
     -- [todo] this startAt logic works a bit differently to "Backpack.selectEmpty()" as it does not wrap around
     startAt = startAt or 1
 
-    for slot = startAt, Basic.size() do
-        if Basic.getItemCount(slot) == 0 then
+    for slot = startAt, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
             return slot
         end
     end
@@ -165,11 +165,11 @@ function Basic.firstEmptySlot(startAt)
 end
 
 ---@return integer
-function Basic.numEmptySlots()
+function SquirtleBasicApi.numEmptySlots()
     local numEmpty = 0
 
-    for slot = 1, Basic.size() do
-        if Basic.getItemCount(slot) == 0 then
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
             numEmpty = numEmpty + 1
         end
     end
@@ -178,9 +178,9 @@ function Basic.numEmptySlots()
 end
 
 ---@return boolean
-function Basic.isFull()
-    for slot = 1, Basic.size() do
-        if Basic.getItemCount(slot) == 0 then
+function SquirtleBasicApi.isFull()
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
             return false
         end
     end
@@ -189,9 +189,9 @@ function Basic.isFull()
 end
 
 ---@return boolean
-function Basic.isEmpty()
-    for slot = 1, Basic.size() do
-        if Basic.getItemCount(slot) > 0 then
+function SquirtleBasicApi.isEmpty()
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) > 0 then
             return false
         end
     end
@@ -200,11 +200,11 @@ function Basic.isEmpty()
 end
 
 ---@return ItemStack[]
-function Basic.getStacks()
+function SquirtleBasicApi.getStacks()
     local stacks = {}
 
-    for slot = 1, Basic.size() do
-        local item = Basic.getStack(slot)
+    for slot = 1, SquirtleBasicApi.size() do
+        local item = SquirtleBasicApi.getStack(slot)
 
         if item then
             stacks[slot] = item
@@ -216,7 +216,7 @@ end
 
 ---@param predicate string|function<boolean, ItemStack>
 ---@return integer
-function Basic.getItemStock(predicate)
+function SquirtleBasicApi.getItemStock(predicate)
     if type(predicate) == "string" then
         local name = predicate
 
@@ -229,7 +229,7 @@ function Basic.getItemStock(predicate)
 
     local stock = 0
 
-    for _, stack in pairs(Basic.getStacks()) do
+    for _, stack in pairs(SquirtleBasicApi.getStacks()) do
         if predicate(stack) then
             stock = stock + stack.count
         end
@@ -239,11 +239,11 @@ function Basic.getItemStock(predicate)
 end
 
 ---@return table<string, integer>
-function Basic.getStock()
+function SquirtleBasicApi.getStock()
     ---@type table<string, integer>
     local stock = {}
 
-    for _, stack in pairs(Basic.getStacks()) do
+    for _, stack in pairs(SquirtleBasicApi.getStacks()) do
         stock[stack.name] = (stock[stack.name] or 0) + stack.count
     end
 
@@ -254,11 +254,11 @@ end
 ---@param exact? boolean
 ---@param startAtSlot? integer
 ---@return integer?
-function Basic.find(name, exact, startAtSlot)
+function SquirtleBasicApi.find(name, exact, startAtSlot)
     startAtSlot = startAtSlot or 1
 
-    for slot = startAtSlot, Basic.size() do
-        local item = Basic.getStack(slot)
+    for slot = startAtSlot, SquirtleBasicApi.size() do
+        local item = SquirtleBasicApi.getStack(slot)
 
         if item and exact and item.name == name then
             return slot
@@ -271,12 +271,12 @@ end
 ---@param item string
 ---@param minCount? integer
 ---@return boolean
-function Basic.has(item, minCount)
+function SquirtleBasicApi.has(item, minCount)
     if type(minCount) == "number" then
-        return Basic.getItemStock(item) >= minCount
+        return SquirtleBasicApi.getItemStock(item) >= minCount
     else
-        for slot = 1, Basic.size() do
-            local stack = Basic.getStack(slot)
+        for slot = 1, SquirtleBasicApi.size() do
+            local stack = SquirtleBasicApi.getStack(slot)
 
             if stack and stack.name == item then
                 return true
@@ -287,28 +287,28 @@ function Basic.has(item, minCount)
     end
 end
 
-function Basic.condense()
+function SquirtleBasicApi.condense()
     if State.simulate then
         return nil
     end
 
-    for slot = Basic.size(), 1, -1 do
-        local item = Basic.getStack(slot)
+    for slot = SquirtleBasicApi.size(), 1, -1 do
+        local item = SquirtleBasicApi.getStack(slot)
 
         if item then
             for targetSlot = 1, slot - 1 do
-                local candidate = Basic.getStack(targetSlot, true)
+                local candidate = SquirtleBasicApi.getStack(targetSlot, true)
 
                 if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
-                    Basic.select(slot)
-                    Basic.transferTo(targetSlot)
+                    SquirtleBasicApi.select(slot)
+                    SquirtleBasicApi.transferTo(targetSlot)
 
-                    if Basic.getItemCount(slot) == 0 then
+                    if SquirtleBasicApi.getItemCount(slot) == 0 then
                         break
                     end
                 elseif not candidate then
-                    Basic.select(slot)
-                    Basic.transferTo(targetSlot)
+                    SquirtleBasicApi.select(slot)
+                    SquirtleBasicApi.transferTo(targetSlot)
                     break
                 end
             end
@@ -316,4 +316,4 @@ function Basic.condense()
     end
 end
 
-return Basic
+return SquirtleBasicApi

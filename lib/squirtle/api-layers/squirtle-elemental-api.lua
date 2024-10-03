@@ -3,14 +3,14 @@ local Cardinal = require "lib.common.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 
----@class Elemental
-local Elemental = {}
+---@class SquirtleElementalApi
+local SquirtleElementalApi = {}
 
 ---@param direction string
-function Elemental.turn(direction)
+function SquirtleElementalApi.turn(direction)
     if direction == "back" then
-        Elemental.turn("left")
-        Elemental.turn("left")
+        SquirtleElementalApi.turn("left")
+        SquirtleElementalApi.turn("left")
     elseif direction == "left" or direction == "right" then
         if State.flipTurns then
             if direction == "left" then
@@ -32,7 +32,7 @@ end
 ---@param direction? string
 ---@param name? table|string
 ---@return Block? block
-function Elemental.probe(direction, name)
+function SquirtleElementalApi.probe(direction, name)
     direction = direction or "front"
     local success, block = getNative("inspect", direction)()
 
@@ -54,7 +54,7 @@ end
 ---@param direction? string
 ---@param text? string
 ---@return boolean, string?
-function Elemental.place(direction, text)
+function SquirtleElementalApi.place(direction, text)
     if State.simulate then
         return true
     end
@@ -64,11 +64,11 @@ function Elemental.place(direction, text)
 end
 
 ---@return string? direction
-function Elemental.placeFrontTopOrBottom()
+function SquirtleElementalApi.placeFrontTopOrBottom()
     local directions = {"front", "top", "bottom"}
 
     for _, direction in pairs(directions) do
-        if Elemental.place(direction) then
+        if SquirtleElementalApi.place(direction) then
             return direction
         end
     end
@@ -77,7 +77,7 @@ end
 ---@param direction? string
 ---@param count? integer
 ---@return boolean, string?
-function Elemental.drop(direction, count)
+function SquirtleElementalApi.drop(direction, count)
     if State.simulate then
         return true
     end
@@ -89,7 +89,7 @@ end
 ---@param direction? string
 ---@param count? integer
 ---@return boolean, string?
-function Elemental.suck(direction, count)
+function SquirtleElementalApi.suck(direction, count)
     if State.simulate then
         return true
     end
@@ -101,7 +101,7 @@ end
 ---@param direction? string
 ---@param tool? string
 ---@return boolean, string?
-function Elemental.dig(direction, tool)
+function SquirtleElementalApi.dig(direction, tool)
     if State.simulate then
         return true
     end
@@ -111,13 +111,13 @@ function Elemental.dig(direction, tool)
 end
 
 ---@return integer|"unlimited"
-function Elemental.getFuelLevel()
+function SquirtleElementalApi.getFuelLevel()
     return turtle.getFuelLevel()
 end
 
 ---@return integer
-function Elemental.getNonInfiniteFuelLevel()
-    local fuel = Elemental.getFuelLevel()
+function SquirtleElementalApi.getNonInfiniteFuelLevel()
+    local fuel = SquirtleElementalApi.getFuelLevel()
 
     if type(fuel) ~= "number" then
         error("expected to not use unlimited fuel configuration")
@@ -127,36 +127,36 @@ function Elemental.getNonInfiniteFuelLevel()
 end
 
 ---@return integer|"unlimited"
-function Elemental.getFuelLimit()
+function SquirtleElementalApi.getFuelLimit()
     return turtle.getFuelLimit()
 end
 
 ---@param quantity? integer
 ---@return boolean, string?
-function Elemental.refuel(quantity)
+function SquirtleElementalApi.refuel(quantity)
     return turtle.refuel(quantity)
 end
 
 ---@return integer
-function Elemental.size()
+function SquirtleElementalApi.size()
     return 16
 end
 
 ---@param slot? integer
 ---@return integer
-function Elemental.getItemCount(slot)
+function SquirtleElementalApi.getItemCount(slot)
     return turtle.getItemCount(slot)
 end
 
 ---@param slot? integer
 ---@return integer
-function Elemental.getItemSpace(slot)
+function SquirtleElementalApi.getItemSpace(slot)
     return turtle.getItemSpace(slot)
 end
 
 ---@param slot integer
 ---@return boolean
-function Elemental.select(slot)
+function SquirtleElementalApi.select(slot)
     if State.simulate then
         return true
     end
@@ -165,22 +165,22 @@ function Elemental.select(slot)
 end
 
 ---@return integer
-function Elemental.getSelectedSlot()
+function SquirtleElementalApi.getSelectedSlot()
     return turtle.getSelectedSlot()
 end
 
 ---@param slot integer
 ---@param detailed? boolean
 ---@return ItemStack?
-function Elemental.getStack(slot, detailed)
+function SquirtleElementalApi.getStack(slot, detailed)
     return turtle.getItemDetail(slot, detailed)
 end
 
 ---@param slot integer
 ---@param quantity? integer
 ---@return boolean
-function Elemental.transferTo(slot, quantity)
+function SquirtleElementalApi.transferTo(slot, quantity)
     return turtle.transferTo(slot, quantity)
 end
 
-return Elemental
+return SquirtleElementalApi

@@ -1,15 +1,15 @@
 local Utils = require "lib.common.utils"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Inventory = require "lib.inventory.inventory-api"
-local Elemental = require "lib.squirtle.elemental"
-local Basic = require "lib.squirtle.basic"
+local SquirtleElementalApi = require "lib.squirtle.api-layers.squirtle-elemental-api"
+local SquirtleBasicApi = require "lib.squirtle.api-layers.squirtle-basic-api"
 
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
 
----@class Advanced : Basic
-local Advanced = {}
-setmetatable(Advanced, {__index = Basic})
+---@class SquirtleAdvancedApi : SquirtleBasicApi
+local SquirtleAdvancedApi = {}
+setmetatable(SquirtleAdvancedApi, {__index = SquirtleBasicApi})
 
 ---@param stacks ItemStack[]
 ---@param fuel number
@@ -40,18 +40,18 @@ end
 ---@param fuel? integer
 ---@param allowLava? boolean
 local function refuelFromBackpack(fuel, allowLava)
-    fuel = fuel or Basic.missingFuel()
-    local fuelStacks = pickFuelStacks(Basic.getStacks(), fuel, allowLava)
-    local emptyBucketSlot = Basic.find(bucket)
+    fuel = fuel or SquirtleBasicApi.missingFuel()
+    local fuelStacks = pickFuelStacks(SquirtleBasicApi.getStacks(), fuel, allowLava)
+    local emptyBucketSlot = SquirtleBasicApi.find(bucket)
 
     for slot, stack in pairs(fuelStacks) do
-        Basic.select(slot)
-        Basic.refuel(stack.count)
+        SquirtleBasicApi.select(slot)
+        SquirtleBasicApi.refuel(stack.count)
 
-        local remaining = Basic.getStack(slot)
+        local remaining = SquirtleBasicApi.getStack(slot)
 
         if remaining and remaining.name == bucket then
-            if not emptyBucketSlot or not Basic.transferTo(emptyBucketSlot) then
+            if not emptyBucketSlot or not SquirtleBasicApi.transferTo(emptyBucketSlot) then
                 emptyBucketSlot = slot
             end
         end
@@ -60,13 +60,13 @@ end
 
 ---@param fuel? integer
 local function refuelWithHelpFromPlayer(fuel)
-    fuel = fuel or Basic.missingFuel()
+    fuel = fuel or SquirtleBasicApi.missingFuel()
     local _, y = term.getCursorPos()
 
-    while not Basic.hasFuel(fuel) do
+    while not SquirtleBasicApi.hasFuel(fuel) do
         term.setCursorPos(1, y)
         term.clearLine()
-        local openFuel = fuel - Basic.getFuelLevel()
+        local openFuel = fuel - SquirtleBasicApi.getFuelLevel()
         term.write(string.format("[help] need %d more fuel please", openFuel))
         term.setCursorPos(1, y + 1)
         os.pullEvent("turtle_inventory")
@@ -75,16 +75,16 @@ local function refuelWithHelpFromPlayer(fuel)
 end
 
 ---@param fuel integer
-function Advanced.refuelTo(fuel)
-    if Basic.hasFuel(fuel) then
+function SquirtleAdvancedApi.refuelTo(fuel)
+    if SquirtleBasicApi.hasFuel(fuel) then
         return true
-    elseif fuel > Basic.getFuelLimit() then
-        error(string.format("required fuel is %d more than the tank can hold", fuel - Basic.getFuelLimit()))
+    elseif fuel > SquirtleBasicApi.getFuelLimit() then
+        error(string.format("required fuel is %d more than the tank can hold", fuel - SquirtleBasicApi.getFuelLimit()))
     end
 
     refuelFromBackpack(fuel)
 
-    if not Basic.hasFuel(fuel) then
+    if not SquirtleBasicApi.hasFuel(fuel) then
         refuelWithHelpFromPlayer(fuel)
     end
 end
@@ -93,16 +93,16 @@ end
 ---@param slot integer
 ---@param quantity? integer
 ---@return boolean, string?
-function Advanced.suckSlot(inventory, slot, quantity)
+function SquirtleAdvancedApi.suckSlot(inventory, slot, quantity)
     if slot == 1 then
-        return Elemental.suck(inventory, quantity)
+        return SquirtleElementalApi.suck(inventory, quantity)
     end
 
     local items = InventoryPeripheral.getStacks(inventory)
 
     if items[1] == nil then
         InventoryPeripheral.move(inventory, slot, 1, quantity)
-        local success, message = Elemental.suck(inventory, quantity)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
         InventoryPeripheral.move(inventory, 1, slot)
 
         return success, message
@@ -110,23 +110,23 @@ function Advanced.suckSlot(inventory, slot, quantity)
 
     local firstEmptySlot = Utils.firstEmptySlot(items, InventoryPeripheral.getSize(inventory))
 
-    if not firstEmptySlot and Basic.isFull() then
+    if not firstEmptySlot and SquirtleBasicApi.isFull() then
         error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
     elseif firstEmptySlot then
         InventoryPeripheral.move(inventory, 1, firstEmptySlot)
         InventoryPeripheral.move(inventory, slot, 1, quantity)
-        local success, message = Elemental.suck(inventory, quantity)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
         InventoryPeripheral.move(inventory, 1, slot)
 
         return success, message
     else
-        local initialSlot = Elemental.getSelectedSlot()
-        Basic.selectFirstEmpty()
-        Elemental.suck(inventory)
+        local initialSlot = SquirtleElementalApi.getSelectedSlot()
+        SquirtleBasicApi.selectFirstEmpty()
+        SquirtleElementalApi.suck(inventory)
         InventoryPeripheral.move(inventory, slot, 1)
-        Elemental.drop(inventory)
-        local success, message = Elemental.suck(inventory, quantity)
-        Elemental.select(initialSlot)
+        SquirtleElementalApi.drop(inventory)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
+        SquirtleElementalApi.select(initialSlot)
 
         return success, message
     end
@@ -135,14 +135,14 @@ end
 ---@param from string
 ---@param to string
 ---@return ItemStock transferredTotal, ItemStock open
-function Advanced.pushOutput(from, to)
+function SquirtleAdvancedApi.pushOutput(from, to)
     return Inventory.transferFromTag(from, to, "output", "output")
 end
 
 ---@param from string
 ---@param to string
-function Advanced.pushAllOutput(from, to)
-    local _, open = Advanced.pushOutput(from, to)
+function SquirtleAdvancedApi.pushAllOutput(from, to)
+    local _, open = SquirtleAdvancedApi.pushOutput(from, to)
 
     if Utils.count(open) > 0 then
         print("output full, waiting...")
@@ -150,7 +150,7 @@ function Advanced.pushAllOutput(from, to)
 
     while Utils.count(open) > 0 do
         os.sleep(7)
-        _, open = Advanced.pushOutput(from, to)
+        _, open = SquirtleAdvancedApi.pushOutput(from, to)
     end
 end
 
@@ -158,7 +158,7 @@ end
 ---@param to string
 ---@param transferredOutput? ItemStock
 ---@return ItemStock transferredTotal, ItemStock open
-function Advanced.pullInput(from, to, transferredOutput)
+function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
     local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
     local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
     local toStock = Inventory.getInventoryStockByTag(to, "input")
@@ -183,4 +183,4 @@ function Advanced.pullInput(from, to, transferredOutput)
     return Inventory.transferFromTag(from, to, "input", "input", total)
 end
 
-return Advanced
+return SquirtleAdvancedApi
