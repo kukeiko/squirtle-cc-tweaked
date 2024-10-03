@@ -6,17 +6,17 @@ local Rpc = require "lib.common.rpc"
 local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
 local QuestService = require "lib.common.quest-service"
-local StorageService = require "lib.features.storage-service"
-local processDrains = require "io-network.process-drains"
-local processFurnaces = require "io-network.process-furnaces"
-local processIo = require "io-network.process-io"
-local processQuickAccess = require "io-network.process-quick-access"
-local processShulkers = require "io-network.process-shulkers"
-local processTrash = require "io-network.process-trash"
-local processSiloOutputs = require "io-network.process-silo-outputs"
-local transferItemStockQuester = require "io-network.questers.transfer-item-stock-quester"
+local StorageService = require "lib.features.storage.storage-service"
+local processDrains = require "lib.features.storage.processors.process-drains"
+local processFurnaces = require "lib.features.storage.processors.process-furnaces"
+local processIo = require "lib.features.storage.processors.process-io"
+local processQuickAccess = require "lib.features.storage.processors.process-quick-access"
+local processShulkers = require "lib.features.storage.processors.process-shulkers"
+local processTrash = require "lib.features.storage.processors.process-trash"
+local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
+local transferItemStockQuester = require "lib.features.storage.questers.transfer-item-stock-quester"
 
-local function main(args)
+local function main()
     print("[io-network v7.0.0-dev] booting...")
     InventoryCollection.useCache = true
     Inventory.discover()
@@ -84,4 +84,4 @@ local function main(args)
     end)
 end
 
-return main(arg)
+return main()

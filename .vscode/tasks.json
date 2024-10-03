@@ -11,7 +11,7 @@
         {
             "label": "build computer:io-network",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network/io-network.lua -p app/computer/?.lua -p ?.lua -o dist/computer/io-network"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network.lua -p app/computer/?.lua -p ?.lua -o dist/computer/io-network"
         },
         {
             "label": "build computer:dispenser",
