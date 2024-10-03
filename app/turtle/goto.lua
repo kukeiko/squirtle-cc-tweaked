@@ -1,6 +1,6 @@
 package.path = package.path .. ";/?.lua"
 
-local World = require "lib.elements.world"
+local World = require "lib.common.world"
 local Squirtle = require "lib.squirtle"
 
 local function printUsage()

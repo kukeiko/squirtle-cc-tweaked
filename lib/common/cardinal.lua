@@ -1,5 +1,5 @@
-local Vector = require "lib.elements.vector"
-local Side = require "lib.elements.side"
+local Vector = require "lib.common.vector"
+local Side = require "lib.common.side"
 
 ---@class Cardinal
 local Cardinal = {south = 0, west = 1, north = 2, east = 3, up = 4, down = 5}

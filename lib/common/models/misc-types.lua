@@ -7,3 +7,8 @@
 ---@field count integer
 ---@field ingredients table<string, integer[]>
 ---
+---@class Block
+---@field name string
+---@field state table
+---@field tags table
+---

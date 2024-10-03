@@ -1,8 +1,8 @@
 local Squirtle = require "lib.squirtle"
 local SquirtleState = require "lib.squirtle.state"
-local Cardinal = require "lib.elements.cardinal"
-local Vector = require "lib.elements.vector"
-local World = require "lib.elements.world"
+local Cardinal = require "lib.common.cardinal"
+local Vector = require "lib.common.vector"
+local World = require "lib.common.world"
 
 local function printUsage()
     print("Usage:")

@@ -3,7 +3,7 @@ local Pretty = require(ccPretty)
 package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
-local Cardinal = require "lib.elements.cardinal"
+local Cardinal = require "lib.common.cardinal"
 local Squirtle = require "lib.squirtle"
 local EventLoop = require "lib.event-loop"
 local Inventory = require "lib.inventory"

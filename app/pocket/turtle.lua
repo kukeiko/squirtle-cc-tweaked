@@ -1,6 +1,6 @@
 package.path = package.path .. ";/?.lua"
 
-local Vector = require "lib.elements.vector"
+local Vector = require "lib.common.vector"
 local Rpc = require "lib.rpc"
 local SquirtleService = require "lib.services.squirtle-service"
 

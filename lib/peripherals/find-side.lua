@@ -1,5 +1,5 @@
 local Utils = require "lib.common.utils"
-local allSideNames = require "lib.elements.side.all-names"
+local Side = require "lib.common.side"
 
 ---@param types string[]|string
 ---@param sides? string[]
@@ -9,7 +9,7 @@ return function(types, sides)
         types = {types}
     end
 
-    sides = sides or allSideNames()
+    sides = sides or Side.allNames()
 
     for i = 1, #sides do
         local foundTypes = {peripheral.getType(sides[i])}

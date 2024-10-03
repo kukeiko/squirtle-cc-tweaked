@@ -1,4 +1,4 @@
-local Side = require "lib.elements.side"
+local Side = require "lib.common.side"
 local Squirtle = require "lib.squirtle"
 local SquirtleState = require "lib.squirtle.state"
 

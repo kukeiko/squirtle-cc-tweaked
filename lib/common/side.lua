@@ -30,6 +30,11 @@ for k, v in pairs(Side) do
     names[v] = k
 end
 
+---@return string[]
+function Side.allNames()
+    return {"front", "right", "back", "left", "top", "bottom"}
+end
+
 ---@param side string|integer
 function Side.getName(side)
     if type(side) == "string" then

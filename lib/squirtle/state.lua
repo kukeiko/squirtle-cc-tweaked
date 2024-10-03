@@ -1,5 +1,5 @@
-local Cardinal = require "lib.elements.cardinal"
-local Vector = require "lib.elements.vector"
+local Cardinal = require "lib.common.cardinal"
+local Vector = require "lib.common.vector"
 
 ---@class Simulated
 ---@field steps integer

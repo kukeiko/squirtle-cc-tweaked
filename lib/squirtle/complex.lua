@@ -1,5 +1,5 @@
-local Vector = require "lib.elements.vector"
-local Cardinal = require "lib.elements.cardinal"
+local Vector = require "lib.common.vector"
+local Cardinal = require "lib.common.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.elemental"
