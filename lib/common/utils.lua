@@ -91,25 +91,11 @@ function Utils.isEmpty(t)
     return true
 end
 
----@generic T, U
----@param list T[]
----@param mapper fun(item: T, index: number): U
----@return U[]
-function Utils.map(list, mapper)
-    local mapped = {}
-
-    for i = 1, #list do
-        table.insert(mapped, mapper(list[i], i))
-    end
-
-    return mapped
-end
-
 ---@generic V, K, U
 ---@param list table<K, V>
 ---@param mapper fun(item: V, index: K): U
 ---@return U[]
-function Utils.map_v2(list, mapper)
+function Utils.map(list, mapper)
     local mapped = {}
 
     for key, value in pairs(list) do

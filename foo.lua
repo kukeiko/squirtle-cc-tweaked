@@ -174,7 +174,7 @@ function testStorageService()
             return quantity > 0
         end)
 
-        local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
+        local options = Utils.map(nonEmptyStock, function(quantity, item)
             ---@type SearchableListOption
             return {id = item, name = string.format("%dx %s", quantity, item)}
         end)

@@ -15,7 +15,7 @@ function getListOptions(storage)
         return quantity > 0
     end)
 
-    local options = Utils.map_v2(nonEmptyStock, function(quantity, item)
+    local options = Utils.map(nonEmptyStock, function(quantity, item)
         ---@type SearchableListOption
         return {id = item, name = itemDisplayNames[item] or item, suffix = tostring(quantity)}
     end)
