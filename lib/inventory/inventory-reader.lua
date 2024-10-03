@@ -1,5 +1,5 @@
-local Utils = require "utils"
-local InventoryPeripheral = require "inventory.inventory-peripheral"
+local Utils = require "lib.utils"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 
 local baseTypeLookup = {
     ["minecraft:chest"] = "minecraft:chest",

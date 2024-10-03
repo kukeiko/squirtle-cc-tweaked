@@ -1,7 +1,7 @@
-local Utils = require "utils"
-local Cardinal = require "elements.cardinal"
-local State = require "squirtle.state"
-local getNative = require "squirtle.get-native"
+local Utils = require "lib.utils"
+local Cardinal = require "lib.elements.cardinal"
+local State = require "lib.squirtle.state"
+local getNative = require "lib.squirtle.get-native"
 
 ---@class Elemental
 local Elemental = {}

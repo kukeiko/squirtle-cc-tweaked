@@ -1,8 +1,8 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Squirtle = require "squirtle"
-local SquirtleState = require "squirtle.state"
+local Squirtle = require "lib.squirtle"
+local SquirtleState = require "lib.squirtle.state"
 
 local function readPattern()
     ---@type string[]

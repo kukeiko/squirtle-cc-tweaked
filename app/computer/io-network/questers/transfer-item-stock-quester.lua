@@ -1,8 +1,8 @@
-local Utils = require "utils"
-local ItemStock = require "common.models.item-stock"
-local Rpc = require "rpc"
-local StorageService = require "services.storage-service"
-local QuestService = require "common.quest-service"
+local Utils = require "lib.utils"
+local ItemStock = require "lib.common.models.item-stock"
+local Rpc = require "lib.rpc"
+local StorageService = require "lib.services.storage-service"
+local QuestService = require "lib.common.quest-service"
 
 return function()
     local questService = Rpc.nearest(QuestService)

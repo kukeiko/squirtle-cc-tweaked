@@ -1,6 +1,6 @@
-local Side = require "elements.side"
-local Squirtle = require "squirtle"
-local SquirtleState = require "squirtle.state"
+local Side = require "lib.elements.side"
+local Squirtle = require "lib.squirtle"
+local SquirtleState = require "lib.squirtle.state"
 
 local move = Squirtle.move
 local turn = Squirtle.turn

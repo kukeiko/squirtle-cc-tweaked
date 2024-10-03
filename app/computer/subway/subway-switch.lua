@@ -1,6 +1,6 @@
-package.path = package.path .. ";/lib/?.lua"
-local Rpc = require "rpc"
-local SubwayService = require "services.subway-service"
+package.path = package.path .. ";/?.lua"
+local Rpc = require "lib.rpc"
+local SubwayService = require "lib.services.subway-service"
 
 local function printUsage()
     print("Usage:")

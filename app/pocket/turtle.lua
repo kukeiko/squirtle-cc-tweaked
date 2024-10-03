@@ -1,8 +1,8 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
-local Vector = require "elements.vector"
-local Rpc = require "rpc"
-local SquirtleService = require "services.squirtle-service"
+local Vector = require "lib.elements.vector"
+local Rpc = require "lib.rpc"
+local SquirtleService = require "lib.services.squirtle-service"
 
 print("[turtle v1.0.0] booting...")
 local squirtles = Rpc.all(SquirtleService)

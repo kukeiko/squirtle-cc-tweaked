@@ -1,8 +1,8 @@
-local Utils = require "utils"
-local InventoryPeripheral = require "inventory.inventory-peripheral"
-local Inventory = require "inventory"
-local Elemental = require "squirtle.elemental"
-local Basic = require "squirtle.basic"
+local Utils = require "lib.utils"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Inventory = require "lib.inventory"
+local Elemental = require "lib.squirtle.elemental"
+local Basic = require "lib.squirtle.basic"
 
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}

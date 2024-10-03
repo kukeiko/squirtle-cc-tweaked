@@ -1,5 +1,5 @@
-local Squirtle = require "squirtle"
-local SquirtleState = require "squirtle.state"
+local Squirtle = require "lib.squirtle"
+local SquirtleState = require "lib.squirtle.state"
 
 ---@param state SiloAppState
 return function(state)

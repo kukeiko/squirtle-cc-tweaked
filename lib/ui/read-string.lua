@@ -1,5 +1,5 @@
-local Utils = require "utils"
-local EventLoop = require "event-loop"
+local Utils = require "lib.utils"
+local EventLoop = require "lib.event-loop"
 
 ---@class ReadStringOptions
 ---@field cancel? table

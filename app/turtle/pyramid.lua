@@ -1,13 +1,13 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "utils"
-local EventLoop = require "event-loop"
-local Squirtle = require "squirtle"
-local SquirtleState = require "squirtle.state"
-local Rpc = require "rpc"
-local SquirtleService = require "services.squirtle-service"
-local AppState = require "app-state"
+local Utils = require "lib.utils"
+local EventLoop = require "lib.event-loop"
+local Squirtle = require "lib.squirtle"
+local SquirtleState = require "lib.squirtle.state"
+local Rpc = require "lib.rpc"
+local SquirtleService = require "lib.services.squirtle-service"
+local AppState = require "lib.app-state"
 
 ---@class PyramidAppState
 ---@field width integer

@@ -1,8 +1,8 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local boot = require "build-platform.boot"
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 
 ---@class BuildPlatformAppState
 ---@field depth integer

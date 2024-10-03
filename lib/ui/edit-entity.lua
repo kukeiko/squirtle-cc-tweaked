@@ -1,6 +1,6 @@
-local Utils = require "utils"
-local EventLoop = require "event-loop"
-local readString = require "ui.read-string"
+local Utils = require "lib.utils"
+local EventLoop = require "lib.event-loop"
+local readString = require "lib.ui.read-string"
 
 ---@class EditEntity
 ---@field window table

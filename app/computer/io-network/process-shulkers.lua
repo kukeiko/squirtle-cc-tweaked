@@ -1,4 +1,4 @@
-local Inventory = require "inventory"
+local Inventory = require "lib.inventory"
 
 return function()
     local success, e = pcall(function(...)

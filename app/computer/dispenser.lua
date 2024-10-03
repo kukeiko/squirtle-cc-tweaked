@@ -1,10 +1,10 @@
-package.path = package.path .. ";/lib/?.lua"
-local Utils = require "utils"
-local Rpc = require "rpc"
-local EventLoop = require "event-loop"
-local StorageService = require "services.storage-service"
-local SearchableList = require "ui.searchable-list"
-local readInteger = require "ui.read-integer"
+package.path = package.path .. ";/?.lua"
+local Utils = require "lib.utils"
+local Rpc = require "lib.rpc"
+local EventLoop = require "lib.event-loop"
+local StorageService = require "lib.services.storage-service"
+local SearchableList = require "lib.ui.searchable-list"
+local readInteger = require "lib.ui.read-integer"
 
 ---@param storage StorageService|RpcClient
 ---@return SearchableListOption[]

@@ -1,5 +1,5 @@
 local isCrops = require "farmer.is-crops"
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 
 local cropsReadyAges = {
     ["minecraft:wheat"] = 7,

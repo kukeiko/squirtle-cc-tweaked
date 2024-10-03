@@ -1,4 +1,4 @@
-local EventLoop = require "event-loop"
+local EventLoop = require "lib.event-loop"
 
 ---@class RpcPingPacket
 ---@field type "ping"

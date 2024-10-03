@@ -1,8 +1,8 @@
-local Vector = require "elements.vector"
-local World = require "elements.world"
-local Cardinal = require "elements.cardinal"
-local Squirtle = require "squirtle"
-local Inventory = require "inventory"
+local Vector = require "lib.elements.vector"
+local World = require "lib.elements.world"
+local Cardinal = require "lib.elements.cardinal"
+local Squirtle = require "lib.squirtle"
+local Inventory = require "lib.inventory"
 
 local function getDirection()
     while true do

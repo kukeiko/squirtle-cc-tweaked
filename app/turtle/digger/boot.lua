@@ -1,5 +1,5 @@
-local AppState = require "app-state"
-local Squirtle = require "squirtle"
+local AppState = require "lib.app-state"
+local Squirtle = require "lib.squirtle"
 local setup = require "digger.setup"
 
 return function()

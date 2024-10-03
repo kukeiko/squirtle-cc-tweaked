@@ -1,10 +1,10 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
-local Utils = require "utils"
-local Rpc = require "rpc"
-local DatabaseService = require "common.database-service"
-local SubwayService = require "services.subway-service"
-local SearchableList = require "ui.searchable-list"
+local Utils = require "lib.utils"
+local Rpc = require "lib.rpc"
+local DatabaseService = require "lib.common.database-service"
+local SubwayService = require "lib.services.subway-service"
+local SearchableList = require "lib.ui.searchable-list"
 
 local pseudoInfinity = 64e10
 

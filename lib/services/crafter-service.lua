@@ -1,6 +1,6 @@
-local Utils = require "utils"
-local InventoryPeripheral = require "inventory.inventory-peripheral"
-local Squirtle = require "squirtle"
+local Utils = require "lib.utils"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Squirtle = require "lib.squirtle"
 
 ---@class CrafterService : Service
 local CrafterService = {name = "crafter"}

@@ -1,6 +1,6 @@
-local Utils = require "utils"
-local EventLoop = require "event-loop"
-local InventoryReader = require "inventory.inventory-reader"
+local Utils = require "lib.utils"
+local EventLoop = require "lib.event-loop"
+local InventoryReader = require "lib.inventory.inventory-reader"
 
 ---@class InventoryCollection
 ---@field useCache boolean

@@ -1,4 +1,4 @@
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 
 local function digLeftAndRight()
     Squirtle.turn("left")

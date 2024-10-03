@@ -1,8 +1,8 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Inventory = require "inventory"
-local Squirtle = require "squirtle"
+local Inventory = require "lib.inventory"
+local Squirtle = require "lib.squirtle"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
 

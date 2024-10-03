@@ -1,4 +1,4 @@
-local Utils = require "utils"
+local Utils = require "lib.utils"
 
 ---@class AppsService : Service
 local AppsService = {name = "apps", folder = "apps"}

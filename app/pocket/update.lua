@@ -1,7 +1,7 @@
-package.path = package.path .. ";/lib/?.lua"
-local Rpc = require "rpc"
-local AppsService = require "services.apps-service"
-local DatabaseService = require "common.database-service"
+package.path = package.path .. ";/?.lua"
+local Rpc = require "lib.rpc"
+local AppsService = require "lib.services.apps-service"
+local DatabaseService = require "lib.common.database-service"
 
 local function main(args)
     print("[update v1.0.0] booting...")

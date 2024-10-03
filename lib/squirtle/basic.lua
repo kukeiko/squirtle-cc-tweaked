@@ -1,6 +1,6 @@
-local State = require "squirtle.state"
-local getNative = require "squirtle.get-native"
-local Elemental = require "squirtle.elemental"
+local State = require "lib.squirtle.state"
+local getNative = require "lib.squirtle.get-native"
+local Elemental = require "lib.squirtle.elemental"
 
 ---@class Basic:Elemental
 local Basic = {}

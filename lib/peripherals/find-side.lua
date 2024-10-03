@@ -1,5 +1,5 @@
-local indexOf = require "utils.index-of"
-local allSideNames = require "elements.side.all-names"
+local indexOf = require "lib.utils.index-of"
+local allSideNames = require "lib.elements.side.all-names"
 
 ---@param types string[]|string
 ---@param sides? string[]

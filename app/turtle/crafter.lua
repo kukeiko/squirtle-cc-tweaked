@@ -1,7 +1,7 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
-local EventLoop = require "event-loop"
-local findSide = require "peripherals.find-side"
+local EventLoop = require "lib.event-loop"
+local findSide = require "lib.peripherals.find-side"
 
 local function printUsage()
     print("Usage: crafter <source> <target>")

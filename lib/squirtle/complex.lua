@@ -1,11 +1,11 @@
-local Vector = require "elements.vector"
-local Cardinal = require "elements.cardinal"
-local State = require "squirtle.state"
-local getNative = require "squirtle.get-native"
-local Elemental = require "squirtle.elemental"
-local Basic = require "squirtle.basic"
-local Advanced = require "squirtle.advanced"
-local Inventory = require "inventory"
+local Vector = require "lib.elements.vector"
+local Cardinal = require "lib.elements.cardinal"
+local State = require "lib.squirtle.state"
+local getNative = require "lib.squirtle.get-native"
+local Elemental = require "lib.squirtle.elemental"
+local Basic = require "lib.squirtle.basic"
+local Advanced = require "lib.squirtle.advanced"
+local Inventory = require "lib.inventory"
 
 ---@class Complex : Advanced
 local Complex = {}

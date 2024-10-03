@@ -1,5 +1,5 @@
-local Vector = require "elements.vector"
-local World = require "elements.world"
+local Vector = require "lib.elements.vector"
+local World = require "lib.elements.world"
 
 ---@param world World
 ---@param start Vector

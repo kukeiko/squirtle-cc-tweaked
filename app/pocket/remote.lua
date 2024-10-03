@@ -1,4 +1,4 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
 local function main(args)
     print("[remote v1.1.0] booting...")

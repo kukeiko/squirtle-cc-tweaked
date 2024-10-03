@@ -1,10 +1,10 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "utils"
-local Vector = require "elements.vector"
-local Cardinal = require "elements.cardinal"
-local Squirtle = require "squirtle"
+local Utils = require "lib.utils"
+local Vector = require "lib.elements.vector"
+local Cardinal = require "lib.elements.cardinal"
+local Squirtle = require "lib.squirtle"
 
 ---@class ColoredPoint
 ---@field vector Vector

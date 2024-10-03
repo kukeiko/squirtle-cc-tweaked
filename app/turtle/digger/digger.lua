@@ -1,13 +1,13 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "utils"
-local Vectors = require "elements.vector"
-local World = require "elements.world"
-local Squirtle = require "squirtle"
-local AppState = require "app-state"
+local Utils = require "lib.utils"
+local Vectors = require "lib.elements.vector"
+local World = require "lib.elements.world"
+local Squirtle = require "lib.squirtle"
+local AppState = require "lib.app-state"
 local boot = require "digger.boot"
-local Inventory = require "inventory"
+local Inventory = require "lib.inventory"
 
 ---@class DiggerAppState
 ---@field home Vector

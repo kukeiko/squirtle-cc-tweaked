@@ -1,9 +1,9 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
-local Utils = require "utils"
-local Redstone = require "redstone"
-local Squirtle = require "squirtle"
-local Inventory = require "inventory"
+local Utils = require "lib.utils"
+local Redstone = require "lib.redstone"
+local Squirtle = require "lib.squirtle"
+local Inventory = require "lib.inventory"
 
 local function dumpChestcartToBarrel()
     while Squirtle.suck() do

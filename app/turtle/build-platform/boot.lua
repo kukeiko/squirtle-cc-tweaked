@@ -1,4 +1,4 @@
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 
 local function printUsage()
     print("Usage:")

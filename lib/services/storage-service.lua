@@ -1,7 +1,7 @@
-local ItemStock = require "common.models.item-stock"
-local InventoryApi = require "inventory"
-local InventoryPeripheral = require "inventory.inventory-peripheral"
-local DatabaseService = require "common.database-service"
+local ItemStock = require "lib.common.models.item-stock"
+local InventoryApi = require "lib.inventory"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local DatabaseService = require "lib.common.database-service"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}

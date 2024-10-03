@@ -1,5 +1,5 @@
-local EventLoop = require "event-loop"
-local Utils = require "utils"
+local EventLoop = require "lib.event-loop"
+local Utils = require "lib.utils"
 
 ---@class SearchableList
 ---@field options SearchableListOption[]

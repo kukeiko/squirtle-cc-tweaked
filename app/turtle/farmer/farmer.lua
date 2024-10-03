@@ -1,7 +1,7 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 local doHomework = require "farmer.do-homework"
 local doFieldWork = require "farmer.do-field-work"
 local isCrops = require "farmer.is-crops"

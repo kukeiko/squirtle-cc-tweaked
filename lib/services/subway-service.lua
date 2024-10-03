@@ -1,5 +1,5 @@
-local EventLoop = require "event-loop"
-local Side = require "elements.side"
+local EventLoop = require "lib.event-loop"
+local Side = require "lib.elements.side"
 
 ---@type integer|nil
 local switchedTrackSignal = nil

@@ -1,4 +1,4 @@
-local DatabaseService = require "common.database-service"
+local DatabaseService = require "lib.common.database-service"
 
 ---@class QuestService : Service
 local QuestService = {name = "quest", host = ""}

@@ -1,4 +1,4 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
 ---@type table<integer, function>
 local tasks = {

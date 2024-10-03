@@ -1,4 +1,4 @@
-local Vector = require "elements.vector"
+local Vector = require "lib.elements.vector"
 
 ---@class World
 ---@field width? integer

@@ -1,6 +1,6 @@
-local World = require "elements.world"
-local Cardinal = require "elements.cardinal"
-local Vector = require "elements.vector"
+local World = require "lib.elements.world"
+local Cardinal = require "lib.elements.cardinal"
+local Vector = require "lib.elements.vector"
 
 ---@param hierarchy Vector[]
 ---@param start Vector

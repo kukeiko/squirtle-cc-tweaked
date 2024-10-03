@@ -1,6 +1,6 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
-local Squirtle = require "squirtle"
+local Squirtle = require "lib.squirtle"
 
 print("[copper v1.1.0] booting...")
 

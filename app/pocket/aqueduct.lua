@@ -1,4 +1,4 @@
-package.path = package.path .. ";/lib/?.lua"
+package.path = package.path .. ";/?.lua"
 
 local function main(args)
     print("[aqueduct v1.0.0] booting...")

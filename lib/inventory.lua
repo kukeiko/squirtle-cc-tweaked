@@ -1,9 +1,8 @@
-local Utils = require "utils"
-local EventLoop = require "event-loop"
-local InventoryPeripheral = require "inventory.inventory-peripheral"
-local InventoryReader = require "inventory.inventory-reader"
-local InventoryCollection = require "inventory.inventory-collection"
-local DatabaseService = require "common.database-service"
+local Utils = require "lib.utils"
+local EventLoop = require "lib.event-loop"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local InventoryReader = require "lib.inventory.inventory-reader"
+local InventoryCollection = require "lib.inventory.inventory-collection"
 
 ---@class InventoryApi
 local Inventory = {}

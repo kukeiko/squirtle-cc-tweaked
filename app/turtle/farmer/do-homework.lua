@@ -1,5 +1,5 @@
-local Squirtle = require "squirtle"
-local Inventory = require "inventory"
+local Squirtle = require "lib.squirtle"
+local Inventory = require "lib.inventory"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 

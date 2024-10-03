@@ -1,4 +1,4 @@
-local printProgress = require "utils.print-progress"
+local printProgress = require "lib.utils.print-progress"
 
 ---@param timeout integer
 ---@return "timeout" | "key"

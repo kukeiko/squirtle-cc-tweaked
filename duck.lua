@@ -1,5 +1,3 @@
-local foo = require "squirtle.refuel"
-
 --    _
 -- __(.)<
 -- \___)
