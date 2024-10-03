@@ -631,27 +631,23 @@ end
 
 function Inventory.discover()
     print("[inventory] mounting connected inventories...")
-    -- EventLoop.waitForAny(function()
-    --     onPeripheralEventMountInventory()
-    -- end, function()
     local names = peripheral.getNames()
-    local x, y = Utils.printProgress(0, #names)
-
-    -- [todo] make parallel
-    for i, name in pairs(names) do
-        if InventoryReader.isInventoryType(name) then
-            InventoryCollection.mount(name)
+    local mountFns = Utils.map(names, function(name)
+        return function()
+            if InventoryReader.isInventoryType(name) then
+                InventoryCollection.mount(name)
+            end
         end
-        -- EventLoop.queue("peripheral", name)
-        x, y = Utils.printProgress(i, #names, x, y)
+    end)
 
-        -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
-        -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
-        if i % 64 == 0 then
-            os.sleep(1)
-        end
+    local chunkSize = 64
+    local chunkedMountFns = Utils.chunk(mountFns, chunkSize)
+    local x, y = Utils.printProgress(0, #chunkedMountFns)
+
+    for i, chunk in pairs(chunkedMountFns) do
+        EventLoop.run(table.unpack(chunk))
+        x, y = Utils.printProgress(i, #chunkedMountFns, x, y)
     end
-    -- end)
 end
 
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.

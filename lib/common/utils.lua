@@ -309,7 +309,7 @@ function Utils.chunk(tbl, size)
     for i = 1, #tbl do
         table.insert(chunk, tbl[i])
 
-        if i == size then
+        if i % size == 0 then
             table.insert(chunked, chunk)
             chunk = {}
         end
