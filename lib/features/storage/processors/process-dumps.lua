@@ -2,19 +2,19 @@ local Inventory = require "lib.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function()
-        local drains = Inventory.getInventories("dump", true)
+        local dumps = Inventory.getInventories("dump", true)
 
         local quickAccesses = Inventory.getInventories("quick-access")
-        Inventory.distributeFromTag(drains, quickAccesses, "output", "input")
+        Inventory.distributeFromTag(dumps, quickAccesses, "output", "input")
 
         local io = Inventory.getInventories("io")
-        Inventory.distributeFromTag(drains, io, "output", "input")
+        Inventory.distributeFromTag(dumps, io, "output", "input")
 
         local storages = Inventory.getInventories("storage")
-        Inventory.distributeFromTag(drains, storages, "output", "input")
+        Inventory.distributeFromTag(dumps, storages, "output", "input")
 
         local siloInputs = Inventory.getInventories("silo:input")
-        Inventory.distributeFromTag(drains, siloInputs, "output", "input")
+        Inventory.distributeFromTag(dumps, siloInputs, "output", "input")
 
         local composterConfigs = Inventory.getInventories("composter-config", true)
 
@@ -23,7 +23,7 @@ return function()
             local configured = Inventory.getStockByTagMultiInventory(composterConfigs, "configuration")
 
             for compostableItem, _ in pairs(configured) do
-                Inventory.distributeItem(drains, composterInputs, compostableItem, "output", "input")
+                Inventory.distributeItem(dumps, composterInputs, compostableItem, "output", "input")
             end
         end
 
@@ -32,11 +32,11 @@ return function()
         local quickAccessStock = Inventory.getStockByTagMultiInventory(quickAccesses, "input")
         -- [todo] should we also include furnace configs?
         local composterConfiguredStock = Inventory.getStockByTagMultiInventory(composterConfigs, "configuration")
-        local dumpedStock = Inventory.getStockByTagMultiInventory(drains, "output")
+        local dumpedStock = Inventory.getStockByTagMultiInventory(dumps, "output")
 
         for dumpedItem, dumpedCount in pairs(dumpedStock) do
             if not storedStock[dumpedItem] and not composterConfiguredStock[dumpedItem] and not quickAccessStock[dumpedItem] then
-                Inventory.distributeItem(drains, trash, dumpedItem, "output", "input", dumpedCount)
+                Inventory.distributeItem(dumps, trash, dumpedItem, "output", "input", dumpedCount)
             end
         end
     end)
