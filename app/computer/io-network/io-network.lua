@@ -3,7 +3,7 @@ package.path = package.path .. ";/app/computer/?.lua"
 
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
 local QuestService = require "lib.common.quest-service"
 local StorageService = require "lib.services.storage-service"

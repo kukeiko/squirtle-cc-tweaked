@@ -1,7 +1,7 @@
 local Utils = require "lib.common.utils"
 local World = require "lib.common.world"
 local findPath = require "lib.squirtle.find-path"
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local State = require "lib.squirtle.state"

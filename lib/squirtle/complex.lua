@@ -5,7 +5,7 @@ local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.elemental"
 local Basic = require "lib.squirtle.basic"
 local Advanced = require "lib.squirtle.advanced"
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 
 ---@class Complex : Advanced
 local Complex = {}

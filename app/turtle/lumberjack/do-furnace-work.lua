@@ -1,4 +1,4 @@
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 local Furnace = require "lib.inventory.furnace"
 local Squirtle = require "lib.squirtle.squirtle-api"
 

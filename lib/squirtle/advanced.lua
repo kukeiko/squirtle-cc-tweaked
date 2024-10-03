@@ -1,6 +1,6 @@
 local Utils = require "lib.common.utils"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 local Elemental = require "lib.squirtle.elemental"
 local Basic = require "lib.squirtle.basic"
 

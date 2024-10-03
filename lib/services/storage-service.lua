@@ -1,5 +1,5 @@
 local ItemStock = require "lib.common.models.item-stock"
-local InventoryApi = require "lib.inventory"
+local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local DatabaseService = require "lib.common.database-service"
 

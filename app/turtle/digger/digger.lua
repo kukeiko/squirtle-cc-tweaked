@@ -7,7 +7,7 @@ local World = require "lib.common.world"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local AppState = require "lib.common.app-state"
 local boot = require "digger.boot"
-local Inventory = require "lib.inventory"
+local Inventory = require "lib.inventory.inventory-api"
 
 ---@class DiggerAppState
 ---@field home Vector
