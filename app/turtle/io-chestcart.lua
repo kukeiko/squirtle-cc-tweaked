@@ -1,7 +1,7 @@
 package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
-local Redstone = require "lib.redstone"
+local Redstone = require "lib.common.redstone"
 local Squirtle = require "lib.squirtle"
 local Inventory = require "lib.inventory"
 

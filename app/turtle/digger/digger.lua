@@ -5,7 +5,7 @@ local Utils = require "lib.common.utils"
 local Vectors = require "lib.common.vector"
 local World = require "lib.common.world"
 local Squirtle = require "lib.squirtle"
-local AppState = require "lib.app-state"
+local AppState = require "lib.common.app-state"
 local boot = require "digger.boot"
 local Inventory = require "lib.inventory"
 

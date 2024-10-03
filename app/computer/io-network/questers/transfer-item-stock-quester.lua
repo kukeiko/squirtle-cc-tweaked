@@ -1,6 +1,6 @@
 local Utils = require "lib.common.utils"
 local ItemStock = require "lib.common.models.item-stock"
-local Rpc = require "lib.rpc"
+local Rpc = require "lib.common.rpc"
 local StorageService = require "lib.services.storage-service"
 local QuestService = require "lib.common.quest-service"
 

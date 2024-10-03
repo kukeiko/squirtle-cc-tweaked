@@ -1,6 +1,6 @@
 package.path = package.path .. ";/?.lua"
 
-local EventLoop = require "lib.event-loop"
+local EventLoop = require "lib.common.event-loop"
 local Peripheral = require "lib.common.peripheral"
 
 local function printUsage()

@@ -1,4 +1,4 @@
-local EventLoop = require "lib.event-loop"
+local EventLoop = require "lib.common.event-loop"
 local Side = require "lib.common.side"
 
 ---@type integer|nil

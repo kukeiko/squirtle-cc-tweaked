@@ -1,5 +1,5 @@
 package.path = package.path .. ";/?.lua"
-local Rpc = require "lib.rpc"
+local Rpc = require "lib.common.rpc"
 local AppsService = require "lib.services.apps-service"
 local DatabaseService = require "lib.common.database-service"
 

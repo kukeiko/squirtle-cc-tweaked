@@ -1,5 +1,5 @@
 local Utils = require "lib.common.utils"
-local EventLoop = require "lib.event-loop"
+local EventLoop = require "lib.common.event-loop"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local InventoryReader = require "lib.inventory.inventory-reader"
 local InventoryCollection = require "lib.inventory.inventory-collection"
