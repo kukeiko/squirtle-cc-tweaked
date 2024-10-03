@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 
 ---@class DatabaseService : Service
 local DatabaseService = {name = "database", folder = "data"}

@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local World = require "lib.elements.world"
 local findPath = require "lib.squirtle.find-path"
 local Inventory = require "lib.inventory"

@@ -1,6 +1,6 @@
 package.path = package.path .. ";/?.lua"
 
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Rpc = require "lib.rpc"
 local DatabaseService = require "lib.common.database-service"
 local SubwayService = require "lib.services.subway-service"

@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Squirtle = require "lib.squirtle"
 

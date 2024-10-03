@@ -1,0 +1,9 @@
+---@class Application
+---@field name string
+---@field content? string
+---
+---@class CraftingRecipe
+---@field item string
+---@field count integer
+---@field ingredients table<string, integer[]>
+---

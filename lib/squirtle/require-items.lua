@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Elemental = require "lib.squirtle.elemental"
 local Basic = require "lib.squirtle.basic"
 

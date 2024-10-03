@@ -1,4 +1,4 @@
-local Utils = require "lib.utils";
+local Utils = require "lib.common.utils";
 
 ---@alias ItemStock table<string, integer>
 ---

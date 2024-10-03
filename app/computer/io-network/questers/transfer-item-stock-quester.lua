@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local ItemStock = require "lib.common.models.item-stock"
 local Rpc = require "lib.rpc"
 local StorageService = require "lib.services.storage-service"

@@ -1,4 +1,4 @@
-local indexOf = require "lib.utils.index-of"
+local Utils = require "lib.common.utils"
 local allSideNames = require "lib.elements.side.all-names"
 
 ---@param types string[]|string
@@ -16,7 +16,7 @@ return function(types, sides)
 
         if foundTypes ~= nil then
             for e = 1, #types do
-                if indexOf(foundTypes, types[e]) > 0 then
+                if Utils.indexOf(foundTypes, types[e]) > 0 then
                     return sides[i], types[e]
                 end
             end

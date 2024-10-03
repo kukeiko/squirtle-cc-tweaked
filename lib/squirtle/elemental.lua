@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Cardinal = require "lib.elements.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"

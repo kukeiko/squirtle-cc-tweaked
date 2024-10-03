@@ -1,7 +1,3 @@
----@class Application
----@field name string
----@field content? string
----
 ---@alias SubwayStationType "hub"|"endpoint"|"platform"|"switch"
 ---
 ---@class SubwayStation
@@ -16,7 +12,3 @@
 ---@field signal number
 ---@field duration? number
 ---
----@class CraftingRecipe
----@field item string
----@field count integer
----@field ingredients table<string, integer[]>

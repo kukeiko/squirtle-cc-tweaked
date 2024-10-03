@@ -1,4 +1,4 @@
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local EventLoop = require "lib.event-loop"
 local InventoryReader = require "lib.inventory.inventory-reader"
 

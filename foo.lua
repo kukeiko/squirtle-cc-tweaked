@@ -2,7 +2,7 @@ local ccPretty = "cc.pretty"
 local Pretty = require(ccPretty)
 package.path = package.path .. ";/?.lua"
 
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Cardinal = require "lib.elements.cardinal"
 local Squirtle = require "lib.squirtle"
 local EventLoop = require "lib.event-loop"
@@ -322,4 +322,9 @@ function testTransferItemsQuest()
     Utils.prettyPrint(quest)
 end
 
-testTransferItemsQuest()
+function testUtilsReverse()
+    local tbl = {"foo", "bar", "baz"}
+    Utils.prettyPrint(Utils.reverse(tbl))
+end
+
+testUtilsReverse()

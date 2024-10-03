@@ -1,7 +1,7 @@
 package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local EventLoop = require "lib.event-loop"
 local Squirtle = require "lib.squirtle"
 local SquirtleState = require "lib.squirtle.state"

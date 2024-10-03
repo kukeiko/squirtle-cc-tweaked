@@ -1,9 +1,20 @@
 local ccPretty = "cc.pretty"
 local Pretty = require(ccPretty)
-local copy = require "lib.utils.copy"
-local indexOf = require "lib.utils.index-of"
-local printProgress = require "lib.utils.print-progress"
-local Utils = {copy = copy, indexOf = indexOf, printProgress = printProgress}
+
+local Utils = {}
+
+---@param tbl table
+---@param item unknown
+---@return integer
+function Utils.indexOf(tbl, item)
+    for i = 1, #tbl do
+        if (tbl[i] == item) then
+            return i
+        end
+    end
+
+    return -1
+end
 
 ---@param list table
 ---@param values table
@@ -29,6 +40,20 @@ function Utils.contains(list, value)
     return false
 end
 
+---Creates a shallow copy of the given table.
+---@generic T: table
+---@param tbl T
+---@return T
+function Utils.copy(tbl)
+    local copy = {}
+
+    for k, v in pairs(tbl) do
+        copy[k] = v
+    end
+
+    return copy
+end
+
 local function clone(value, seen)
     if type(value) ~= "table" then
         return value
@@ -49,7 +74,8 @@ local function clone(value, seen)
     return res
 end
 
--- https://stackoverflow.com/a/26367080/1611592
+---Creates a deep copy of the given table.
+---https://stackoverflow.com/a/26367080/1611592
 ---@generic T: table
 ---@param tbl T
 ---@return T
@@ -231,12 +257,15 @@ function Utils.concat(...)
     return concatenated
 end
 
-function Utils.reverse(list)
-    for i = 1, #list / 2, 1 do
-        list[i], list[#list - i + 1] = list[#list - i + 1], list[i]
+---@param tbl table
+function Utils.reverse(tbl)
+    local reversed = {}
+
+    for i = #tbl, 1, -1 do
+        table.insert(reversed, tbl[i])
     end
 
-    return list
+    return reversed
 end
 
 function Utils.prettyPrint(value)
@@ -376,6 +405,53 @@ function Utils.ellipsis(str, length)
         return string.sub(str, 1, length - 3) .. "..."
     else
         return str
+    end
+end
+
+---@param current number
+---@param total number
+---@param x integer|nil
+---@param y integer|nil
+---@return integer, integer
+function Utils.printProgress(current, total, x, y)
+    if not x or not y then
+        x, y = term.getCursorPos()
+    end
+
+    ---@type integer
+    local termWidth = term.getSize()
+    local numProgressChars = termWidth - 2
+
+    local numCharsDone = math.ceil((current / total) * numProgressChars)
+    local numCharsOpen = numProgressChars - numCharsDone
+    term.setCursorPos(x, y)
+    term.write("[" .. string.rep("=", numCharsDone) .. string.rep(" ", numCharsOpen) .. "]")
+
+    return x, y
+end
+
+---@param timeout integer
+---@return "timeout" | "key"
+function Utils.waitForTimeoutOrUntilKeyEvent(timeout)
+    local steps = 10
+    local x, y = Utils.printProgress(0, steps)
+
+    local first = parallel.waitForAny(function()
+        local timeoutTick = timeout / steps
+
+        for i = 1, steps do
+            os.sleep(timeoutTick)
+            Utils.printProgress(i, steps, x, y)
+        end
+    end, function()
+        os.pullEvent("key")
+        Utils.printProgress(steps, steps, x, y)
+    end)
+
+    if first == 1 then
+        return "timeout"
+    else
+        return "key"
     end
 end
 

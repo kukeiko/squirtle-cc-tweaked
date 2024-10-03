@@ -1,7 +1,7 @@
 package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Vector = require "lib.elements.vector"
 local Cardinal = require "lib.elements.cardinal"
 local Squirtle = require "lib.squirtle"

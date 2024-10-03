@@ -1,5 +1,5 @@
 package.path = package.path .. ";/?.lua"
-local Utils = require "lib.utils"
+local Utils = require "lib.common.utils"
 local Rpc = require "lib.rpc"
 local EventLoop = require "lib.event-loop"
 local StorageService = require "lib.services.storage-service"
