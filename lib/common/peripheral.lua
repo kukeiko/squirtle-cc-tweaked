@@ -1,10 +1,12 @@
 local Utils = require "lib.common.utils"
 local Side = require "lib.common.side"
 
+local Peripheral = {}
+
 ---@param types string[]|string
 ---@param sides? string[]
 ---@return string?, string?
-return function(types, sides)
+function Peripheral.findSide(types, sides)
     if type(types) == "string" then
         types = {types}
     end
@@ -23,3 +25,5 @@ return function(types, sides)
         end
     end
 end
+
+return Peripheral

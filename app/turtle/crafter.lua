@@ -1,7 +1,7 @@
 package.path = package.path .. ";/?.lua"
 
 local EventLoop = require "lib.event-loop"
-local findSide = require "lib.peripherals.find-side"
+local Peripheral = require "lib.common.peripheral"
 
 local function printUsage()
     print("Usage: crafter <source> <target>")
@@ -148,7 +148,7 @@ local function main(args)
         return printUsage()
     end
 
-    local barrel = findSide("minecraft:barrel")
+    local barrel = Peripheral.findSide("minecraft:barrel")
 
     if not barrel then
         error("no barrel found :(")
