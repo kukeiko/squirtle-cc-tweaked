@@ -3,7 +3,7 @@ package.path = package.path .. ";/?.lua"
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local DatabaseService = require "lib.common.database-service"
-local SubwayService = require "lib.services.subway-service"
+local SubwayService = require "lib.features.subway-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 local pseudoInfinity = 64e10

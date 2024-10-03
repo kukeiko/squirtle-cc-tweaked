@@ -1,7 +1,7 @@
 package.path = package.path .. ";/?.lua"
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
-local AppsService = require "lib.services.apps-service"
+local AppsService = require "lib.features.apps-service"
 local DatabaseService = require "lib.common.database-service"
 
 local function main()

@@ -2,7 +2,7 @@ package.path = package.path .. ";/?.lua"
 
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
-local SubwayService = require "lib.services.subway-service"
+local SubwayService = require "lib.features.subway-service"
 
 print("station", SubwayService.host)
 

@@ -1,6 +1,6 @@
 package.path = package.path .. ";/?.lua"
 local Rpc = require "lib.common.rpc"
-local BoneMealService = require "lib.services.bone-meal-service"
+local BoneMealService = require "lib.features.bone-meal-service"
 
 print("[bone-meal v1.2.0] booting...")
 local on = arg[1] == "on"

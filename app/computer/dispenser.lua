@@ -2,7 +2,7 @@ package.path = package.path .. ";/?.lua"
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
-local StorageService = require "lib.services.storage-service"
+local StorageService = require "lib.features.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 

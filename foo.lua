@@ -9,11 +9,11 @@ local EventLoop = require "lib.common.event-loop"
 local Inventory = require "lib.inventory.inventory-api"
 local Rpc = require "lib.common.rpc";
 local SquirtleService = require "lib.squirtle.squirtle-service"
-local BoneMealService = require "lib.services.bone-meal-service"
-local StorageService = require "lib.services.storage-service"
+local BoneMealService = require "lib.features.bone-meal-service"
+local StorageService = require "lib.features.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local CrafterService = require "lib.services.crafter-service"
+local CrafterService = require "lib.features.crafter-service"
 local QuestService = require "lib.common.quest-service"
 
 ---@param width number
