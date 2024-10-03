@@ -4,7 +4,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@class ColoredPoint
 ---@field vector Vector

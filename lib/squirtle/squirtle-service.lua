@@ -1,4 +1,4 @@
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@class SquirtleService : Service
 ---@field error string?

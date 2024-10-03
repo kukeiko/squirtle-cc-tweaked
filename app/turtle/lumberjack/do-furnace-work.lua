@@ -1,6 +1,6 @@
 local Inventory = require "lib.inventory"
 local Furnace = require "lib.inventory.furnace"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@param furnace string
 ---@param stash string

@@ -2,7 +2,7 @@ package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
 local Redstone = require "lib.common.redstone"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local Inventory = require "lib.inventory"
 
 local function dumpChestcartToBarrel()

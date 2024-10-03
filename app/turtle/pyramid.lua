@@ -3,7 +3,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
 local Rpc = require "lib.common.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"

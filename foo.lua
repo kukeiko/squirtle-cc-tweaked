@@ -4,7 +4,7 @@ package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
 local Cardinal = require "lib.common.cardinal"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local EventLoop = require "lib.common.event-loop"
 local Inventory = require "lib.inventory"
 local Rpc = require "lib.common.rpc";

@@ -1,4 +1,4 @@
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"

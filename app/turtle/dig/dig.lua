@@ -5,7 +5,7 @@ local Utils = require "lib.common.utils"
 local World = require "lib.common.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@class DigAppState
 ---@field world World

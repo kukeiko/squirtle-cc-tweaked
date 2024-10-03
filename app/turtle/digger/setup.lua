@@ -1,7 +1,7 @@
 local Vector = require "lib.common.vector"
 local World = require "lib.common.world"
 local Cardinal = require "lib.common.cardinal"
-local Squirtle = require "lib.squirtle"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local Inventory = require "lib.inventory"
 
 local function getDirection()
