@@ -1,179 +1,229 @@
 [
     {
-        "stationId": "storage",
         "targetStationId": "storage:platform:switch",
-        "signal": 1,
-        "duration": 10
+        "duration": 10,
+        "stationId": "storage",
+        "signal": 1
     },
     {
-        "stationId": "storage",
         "targetStationId": "storage-silos:exit",
+        "stationId": "storage",
         "signal": 2
     },
     {
-        "stationId": "storage",
         "targetStationId": "storage:exit",
-        "signal": 3,
-        "duration": 5
+        "duration": 5,
+        "stationId": "storage",
+        "signal": 3
     },
     {
-        "stationId": "storage",
         "targetStationId": "home",
-        "signal": 7,
-        "duration": 10
-    },
-    {
+        "duration": 10,
         "stationId": "storage",
-        "targetStationId": "villagers",
-        "signal": 15,
-        "duration": 16
-    },
-    {
-        "stationId": "storage:platform",
-        "targetStationId": "storage",
-        "signal": 6,
-        "duration": 9
-    },
-    {
-        "stationId": "storage:platform",
-        "targetStationId": "crystal:???",
         "signal": 7
     },
     {
+        "targetStationId": "villagers",
+        "duration": 16,
+        "stationId": "storage",
+        "signal": 15
+    },
+    {
+        "targetStationId": "storage",
+        "duration": 9,
         "stationId": "storage:platform",
-        "targetStationId": "farms:peak:switch",
-        "signal": 8,
-        "duration": 26
-    },
-    {
-        "stationId": "storage:platform:switch",
-        "targetStationId": "storage:platform:exit",
-        "signal": 0,
-        "duration": 2
-    },
-    {
-        "stationId": "storage:platform:switch",
-        "targetStationId": "storage:platform",
-        "signal": 1,
-        "duration": 3.5
-    },
-    {
-        "stationId": "storage:farms:switch",
-        "targetStationId": "farms:peak:switch",
-        "signal": 0
-    },
-    {
-        "stationId": "storage:farms:switch",
-        "targetStationId": "storage:platform",
-        "signal": 4
-    },
-    {
-        "stationId": "storage:farms:switch",
-        "targetStationId": "storage:platform:exit",
         "signal": 6
     },
     {
-        "stationId": "storage:crystal:switch",
-        "targetStationId": "crystal",
+        "targetStationId": "crystal:???",
+        "stationId": "storage:platform",
+        "signal": 7
+    },
+    {
+        "targetStationId": "farms:peak:switch",
+        "duration": 26,
+        "stationId": "storage:platform",
+        "signal": 8
+    },
+    {
+        "targetStationId": "storage:platform:exit",
+        "duration": 2,
+        "stationId": "storage:platform:switch",
         "signal": 0
     },
     {
-        "stationId": "storage:crystal:switch",
-        "targetStationId": "storage:platform:exit",
-        "signal": 3,
-        "duration": 2
-    },
-    {
-        "stationId": "storage:crystal:switch",
         "targetStationId": "storage:platform",
-        "signal": 6,
-        "duration": 3.5
+        "duration": 3.5,
+        "stationId": "storage:platform:switch",
+        "signal": 1
     },
     {
-        "stationId": "villagers",
+        "targetStationId": "farms:peak:switch",
+        "stationId": "storage:farms:switch",
+        "signal": 0
+    },
+    {
+        "targetStationId": "storage:platform",
+        "stationId": "storage:farms:switch",
+        "signal": 4
+    },
+    {
+        "targetStationId": "storage:platform:exit",
+        "stationId": "storage:farms:switch",
+        "signal": 6
+    },
+    {
+        "targetStationId": "crystal",
+        "stationId": "storage:crystal:switch",
+        "signal": 0
+    },
+    {
+        "targetStationId": "storage:platform:exit",
+        "duration": 2,
+        "stationId": "storage:crystal:switch",
+        "signal": 3
+    },
+    {
+        "targetStationId": "storage:platform",
+        "duration": 3.5,
+        "stationId": "storage:crystal:switch",
+        "signal": 6
+    },
+    {
         "targetStationId": "home",
-        "signal": 1,
-        "duration": 7
+        "duration": 7,
+        "stationId": "villagers",
+        "signal": 1
     },
     {
-        "stationId": "villagers",
         "targetStationId": "villagers:exit",
-        "signal": 2,
-        "duration": 4
+        "duration": 4,
+        "stationId": "villagers",
+        "signal": 2
     },
     {
-        "stationId": "villagers",
         "targetStationId": "villagers:exit:nether-portal",
-        "signal": 3,
-        "duration": 6
+        "duration": 6,
+        "stationId": "villagers",
+        "signal": 3
     },
     {
-        "stationId": "villagers",
         "targetStationId": "storage",
-        "signal": 4,
-        "duration": 23
+        "duration": 23,
+        "stationId": "villagers",
+        "signal": 4
     },
     {
-        "stationId": "villagers",
         "targetStationId": "farms:peak:switch",
-        "signal": 5,
-        "duration": 24
+        "duration": 24,
+        "stationId": "villagers",
+        "signal": 5
     },
     {
-        "stationId": "villagers",
         "targetStationId": "gdi-nod",
-        "signal": 9,
-        "duration": 10
+        "duration": 10,
+        "stationId": "villagers",
+        "signal": 9
     },
     {
-        "stationId": "farms",
         "targetStationId": "farms:peak:switch",
-        "signal": 1,
-        "duration": 7
+        "duration": 7,
+        "stationId": "farms",
+        "signal": 1
     },
     {
-        "stationId": "farms",
         "targetStationId": "farms:storage:switch",
-        "signal": 2,
-        "duration": 10
+        "duration": 10,
+        "stationId": "farms",
+        "signal": 2
     },
     {
-        "stationId": "farms",
         "targetStationId": "villagers",
-        "signal": 7,
-        "duration": 20
+        "duration": 20,
+        "stationId": "farms",
+        "signal": 7
     },
     {
-        "stationId": "farms",
         "targetStationId": "???",
+        "stationId": "farms",
         "signal": 12
     },
     {
-        "stationId": "farms:peak:switch",
         "targetStationId": "peak:???",
+        "stationId": "farms:peak:switch",
         "signal": 0
     },
     {
-        "stationId": "farms:peak:switch",
         "targetStationId": "farms:exit",
-        "signal": 1,
-        "duration": 3
-    },
-    {
+        "duration": 3,
         "stationId": "farms:peak:switch",
+        "signal": 1
+    },
+    {
         "targetStationId": "farms",
-        "signal": 6,
-        "duration": 4
+        "duration": 4,
+        "stationId": "farms:peak:switch",
+        "signal": 6
     },
     {
-        "stationId": "farms:storage:switch",
         "targetStationId": "storage:crystal:switch",
-        "signal": 0,
-        "duration": 23
+        "duration": 23,
+        "stationId": "farms:storage:switch",
+        "signal": 0
     },
     {
-        "stationId": "farms:storage:switch",
         "targetStationId": "farms:peak:switch",
+        "stationId": "farms:storage:switch",
         "signal": 15
+    },
+    {
+        "stationId": "nether:squids:switch",
+        "targetStationId": "nether:squids",
+        "signal": 5
+    },
+    {
+        "stationId": "nether:squids:switch",
+        "targetStationId": "nether:aztec-base",
+        "signal": 7
+    },
+    {
+        "stationId": "nether:squids:switch",
+        "targetStationId": "nether:snow-base:switch",
+        "signal": 0
+    },
+    {
+        "stationId": "nether:snow-base:switch",
+        "targetStationId": "nether:snow-base",
+        "signal": 1
+    },
+    {
+        "stationId": "nether:snow-base:switch",
+        "targetStationId": "nether:necropolis:switch",
+        "signal": 0
+    },
+    {
+        "stationId": "nether:snow-base:switch",
+        "targetStationId": "nether:mob-farm",
+        "signal": 5
+    },
+    {
+        "stationId": "nether:snow-base:switch",
+        "targetStationId": "nether:squids:switch",
+        "signal": 7
+    },
+    {
+        "stationId": "nether:necropolis:switch",
+        "targetStationId": "nether:original-base",
+        "signal": 7
+    },
+    {
+        "stationId": "nether:necropolis:switch",
+        "targetStationId": "nether:snow-base:switch",
+        "signal": 0
+    },
+    {
+        "stationId": "nether:necropolis:switch",
+        "targetStationId": "nether:necropolis",
+        "signal": 1
     }
 ]

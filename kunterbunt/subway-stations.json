@@ -1,93 +1,138 @@
 [
     {
         "id": "home",
+        "type": "endpoint",
         "name": "Home",
-        "label": "Home",
-        "type": "endpoint"
+        "label": "Home"
     },
     {
         "id": "storage",
-        "name": "Storage (Hub)",
-        "type": "hub"
+        "type": "hub",
+        "name": "Storage (Hub)"
     },
     {
         "id": "storage:exit",
-        "name": "Storage",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Storage"
     },
     {
         "id": "storage-silos:exit",
-        "name": "Storage (Silos)",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Storage (Silos)"
     },
     {
         "id": "storage:platform",
-        "name": "Storage Bahnsteig",
-        "type": "platform"
+        "type": "platform",
+        "name": "Storage Bahnsteig"
     },
     {
         "id": "storage:platform:exit",
-        "name": "Storage (Bahnsteig)",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Storage (Bahnsteig)"
     },
     {
         "id": "storage:platform:switch",
-        "name": "Storage Platform (Switch)",
-        "type": "switch"
+        "type": "switch",
+        "name": "Storage Platform (Switch)"
     },
     {
         "id": "storage:farms:switch",
-        "name": "Storage > Farms",
-        "type": "switch"
+        "type": "switch",
+        "name": "Storage > Farms"
     },
     {
         "id": "storage:crystal:switch",
-        "name": "Storage > Crystal",
-        "type": "switch"
+        "type": "switch",
+        "name": "Storage > Crystal"
     },
     {
         "id": "villagers",
-        "name": "Villagers (Hub)",
-        "type": "hub"
+        "type": "hub",
+        "name": "Villagers (Hub)"
     },
     {
         "id": "villagers:exit",
-        "name": "Villagers",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Villagers"
     },
     {
         "id": "villagers:exit:nether-portal",
-        "name": "Nether Portal",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Nether Portal"
     },
     {
         "id": "gdi-nod",
-        "name": "GDI & NOD Symbols",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "GDI & NOD Symbols"
     },
     {
         "id": "farms",
-        "name": "Farms (Hub)",
-        "type": "platform"
+        "type": "platform",
+        "name": "Farms (Hub)"
     },
     {
         "id": "farms:exit",
-        "name": "Farms",
-        "type": "endpoint"
+        "type": "endpoint",
+        "name": "Farms"
     },
     {
         "id": "farms:storage:switch",
-        "name": "Farms > Storage",
-        "type": "switch"
+        "type": "switch",
+        "name": "Farms > Storage"
     },
     {
         "id": "farms:peak:switch",
-        "name": "Farms > Peak",
-        "type": "switch"
+        "type": "switch",
+        "name": "Farms > Peak"
     },
     {
         "id": "peak:platform",
-        "name": "Peak (Platform)",
-        "type": "platform"
+        "type": "platform",
+        "name": "Peak (Platform)"
+    },
+    {
+        "id": "nether:squids:switch",
+        "type": "switch",
+        "name": "Nether: Squid Switch"
+    },
+    {
+        "id": "nether:squids",
+        "type": "endpoint",
+        "name": "Nether: Squid Farm"
+    },
+    {
+        "id": "nether:aztec-base",
+        "type": "endpoint",
+        "name": "Nether: Aztec Base"
+    },
+    {
+        "id": "nether:snow-base:switch",
+        "type": "switch",
+        "name": "Nether: Snow Base (Switch)"
+    },
+    {
+        "id": "nether:snow-base",
+        "type": "endpoint",
+        "name": "Nether: Snow Base"
+    },
+    {
+        "id": "nether:original-base",
+        "type": "endpoint",
+        "name": "Nether: Ze Original Base"
+    },
+    {
+        "id": "nether:necropolis:switch",
+        "type": "switch",
+        "name": "Nether: Necropolis Switch"
+    },
+    {
+        "id": "nether:necropolis",
+        "type": "endpoint",
+        "name": "Nether: Necropolis"
+    },
+    {
+        "id": "nether:mob-farm",
+        "type": "endpoint",
+        "name": "Nether: Mob Farm"
     }
 ]
