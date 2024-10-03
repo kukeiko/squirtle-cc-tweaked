@@ -161,7 +161,7 @@ end
 ---@param stacks table<integer, ItemStack>
 ---@param nameTagSlot integer
 ---@return Inventory
-local function createDrain(name, stacks, nameTagSlot)
+local function createDump(name, stacks, nameTagSlot)
     ---@type table<integer, InventorySlot>
     local slots = {}
 
@@ -179,7 +179,7 @@ local function createDrain(name, stacks, nameTagSlot)
         slots[slot] = {index = slot, tags = tags}
     end
 
-    return construct(name, "drain", stacks, slots)
+    return construct(name, "dump", stacks, slots)
 end
 
 ---@param name string
@@ -581,7 +581,7 @@ function InventoryReader.read(name, expected)
                 if nameTagName == "I/O" then
                     return createIo(name, stacks, nameTagSlot)
                 elseif nameTagName == "Drain" or nameTagName == "Dump" then
-                    return createDrain(name, stacks, nameTagSlot)
+                    return createDump(name, stacks, nameTagSlot)
                 elseif nameTagName == "Silo" then
                     return createSilo(name, stacks, nameTagSlot)
                 elseif nameTagName == "Silo: Input" then

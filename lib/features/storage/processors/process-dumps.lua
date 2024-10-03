@@ -2,7 +2,7 @@ local Inventory = require "lib.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function()
-        local drains = Inventory.getInventories("drain", true)
+        local drains = Inventory.getInventories("dump", true)
 
         local quickAccesses = Inventory.getInventories("quick-access")
         Inventory.distributeFromTag(drains, quickAccesses, "output", "input")

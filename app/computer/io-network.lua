@@ -7,7 +7,7 @@ local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
 local QuestService = require "lib.common.quest-service"
 local StorageService = require "lib.features.storage.storage-service"
-local processDrains = require "lib.features.storage.processors.process-drains"
+local processDumps = require "lib.features.storage.processors.process-dumps"
 local processFurnaces = require "lib.features.storage.processors.process-furnaces"
 local processIo = require "lib.features.storage.processors.process-io"
 local processQuickAccess = require "lib.features.storage.processors.process-quick-access"
@@ -30,7 +30,7 @@ local function main()
         Rpc.server(QuestService)
     end, function()
         while true do
-            processDrains()
+            processDumps()
             os.sleep(3)
         end
     end, function()
