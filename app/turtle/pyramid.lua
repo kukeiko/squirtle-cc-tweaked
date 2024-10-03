@@ -6,7 +6,7 @@ local EventLoop = require "lib.event-loop"
 local Squirtle = require "lib.squirtle"
 local SquirtleState = require "lib.squirtle.state"
 local Rpc = require "lib.rpc"
-local SquirtleService = require "lib.services.squirtle-service"
+local SquirtleService = require "lib.squirtle.squirtle-service"
 local AppState = require "lib.app-state"
 
 ---@class PyramidAppState
