@@ -8,7 +8,7 @@ local Vector = require "elements.vector"
 ---@field x integer
 ---@field y integer
 ---@field z integer
-local World = {}
+---
 
 local function swap(a, b)
     return b, a

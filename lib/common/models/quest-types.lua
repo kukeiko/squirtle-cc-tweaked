@@ -1,0 +1,39 @@
+---@alias QuestType "provide-items" | "craft-items" | "transfer-items" | "craft-item" | "dance"
+---
+---@class Quest
+---@field id integer
+---@field issuedBy string
+---@field acceptedBy? string
+---@field partOfQuestId? integer 
+---@field status "issued" | "accepted" | "finished" | "failed"
+---@field type QuestType
+---
+---@class ProvideItemsQuest : Quest
+---@field type "provide-items"
+---@field transferredInitial boolean
+---@field craftMissingQuestId? integer
+---@field items ItemStock
+---@field targetInventory string
+---
+---@class CraftItemsQuest : Quest
+---@field type "craft-items"
+---@field item string
+---@field quantity integer
+---@field recipe CraftingRecipe
+---
+---@class TransferItemsQuest : Quest
+---@field type "transfer-items"
+---@field to string[]
+---@field toTag InventorySlotTag
+---@field items ItemStock
+---@field bufferId? integer
+---@field found ItemStock 
+---@field transferred ItemStock
+---@field transferredAll boolean
+---
+---@class CraftItemQuest : Quest
+---@field type "craft-item"
+---
+---@class DanceQuest : Quest
+---@field type "dance"
+---@field duration integer

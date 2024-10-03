@@ -3,9 +3,35 @@ local EventLoop = require "event-loop"
 local InventoryPeripheral = require "inventory.inventory-peripheral"
 local InventoryReader = require "inventory.inventory-reader"
 local InventoryCollection = require "inventory.inventory-collection"
+local DatabaseService = require "common.database-service"
 
 ---@class InventoryApi
 local Inventory = {}
+
+---@param names string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return string[] candidates
+local function getFromCandidates(names, item, tag)
+    return Utils.filter(names, function(name)
+        return InventoryCollection.isMounted(name) and Inventory.canProvideItem(name, item, tag)
+    end)
+end
+
+---@param names string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return string[] candidates
+local function getToCandidates(names, item, tag)
+    return Utils.filter(names, function(name)
+        return InventoryCollection.isMounted(name) and Inventory.canTakeItem(name, item, tag)
+    end)
+end
+
+---@param names string[]
+function Inventory.refresh(names)
+    return InventoryCollection.refreshMany(names)
+end
 
 ---@param type InventoryType
 function Inventory.refreshByType(type)
@@ -17,6 +43,13 @@ end
 ---@return string[]
 function Inventory.getInventories(type, refresh)
     return InventoryCollection.getInventories(type, refresh)
+end
+
+---@param name string
+---@param slotTag InventorySlotTag
+---@return integer
+function Inventory.getInventorySlotCount(name, slotTag)
+    return InventoryCollection.getInventorySlotCount(name, slotTag)
 end
 
 ---@param inventoryType InventoryType
@@ -328,7 +361,7 @@ end
 ---@param total? integer
 ---@param rate? integer
 ---@return integer transferredTotal
-function Inventory.transferItem(from, to, item, fromTag, toTag, total, rate)
+function Inventory.moveItem(from, to, item, fromTag, toTag, total, rate)
     total = total or Inventory.getItemCount(from, item, fromTag)
 
     if total == 0 then
@@ -351,7 +384,7 @@ function Inventory.transferItem(from, to, item, fromTag, toTag, total, rate)
             local transferred = pushItems(from, to, fromSlot.index, transfer, toSlot.index)
 
             if transferred == 0 then
-                -- either the "from" or the "to" inventory cache is no longer valid
+                -- either the "from" or the "to" inventory cache is no longer valid.
                 -- refreshing both so that distributeItem() doesn't run in an endless loop
                 -- [todo] a bit hacky, would like a cleaner way.
                 InventoryCollection.remove(from)
@@ -390,6 +423,84 @@ function Inventory.transferItem(from, to, item, fromTag, toTag, total, rate)
     return transferredTotal
 end
 
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param item string
+---@param quantity? integer
+---@param options? TransferOptions
+---@return integer transferredTotal
+function Inventory.transferItem(from, fromTag, to, toTag, item, quantity, options)
+    from = getFromCandidates(from, item, fromTag)
+    to = getToCandidates(to, item, toTag)
+    options = options or {}
+    local total = quantity or Inventory.getTotalItemCount(from, item, fromTag)
+    local totalTransferred = 0
+
+    while totalTransferred < total and #from > 0 and #to > 0 do
+        if #from == 1 and #to == 1 and from[1] == to[1] then
+            break
+        end
+
+        local transferPerOutput = (total - totalTransferred)
+
+        if not options.fromSequential then
+            transferPerOutput = transferPerOutput / #from
+        end
+
+        local transferPerInput = math.max(1, math.floor(transferPerOutput))
+
+        if not options.toSequential then
+            transferPerInput = math.max(1, math.floor(transferPerOutput / #to))
+        end
+
+        --- [todo] in regards to locking/unlocking:
+        --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
+        --- we really should have that functionality again to make sure the system is not super slow in some cases.
+        --- I'm thinking of doing that logic exactly here, as I assume all future distribute() methods will make use of distributeItem().
+        for _, fromName in ipairs(from) do
+            for _, toName in ipairs(to) do
+                if fromName ~= toName then
+                    local transferred = Inventory.moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate)
+                    totalTransferred = totalTransferred + transferred
+
+                    if totalTransferred == total then
+                        return totalTransferred
+                    end
+                end
+            end
+        end
+
+        from = getFromCandidates(from, item, fromTag)
+        to = getToCandidates(to, item, toTag)
+    end
+
+    return totalTransferred
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param items ItemStock
+---@param options? TransferOptions
+---@return ItemStock transferredTotal
+function Inventory.transferItems(from, fromTag, to, toTag, items, options)
+    ---@type ItemStock
+    local transferredTotal = {}
+
+    for item, quantity in pairs(items) do
+        local transferred = Inventory.transferItem(from, fromTag, to, toTag, item, quantity, options)
+
+        if transferred > 0 then
+            transferredTotal[item] = transferred
+        end
+    end
+
+    return transferredTotal
+end
+
 --- Transfer items found in slots of "from" inventory matching "fromTag" from one inventory to the other.
 ---@param from string
 ---@param to string
@@ -407,7 +518,7 @@ function Inventory.transferFromTag(from, to, fromTag, toTag, total)
 
     for item, stock in pairs(itemStock) do
         local transfer = total[item] or stock
-        local transferred = Inventory.transferItem(from, to, item, fromTag, toTag, transfer)
+        local transferred = Inventory.moveItem(from, to, item, fromTag, toTag, transfer)
 
         if transferred > 0 then
             transferredTotal[item] = transferred
@@ -421,26 +532,6 @@ function Inventory.transferFromTag(from, to, fromTag, toTag, total)
     end
 
     return transferredTotal, open
-end
-
----@param names string[]
----@param item string
----@param tag InventorySlotTag
----@return string[] candidates
-local function getFromCandidates(names, item, tag)
-    return Utils.filter(names, function(name)
-        return InventoryCollection.isMounted(name) and Inventory.canProvideItem(name, item, tag)
-    end)
-end
-
----@param names string[]
----@param item string
----@param tag InventorySlotTag
----@return string[] candidates
-local function getToCandidates(names, item, tag)
-    return Utils.filter(names, function(name)
-        return InventoryCollection.isMounted(name) and Inventory.canTakeItem(name, item, tag)
-    end)
 end
 
 ---@param from string[]
@@ -471,7 +562,7 @@ function Inventory.distributeItem(from, to, item, fromTag, toTag, total)
         for _, fromName in ipairs(from) do
             for _, toName in ipairs(to) do
                 if fromName ~= toName then
-                    local transferred = Inventory.transferItem(fromName, toName, item, fromTag, toTag, transferPerInput)
+                    local transferred = Inventory.moveItem(fromName, toName, item, fromTag, toTag, transferPerInput)
                     totalTransferred = totalTransferred + transferred
 
                     if totalTransferred == total then
@@ -495,18 +586,7 @@ end
 ---@param toTag InventorySlotTag
 ---@return ItemStock transferredTotal
 function Inventory.distributeItems(from, to, items, fromTag, toTag)
-    ---@type ItemStock
-    local totalTransferred = {}
-
-    for item, quantity in pairs(items) do
-        local transferred = Inventory.distributeItem(from, to, item, fromTag, toTag, quantity)
-
-        if transferred > 0 then
-            totalTransferred[item] = transferred
-        end
-    end
-
-    return totalTransferred
+    return Inventory.transferItems(from, fromTag, to, toTag, items)
 end
 
 ---@param from string[]
@@ -552,23 +632,27 @@ end
 
 function Inventory.discover()
     print("[inventory] mounting connected inventories...")
-    EventLoop.waitForAny(function()
-        onPeripheralEventMountInventory()
-    end, function()
-        local names = peripheral.getNames()
-        local x, y = Utils.printProgress(0, #names)
+    -- EventLoop.waitForAny(function()
+    --     onPeripheralEventMountInventory()
+    -- end, function()
+    local names = peripheral.getNames()
+    local x, y = Utils.printProgress(0, #names)
 
-        for i, name in pairs(names) do
-            EventLoop.queue("peripheral", name)
-            x, y = Utils.printProgress(i, #names, x, y)
-
-            -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
-            -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
-            if i % 64 == 0 then
-                os.sleep(1)
-            end
+    -- [todo] make parallel
+    for i, name in pairs(names) do
+        if InventoryReader.isInventoryType(name) then
+            InventoryCollection.mount(name)
         end
-    end)
+        -- EventLoop.queue("peripheral", name)
+        x, y = Utils.printProgress(i, #names, x, y)
+
+        -- [todo] I experienced some inventories not being registered by the system. I assume there is some limit to os.queueEvent()?
+        -- as a workaround, we are staggering the queue events a bit, which seems to have fixed the issue for now.
+        if i % 64 == 0 then
+            os.sleep(1)
+        end
+    end
+    -- end)
 end
 
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.

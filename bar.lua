@@ -4,7 +4,6 @@ local Rpc = require "rpc"
 local EventLoop = require "event-loop"
 local SubwayService = require "services.subway-service"
 
-SubwayService.host = arg[1]
 print("station", SubwayService.host)
 
 parallel.waitForAny(function()

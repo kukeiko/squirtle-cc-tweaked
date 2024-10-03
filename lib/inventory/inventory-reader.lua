@@ -197,8 +197,7 @@ local function createBuffer(name, stacks, nameTagSlot)
         if slot == nameTagSlot then
             tags.nameTag = true
         else
-            tags.input = true
-            tags.output = true
+            tags.buffer = true
         end
 
         slots[slot] = {index = slot, tags = tags}

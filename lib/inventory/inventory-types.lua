@@ -6,7 +6,6 @@
 ---@field displayName? string
 ---@field tags? table<string, boolean>
 ---@alias ItemStacks table<integer, ItemStack>
----@alias ItemStock table<string, integer>
 ---
 ---@class Inventory
 ---@field name string
@@ -36,3 +35,17 @@
 ---@field configuration? true
 ---@field withdraw? true
 ---@field buffer? true
+---
+---@class AllocatedBuffer
+---@field id integer
+---@field allocatedBy string
+---@field inventories string[]
+---@field questId? integer
+---
+---@alias TransferItemsMode "sequential" | "distribute"
+---
+---@class TransferOptions
+---@field fromSequential? boolean
+---@field toSequential? boolean
+---@field rate? integer
+---

@@ -72,17 +72,8 @@ function InventoryCollection.refresh(name)
     return inventories[name]
 end
 
----@param type InventoryType
-function InventoryCollection.refreshByType(type)
-    ---@type string[]
-    local names = {}
-
-    for name, inventory in pairs(inventories) do
-        if inventory.type == type then
-            table.insert(names, name)
-        end
-    end
-
+---@param names string[]
+function InventoryCollection.refreshMany(names)
     local fns = Utils.map(names, function(name)
         return function()
             InventoryCollection.refresh(name)
@@ -95,6 +86,20 @@ function InventoryCollection.refreshByType(type)
         EventLoop.run(table.unpack(chunk))
         os.sleep(1)
     end
+end
+
+---@param type InventoryType
+function InventoryCollection.refreshByType(type)
+    ---@type string[]
+    local names = {}
+
+    for name, inventory in pairs(inventories) do
+        if inventory.type == type then
+            table.insert(names, name)
+        end
+    end
+
+    InventoryCollection.refreshMany(names)
 end
 
 function InventoryCollection.clear()
@@ -201,6 +206,22 @@ function InventoryCollection.getInventories(type, refresh)
     end
 
     return array
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@return integer
+function InventoryCollection.getInventorySlotCount(name, tag)
+    local inventory = InventoryCollection.getInventory(name)
+    local count = 0
+
+    for _, slot in pairs(inventory.slots) do
+        if slot.tags[tag] == true then
+            count = count + 1
+        end
+    end
+
+    return count
 end
 
 ---@param name string

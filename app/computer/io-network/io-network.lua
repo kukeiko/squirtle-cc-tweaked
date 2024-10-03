@@ -5,6 +5,7 @@ local EventLoop = require "event-loop"
 local Rpc = require "rpc"
 local Inventory = require "inventory"
 local InventoryCollection = require "inventory.inventory-collection"
+local QuestService = require "common.quest-service"
 local StorageService = require "services.storage-service"
 local processDrains = require "io-network.process-drains"
 local processFurnaces = require "io-network.process-furnaces"
@@ -13,9 +14,10 @@ local processQuickAccess = require "io-network.process-quick-access"
 local processShulkers = require "io-network.process-shulkers"
 local processTrash = require "io-network.process-trash"
 local processSiloOutputs = require "io-network.process-silo-outputs"
+local transferItemStockQuester = require "io-network.questers.transfer-item-stock-quester"
 
 local function main(args)
-    print("[io-network v6.3.1] booting...")
+    print("[io-network v7.0.0-dev] booting...")
     InventoryCollection.useCache = true
     Inventory.discover()
     print("[io-network] ready!")
@@ -24,6 +26,8 @@ local function main(args)
         Inventory.start()
     end, function()
         Rpc.server(StorageService)
+    end, function()
+        Rpc.server(QuestService)
     end, function()
         while true do
             processDrains()
@@ -68,6 +72,8 @@ local function main(args)
             Inventory.refreshByType("silo:output")
         end
     end, function()
+        transferItemStockQuester()
+    end, function()
         local _, key = EventLoop.pull("key")
 
         if key == keys.f4 then
@@ -76,7 +82,6 @@ local function main(args)
             EventLoop.queue("io-network:stop")
         end
     end)
-
 end
 
 return main(arg)

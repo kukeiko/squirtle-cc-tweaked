@@ -2,7 +2,7 @@ package.path = package.path .. ";/lib/?.lua"
 
 local Utils = require "utils"
 local Rpc = require "rpc"
-local DatabaseService = require "services.database-service"
+local DatabaseService = require "common.database-service"
 local SubwayService = require "services.subway-service"
 local SearchableList = require "ui.searchable-list"
 

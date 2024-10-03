@@ -44,7 +44,7 @@ end
 
 ---@return table
 local function getWirelessModem()
-    return peripheral.find("modem", function(name, modem)
+    return peripheral.find("modem", function(_, modem)
         return modem.isWireless()
     end) or error("no wireless modem equipped")
 end
@@ -55,7 +55,13 @@ local function getModem(name)
     if not name then
         return getWirelessModem()
     else
-        return peripheral.wrap(name)
+        local modem = peripheral.wrap(name)
+
+        if not modem then
+            error(string.format("peripheral $s not found", name))
+        end
+
+        return modem
     end
 end
 
@@ -106,6 +112,10 @@ end
 ---@param maxDistance? number
 ---@return (T|RpcClient)?, number?
 function Rpc.nearest(service, modem, maxDistance)
+    if service.host == os.getComputerLabel() then
+        return service
+    end
+
     local hosts = findAllHosts(service, modem, maxDistance)
 
     ---@type { host:string, distance:number }?
@@ -189,7 +199,6 @@ function Rpc.client(service, host)
 
                 ---@type RpcRequestPacket
                 local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
-
                 modem.transmit(channel, channel, packet)
 
                 while true do
