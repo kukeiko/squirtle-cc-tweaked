@@ -1,5 +1,5 @@
 local Inventory = require "lib.inventory.inventory-api"
-local Furnace = require "lib.inventory.furnace"
+local Furnace = require "lib.inventory.furnace-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@param furnace string
