@@ -3,6 +3,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
+local readInteger = require "lib.ui.read-integer"
 
 local function readPattern()
     ---@type string[]
@@ -19,6 +20,21 @@ local function readPattern()
     end
 
     return pattern
+end
+
+---@return integer
+local function promptPatternMode()
+    print("[prompt] choose pattern mode by entering number")
+    print(" (1) alternate block")
+    print(" (2) alternate layer")
+    ---@type integer|nil
+    local mode = 0
+
+    while not mode or mode < 1 or mode > 2 do
+        mode = readInteger(1, {})
+    end
+
+    return mode
 end
 
 local function promptPattern()
@@ -45,8 +61,10 @@ local function sequence(state)
     local patternIndex = 1
 
     for line = 1, state.height do
+        local item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
+
         for column = 1, state.depth do
-            local item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
+            item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
 
             if column ~= state.depth then
                 Squirtle.move("back")
@@ -63,12 +81,19 @@ local function sequence(state)
                 end
             end
 
+            if state.patternMode == 1 then
+                patternIndex = patternIndex + 1
+            end
+        end
+
+        if state.patternMode == 2 then
             patternIndex = patternIndex + 1
         end
     end
 end
 
 ---@class WallAppState
+---@field patternMode integer
 ---@field pattern string[]
 local state = {depth = 0, height = 0}
 
@@ -85,6 +110,7 @@ if not depth or not height or depth < 1 or height < 1 then
     return printUsage()
 end
 
+state.patternMode = promptPatternMode()
 state.pattern = promptPattern()
 state.depth = depth
 state.height = height
