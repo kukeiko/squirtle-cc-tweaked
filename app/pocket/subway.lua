@@ -1,6 +1,7 @@
 package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
+local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
 local DatabaseService = require "lib.common.database-service"
 local SubwayService = require "lib.features.subway-service"
@@ -45,10 +46,10 @@ local function getPath(previous, start, goal)
 end
 
 ---@param stations SubwayStation[]
----@param tracks SubwayTrack[]
 ---@param start SubwayStation
 ---@param goal SubwayStation
-local function findPath(stations, tracks, start, goal)
+---@return boolean|SubwayStation[]
+local function findPath(stations, start, goal)
     ---@type table<string, number>
     local distances = {}
     ---@type table<string, SubwayStation>
@@ -75,16 +76,16 @@ local function findPath(stations, tracks, start, goal)
 
         unvisited[nextStation.id] = nil
 
-        local nextTracks = Utils.filter(tracks, function(track)
-            return track.stationId == nextStation.id and unvisited[track.targetStationId] ~= nil
+        local nextTracks = Utils.filter(nextStation.tracks, function(track)
+            return unvisited[track.to] ~= nil
         end)
 
         for _, nextTrack in pairs(nextTracks) do
             local distance = distances[nextStation.id] + (nextTrack.duration or 60)
 
-            if distance < distances[nextTrack.targetStationId] then
-                distances[nextTrack.targetStationId] = distance
-                previous[nextTrack.targetStationId] = nextStation
+            if distance < distances[nextTrack.to] then
+                distances[nextTrack.to] = distance
+                previous[nextTrack.to] = nextStation
             end
         end
     end
@@ -132,7 +133,7 @@ local function promptUserToPickGoal(allStations)
 end
 
 local function main(args)
-    print("[subway v1.1.0] booting...")
+    print("[subway v2.0.0-dev] booting...")
 
     ---@type string?
     local goalId = args[1] or promptUserToPickGoal()
@@ -146,7 +147,6 @@ local function main(args)
     end
 
     local stations = DatabaseService.getSubwayStations()
-    local tracks = DatabaseService.getSubwayTracks()
 
     local goal = Utils.find(stations, function(station)
         return station.id == goalId
@@ -157,40 +157,68 @@ local function main(args)
     end
 
     print("[wait] for nearby station")
-    while true do
-        local client, distance = Rpc.nearest(SubwayService)
+    ---@type string|nil
+    local previousStation = nil
+    ---@type integer|nil
+    local resetPreviousStationTimerId = nil
 
-        if client and distance <= client.getMaxDistance() then
-            local station = Utils.find(stations, function(station)
-                return station.id == client.host
-            end)
+    EventLoop.run(function()
+        EventLoop.runUntil("subway:stop", function()
+            while true do
+                local _, timerId = EventLoop.pull("timer")
 
-            if not station then
-                error("reached station '" .. client.host .. "', but I did not find it in my database")
+                if timerId == resetPreviousStationTimerId then
+                    print("[reset] previous", previousStation)
+                    previousStation = nil
+                end
             end
+        end)
+    end, function()
+        while true do
+            local client = Rpc.nearest(SubwayService)
 
-            print("[reached]", station.name)
+            if client and (previousStation == nil or client.host ~= previousStation) then
+                previousStation = client.host
 
-            local startId = client.host
+                if resetPreviousStationTimerId then
+                    os.cancelTimer(resetPreviousStationTimerId)
+                end
 
-            if startId == goalId then
-                print("[done] enjoy your stay!")
-                break
-            end
+                resetPreviousStationTimerId = os.startTimer(10)
 
-            local path = findPath(stations, tracks, station, goal)
+                local station = Utils.find(stations, function(station)
+                    return station.id == client.host
+                end)
 
-            if path and #path > 1 then
+                if not station then
+                    error("reached station '" .. client.host .. "', but I did not find it in my database")
+                end
+
+                print("[reached]", station.name)
+
+                local startId = station.id
+
+                if startId == goalId then
+                    print("[done] enjoy your stay!")
+                    break
+                end
+
+                local path = findPath(stations, station, goal)
+
+                if not path or #path < 2 then
+                    error("no path towards '" .. goal.name .. "' found :(")
+                end
+
                 local nextStation = path[2]
-                local track = Utils.find(tracks, function(item)
-                    return item.stationId == startId and item.targetStationId == nextStation.id
+                local track = Utils.find(station.tracks, function(item)
+                    return item.to == nextStation.id
                 end)
 
                 if not track then
-                    error("no track going towards " .. nextStation.name .. " found")
+                    error("no track towards " .. nextStation.name .. " found")
                 end
 
-                print("[switch] " .. nextStation.name)
+                print("[switch] to " .. nextStation.name)
 
                 local printedBusy = false
 
@@ -201,8 +229,6 @@ local function main(args)
                     end
 
                     os.sleep(1)
-                    -- [todo] what if station is a switch that was busy and we are now no longer in range of it?
-                    -- (i.e. we passed it and need to route to goal somehow else)
                 end
 
                 if nextStation.type == "endpoint" then
@@ -212,11 +238,11 @@ local function main(args)
                 end
 
                 print("[wait] for nearby station")
-            else
-                error("no path towards '" .. goal.name .. "' found :(")
             end
         end
-    end
+
+        EventLoop.queue("subway:stop")
+    end)
 end
 
 main(arg)

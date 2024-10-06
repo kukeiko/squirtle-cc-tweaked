@@ -5,10 +5,10 @@
 ---@field name string
 ---@field label? string
 ---@field type SubwayStationType
+---@field tracks SubwayTrack[]
 ---
 ---@class SubwayTrack
----@field stationId string
----@field targetStationId string
+---@field to string
 ---@field signal number
 ---@field duration? number
 ---

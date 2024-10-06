@@ -3,7 +3,7 @@ local Utils = require "lib.common.utils"
 ---@class DatabaseService : Service
 local DatabaseService = {name = "database", folder = "data"}
 
-local entityTypes = {allocatedBuffers = "allocated-buffers"}
+local entityTypes = {allocatedBuffers = "allocated-buffers", subwayStations = "subway-stations"}
 
 ---@param entity string
 local function getPath(entity)
@@ -58,43 +58,12 @@ end
 
 ---@return SubwayStation[]
 function DatabaseService.getSubwayStations()
-    return readEntities("subway-stations")
+    return readEntities(entityTypes.subwayStations)
 end
 
 ---@param stations SubwayStation[]
 function DatabaseService.setSubwayStations(stations)
-    writeEntities("subway-stations", stations)
-end
-
----@param stationId? string
----@return SubwayTrack[]
-function DatabaseService.getSubwayTracks(stationId)
-    ---@type SubwayTrack[]
-    local tracks = readEntities("subway-tracks")
-
-    if stationId == nil then
-        return tracks
-    end
-
-    return Utils.filter(tracks, function(item)
-        return item.stationId == stationId
-    end)
-end
-
----@param tracks SubwayTrack[]
-function DatabaseService.setSubwayTracks(tracks)
-    writeEntities("subway-tracks", tracks)
-end
-
----@param stationId string
----@param signal integer
----@return SubwayTrack?
-function DatabaseService.getSubwayTrack(stationId, signal)
-    local track = Utils.find(DatabaseService.getSubwayTracks(stationId), function(item)
-        return item.signal == signal
-    end)
-
-    return track
+    writeEntities(entityTypes.subwayStations, stations)
 end
 
 ---@return CraftingRecipe[]

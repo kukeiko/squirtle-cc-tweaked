@@ -4,7 +4,7 @@ local AppsService = require "lib.features.apps-service"
 local DatabaseService = require "lib.common.database-service"
 
 local function main(args)
-    print("[update v1.0.0] booting...")
+    print("[update v2.0.0-dev] booting...")
 
     local appsClient = Rpc.nearest(AppsService)
 
@@ -17,7 +17,6 @@ local function main(args)
 
     if databaseClient then
         DatabaseService.setSubwayStations(databaseClient.getSubwayStations())
-        DatabaseService.setSubwayTracks(databaseClient.getSubwayTracks())
         print("[updated] database")
     end
 end

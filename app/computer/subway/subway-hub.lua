@@ -1,5 +1,7 @@
 package.path = package.path .. ";/?.lua"
+local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
+local EventLoop = require "lib.common.event-loop"
 local SubwayService = require "lib.features.subway-service"
 
 local function printUsage()
@@ -8,13 +10,13 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-hub v2.0.0-dev] booting...")
+    print("[subway-hub v3.0.0-dev] booting...")
 
     SubwayService.lockAnalogSide = args[1]
-    SubwayService.signalDuration = tonumber(args[2]) or 7
-    SubwayService.maxDistance = tonumber(args[3]) or 5
+    SubwayService.signalDuration = tonumber(args[2]) or SubwayService.signalDuration
+    SubwayService.maxDistance = tonumber(args[3]) or SubwayService.maxDistance
 
-    if not SubwayService.host then
+    if not SubwayService.lockAnalogSide then
         return printUsage()
     end
 
@@ -22,7 +24,15 @@ local function main(args)
     print("[signal-duration]", SubwayService.signalDuration)
     print("[max-distance]", SubwayService.maxDistance)
 
-    Rpc.server(SubwayService)
+    if not turtle then
+        Utils.writeStartupFile("subway-hub", SubwayService.lockAnalogSide, SubwayService.signalDuration, SubwayService.maxDistance)
+    end
+
+    EventLoop.run(function()
+        Rpc.server(SubwayService)
+    end, function()
+        SubwayService.start()
+    end)
 end
 
 main(arg)

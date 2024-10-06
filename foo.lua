@@ -327,4 +327,22 @@ function testUtilsReverse()
     Utils.prettyPrint(Utils.reverse(tbl))
 end
 
-testUtilsReverse()
+function testRunUntil()
+    EventLoop.run(function()
+        EventLoop.runUntil("key", function()
+            while true do
+                print("foo")
+                os.sleep(1)
+            end
+        end)
+    end, function()
+        EventLoop.pull("key")
+        print("pulled key")
+        EventLoop.queue("foo")
+    end, function()
+        EventLoop.pull("foo")
+        print("pulled foo")
+    end)
+end
+
+testRunUntil()

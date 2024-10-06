@@ -109,8 +109,6 @@ function EventLoop.run(...)
         return createThread(fn)
     end)
 
-    -- os.queueEvent("event-loop:bootstrap")
-
     threads = runThreads(threads, {})
 
     while #threads > 0 do
@@ -121,9 +119,12 @@ end
 ---@param event string
 ---@param ... function
 function EventLoop.runUntil(event, ...)
+    local fns = {...}
     EventLoop.waitForAny(function()
         EventLoop.pull(event)
-    end, EventLoop.run(...))
+    end, function()
+        EventLoop.run(table.unpack(fns))
+    end)
 end
 
 ---@param ... function
@@ -135,8 +136,6 @@ function EventLoop.waitForAny(...)
             anyFinished = true
         end)
     end)
-
-    -- os.queueEvent("event-loop:bootstrap")
 
     threads = runThreads(threads, {})
 

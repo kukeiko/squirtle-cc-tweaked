@@ -9,6 +9,7 @@ local EventLoop = require "lib.common.event-loop"
 ---@field type "pong"
 ---@field service string
 ---@field host string
+---@field maxDistance? integer
 
 ---@class RpcRequestPacket
 ---@field callId string
@@ -31,6 +32,7 @@ local EventLoop = require "lib.common.event-loop"
 ---@class Service
 ---@field host string
 ---@field name string
+---@field maxDistance? integer
 
 local callId = 0
 local channel = 64
@@ -88,16 +90,20 @@ local function findAllHosts(service, modemName, maxDistance)
 
         while true do
             local event = table.pack(EventLoop.pull("modem_message"))
+            ---@type RpcPongPacket
             local message = event[5]
+            ---@type integer
             local distance = event[6]
 
             if type(message) == "table" and message.type == "pong" and message.service == service.name then
-                if maxDistance then
-                    if distance <= maxDistance then
+                if not message.maxDistance or (message.maxDistance and distance <= message.maxDistance) then
+                    if maxDistance then
+                        if distance <= maxDistance then
+                            table.insert(hosts, {host = message.host, distance = distance})
+                        end
+                    else
                         table.insert(hosts, {host = message.host, distance = distance})
                     end
-                else
-                    table.insert(hosts, {host = message.host, distance = distance})
                 end
             end
         end
@@ -112,8 +118,8 @@ end
 ---@param maxDistance? number
 ---@return (T|RpcClient)?, number?
 function Rpc.nearest(service, modem, maxDistance)
-    if service.host == os.getComputerLabel() then
-        return service
+    if os.getComputerLabel() ~= nil and service.host == os.getComputerLabel() then
+        return service, 0
     end
 
     local hosts = findAllHosts(service, modem, maxDistance)
@@ -174,7 +180,7 @@ function Rpc.server(service, modemName)
                     peripheral.call(modem, "transmit", channel, channel, packet)
                 elseif type(message) == "table" and message.type == "ping" and message.service == service.name then
                     ---@type RpcPongPacket
-                    local pong = {type = "pong", host = service.host, service = service.name}
+                    local pong = {type = "pong", host = service.host, service = service.name, maxDistance = service.maxDistance}
                     peripheral.call(modem, "transmit", channel, channel, pong)
                 end
             end)

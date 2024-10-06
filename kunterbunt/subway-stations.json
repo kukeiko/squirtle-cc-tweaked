@@ -1,138 +1,465 @@
 [
     {
-        "id": "home",
-        "type": "endpoint",
-        "name": "Home",
-        "label": "Home"
-    },
-    {
-        "id": "storage",
-        "type": "hub",
-        "name": "Storage (Hub)"
-    },
-    {
-        "id": "storage:exit",
-        "type": "endpoint",
-        "name": "Storage"
-    },
-    {
-        "id": "storage-silos:exit",
-        "type": "endpoint",
-        "name": "Storage (Silos)"
-    },
-    {
-        "id": "storage:platform",
-        "type": "platform",
-        "name": "Storage Bahnsteig"
-    },
-    {
-        "id": "storage:platform:exit",
-        "type": "endpoint",
-        "name": "Storage (Bahnsteig)"
-    },
-    {
-        "id": "storage:platform:switch",
-        "type": "switch",
-        "name": "Storage Platform (Switch)"
-    },
-    {
-        "id": "storage:farms:switch",
-        "type": "switch",
-        "name": "Storage > Farms"
-    },
-    {
-        "id": "storage:crystal:switch",
-        "type": "switch",
-        "name": "Storage > Crystal"
-    },
-    {
-        "id": "villagers",
-        "type": "hub",
-        "name": "Villagers (Hub)"
-    },
-    {
-        "id": "villagers:exit",
-        "type": "endpoint",
-        "name": "Villagers"
-    },
-    {
-        "id": "villagers:exit:nether-portal",
-        "type": "endpoint",
-        "name": "Nether Portal"
-    },
-    {
-        "id": "gdi-nod",
-        "type": "endpoint",
-        "name": "GDI & NOD Symbols"
-    },
-    {
         "id": "farms",
         "type": "platform",
-        "name": "Farms (Hub)"
+        "name": "Farms (Hub)",
+        "tracks": [
+            {
+                "to": "farms:peak:switch",
+                "signal": 1,
+                "duration": 7
+            },
+            {
+                "to": "farms:storage:switch",
+                "signal": 2,
+                "duration": 10
+            },
+            {
+                "to": "villagers",
+                "signal": 7,
+                "duration": 20
+            },
+            {
+                "to": "???",
+                "signal": 12
+            }
+        ]
     },
     {
         "id": "farms:exit",
         "type": "endpoint",
-        "name": "Farms"
-    },
-    {
-        "id": "farms:storage:switch",
-        "type": "switch",
-        "name": "Farms > Storage"
+        "name": "Farms",
+        "tracks": []
     },
     {
         "id": "farms:peak:switch",
         "type": "switch",
-        "name": "Farms > Peak"
+        "name": "Farms > Peak",
+        "tracks": [
+            {
+                "to": "switch:snow-base:entry",
+                "signal": 0
+            },
+            {
+                "to": "farms:exit",
+                "signal": 1,
+                "duration": 3
+            },
+            {
+                "to": "farms",
+                "signal": 6,
+                "duration": 4
+            }
+        ]
     },
     {
-        "id": "peak:platform",
-        "type": "platform",
-        "name": "Peak (Platform)"
-    },
-    {
-        "id": "nether:squids:switch",
+        "id": "farms:storage:switch",
         "type": "switch",
-        "name": "Nether: Squid Switch"
+        "name": "Farms > Storage",
+        "tracks": [
+            {
+                "to": "storage:crystal:switch",
+                "signal": 0,
+                "duration": 23
+            },
+            {
+                "to": "farms:peak:switch",
+                "signal": 15
+            }
+        ]
     },
     {
-        "id": "nether:squids",
+        "id": "gdi-nod",
         "type": "endpoint",
-        "name": "Nether: Squid Farm"
+        "name": "GDI & NOD Symbols",
+        "tracks": []
+    },
+    {
+        "id": "home",
+        "type": "endpoint",
+        "name": "Home",
+        "label": "Home",
+        "tracks": []
     },
     {
         "id": "nether:aztec-base",
         "type": "endpoint",
-        "name": "Nether: Aztec Base"
-    },
-    {
-        "id": "nether:snow-base:switch",
-        "type": "switch",
-        "name": "Nether: Snow Base (Switch)"
-    },
-    {
-        "id": "nether:snow-base",
-        "type": "endpoint",
-        "name": "Nether: Snow Base"
-    },
-    {
-        "id": "nether:original-base",
-        "type": "endpoint",
-        "name": "Nether: Ze Original Base"
-    },
-    {
-        "id": "nether:necropolis:switch",
-        "type": "switch",
-        "name": "Nether: Necropolis Switch"
-    },
-    {
-        "id": "nether:necropolis",
-        "type": "endpoint",
-        "name": "Nether: Necropolis"
+        "name": "Nether: Aztec Base",
+        "tracks": []
     },
     {
         "id": "nether:mob-farm",
         "type": "endpoint",
-        "name": "Nether: Mob Farm"
+        "name": "Nether: Mob Farm",
+        "tracks": []
+    },
+    {
+        "id": "nether:necropolis",
+        "type": "endpoint",
+        "name": "Nether: Necropolis",
+        "tracks": []
+    },
+    {
+        "id": "nether:necropolis:switch",
+        "type": "switch",
+        "name": "Nether: Necropolis Switch",
+        "tracks": [
+            {
+                "to": "nether:snow-base:switch",
+                "signal": 0
+            },
+            {
+                "to": "nether:necropolis",
+                "signal": 1
+            },
+            {
+                "to": "nether:original-base",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "nether:original-base",
+        "type": "endpoint",
+        "name": "Nether: Ze Original Base",
+        "tracks": []
+    },
+    {
+        "id": "nether:snow-base",
+        "type": "endpoint",
+        "name": "Nether: Snow Base",
+        "tracks": []
+    },
+    {
+        "id": "nether:snow-base:switch",
+        "type": "switch",
+        "name": "Nether: Snow Base (Switch)",
+        "tracks": [
+            {
+                "to": "nether:necropolis:switch",
+                "signal": 0
+            },
+            {
+                "to": "nether:snow-base",
+                "signal": 1
+            },
+            {
+                "to": "nether:mob-farm",
+                "signal": 5
+            },
+            {
+                "to": "nether:squids:switch",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "nether:squids",
+        "type": "endpoint",
+        "name": "Nether: Squid Farm",
+        "tracks": []
+    },
+    {
+        "id": "nether:squids:switch",
+        "type": "switch",
+        "name": "Nether: Squid Switch",
+        "tracks": [
+            {
+                "to": "nether:snow-base:switch",
+                "signal": 0
+            },
+            {
+                "to": "nether:squids",
+                "signal": 5
+            },
+            {
+                "to": "nether:aztec-base",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "original-base",
+        "type": "endpoint",
+        "name": "Original Base",
+        "tracks": []
+    },
+    {
+        "id": "peak:platform",
+        "type": "platform",
+        "name": "Peak (Platform)",
+        "tracks": []
+    },
+    {
+        "id": "squid-farm",
+        "type": "endpoint",
+        "name": "Squid Farm",
+        "tracks": []
+    },
+    {
+        "id": "station:aztec:bazaar",
+        "type": "endpoint",
+        "name": "Aztec Bazaar",
+        "tracks": []
+    },
+    {
+        "id": "station:aztec:deep-storage",
+        "type": "endpoint",
+        "name": "Aztec Deep Storage",
+        "tracks": []
+    },
+    {
+        "id": "station:aztec:entry-hall",
+        "type": "endpoint",
+        "name": "Aztec Entry Hall",
+        "tracks": []
+    },
+    {
+        "id": "storage",
+        "type": "hub",
+        "name": "Storage (Hub)",
+        "tracks": [
+            {
+                "to": "storage:platform:switch",
+                "signal": 1,
+                "duration": 10
+            },
+            {
+                "to": "storage-silos:exit",
+                "signal": 2
+            },
+            {
+                "to": "storage:exit",
+                "signal": 3,
+                "duration": 5
+            },
+            {
+                "to": "home",
+                "signal": 7,
+                "duration": 10
+            },
+            {
+                "to": "villagers",
+                "signal": 15,
+                "duration": 16
+            }
+        ]
+    },
+    {
+        "id": "storage-silos:exit",
+        "type": "endpoint",
+        "name": "Storage (Silos)",
+        "tracks": []
+    },
+    {
+        "id": "storage:crystal:switch",
+        "type": "switch",
+        "name": "Storage > Crystal",
+        "tracks": [
+            {
+                "to": "crystal",
+                "signal": 0
+            },
+            {
+                "to": "storage:platform:exit",
+                "signal": 3,
+                "duration": 2
+            },
+            {
+                "to": "storage:platform",
+                "signal": 6,
+                "duration": 3.5
+            }
+        ]
+    },
+    {
+        "id": "storage:exit",
+        "type": "endpoint",
+        "name": "Storage",
+        "tracks": []
+    },
+    {
+        "id": "storage:farms:switch",
+        "type": "switch",
+        "name": "Storage > Farms",
+        "tracks": [
+            {
+                "to": "farms:peak:switch",
+                "signal": 0
+            },
+            {
+                "to": "storage:platform",
+                "signal": 4
+            },
+            {
+                "to": "storage:platform:exit",
+                "signal": 6
+            }
+        ]
+    },
+    {
+        "id": "storage:platform",
+        "type": "platform",
+        "name": "Storage Bahnsteig",
+        "tracks": [
+            {
+                "to": "storage",
+                "signal": 6,
+                "duration": 9
+            },
+            {
+                "to": "crystal:???",
+                "signal": 7
+            },
+            {
+                "to": "farms:peak:switch",
+                "signal": 8,
+                "duration": 26
+            }
+        ]
+    },
+    {
+        "id": "storage:platform:exit",
+        "type": "endpoint",
+        "name": "Storage (Bahnsteig)",
+        "tracks": []
+    },
+    {
+        "id": "storage:platform:switch",
+        "type": "switch",
+        "name": "Storage Platform (Switch)",
+        "tracks": [
+            {
+                "to": "storage:platform:exit",
+                "signal": 0,
+                "duration": 2
+            },
+            {
+                "to": "storage:platform",
+                "signal": 1,
+                "duration": 3.5
+            }
+        ]
+    },
+    {
+        "id": "switch:aztec:deep-storage",
+        "type": "switch",
+        "name": "Aztec Deep Storage (Switch)",
+        "tracks": [
+            {
+                "to": "switch:aztec:entry-hall",
+                "signal": 0
+            },
+            {
+                "to": "station:aztec:deep-storage",
+                "signal": 1
+            },
+            {
+                "to": "station:aztec:bazaar",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "switch:aztec:entry-hall",
+        "type": "switch",
+        "name": "Aztec Entry Hall (Switch)",
+        "tracks": [
+            {
+                "to": "switch:squid-farm",
+                "signal": 0
+            },
+            {
+                "to": "switch:aztec:deep-storage",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "switch:snow-base:entry",
+        "type": "switch",
+        "name": "Snow Base Entry (Switch)",
+        "tracks": [
+            {
+                "to": "switch:squid-farm",
+                "signal": 0
+            },
+            {
+                "to": "farms:peak:switch",
+                "signal": 5
+            },
+            {
+                "to": "original-base",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "switch:squid-farm",
+        "type": "switch",
+        "name": "Squid Farm (Switch)",
+        "tracks": [
+            {
+                "to": "switch:snow-base:entry",
+                "signal": 0
+            },
+            {
+                "to": "squid-farm",
+                "signal": 1
+            },
+            {
+                "to": "switch:aztec:entry-hall",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "villagers",
+        "type": "hub",
+        "name": "Villagers (Hub)",
+        "tracks": [
+            {
+                "to": "home",
+                "signal": 1,
+                "duration": 7
+            },
+            {
+                "to": "villagers:exit",
+                "signal": 2,
+                "duration": 4
+            },
+            {
+                "to": "villagers:exit:nether-portal",
+                "signal": 3,
+                "duration": 6
+            },
+            {
+                "to": "storage",
+                "signal": 4,
+                "duration": 23
+            },
+            {
+                "to": "farms:peak:switch",
+                "signal": 5,
+                "duration": 24
+            },
+            {
+                "to": "gdi-nod",
+                "signal": 9,
+                "duration": 10
+            }
+        ]
+    },
+    {
+        "id": "villagers:exit",
+        "type": "endpoint",
+        "name": "Villagers",
+        "tracks": []
+    },
+    {
+        "id": "villagers:exit:nether-portal",
+        "type": "endpoint",
+        "name": "Nether Portal",
+        "tracks": []
     }
 ]
