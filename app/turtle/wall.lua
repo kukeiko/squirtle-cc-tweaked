@@ -102,7 +102,7 @@ local function printUsage()
     print("wall <depth> <height>")
 end
 
-print("[wall v1.1.0] booting...")
+print("[wall v2.0.0] booting...")
 local depth = tonumber(arg[1])
 local height = tonumber(arg[2])
 
