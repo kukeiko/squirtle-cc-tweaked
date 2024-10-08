@@ -1,0 +1,132 @@
+[
+    {
+        "id": "dev:blue:exit",
+        "type": "endpoint",
+        "name": "Blue",
+        "tracks": []
+    },
+    {
+        "id": "dev:red:exit",
+        "type": "endpoint",
+        "name": "Red",
+        "tracks": []
+    },
+    {
+        "id": "dev:orange:exit",
+        "type": "endpoint",
+        "name": "Orange",
+        "tracks": []
+    },
+    {
+        "id": "dev:yellow:exit",
+        "type": "endpoint",
+        "name": "Yellow",
+        "tracks": []
+    },
+    {
+        "id": "dev:green:exit",
+        "type": "endpoint",
+        "name": "Green",
+        "tracks": []
+    },
+    {
+        "id": "dev:purple:exit",
+        "type": "endpoint",
+        "name": "Purple",
+        "tracks": []
+    },
+    {
+        "id": "dev:red-blue:switch",
+        "type": "switch",
+        "name": "Red/Blue [SW]",
+        "tracks": [
+            {
+                "to": "dev:red:exit",
+                "signal": 0
+            },
+            {
+                "to": "dev:orange-yellow:switch",
+                "signal": 1
+            },
+            {
+                "to": "dev:blue:exit",
+                "signal": 5
+            },
+            {
+                "to": "dev:purple:switch",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "dev:orange-yellow:switch",
+        "type": "switch",
+        "name": "Orange/Yellow [SW]",
+        "tracks": [
+            {
+                "to": "dev:yellow:exit",
+                "signal": 0
+            },
+            {
+                "to": "dev:green:switch",
+                "signal": 1
+            },
+            {
+                "to": "dev:orange:exit",
+                "signal": 5
+            },
+            {
+                "to": "dev:red-blue:switch",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "dev:green:switch",
+        "type": "switch",
+        "name": "Green [SW]",
+        "tracks": [
+            {
+                "to": "dev:green:exit",
+                "signal": 0
+            },
+            {
+                "to": "dev:orange-yellow:switch",
+                "signal": 5
+            },
+            {
+                "to": "dev:purple:switch",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "dev:purple:switch",
+        "type": "switch",
+        "name": "Purple [SW]",
+        "tracks": [
+            {
+                "to": "dev:red-blue:switch",
+                "signal": 0
+            },
+            {
+                "to": "dev:green:switch",
+                "signal": 1
+            },
+            {
+                "to": "dev:purple:exit",
+                "signal": 5
+            },
+            {
+                "to": "dev:hub",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "dev:hub",
+        "type": "hub",
+        "name": "Hub",
+        "tracks": []
+    }
+]

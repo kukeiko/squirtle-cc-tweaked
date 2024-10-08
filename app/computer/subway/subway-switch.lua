@@ -3,11 +3,15 @@ local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local SubwayService = require "lib.features.subway-service"
 
-print("[subway-switch v3.0.0-dev] booting...")
+print("[subway-switch v3.2.0-dev] booting...")
 
-if not turtle then
-    Utils.writeStartupFile("subway-switch")
+SubwayService.maxDistance = tonumber(arg[1]) or 13
+
+if not turtle and not string.find(os.getComputerLabel(), "dev") then
+    Utils.writeStartupFile("subway-switch", SubwayService.maxDistance)
+else
+    print("[debug] skipping creation of startup file")
 end
 
-SubwayService.maxDistance = 10
+print("[max-distance]", SubwayService.maxDistance)
 Rpc.server(SubwayService)

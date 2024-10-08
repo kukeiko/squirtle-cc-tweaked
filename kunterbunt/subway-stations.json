@@ -1,21 +1,21 @@
 [
     {
-        "id": "farms",
+        "id": "snow-base:farms:hub",
         "type": "platform",
         "name": "Farms (Hub)",
         "tracks": [
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 1,
                 "duration": 7
             },
             {
-                "to": "farms:storage:switch",
+                "to": "snow-base:farms>storage:switch",
                 "signal": 2,
                 "duration": 10
             },
             {
-                "to": "villagers",
+                "to": "snow-base:villagers:hub",
                 "signal": 7,
                 "duration": 20
             },
@@ -32,12 +32,12 @@
         "tracks": []
     },
     {
-        "id": "farms:peak:switch",
+        "id": "snow-base:farms>aqueduct:switch",
         "type": "switch",
         "name": "Farms > Peak",
         "tracks": [
             {
-                "to": "switch:snow-base:entry",
+                "to": "snow-base:aqueduct>farms:switch",
                 "signal": 0
             },
             {
@@ -46,24 +46,24 @@
                 "duration": 3
             },
             {
-                "to": "farms",
+                "to": "snow-base:farms:hub",
                 "signal": 6,
                 "duration": 4
             }
         ]
     },
     {
-        "id": "farms:storage:switch",
+        "id": "snow-base:farms>storage:switch",
         "type": "switch",
         "name": "Farms > Storage",
         "tracks": [
             {
-                "to": "storage:crystal:switch",
+                "to": "snow-base:storage>crystal:switch",
                 "signal": 0,
                 "duration": 23
             },
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 15
             }
         ]
@@ -215,12 +215,12 @@
         "tracks": []
     },
     {
-        "id": "storage",
+        "id": "snow-base:storage:hub",
         "type": "hub",
         "name": "Storage (Hub)",
         "tracks": [
             {
-                "to": "storage:platform:switch",
+                "to": "snow-base:storage:pltfrm:switch",
                 "signal": 1,
                 "duration": 10
             },
@@ -239,7 +239,7 @@
                 "duration": 10
             },
             {
-                "to": "villagers",
+                "to": "snow-base:villagers:hub",
                 "signal": 15,
                 "duration": 16
             }
@@ -252,7 +252,7 @@
         "tracks": []
     },
     {
-        "id": "storage:crystal:switch",
+        "id": "snow-base:storage>crystal:switch",
         "type": "switch",
         "name": "Storage > Crystal",
         "tracks": [
@@ -266,7 +266,7 @@
                 "duration": 2
             },
             {
-                "to": "storage:platform",
+                "to": "snow-base:storage:platform",
                 "signal": 6,
                 "duration": 3.5
             }
@@ -279,16 +279,16 @@
         "tracks": []
     },
     {
-        "id": "storage:farms:switch",
+        "id": "snow-base:storage>farms:switch",
         "type": "switch",
         "name": "Storage > Farms",
         "tracks": [
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 0
             },
             {
-                "to": "storage:platform",
+                "to": "snow-base:storage:platform",
                 "signal": 4
             },
             {
@@ -298,12 +298,12 @@
         ]
     },
     {
-        "id": "storage:platform",
+        "id": "snow-base:storage:platform",
         "type": "platform",
         "name": "Storage Bahnsteig",
         "tracks": [
             {
-                "to": "storage",
+                "to": "snow-base:storage:hub",
                 "signal": 6,
                 "duration": 9
             },
@@ -312,7 +312,7 @@
                 "signal": 7
             },
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 8,
                 "duration": 26
             }
@@ -325,7 +325,7 @@
         "tracks": []
     },
     {
-        "id": "storage:platform:switch",
+        "id": "snow-base:storage:pltfrm:switch",
         "type": "switch",
         "name": "Storage Platform (Switch)",
         "tracks": [
@@ -335,9 +335,59 @@
                 "duration": 2
             },
             {
-                "to": "storage:platform",
+                "to": "snow-base:storage:platform",
                 "signal": 1,
                 "duration": 3.5
+            }
+        ]
+    },
+    {
+        "id": "aztec:home:exit",
+        "type": "endpoint",
+        "name": "Aztec: Home",
+        "tracks": []
+    },
+    {
+        "id": "aztec:home:switch",
+        "type": "switch",
+        "name": "Aztec: Home [SW]",
+        "tracks": [
+            {
+                "to": "aztec:trade:switch",
+                "signal": 0
+            },
+            {
+                "to": "switch:aztec:deep-storage",
+                "signal": 1
+            },
+            {
+                "to": "aztec:home:exit",
+                "signal": 5
+            },
+            {
+                "to": "switch:aztec:entry-hall",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "aztec:trade:exit",
+        "type": "endpoint",
+        "name": "Aztec: Trading Hall",
+        "tracks": []
+    },
+    {
+        "id": "aztec:trade:switch",
+        "type": "switch",
+        "name": "Aztec: Trading Hall [SW]",
+        "tracks": [
+            {
+                "to": "aztec:trade:exit",
+                "signal": 5
+            },
+            {
+                "to": "aztec:home:switch",
+                "signal": 7
             }
         ]
     },
@@ -347,7 +397,7 @@
         "name": "Aztec Deep Storage (Switch)",
         "tracks": [
             {
-                "to": "switch:aztec:entry-hall",
+                "to": "aztec:home:switch",
                 "signal": 0
             },
             {
@@ -370,13 +420,13 @@
                 "signal": 0
             },
             {
-                "to": "switch:aztec:deep-storage",
+                "to": "aztec:home:switch",
                 "signal": 7
             }
         ]
     },
     {
-        "id": "switch:snow-base:entry",
+        "id": "snow-base:aqueduct>farms:switch",
         "type": "switch",
         "name": "Snow Base Entry (Switch)",
         "tracks": [
@@ -385,7 +435,7 @@
                 "signal": 0
             },
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 5
             },
             {
@@ -400,7 +450,7 @@
         "name": "Squid Farm (Switch)",
         "tracks": [
             {
-                "to": "switch:snow-base:entry",
+                "to": "snow-base:aqueduct>farms:switch",
                 "signal": 0
             },
             {
@@ -414,7 +464,7 @@
         ]
     },
     {
-        "id": "villagers",
+        "id": "snow-base:villagers:hub",
         "type": "hub",
         "name": "Villagers (Hub)",
         "tracks": [
@@ -434,12 +484,12 @@
                 "duration": 6
             },
             {
-                "to": "storage",
+                "to": "snow-base:storage:hub",
                 "signal": 4,
                 "duration": 23
             },
             {
-                "to": "farms:peak:switch",
+                "to": "snow-base:farms>aqueduct:switch",
                 "signal": 5,
                 "duration": 24
             },

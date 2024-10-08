@@ -104,9 +104,19 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-hub.lua -p app/computer/subway/?.lua -p ?.lua -o dist/computer/subway-hub"
         },
         {
+            "label": "build computer:subway-hub:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-hub.lua -p app/computer/subway/?.lua -p ?.lua -o ../21/subway-hub"
+        },
+        {
             "label": "build computer:subway-switch",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p ?.lua -o dist/computer/subway-switch"
+        },
+        {
+            "label": "build computer:subway-switch:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p ?.lua -o ../21/subway-switch"
         },
         {
             "label": "build computer:update-host",
