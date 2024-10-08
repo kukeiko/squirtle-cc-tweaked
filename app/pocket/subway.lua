@@ -71,6 +71,7 @@ local function findPath(stations, start, goal)
         if not nextStation then
             return false
         elseif nextStation.id == goal.id then
+            -- [todo] i don't think this is correct - we should visit all stations first to ensure the shortest path
             return getPath(previous, start, goal)
         end
 
@@ -81,7 +82,7 @@ local function findPath(stations, start, goal)
         end)
 
         for _, nextTrack in pairs(nextTracks) do
-            local distance = distances[nextStation.id] + (nextTrack.duration or 60)
+            local distance = distances[nextStation.id] + (nextTrack.duration or 0)
 
             if distance < distances[nextTrack.to] then
                 distances[nextTrack.to] = distance
@@ -133,7 +134,7 @@ local function promptUserToPickGoal(allStations)
 end
 
 local function main(args)
-    print("[subway v2.0.0-dev] booting...")
+    print("[subway v2.1.0-dev] booting...")
 
     ---@type string?
     local goalId = args[1] or promptUserToPickGoal()
@@ -168,17 +169,31 @@ local function main(args)
                 local _, timerId = EventLoop.pull("timer")
 
                 if timerId == resetPreviousStationTimerId then
-                    print("[reset] previous", previousStation)
                     previousStation = nil
                 end
             end
         end)
     end, function()
+        ---@type SubwayTrack
+        local currentTrack = nil
+        local previousStationTime = 0
+
         while true do
             local client = Rpc.nearest(SubwayService)
 
             if client and (previousStation == nil or client.host ~= previousStation) then
+                if currentTrack ~= nil then
+                    local newDuration = math.floor((os.epoch("utc") - previousStationTime) / 1000)
+
+                    if currentTrack.duration == nil or math.abs(newDuration - currentTrack.duration) > 1 then
+                        print(string.format("[duration] updated to %ds", newDuration))
+                        currentTrack.duration = newDuration
+                        DatabaseService.setSubwayStations(stations)
+                    end
+                end
+
                 previousStation = client.host
+                previousStationTime = os.epoch("utc")
 
                 if resetPreviousStationTimerId then
                     os.cancelTimer(resetPreviousStationTimerId)
@@ -191,10 +206,10 @@ local function main(args)
                 end)
 
                 if not station then
-                    error("reached station '" .. client.host .. "', but I did not find it in my database")
+                    error(string.format("found station %s, but I did not find it in my database", client.host))
                 end
 
-                print("[reached]", station.name)
+                print("[found]", station.name)
 
                 local startId = station.id
 
@@ -218,6 +233,7 @@ local function main(args)
                     error("no track towards " .. nextStation.name .. " found")
                 end
 
+                currentTrack = track
                 print("[switch] to " .. nextStation.name)
 
                 local printedBusy = false
@@ -232,12 +248,15 @@ local function main(args)
                 end
 
                 if nextStation.type == "endpoint" then
-                    print("[reached]", nextStation.name)
                     print("[done] enjoy your stay!")
                     break
                 end
 
                 print("[wait] for nearby station")
+
+                if currentTrack.duration then
+                    print(string.format("[eta] %ds", currentTrack.duration))
+                end
             end
         end
 
