@@ -6,7 +6,7 @@ local AppsService = require "lib.features.apps-service"
 local DatabaseService = require "lib.common.database-service"
 
 local function main()
-    print("[update-host v2.0.0-dev] booting...")
+    print("[update-host v2.0.0] booting...")
 
     Utils.writeStartupFile("update-host")
 
