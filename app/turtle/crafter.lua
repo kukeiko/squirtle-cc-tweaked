@@ -4,8 +4,17 @@ local EventLoop = require "lib.common.event-loop"
 local Peripheral = require "lib.common.peripheral"
 
 local function printUsage()
-    print("Usage: crafter <source> <target>")
-    print("- source and target must be one of: top, bottom, front")
+    print("Usage: crafter <source> <target> [trash]")
+    print("- target must be one of: top, bottom, front")
+    print("- needs a barrel at either: top, bottom, front")
+end
+
+---@param side string
+---@param name string
+local function assertValidSide(side, name)
+    if side ~= "top" and side ~= "front" and side ~= "bottom" then
+        error(string.format("%s must be either at top, front or bottom", name))
+    end
 end
 
 ---@param name string
@@ -139,10 +148,11 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[crafter v2.2.1] booting...")
+    print("[crafter v2.3.0-dev] booting...")
     local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]
+    local trash = args[3]
 
     if not source or not target then
         return printUsage()
@@ -154,8 +164,11 @@ local function main(args)
         error("no barrel found :(")
     end
 
-    if source == barrel or target == barrel then
-        error("barrel can not be the source or target")
+    assertValidSide(barrel, "barrel")
+    assertValidSide(target, "target")
+
+    if source == barrel or target == barrel or trash == barrel then
+        error("barrel can not be the source, target or trash")
     end
 
     local craftTargetSlot = 16
@@ -171,7 +184,7 @@ local function main(args)
             end
         end
     end, function()
-        moveNonRecipeItemsFromSourceToTarget(source, target, barrel)
+        moveNonRecipeItemsFromSourceToTarget(source, trash or target, barrel)
     end)
 
 end
