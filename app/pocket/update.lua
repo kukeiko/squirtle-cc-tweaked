@@ -3,7 +3,7 @@ local Rpc = require "lib.common.rpc"
 local AppsService = require "lib.features.apps-service"
 local DatabaseService = require "lib.common.database-service"
 
-print("[update v2.0.0-dev] booting...")
+print("[update v2.0.0] booting...")
 
 local appsClient = Rpc.nearest(AppsService)
 
