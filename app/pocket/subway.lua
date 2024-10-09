@@ -134,37 +134,44 @@ local function promptUserToPickGoal(databaseService, allStations)
     end
 end
 
+---@param useLocal boolean
+---@return DatabaseService|RpcClient
+local function connectToDatabase(useLocal)
+    if useLocal then
+        return DatabaseService
+    end
+
+    local databaseService = Rpc.nearest(DatabaseService)
+
+    if databaseService then
+        DatabaseService.setSubwayStations(databaseService.getSubwayStations())
+    else
+        databaseService = DatabaseService
+    end
+
+    return databaseService
+end
+
 local function main(args)
-    print("[subway v2.2.0] booting...")
+    print("[subway v2.3.0-dev] booting...")
 
     while true do
-        local databaseService = Rpc.nearest(DatabaseService)
+        local useLocalDatabase = args[1] == "local"
+        local showAll = args[1] == "all"
+        local databaseService = connectToDatabase(useLocalDatabase)
+        local goal = promptUserToPickGoal(databaseService, showAll)
 
-        if databaseService then
-            DatabaseService.setSubwayStations(databaseService.getSubwayStations())
-        else
-            databaseService = DatabaseService
-        end
-
-        ---@type string?
-        local goalId = args[1] or promptUserToPickGoal(databaseService)
-
-        if not goalId then
+        if not goal then
             return
         end
 
-        if goalId == "all" then
-            goalId = promptUserToPickGoal(databaseService, true)
-        end
-
         local stations = databaseService.getSubwayStations()
-
         local goal = Utils.find(stations, function(station)
-            return station.id == goalId
+            return station.id == goal
         end)
 
         if not goal then
-            error("no station w/ id '" .. goalId .. "' found")
+            error("no station w/ id '" .. goal .. "' found")
         end
 
         print("[wait] for nearby station")
@@ -223,7 +230,7 @@ local function main(args)
 
                     local startId = station.id
 
-                    if startId == goalId then
+                    if startId == goal then
                         print("[done] enjoy your stay!")
                         os.sleep(3)
                         break
