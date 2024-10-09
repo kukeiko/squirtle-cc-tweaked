@@ -135,7 +135,7 @@ local function promptUserToPickGoal(databaseService, allStations)
 end
 
 local function main(args)
-    print("[subway v2.2.0-dev] booting...")
+    print("[subway v2.2.0] booting...")
 
     while true do
         local databaseService = Rpc.nearest(DatabaseService)
