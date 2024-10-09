@@ -109,6 +109,9 @@ function SearchableList:run()
             self.searchText = self.searchText .. value
             filterDirty = true
             self.index = 1
+        elseif event == "terminate" then
+            -- [todo] need to properly understand terminate event so that I don't have to check for it here
+            break
         end
 
         if (filterDirty) then
