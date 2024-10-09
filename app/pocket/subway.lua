@@ -153,7 +153,7 @@ local function connectToDatabase(useLocal)
 end
 
 local function main(args)
-    print("[subway v2.3.0-dev] booting...")
+    print("[subway v2.3.0] booting...")
 
     while true do
         local useLocalDatabase = args[1] == "local"
