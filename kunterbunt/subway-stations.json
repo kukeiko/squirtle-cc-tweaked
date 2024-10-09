@@ -28,7 +28,7 @@
     {
         "id": "farms:exit",
         "type": "endpoint",
-        "name": "Farms",
+        "name": "Snow: Farms",
         "tracks": []
     },
     {
@@ -71,14 +71,13 @@
     {
         "id": "gdi-nod",
         "type": "endpoint",
-        "name": "GDI & NOD Symbols",
+        "name": "Snow: GDI & NOD Symbols",
         "tracks": []
     },
     {
         "id": "home",
         "type": "endpoint",
-        "name": "Home",
-        "label": "Home",
+        "name": "Snow: Home",
         "tracks": []
     },
     {
@@ -199,25 +198,25 @@
     {
         "id": "station:aztec:bazaar",
         "type": "endpoint",
-        "name": "Aztec Bazaar",
+        "name": "Aztec: Bazaar",
         "tracks": []
     },
     {
         "id": "station:aztec:deep-storage",
         "type": "endpoint",
-        "name": "Aztec Deep Storage",
+        "name": "Aztec: Deep Storage",
         "tracks": []
     },
     {
-        "id": "station:aztec:entry-hall",
+        "id": "aztec:entry-hall:exit",
         "type": "endpoint",
-        "name": "Aztec Entry Hall",
+        "name": "Aztec: Entry Hall",
         "tracks": []
     },
     {
         "id": "snow-base:storage:hub",
         "type": "hub",
-        "name": "Storage (Hub)",
+        "name": "Snow: Storage (Hub)",
         "tracks": [
             {
                 "to": "snow-base:storage:pltfrm:switch",
@@ -248,7 +247,7 @@
     {
         "id": "storage-silos:exit",
         "type": "endpoint",
-        "name": "Storage (Silos)",
+        "name": "Snow: Storage (Silos)",
         "tracks": []
     },
     {
@@ -275,7 +274,7 @@
     {
         "id": "storage:exit",
         "type": "endpoint",
-        "name": "Storage",
+        "name": "Snow: Storage",
         "tracks": []
     },
     {
@@ -321,7 +320,7 @@
     {
         "id": "storage:platform:exit",
         "type": "endpoint",
-        "name": "Storage (Bahnsteig)",
+        "name": "Snow: Storage (Bahnsteig)",
         "tracks": []
     },
     {
@@ -365,7 +364,26 @@
                 "signal": 5
             },
             {
-                "to": "switch:aztec:entry-hall",
+                "to": "aztec:home>entry-hall:switch",
+                "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "aztec:home>entry-hall:switch",
+        "type": "switch",
+        "name": "Aztec: Home > Entry Hall [SW]",
+        "tracks": [
+            {
+                "to": "aztec:home:switch",
+                "signal": 0
+            },
+            {
+                "to": "aztec:entry-hall:switch",
+                "signal": 5
+            },
+            {
+                "to": "aztec:sunken-temple:exit",
                 "signal": 7
             }
         ]
@@ -374,6 +392,12 @@
         "id": "aztec:trade:exit",
         "type": "endpoint",
         "name": "Aztec: Trading Hall",
+        "tracks": []
+    },
+    {
+        "id": "aztec:sunken-temple:exit",
+        "type": "endpoint",
+        "name": "Aztec: Sunken Temple",
         "tracks": []
     },
     {
@@ -394,7 +418,7 @@
     {
         "id": "switch:aztec:deep-storage",
         "type": "switch",
-        "name": "Aztec Deep Storage (Switch)",
+        "name": "Aztec: Deep Storage [SW]",
         "tracks": [
             {
                 "to": "aztec:home:switch",
@@ -411,16 +435,20 @@
         ]
     },
     {
-        "id": "switch:aztec:entry-hall",
+        "id": "aztec:entry-hall:switch",
         "type": "switch",
-        "name": "Aztec Entry Hall (Switch)",
+        "name": "Aztec: Entry Hall [SW]",
         "tracks": [
             {
                 "to": "switch:squid-farm",
                 "signal": 0
             },
             {
-                "to": "aztec:home:switch",
+                "to": "aztec:entry-hall:exit",
+                "signal": 1
+            },
+            {
+                "to": "aztec:home>entry-hall:switch",
                 "signal": 7
             }
         ]
@@ -458,7 +486,7 @@
                 "signal": 1
             },
             {
-                "to": "switch:aztec:entry-hall",
+                "to": "aztec:entry-hall:switch",
                 "signal": 7
             }
         ]
@@ -503,13 +531,13 @@
     {
         "id": "villagers:exit",
         "type": "endpoint",
-        "name": "Villagers",
+        "name": "Snow: Villagers",
         "tracks": []
     },
     {
         "id": "villagers:exit:nether-portal",
         "type": "endpoint",
-        "name": "Nether Portal",
+        "name": "Snow: Nether Portal",
         "tracks": []
     }
 ]

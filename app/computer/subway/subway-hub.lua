@@ -10,7 +10,7 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-hub v3.2.0-dev] booting...")
+    print("[subway-hub v3.2.0] booting...")
 
     SubwayService.lockAnalogSide = args[1]
     SubwayService.signalDuration = tonumber(args[2]) or SubwayService.signalDuration

@@ -3,7 +3,7 @@ local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local SubwayService = require "lib.features.subway-service"
 
-print("[subway-switch v3.2.0-dev] booting...")
+print("[subway-switch v3.2.0] booting...")
 
 SubwayService.maxDistance = tonumber(arg[1]) or 13
 
