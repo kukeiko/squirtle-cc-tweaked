@@ -92,14 +92,15 @@ local function findPath(stations, start, goal)
     end
 end
 
+---@param databaseService DatabaseService|RpcClient
 ---@param allStations? boolean
 ---@return string?
-local function promptUserToPickGoal(allStations)
+local function promptUserToPickGoal(databaseService, allStations)
     allStations = allStations or false
-    local stations = DatabaseService.getSubwayStations()
+    local stations = databaseService.getSubwayStations()
 
     if not allStations then
-        stations = Utils.filter(DatabaseService.getSubwayStations(), function(station)
+        stations = Utils.filter(databaseService.getSubwayStations(), function(station)
             return station.type == "endpoint"
         end)
     end
@@ -134,134 +135,146 @@ local function promptUserToPickGoal(allStations)
 end
 
 local function main(args)
-    print("[subway v2.1.0] booting...")
+    print("[subway v2.2.0-dev] booting...")
 
-    ---@type string?
-    local goalId = args[1] or promptUserToPickGoal()
+    while true do
+        local databaseService = Rpc.nearest(DatabaseService)
 
-    if not goalId then
-        return
-    end
-
-    if goalId == "all" then
-        goalId = promptUserToPickGoal(true)
-    end
-
-    local stations = DatabaseService.getSubwayStations()
-
-    local goal = Utils.find(stations, function(station)
-        return station.id == goalId
-    end)
-
-    if not goal then
-        error("no station w/ id '" .. goalId .. "' found")
-    end
-
-    print("[wait] for nearby station")
-    ---@type string|nil
-    local previousStation = nil
-    ---@type integer|nil
-    local resetPreviousStationTimerId = nil
-
-    EventLoop.run(function()
-        EventLoop.runUntil("subway:stop", function()
-            while true do
-                local _, timerId = EventLoop.pull("timer")
-
-                if timerId == resetPreviousStationTimerId then
-                    previousStation = nil
-                end
-            end
-        end)
-    end, function()
-        ---@type SubwayTrack
-        local currentTrack = nil
-        local previousStationTime = 0
-
-        while true do
-            local client = Rpc.nearest(SubwayService)
-
-            if client and (previousStation == nil or client.host ~= previousStation) then
-                if currentTrack ~= nil then
-                    local newDuration = math.floor((os.epoch("utc") - previousStationTime) / 1000)
-
-                    if currentTrack.duration == nil or math.abs(newDuration - currentTrack.duration) > 1 then
-                        print(string.format("[duration] updated to %ds", newDuration))
-                        currentTrack.duration = newDuration
-                        DatabaseService.setSubwayStations(stations)
-                    end
-                end
-
-                previousStation = client.host
-                previousStationTime = os.epoch("utc")
-
-                if resetPreviousStationTimerId then
-                    os.cancelTimer(resetPreviousStationTimerId)
-                end
-
-                resetPreviousStationTimerId = os.startTimer(10)
-
-                local station = Utils.find(stations, function(station)
-                    return station.id == client.host
-                end)
-
-                if not station then
-                    error(string.format("found station %s, but I did not find it in my database", client.host))
-                end
-
-                print("[found]", station.name)
-
-                local startId = station.id
-
-                if startId == goalId then
-                    print("[done] enjoy your stay!")
-                    break
-                end
-
-                local path = findPath(stations, station, goal)
-
-                if not path or #path < 2 then
-                    error("no path towards '" .. goal.name .. "' found :(")
-                end
-
-                local nextStation = path[2]
-                local track = Utils.find(station.tracks, function(item)
-                    return item.to == nextStation.id
-                end)
-
-                if not track then
-                    error("no track towards " .. nextStation.name .. " found")
-                end
-
-                currentTrack = track
-                print("[switch] to " .. nextStation.name)
-
-                local printedBusy = false
-
-                while not client.switchTrack(track.signal) do
-                    if not printedBusy then
-                        print("[wait] station is busy")
-                        printedBusy = true
-                    end
-
-                    os.sleep(1)
-                end
-
-                if nextStation.type == "endpoint" then
-                    print("[done] enjoy your stay!")
-                    break
-                end
-
-                print("[wait] for nearby station")
-
-                if currentTrack.duration then
-                    print(string.format("[eta] %ds", currentTrack.duration))
-                end
-            end
+        if databaseService then
+            DatabaseService.setSubwayStations(databaseService.getSubwayStations())
+        else
+            databaseService = DatabaseService
         end
 
-        EventLoop.queue("subway:stop")
-    end)
+        ---@type string?
+        local goalId = args[1] or promptUserToPickGoal(databaseService)
+
+        if not goalId then
+            return
+        end
+
+        if goalId == "all" then
+            goalId = promptUserToPickGoal(databaseService, true)
+        end
+
+        local stations = databaseService.getSubwayStations()
+
+        local goal = Utils.find(stations, function(station)
+            return station.id == goalId
+        end)
+
+        if not goal then
+            error("no station w/ id '" .. goalId .. "' found")
+        end
+
+        print("[wait] for nearby station")
+        ---@type string|nil
+        local previousStation = nil
+        ---@type integer|nil
+        local resetPreviousStationTimerId = nil
+
+        EventLoop.run(function()
+            EventLoop.runUntil("subway:stop", function()
+                while true do
+                    local _, timerId = EventLoop.pull("timer")
+
+                    if timerId == resetPreviousStationTimerId then
+                        previousStation = nil
+                    end
+                end
+            end)
+        end, function()
+            ---@type SubwayTrack
+            local currentTrack = nil
+            local previousStationTime = 0
+
+            while true do
+                local client = Rpc.nearest(SubwayService)
+
+                if client and (previousStation == nil or client.host ~= previousStation) then
+                    if currentTrack ~= nil then
+                        local newDuration = math.floor((os.epoch("utc") - previousStationTime) / 1000)
+
+                        if currentTrack.duration == nil or math.abs(newDuration - currentTrack.duration) > 1 then
+                            print(string.format("[duration] updated to %ds", newDuration))
+                            currentTrack.duration = newDuration
+                            DatabaseService.setSubwayStations(stations)
+                        end
+                    end
+
+                    previousStation = client.host
+                    previousStationTime = os.epoch("utc")
+
+                    if resetPreviousStationTimerId then
+                        os.cancelTimer(resetPreviousStationTimerId)
+                    end
+
+                    resetPreviousStationTimerId = os.startTimer(10)
+
+                    local station = Utils.find(stations, function(station)
+                        return station.id == client.host
+                    end)
+
+                    if not station then
+                        error(string.format("found station %s, but I did not find it in my database", client.host))
+                    end
+
+                    print("[found]", station.name)
+
+                    local startId = station.id
+
+                    if startId == goalId then
+                        print("[done] enjoy your stay!")
+                        os.sleep(3)
+                        break
+                    end
+
+                    local path = findPath(stations, station, goal)
+
+                    if not path or #path < 2 then
+                        error("no path towards '" .. goal.name .. "' found :(")
+                    end
+
+                    local nextStation = path[2]
+                    local track = Utils.find(station.tracks, function(item)
+                        return item.to == nextStation.id
+                    end)
+
+                    if not track then
+                        error("no track towards " .. nextStation.name .. " found")
+                    end
+
+                    currentTrack = track
+                    print("[switch] to " .. nextStation.name)
+
+                    local printedBusy = false
+
+                    while not client.switchTrack(track.signal) do
+                        if not printedBusy then
+                            print("[wait] station is busy")
+                            printedBusy = true
+                        end
+
+                        os.sleep(1)
+                    end
+
+                    if nextStation.type == "endpoint" then
+                        print("[done] enjoy your stay!")
+                        os.sleep(3)
+                        break
+                    end
+
+                    print("[wait] for nearby station")
+
+                    if currentTrack.duration then
+                        print(string.format("[eta] %ds", currentTrack.duration))
+                    end
+                end
+            end
+
+            EventLoop.queue("subway:stop")
+        end)
+    end
 end
 
 main(arg)
