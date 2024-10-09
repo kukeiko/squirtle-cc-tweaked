@@ -63,6 +63,13 @@ end
 
 ---@param stations SubwayStation[]
 function DatabaseService.setSubwayStations(stations)
+    -- [todo] hack - should be fixed with newer cc:tweaked version
+    for _, station in pairs(stations) do
+        if #station.tracks == 0 then
+            station.tracks = {}
+        end
+    end
+
     writeEntities(entityTypes.subwayStations, stations)
 end
 
