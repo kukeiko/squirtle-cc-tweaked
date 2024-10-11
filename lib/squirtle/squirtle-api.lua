@@ -7,6 +7,7 @@ local Vector = require "lib.common.vector"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
+local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Complex = require "lib.squirtle.api-layers.squirtle-complex-api"
 local requireItems = require "lib.squirtle.require-items"
 
@@ -14,6 +15,7 @@ local requireItems = require "lib.squirtle.require-items"
 local SquirtleApi = {}
 setmetatable(SquirtleApi, {__index = Complex})
 
+--- [todo] rework to not accept a predicate. also somehow support block tags (see isCrops() from farmer)
 ---@param predicate? (fun(block: Block) : boolean) | string[]
 ---@return fun() : nil
 function SquirtleApi.setBreakable(predicate)
@@ -108,39 +110,39 @@ end
 
 ---@param target Vector
 ---@return boolean, string?
-function SquirtleApi.walkToPoint(target)
+function SquirtleApi.moveToPoint(target)
     local delta = Vector.minus(target, SquirtleApi.locate())
 
     if delta.y > 0 then
-        if not SquirtleApi.tryWalk("top", delta.y) then
+        if not SquirtleApi.tryMove("top", delta.y) then
             return false, "top"
         end
     elseif delta.y < 0 then
-        if not SquirtleApi.tryWalk("bottom", -delta.y) then
+        if not SquirtleApi.tryMove("bottom", -delta.y) then
             return false, "bottom"
         end
     end
 
     if delta.x > 0 then
         SquirtleApi.face(Cardinal.east)
-        if not SquirtleApi.tryWalk("front", delta.x) then
+        if not SquirtleApi.tryMove("front", delta.x) then
             return false, "front"
         end
     elseif delta.x < 0 then
         SquirtleApi.face(Cardinal.west)
-        if not SquirtleApi.tryWalk("front", -delta.x) then
+        if not SquirtleApi.tryMove("front", -delta.x) then
             return false, "front"
         end
     end
 
     if delta.z > 0 then
         SquirtleApi.face(Cardinal.south)
-        if not SquirtleApi.tryWalk("front", delta.z) then
+        if not SquirtleApi.tryMove("front", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
         SquirtleApi.face(Cardinal.north)
-        if not SquirtleApi.tryWalk("front", -delta.z) then
+        if not SquirtleApi.tryMove("front", -delta.z) then
             return false, "front"
         end
     end
@@ -150,9 +152,9 @@ end
 
 ---@param path Vector[]
 ---@return boolean, string?, integer?
-local function walkPath(path)
+local function movePath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = SquirtleApi.walkToPoint(next)
+        local success, failedSide = SquirtleApi.moveToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -166,42 +168,38 @@ end
 ---@param world? World
 ---@param breakable? function
 function SquirtleApi.navigate(to, world, breakable)
-    breakable = breakable or function(...)
+    breakable = breakable or function()
         return false
     end
 
+    local restoreBreakable = SquirtleApi.setBreakable(breakable)
+
     if not world then
-        local position = SquirtleApi.locate()
+        local position = Complex.locate()
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = SquirtleApi.orientate()
+    local from, facing = Complex.orientate()
 
     while true do
         local path, msg = findPath(from, to, facing, world)
 
         if not path then
+            restoreBreakable()
             return false, msg
         end
 
         local distance = Vector.manhattan(from, to)
-        SquirtleApi.refuelTo(distance)
-        local success, failedSide = walkPath(path)
+        Advanced.refuelTo(distance)
+        local success, failedSide = movePath(path)
 
         if success then
+            restoreBreakable()
             return true
         elseif failedSide then
             from, facing = SquirtleApi.orientate()
-            local block = SquirtleApi.probe(failedSide)
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
-
-            if block and breakable(block) then
-                SquirtleApi.mine(failedSide)
-            elseif block then
-                World.setBlock(world, scannedLocation)
-            else
-                error("could not move, not sure why")
-            end
+            World.setBlock(world, scannedLocation)
         end
     end
 end
