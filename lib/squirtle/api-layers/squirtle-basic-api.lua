@@ -52,8 +52,11 @@ function SquirtleBasicApi.placeTopOrBottom()
     end
 end
 
+---Throws an error if:
+--- - no digging tool is equipped
+--- - turtle is not allowed to dig the block
 ---@param direction? string
----@return boolean, string?
+---@return boolean success
 function SquirtleBasicApi.mine(direction)
     local success, message = SquirtleBasicApi.tryMine(direction)
 
@@ -65,8 +68,10 @@ function SquirtleBasicApi.mine(direction)
     return success
 end
 
+---Throws an error if:
+--- - no digging tool is equipped
 ---@param direction? string
----@return boolean, string?
+---@return boolean success, string? error
 function SquirtleBasicApi.tryMine(direction)
     if State.simulate then
         return true
@@ -78,16 +83,18 @@ function SquirtleBasicApi.tryMine(direction)
 
     if not block then
         return false
-    end
-
-    if not State.canBreak(block) then
+    elseif not State.canBreak(block) then
         return false, string.format("not allowed to mine block %s", block.name)
     end
 
     local success, message = native()
 
-    if not success and string.match(message, "tool") then
-        error(string.format("failed to mine towards %s: %s", direction, message))
+    if not success then
+        if message == "Nothing to dig here" then
+            return false
+        elseif string.match(message, "tool") then
+            error(string.format("failed to mine %s: %s", direction, message))
+        end
     end
 
     return success, message
