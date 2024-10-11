@@ -7,6 +7,7 @@ local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Inventory = require "lib.inventory.inventory-api"
 
+---The complex layer starts having movement functionality.
 ---@class SquirtleComplexApi : SquirtleAdvancedApi
 local SquirtleComplexApi = {}
 setmetatable(SquirtleComplexApi, {__index = Advanced})
@@ -137,6 +138,7 @@ function SquirtleComplexApi.tryMove(direction, steps)
     direction = direction or "forward"
     steps = steps or 1
     local native = getNative("go", direction)
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, State.facing))
 
     for step = 1, steps do
         if State.simulate then
@@ -152,6 +154,8 @@ function SquirtleComplexApi.tryMove(direction, steps)
                     return false, step - 1, string.format("blocked by %s", block.name)
                 end
             end
+
+            State.position = Vector.plus(State.position, delta)
         end
     end
 
