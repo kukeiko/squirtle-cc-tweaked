@@ -1,10 +1,36 @@
 local Utils = require "lib.common.utils"
+local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 
 ---@class SquirtleElementalApi
 local SquirtleElementalApi = {}
+
+---@return integer
+function SquirtleElementalApi.getFacing()
+    return State.facing
+end
+
+---@param facing integer
+function SquirtleElementalApi.setFacing(facing)
+    State.facing = facing
+end
+
+---@return Vector
+function SquirtleElementalApi.getPosition()
+    return Vector.copy(State.position)
+end
+
+---@param position Vector
+function SquirtleElementalApi.setPosition(position)
+    State.position = position
+end
+
+---@param delta Vector
+function SquirtleElementalApi.changePosition(delta)
+    State.position = Vector.plus(State.position, delta)
+end
 
 ---@param direction string
 function SquirtleElementalApi.turn(direction)

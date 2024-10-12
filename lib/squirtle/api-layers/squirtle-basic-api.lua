@@ -13,7 +13,7 @@ function SquirtleBasicApi.face(target, current)
         return nil
     end
 
-    current = current or State.facing
+    current = current or SquirtleElementalApi.getFacing()
 
     if not current then
         error("facing not available")

@@ -47,13 +47,13 @@ function SquirtleComplexApi.tryWalk(direction, steps)
         Advanced.refuelTo(steps)
     end
 
-    local delta = Cardinal.toVector(Cardinal.fromSide(direction, State.facing))
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, Elemental.getFacing()))
 
     for step = 1, steps do
         local success, message = native()
 
         if success then
-            State.position = Vector.plus(State.position, delta)
+            Elemental.changePosition(delta)
         else
             return false, step - 1, message
         end
@@ -139,7 +139,7 @@ function SquirtleComplexApi.tryMove(direction, steps)
     direction = direction or "forward"
     steps = steps or 1
     local native = getNative("go", direction)
-    local delta = Cardinal.toVector(Cardinal.fromSide(direction, State.facing))
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, Elemental.getFacing()))
 
     for step = 1, steps do
         if State.simulate then
@@ -156,7 +156,7 @@ function SquirtleComplexApi.tryMove(direction, steps)
                 end
             end
 
-            State.position = Vector.plus(State.position, delta)
+            Elemental.changePosition(delta)
         end
     end
 
@@ -291,10 +291,10 @@ function SquirtleComplexApi.locate(refresh)
             error("no gps available")
         end
 
-        State.position = Vector.create(x, y, z)
+        Elemental.setPosition(Vector.create(x, y, z))
     end
 
-    return Vector.copy(State.position)
+    return Elemental.getPosition()
 end
 
 ---@param position Vector
@@ -306,7 +306,7 @@ local function stepOut(position)
     end
 
     local now = SquirtleComplexApi.locate(true)
-    State.facing = Cardinal.fromVector(Vector.minus(now, position))
+    Elemental.setFacing(Cardinal.fromVector(Vector.minus(now, position)))
 
     while not SquirtleComplexApi.tryWalk("back") do
         print("can't move back, something is blocking me. sleeping 1s...")
@@ -395,11 +395,11 @@ end
 function SquirtleComplexApi.orientate(refresh)
     if State.orientationMethod == "disk-drive" then
         if refresh then
-            State.facing = orientateUsingDiskDrive()
+            Elemental.setFacing(orientateUsingDiskDrive())
         end
     else
         local position = SquirtleComplexApi.locate(refresh)
-        local facing = State.facing
+        local facing = Elemental.getFacing()
 
         if refresh or not facing then
             if not orientateSameLayer(position) then
@@ -408,7 +408,7 @@ function SquirtleComplexApi.orientate(refresh)
         end
     end
 
-    return Vector.copy(State.position), State.facing
+    return Elemental.getPosition(), Elemental.getFacing()
 end
 
 ---@param items table<string, integer>

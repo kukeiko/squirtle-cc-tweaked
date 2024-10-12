@@ -101,7 +101,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[dig v3.2.1] booting...")
+    print("[dig v3.2.2-dev] booting...")
     local state = boot(args)
 
     if not state then

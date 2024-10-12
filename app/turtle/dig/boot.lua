@@ -1,5 +1,4 @@
 local Squirtle = require "lib.squirtle.squirtle-api"
-local SquirtleState = require "lib.squirtle.state"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local World = require "lib.common.world"
@@ -28,8 +27,6 @@ return function(args)
         return nil
     end
 
-    depth = -depth
-
     local returnTripFuel = math.abs(depth) + math.abs(width) + math.abs(height)
     local numBlocks = math.abs(depth) * math.abs(width) * math.abs(height)
     print(numBlocks .. "x blocks, guessing " .. numBlocks / 32 .. " stacks")
@@ -38,11 +35,8 @@ return function(args)
     Squirtle.refuelTo(requiredFuel)
 
     local position = Vector.create(0, 0, 0)
-    local facing = Cardinal.north
-    -- [todo] shouldn't access it like this
-    SquirtleState.facing = facing
-    SquirtleState.position = position
-
+    -- [todo] rotate world around actual facing
+    local facing = Cardinal.south
     local worldX = 0
     local worldY = 0
     local worldZ = 0
