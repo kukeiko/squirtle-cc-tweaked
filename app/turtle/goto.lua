@@ -21,7 +21,8 @@ local function main(args)
 
     ---@type Vector
     local goal = {x = x, y = y, z = z}
-    local start = Squirtle.locate(true)
+    local start = Squirtle.locate()
+    Squirtle.orientate()
     ---@type World
     local world = World.create(start.x, start.y, start.z)
 

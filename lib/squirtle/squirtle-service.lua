@@ -4,9 +4,8 @@ local Squirtle = require "lib.squirtle.squirtle-api"
 ---@field error string?
 local SquirtleService = {name = "squirtle", error = nil}
 
----@param refresh boolean?
-function SquirtleService.locate(refresh)
-    return Squirtle.locate(refresh)
+function SquirtleService.locate()
+    return Squirtle.locate()
 end
 
 ---@return string?

@@ -22,7 +22,8 @@ SquirtleState.results.placed[state.blocks.boneMeal] = 64
 SquirtleState.simulate = false
 Squirtle.requireItems(SquirtleState.results.placed)
 print("[ok] all good now! building...")
-local home, facing = Squirtle.orientate()
+local home = Squirtle.getPosition()
+local facing = Squirtle.getFacing()
 sequence(state)
 Squirtle.navigate(home)
 Squirtle.face(facing)

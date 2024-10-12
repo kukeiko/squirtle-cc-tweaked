@@ -17,9 +17,7 @@ local function getDirection()
         end
     end
 
-    local _, direction = Squirtle.orientate()
-
-    return direction
+    return Squirtle.getFacing()
 end
 
 local function readNumber(msg, min)
@@ -51,7 +49,7 @@ end
 
 return function()
     print("setup!")
-    local position = Squirtle.orientate()
+    local position = Squirtle.getPosition()
     -- [todo] make sure barrel and io-chest are placed
 
     print("use a/d keys to let me look towards 1st digging direction, then hit enter")

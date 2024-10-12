@@ -8,7 +8,8 @@ local function start()
     while Squirtle.suck("bottom") do
     end
 
-    local home, facing = Squirtle.orientate()
+    local home = Squirtle.getPosition()
+    local facing = Squirtle.getFacing()
     Squirtle.move("forward", 2)
     Squirtle.turn("left")
     Squirtle.move("forward", 2)

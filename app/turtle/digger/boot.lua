@@ -3,7 +3,8 @@ local Squirtle = require "lib.squirtle.squirtle-api"
 local setup = require "digger.setup"
 
 return function()
-    Squirtle.orientate(true)
+    Squirtle.locate()
+    Squirtle.orientate()
 
     ---@type DiggerAppState
     local state = AppState.load("digger", {})

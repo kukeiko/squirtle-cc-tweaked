@@ -282,17 +282,14 @@ function SquirtleComplexApi.selectItem(name)
     return slot
 end
 
----@param refresh? boolean
-function SquirtleComplexApi.locate(refresh)
-    if refresh then
-        local x, y, z = gps.locate()
+function SquirtleComplexApi.locate()
+    local x, y, z = gps.locate()
 
-        if not x then
-            error("no gps available")
-        end
-
-        Elemental.setPosition(Vector.create(x, y, z))
+    if not x then
+        error("no gps available")
     end
+
+    Elemental.setPosition(Vector.create(x, y, z))
 
     return Elemental.getPosition()
 end
@@ -305,7 +302,7 @@ local function stepOut(position)
         return false
     end
 
-    local now = SquirtleComplexApi.locate(true)
+    local now = SquirtleComplexApi.locate()
     Elemental.setFacing(Cardinal.fromVector(Vector.minus(now, position)))
 
     while not SquirtleComplexApi.tryWalk("back") do
@@ -390,25 +387,19 @@ local function orientateUsingDiskDrive()
     return facing
 end
 
----@param refresh? boolean
----@return Vector position, integer facing
-function SquirtleComplexApi.orientate(refresh)
+---@return integer facing
+function SquirtleComplexApi.orientate()
     if State.orientationMethod == "disk-drive" then
-        if refresh then
-            Elemental.setFacing(orientateUsingDiskDrive())
-        end
+        Elemental.setFacing(orientateUsingDiskDrive())
     else
-        local position = SquirtleComplexApi.locate(refresh)
-        local facing = Elemental.getFacing()
+        local position = SquirtleComplexApi.locate()
 
-        if refresh or not facing then
-            if not orientateSameLayer(position) then
-                error("failed to orientate. possibly blocked in.")
-            end
+        if not orientateSameLayer(position) then
+            error("failed to orientate. possibly blocked in.")
         end
     end
 
-    return Elemental.getPosition(), Elemental.getFacing()
+    return Elemental.getFacing()
 end
 
 ---@param items table<string, integer>

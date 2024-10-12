@@ -163,8 +163,8 @@ local function start(args)
     end
 
     local height = tonumber(args[2]) or math.ceil(width / 2)
-    local home = Squirtle.locate(true)
-    Squirtle.orientate(true)
+    local home = Squirtle.locate()
+    Squirtle.orientate()
 
     ---@type PyramidAppState
     local state = {

@@ -9,7 +9,7 @@ local squirtles = Rpc.all(SquirtleService)
 
 for _, squirtle in pairs(squirtles) do
     local name = squirtle.host
-    local location = Vector.toString(squirtle.locate(true))
+    local location = Vector.toString(squirtle.locate())
     local distance = squirtle.distance
     local errorMessage = squirtle.getError()
     local status = "ok"

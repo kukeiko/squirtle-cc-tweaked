@@ -20,7 +20,7 @@ local function main(args)
     local pointsCompact = textutils.unserializeJSON(file.readAll())
     file.close()
 
-    local _, facing = Squirtle.orientate(true)
+    local facing = Squirtle.orientate()
     ---@type table<string, integer>
     local blocks = {}
 
@@ -41,16 +41,16 @@ local function main(args)
         blocks[usedBlock] = (blocks[usedBlock] or 0) + 1
 
         -- [todo] dirty hack to make sure we can start. missing blocks will have to be added during printing
-
-        if blocks[usedBlock] > 64 then
-            blocks[usedBlock] = 64
-        end
+        -- [note] commented out because requireItems() now supports loading shulkers - but needs testing first
+        -- if blocks[usedBlock] > 64 then
+        --     blocks[usedBlock] = 64
+        -- end
 
         return {vector = point, block = block}
     end)
 
     Squirtle.requireItems(blocks)
-    local start = Squirtle.locate(true)
+    local start = Squirtle.locate()
 
     for _, point in pairs(points) do
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
@@ -66,7 +66,9 @@ local function main(args)
         Squirtle.put("bottom", point.block or defaultBlock)
     end
 
-    Squirtle.navigate(start)
+    Squirtle.navigate(start, nil, function()
+        return false
+    end)
     Squirtle.face(facing)
 end
 

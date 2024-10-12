@@ -8,6 +8,7 @@ local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
+local SquirtleElementalApi = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Complex = require "lib.squirtle.api-layers.squirtle-complex-api"
@@ -170,11 +171,12 @@ function SquirtleApi.navigate(to, world, breakable)
     local restoreBreakable = SquirtleApi.setBreakable(breakable)
 
     if not world then
-        local position = Complex.locate()
+        local position = SquirtleElementalApi.getPosition()
         world = World.create(position.x, position.y, position.z)
     end
 
-    local from, facing = Complex.orientate()
+    local from = SquirtleElementalApi.getPosition()
+    local facing = SquirtleElementalApi.getFacing()
 
     while true do
         local path, msg = findPath(from, to, facing, world)
@@ -192,7 +194,8 @@ function SquirtleApi.navigate(to, world, breakable)
             restoreBreakable()
             return true
         elseif failedSide then
-            from, facing = SquirtleApi.orientate()
+            from = SquirtleElementalApi.getPosition()
+            facing = SquirtleElementalApi.getFacing()
             local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
             World.setBlock(world, scannedLocation)
         end
@@ -332,7 +335,8 @@ function SquirtleApi.runResumable(name, args, start, resume, config, additionalR
             SquirtleApi.requireItems(required, true)
 
             -- set up initial state for potential later shutdown recovery
-            local home, facing = Complex.orientate()
+            local home = SquirtleElementalApi.getPosition()
+            local facing = SquirtleElementalApi.getFacing()
             ---@type SimulationDetails
             local initialState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
             DatabaseService.createSquirtleResumable({
@@ -348,7 +352,7 @@ function SquirtleApi.runResumable(name, args, start, resume, config, additionalR
             math.randomseed(resumable.randomSeed)
             SquirtleApi.recover()
             Complex.locate(true) -- [todo] needs to be configurable
-            local _, facing = Complex.orientate(true) -- the actual facing of the turtle is required to run the simulation
+            local facing = Complex.orientate() -- the actual facing of the turtle is required to run the simulation
             ---@type SimulationDetails
             local targetState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
             local initialState = resumable.initialState
