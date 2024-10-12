@@ -27,6 +27,8 @@ return function(args)
         return nil
     end
 
+    width = -width
+
     local returnTripFuel = math.abs(depth) + math.abs(width) + math.abs(height)
     local numBlocks = math.abs(depth) * math.abs(width) * math.abs(height)
     print(numBlocks .. "x blocks, guessing " .. numBlocks / 32 .. " stacks")
