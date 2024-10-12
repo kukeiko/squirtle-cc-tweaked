@@ -1,5 +1,7 @@
 local Utils = require "lib.common.utils"
 local World = require "lib.common.world"
+local ItemStock = require "lib.common.models.item-stock"
+local DatabaseService = require "lib.common.database-service"
 local findPath = require "lib.squirtle.find-path"
 local Inventory = require "lib.inventory.inventory-api"
 local Cardinal = require "lib.common.cardinal"
@@ -9,7 +11,6 @@ local getNative = require "lib.squirtle.get-native"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Complex = require "lib.squirtle.api-layers.squirtle-complex-api"
-local requireItems = require "lib.squirtle.require-items"
 
 ---@class SquirtleApi : SquirtleComplexApi
 local SquirtleApi = {}
@@ -100,12 +101,6 @@ end
 
 function SquirtleApi.lookAtChest()
     SquirtleApi.turn(Inventory.findChest())
-end
-
----@param items table<string, integer>
----@param shulker boolean?
-function SquirtleApi.requireItems(items, shulker)
-    requireItems(items, shulker)
 end
 
 ---@param target Vector
@@ -297,6 +292,76 @@ function SquirtleApi.recover()
             Basic.dig(direction)
         end
     end
+end
+
+---@generic T
+---@param name string
+---@param args string[]
+---@param start fun(args:string[]) : T
+---@param resume fun(state: T) : unknown|nil
+---@param config? SquirtleConfigOptions
+---@param additionalRequiredItems? ItemStock
+function SquirtleApi.runResumable(name, args, start, resume, config, additionalRequiredItems)
+    local success, message = pcall(function(...)
+        local resumable = DatabaseService.findSquirtleResumable(name)
+
+        if config then
+            SquirtleApi.configure(config)
+        end
+
+        if not resumable then
+            local state = start(args)
+
+            if not state then
+                return
+            end
+
+            Utils.writeStartupFile(name)
+            local randomSeed = os.epoch("utc")
+            math.randomseed(randomSeed)
+            State.simulate = true
+            resume(state)
+            State.simulate = false
+            Advanced.refuelTo(State.results.steps)
+            local required = State.results.placed
+
+            if additionalRequiredItems then
+                required = ItemStock.add(required, additionalRequiredItems)
+            end
+
+            SquirtleApi.requireItems(required, true)
+
+            -- set up initial state for potential later shutdown recovery
+            local home, facing = Complex.orientate()
+            ---@type SimulationDetails
+            local initialState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
+            DatabaseService.createSquirtleResumable({
+                name = name,
+                initialState = initialState,
+                randomSeed = randomSeed,
+                home = home, -- [todo] not used yet
+                args = args,
+                state = state
+            })
+        else
+            -- recover from shutdown
+            math.randomseed(resumable.randomSeed)
+            SquirtleApi.recover()
+            Complex.locate(true) -- [todo] needs to be configurable
+            local _, facing = Complex.orientate(true) -- the actual facing of the turtle is required to run the simulation
+            ---@type SimulationDetails
+            local targetState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
+            local initialState = resumable.initialState
+            SquirtleApi.simulate(initialState, targetState)
+        end
+
+        resumable = DatabaseService.getSquirtleResumable(name)
+        resume(resumable.state)
+        DatabaseService.deleteSquirtleResumable(name)
+        Utils.deleteStartupFile()
+    end)
+
+    return success, message
 end
 
 return SquirtleApi

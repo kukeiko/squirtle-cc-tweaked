@@ -3,8 +3,8 @@ package.path = package.path .. ";/app/turtle/?.lua"
 
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
-local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
+local Squirtle = require "lib.squirtle.squirtle-api"
 local Rpc = require "lib.common.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 local AppState = require "lib.common.app-state"
@@ -12,10 +12,8 @@ local AppState = require "lib.common.app-state"
 ---@class PyramidAppState
 ---@field width integer
 ---@field height integer
----@field seed integer
 ---@field home Vector
----@field facing integer
----@field fuel integer
+---@field returnHome boolean
 ---@field block string
 ---@field borderBlock string
 ---@field borderBlockAlt string
@@ -62,6 +60,7 @@ local function tryLoadShulkers()
 
         if stack and stack.name:match("shulker") then
             Squirtle.select(slot)
+            -- [todo] for pyramid app, it is not allowed to place in front as it might be facing towards a pyramid lane of another turtle
             placedSide = Squirtle.placeFrontTopOrBottom()
 
             if not placedSide then
@@ -142,9 +141,20 @@ local function sequence(state)
     end
 
     tryLoadShulkers()
+
+    -- [todo] returning home needs to be part of Squirtle.runResumable() as it is incompatible with simulation.
+    -- for now its fine as long as the turtle doesn't reboot during returning home.
+    if state.returnHome then
+        if not SquirtleState.simulate then
+            print("[return] home")
+        end
+
+        Squirtle.navigate(state.home)
+    end
 end
 
 ---@param args string[]
+---@return PyramidAppState?
 local function start(args)
     local width = tonumber(args[1])
 
@@ -153,74 +163,40 @@ local function start(args)
     end
 
     local height = tonumber(args[2]) or math.ceil(width / 2)
-    state.width = width
-    state.height = height
-    state.seed = os.epoch("utc")
-    Squirtle.configure({orientate = "disk-drive", breakDirection = "top"})
-    Squirtle.recover()
-    state.home, state.facing = Squirtle.orientate(true)
-    state.block = "minecraft:stone"
-    state.borderBlock = "minecraft:stone_bricks"
-    state.borderBlockAlt = "minecraft:mossy_stone_bricks"
-    state.fuel = Squirtle.getNonInfiniteFuelLevel()
-    Squirtle.simulate()
-    math.randomseed(state.seed)
-    sequence(state)
-    SquirtleState.simulate = false
-    local required = SquirtleState.results.placed
-    required["computercraft:disk_drive"] = 1
-    Squirtle.requireItems(required, true)
-    AppState.save(state, "pyramid")
-    Utils.writeStartupFile("pyramid", "resume")
-    print("[ok] all good! rebooting...")
-    os.sleep(1)
-end
+    local home = Squirtle.locate(true)
+    Squirtle.orientate(true)
 
-local function resume()
     ---@type PyramidAppState
-    local state = AppState.load("pyramid")
+    local state = {
+        width = width,
+        height = height,
+        block = "minecraft:stone",
+        borderBlock = "minecraft:stone_bricks",
+        borderBlockAlt = "minecraft:mossy_stone_bricks",
+        home = home,
+        returnHome = args[2] == "home" or args[3] == "home"
+    }
 
-    if not state then
-        error("no pyramid app state file found")
-    end
-
-    Squirtle.configure({orientate = "disk-drive", breakDirection = "top"})
-    Squirtle.recover()
-
-    ---@type SimulationDetails
-    local initial = {facing = state.facing, fuel = state.fuel}
-    local _, facing = Squirtle.orientate(true)
-    ---@type SimulationDetails
-    local target = {facing = facing, fuel = Squirtle.getNonInfiniteFuelLevel()}
-
-    Squirtle.simulate(initial, target)
-    math.randomseed(state.seed)
-    sequence(state)
-    print("[complete] all done!")
-
-    AppState.delete("pyramid")
-    Utils.deleteStartupFile()
+    return state
 end
 
 ---@param args string[]
 local function main(args)
-    print("[pyramid v2.0.0-dev] booting...")
+    print("[pyramid v3.0.0-dev] booting...")
 
     EventLoop.run(function()
-        Rpc.server(SquirtleService)
-    end, function()
-        local success, e = pcall(function(...)
-            if args[1] == "resume" then
-                resume()
-            else
-                start(args)
-                resume()
-            end
+        EventLoop.runUntil("pyramid:stop", function()
+            Rpc.server(SquirtleService)
         end)
+    end, function()
+        local success, message = Squirtle.runResumable("app/turtle/pyramid", args, start, sequence,
+                                                       {orientate = "disk-drive", breakDirection = "top"})
 
-        if not success then
-            print(e)
-            SquirtleService.error = e
+        if success then
+            EventLoop.queue("pyramid:stop")
+        else
+            print(message)
+            SquirtleService.error = message
         end
     end)
 end

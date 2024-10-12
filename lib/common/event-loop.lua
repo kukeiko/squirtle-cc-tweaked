@@ -116,6 +116,7 @@ function EventLoop.run(...)
     end
 end
 
+---Run functions until a specific event is pulled.
 ---@param event string
 ---@param ... function
 function EventLoop.runUntil(event, ...)

@@ -6,6 +6,7 @@ local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Inventory = require "lib.inventory.inventory-api"
+local requireItems = require "lib.squirtle.require-items"
 
 ---The complex layer starts having movement functionality.
 ---@class SquirtleComplexApi : SquirtleAdvancedApi
@@ -293,7 +294,7 @@ function SquirtleComplexApi.locate(refresh)
         State.position = Vector.create(x, y, z)
     end
 
-    return State.position
+    return Vector.copy(State.position)
 end
 
 ---@param position Vector
@@ -348,37 +349,32 @@ end
 
 ---@return integer
 local function orientateUsingDiskDrive()
-    if not SquirtleComplexApi.selectItem("computercraft:disk_drive") then
-        error("no disk drive in inventory")
+    while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
+        SquirtleComplexApi.requireItems({["computercraft:disk_drive"] = 1})
     end
 
-    local direction = Basic.placeTopOrBottom()
+    local placedSide = Basic.placeTopOrBottom()
 
-    if not direction then
-        while Basic.tryMine("top") do
+    if not placedSide then
+        if not State.breakDirection or State.breakDirection == "front" then
+            error("no space to put the disk drive")
         end
 
-        if not Basic.probe("top") then
-            direction = "top"
-        else
-            while Basic.tryMine("bottom") do
-            end
+        -- [todo] should use put() instead - for that, put() needs to be pulled into at least this layer
+        SquirtleComplexApi.mine(State.breakDirection)
 
-            if not Basic.probe("bottom") then
-                direction = "bottom"
-            else
-                error("no space to put the disk drive")
-            end
+        if not Basic.place(State.breakDirection) then
+            error("no space to put the disk drive")
         end
 
-        Basic.place(direction)
+        placedSide = State.breakDirection
     end
 
-    while not peripheral.isPresent(direction) do
+    while not peripheral.isPresent(placedSide) do
         os.sleep(.1)
     end
 
-    local diskDrive = Basic.probe(direction, "computercraft:disk_drive")
+    local diskDrive = Basic.probe(placedSide, "computercraft:disk_drive")
 
     if not diskDrive then
         error("placed a disk-drive, but now it's gone")
@@ -389,7 +385,7 @@ local function orientateUsingDiskDrive()
     end
 
     local facing = Cardinal.rotateAround(Cardinal.fromName(diskDrive.state.facing))
-    Basic.dig(direction)
+    Basic.dig(placedSide)
 
     return facing
 end
@@ -397,20 +393,28 @@ end
 ---@param refresh? boolean
 ---@return Vector position, integer facing
 function SquirtleComplexApi.orientate(refresh)
-    local position = SquirtleComplexApi.locate(refresh)
-    local facing = State.facing
+    if State.orientationMethod == "disk-drive" then
+        if refresh then
+            State.facing = orientateUsingDiskDrive()
+        end
+    else
+        local position = SquirtleComplexApi.locate(refresh)
+        local facing = State.facing
 
-    if refresh or not facing then
-        if State.orientationMethod == "move" then
+        if refresh or not facing then
             if not orientateSameLayer(position) then
                 error("failed to orientate. possibly blocked in.")
             end
-        else
-            State.facing = orientateUsingDiskDrive()
         end
     end
 
-    return State.position, State.facing
+    return Vector.copy(State.position), State.facing
+end
+
+---@param items table<string, integer>
+---@param shulker boolean?
+function SquirtleComplexApi.requireItems(items, shulker)
+    requireItems(items, shulker)
 end
 
 return SquirtleComplexApi

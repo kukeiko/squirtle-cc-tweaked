@@ -1,0 +1,11 @@
+---@class SquirtleResumable
+---@field name string
+---@field home Vector
+---@field randomSeed integer
+---@field initialState SimulationDetails
+---@field args string[]
+---@field state unknown
+---
+---@class SimulationDetails
+---@field fuel integer
+---@field facing integer

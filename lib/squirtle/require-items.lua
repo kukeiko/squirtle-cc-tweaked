@@ -220,6 +220,10 @@ end
 ---@param items table<string, integer>
 ---@param shulker boolean?
 return function(items, shulker)
+    if Utils.isEmpty(items) then
+        return
+    end
+
     local numStacks = itemsToStacks(items)
 
     -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,

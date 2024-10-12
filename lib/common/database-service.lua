@@ -3,7 +3,7 @@ local Utils = require "lib.common.utils"
 ---@class DatabaseService : Service
 local DatabaseService = {name = "database", folder = "data"}
 
-local entityTypes = {allocatedBuffers = "allocated-buffers", subwayStations = "subway-stations"}
+local entityTypes = {allocatedBuffers = "allocated-buffers", subwayStations = "subway-stations", squirtleResumables = "squirtle-resumables"}
 
 ---@param entity string
 local function getPath(entity)
@@ -110,7 +110,7 @@ function DatabaseService.getQuest(id)
     end)
 
     if not quest then
-        error(string.format("quest %d doesn't exist"))
+        error(string.format("quest %d doesn't exist", id))
     end
 
     return quest
@@ -177,7 +177,7 @@ function DatabaseService.getAllocatedBuffer(id)
     end)
 
     if not buffer then
-        error(string.format("allocated buffer %d doesn't exist"))
+        error(string.format("allocated buffer %d doesn't exist", id))
     end
 
     return buffer
@@ -199,6 +199,48 @@ function DatabaseService.deleteAllocatedBuffer(bufferId)
     end)
 
     writeEntities(entityTypes.allocatedBuffers, buffers)
+end
+
+---@return SquirtleResumable[]
+function DatabaseService.getSquirtleResumables()
+    return readEntities(entityTypes.squirtleResumables)
+end
+
+---@param name string
+---@return SquirtleResumable?
+function DatabaseService.findSquirtleResumable(name)
+    return Utils.find(DatabaseService.getSquirtleResumables(), function(item)
+        return item.name == name
+    end)
+end
+
+---@param name string
+---@return SquirtleResumable
+function DatabaseService.getSquirtleResumable(name)
+    local resumable = DatabaseService.findSquirtleResumable(name)
+
+    if not resumable then
+        error(string.format("squirtle resumable %s doesn't exist", name))
+    end
+
+    return resumable
+end
+
+---@param resumable SquirtleResumable
+---@return SquirtleResumable
+function DatabaseService.createSquirtleResumable(resumable)
+    pushEntity(entityTypes.squirtleResumables, resumable)
+
+    return resumable
+end
+
+---@param name string
+function DatabaseService.deleteSquirtleResumable(name)
+    local resumables = Utils.filter(DatabaseService.getSquirtleResumables(), function(item)
+        return item.name ~= name
+    end)
+
+    writeEntities(entityTypes.squirtleResumables, resumables)
 end
 
 return DatabaseService

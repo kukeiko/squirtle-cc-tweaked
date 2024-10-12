@@ -21,6 +21,12 @@ function Vector.create(x, y, z)
     return instance
 end
 
+---@param vector Vector
+---@return Vector
+function Vector.copy(vector)
+    return Vector.create(vector.x, vector.y, vector.z)
+end
+
 function Vector.plus(a, b)
     if (type(a) == "number") then
         return Vector.create(b.x + a, b.y + a, b.z + a)

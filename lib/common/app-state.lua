@@ -46,4 +46,10 @@ local function delete(appName)
     end
 end
 
-return {load = loadAppState, save = saveAppState, delete = delete}
+---@param appName string
+---@return boolean
+local function has(appName)
+    return fs.exists(getAppStateFilepath(appName))
+end
+
+return {load = loadAppState, save = saveAppState, delete = delete, has = has}

@@ -3,7 +3,7 @@ local Vector = require "lib.common.vector"
 
 ---@class Simulated
 ---@field steps integer
----@field placed table<string, integer>
+---@field placed ItemStock
 local SimulationResults = {placed = {}, steps = 0}
 
 ---@class State
@@ -11,6 +11,7 @@ local SimulationResults = {placed = {}, steps = 0}
 ---@field facing integer
 ---@field position Vector
 ---@field orientationMethod "move"|"disk-drive"
+---In which direction the turtle is allowed to try to break a block in order to place a shulker that could not be placed at front, top or bottom.
 ---@field breakDirection? "top"|"front"|"bottom"
 ---@field flipTurns boolean
 ---@field simulate boolean
@@ -31,10 +32,6 @@ local State = {
 ---@field current SimulationDetails?
 ---@field initial SimulationDetails?
 ---@field target SimulationDetails?
-
----@class SimulationDetails
----@field fuel integer
----@field facing integer
 
 ---@param block Block
 ---@return boolean

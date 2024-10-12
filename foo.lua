@@ -345,4 +345,22 @@ function testRunUntil()
     end)
 end
 
-testRunUntil()
+function testMine()
+    while true do
+        Squirtle.mine()
+    end
+end
+
+function testSimulateFuel()
+    local initialFuel = Squirtle.getNonInfiniteFuelLevel()
+    Squirtle.move("forward", 3)
+    os.sleep(1)
+    turtle.refuel(1)
+    local currentFuel = Squirtle.getNonInfiniteFuelLevel()
+
+    Squirtle.simulate({facing = Cardinal.north, fuel = initialFuel}, {facing = Cardinal.north, fuel = currentFuel})
+
+    Squirtle.move("forward", 4)
+end
+
+testSimulateFuel()
