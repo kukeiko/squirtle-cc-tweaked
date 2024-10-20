@@ -5,19 +5,19 @@
         "name": "Farms (Hub)",
         "tracks": [
             {
+                "duration": 7,
                 "to": "snow-base:farms>aqueduct:switch",
-                "signal": 1,
-                "duration": 7
+                "signal": 1
             },
             {
+                "duration": 10,
                 "to": "snow-base:farms>storage:switch",
-                "signal": 2,
-                "duration": 10
+                "signal": 2
             },
             {
+                "duration": 20,
                 "to": "snow-base:villagers:hub",
-                "signal": 7,
-                "duration": 20
+                "signal": 7
             },
             {
                 "to": "???",
@@ -41,14 +41,14 @@
                 "signal": 0
             },
             {
+                "duration": 3,
                 "to": "farms:exit",
-                "signal": 1,
-                "duration": 3
+                "signal": 1
             },
             {
+                "duration": 4,
                 "to": "snow-base:farms:hub",
-                "signal": 6,
-                "duration": 4
+                "signal": 6
             }
         ]
     },
@@ -58,9 +58,9 @@
         "name": "Farms > Storage",
         "tracks": [
             {
+                "duration": 23,
                 "to": "snow-base:storage>crystal:switch",
-                "signal": 0,
-                "duration": 23
+                "signal": 0
             },
             {
                 "to": "snow-base:farms>aqueduct:switch",
@@ -219,28 +219,28 @@
         "name": "Snow: Storage (Hub)",
         "tracks": [
             {
+                "duration": 10,
                 "to": "snow-base:storage:pltfrm:switch",
-                "signal": 1,
-                "duration": 10
+                "signal": 1
             },
             {
                 "to": "storage-silos:exit",
                 "signal": 2
             },
             {
+                "duration": 5,
                 "to": "storage:exit",
-                "signal": 3,
-                "duration": 5
+                "signal": 3
             },
             {
+                "duration": 10,
                 "to": "home",
-                "signal": 7,
-                "duration": 10
+                "signal": 7
             },
             {
+                "duration": 16,
                 "to": "snow-base:villagers:hub",
-                "signal": 15,
-                "duration": 16
+                "signal": 15
             }
         ]
     },
@@ -260,14 +260,14 @@
                 "signal": 0
             },
             {
+                "duration": 2,
                 "to": "storage:platform:exit",
-                "signal": 3,
-                "duration": 2
+                "signal": 3
             },
             {
+                "duration": 3.5,
                 "to": "snow-base:storage:platform",
-                "signal": 6,
-                "duration": 3.5
+                "signal": 6
             }
         ]
     },
@@ -302,18 +302,18 @@
         "name": "Storage Bahnsteig",
         "tracks": [
             {
+                "duration": 9,
                 "to": "snow-base:storage:hub",
-                "signal": 6,
-                "duration": 9
+                "signal": 6
             },
             {
                 "to": "crystal:???",
                 "signal": 7
             },
             {
+                "duration": 26,
                 "to": "snow-base:farms>aqueduct:switch",
-                "signal": 8,
-                "duration": 26
+                "signal": 8
             }
         ]
     },
@@ -329,14 +329,14 @@
         "name": "Storage Platform (Switch)",
         "tracks": [
             {
+                "duration": 2,
                 "to": "storage:platform:exit",
-                "signal": 0,
-                "duration": 2
+                "signal": 0
             },
             {
+                "duration": 3.5,
                 "to": "snow-base:storage:platform",
-                "signal": 1,
-                "duration": 3.5
+                "signal": 1
             }
         ]
     },
@@ -352,10 +352,12 @@
         "name": "Aztec: Home [SW]",
         "tracks": [
             {
+                "duration": 11,
                 "to": "aztec:trade:switch",
                 "signal": 0
             },
             {
+                "duration": 11,
                 "to": "switch:aztec:deep-storage",
                 "signal": 1
             },
@@ -364,6 +366,7 @@
                 "signal": 5
             },
             {
+                "duration": 3,
                 "to": "aztec:home>entry-hall:switch",
                 "signal": 7
             }
@@ -375,15 +378,17 @@
         "name": "Aztec: Home > Entry Hall [SW]",
         "tracks": [
             {
+                "duration": 4,
                 "to": "aztec:home:switch",
                 "signal": 0
             },
             {
+                "duration": 13,
                 "to": "aztec:entry-hall:switch",
                 "signal": 5
             },
             {
-                "to": "aztec:sunken-temple:exit",
+                "to": "aztec:wood:switch",
                 "signal": 7
             }
         ]
@@ -401,6 +406,32 @@
         "tracks": []
     },
     {
+        "id": "aztec:wood:exit",
+        "type": "endpoint",
+        "name": "Aztec: Wood Farm",
+        "tracks": []
+    },
+    {
+        "id": "aztec:wood:switch",
+        "type": "switch",
+        "name": "Aztec: Wood Farm [SW]",
+        "tracks": [
+            {
+                "to": "aztec:home>entry-hall:switch",
+                "signal": 0
+            },
+            {
+                "to": "aztec:wood:exit",
+                "signal": 1
+            },
+            {
+                "duration": 12,
+                "to": "aztec:sunken-temple:exit",
+                "signal": 7
+            }
+        ]
+    },
+    {
         "id": "aztec:trade:switch",
         "type": "switch",
         "name": "Aztec: Trading Hall [SW]",
@@ -410,6 +441,7 @@
                 "signal": 5
             },
             {
+                "duration": 12,
                 "to": "aztec:home:switch",
                 "signal": 7
             }
@@ -448,7 +480,8 @@
                 "signal": 1
             },
             {
-                "to": "aztec:home>entry-hall:switch",
+                "duration": 13,
+                "to": "aztec:home:switch",
                 "signal": 7
             }
         ]
@@ -497,34 +530,34 @@
         "name": "Villagers (Hub)",
         "tracks": [
             {
+                "duration": 7,
                 "to": "home",
-                "signal": 1,
-                "duration": 7
+                "signal": 1
             },
             {
+                "duration": 4,
                 "to": "villagers:exit",
-                "signal": 2,
-                "duration": 4
+                "signal": 2
             },
             {
+                "duration": 6,
                 "to": "villagers:exit:nether-portal",
-                "signal": 3,
-                "duration": 6
+                "signal": 3
             },
             {
+                "duration": 23,
                 "to": "snow-base:storage:hub",
-                "signal": 4,
-                "duration": 23
+                "signal": 4
             },
             {
+                "duration": 24,
                 "to": "snow-base:farms>aqueduct:switch",
-                "signal": 5,
-                "duration": 24
+                "signal": 5
             },
             {
+                "duration": 10,
                 "to": "gdi-nod",
-                "signal": 9,
-                "duration": 10
+                "signal": 9
             }
         ]
     },
