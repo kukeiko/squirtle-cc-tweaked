@@ -1,0 +1,6152 @@
+-- Bundled by luabundle {"version":"1.6.0"}
+local __bundle_require, __bundle_loaded, __bundle_register, __bundle_modules = (function(superRequire)
+	local loadingPlaceholder = {[{}] = true}
+
+	local register
+	local modules = {}
+
+	local require
+	local loaded = {}
+
+	register = function(name, body)
+		if not modules[name] then
+			modules[name] = body
+		end
+	end
+
+	require = function(name)
+		local loadedModule = loaded[name]
+
+		if loadedModule then
+			if loadedModule == loadingPlaceholder then
+				return nil
+			end
+		else
+			if not modules[name] then
+				if not superRequire then
+					local identifier = type(name) == 'string' and '\"' .. name .. '\"' or tostring(name)
+					error('Tried to require ' .. identifier .. ', but no such module has been registered')
+				else
+					return superRequire(name)
+				end
+			end
+
+			loaded[name] = loadingPlaceholder
+			loadedModule = modules[name](require, loaded, register, modules)
+			loaded[name] = loadedModule
+		end
+
+		return loadedModule
+	end
+
+	return require, loaded, register, modules
+end)(require)
+__bundle_register("__root", function(require, _LOADED, __bundle_register, __bundle_modules)
+package.path = package.path .. ";/?.lua"
+package.path = package.path .. ";/app/turtle/?.lua"
+
+local Utils = require("lib.common.utils")
+local EventLoop = require("lib.common.event-loop")
+local Rpc = require("lib.common.rpc")
+local SquirtleService = require("lib.squirtle.squirtle-service")
+local Vector = require("lib.common.vector")
+local Cardinal = require("lib.common.cardinal")
+local Squirtle = require("lib.squirtle.squirtle-api")
+local Print3dService = require("lib.features.print3d-service")
+
+---@class ColoredPoint
+---@field vector Vector
+---@field block string?
+---
+---@class Blueprint3D
+---@field fuel integer
+---@field palette string[]
+---@field points [integer, integer, integer, integer][]
+---
+---@class Print3DState
+---@field home Vector
+---@field points ColoredPoint[]
+---
+
+local function printUsage()
+    print("Usage: print3d <file>")
+end
+
+---@param args string[]
+---@return Print3DState?
+local function start(args)
+    local filename = args[1]
+
+    if not filename then
+        return printUsage()
+    end
+
+    local file = fs.open(filename, "r")
+    ---@type Blueprint3D
+    local blueprint = textutils.unserializeJSON(file.readAll())
+    file.close()
+
+    Squirtle.configure({shulkerSides = {"top"}})
+    Squirtle.refuelTo(blueprint.fuel + 1000);
+    local facing = Squirtle.orientate("disk-drive", {"top"})
+    local home = Squirtle.locate()
+    ---@type ItemStock
+    local blocks = {}
+
+    ---@type ColoredPoint[]
+    local points = Utils.map(blueprint.points, function(point)
+        local block = blueprint.palette[point[4]]
+        local point = Vector.create(point[1], point[2], point[3])
+
+        if facing == Cardinal.east then
+            point = Vector.rotateClockwise(point, 1)
+        elseif facing == Cardinal.south then
+            point = Vector.rotateClockwise(point, 2)
+        elseif facing == Cardinal.west then
+            point = Vector.rotateClockwise(point, 3)
+        end
+
+        blocks[block] = (blocks[block] or 0) + 1
+
+        return {vector = point, block = block}
+    end)
+
+    Squirtle.requireItems(blocks, true)
+
+    print("[ok] all good! waiting for pda signal")
+
+    while not Print3dService.isOn() do
+        os.sleep(.5)
+    end
+
+    ---@type Print3DState
+    local state = {home = home, points = points}
+
+    return state
+end
+
+---@param state Print3DState
+local function main(state)
+    for _, point in pairs(state.points) do
+        local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
+        local worldPoint = Vector.plus(state.home, above)
+        local success, message = Squirtle.navigate(worldPoint, nil, function()
+            return true
+        end)
+
+        if not success then
+            error(message)
+        end
+
+        Squirtle.put("bottom", point.block)
+    end
+end
+
+local function resume()
+    Squirtle.configure({shulkerSides = {"top"}})
+    Squirtle.orientate("disk-drive", {"top"})
+    Squirtle.locate()
+end
+
+---@param state Print3DState
+local function finish(state)
+    Squirtle.navigate(state.home, nil, function()
+        return false
+    end)
+end
+
+-- https://3dviewer.net/ for rotating
+-- https://drububu.com/miscellaneous/voxelizer/?out=obj for voxelizing
+print("[print3d v2.0.0-dev]")
+
+EventLoop.run(function()
+    EventLoop.runUntil("print3d:stop", function()
+        Rpc.server(SquirtleService)
+    end)
+end, function()
+    EventLoop.runUntil("print3d:stop", function()
+        Rpc.server(Print3dService)
+    end)
+end, function()
+    local success, message = Squirtle.runResumable("print3d", arg, start, main, resume, finish)
+
+    if success then
+        EventLoop.queue("print3d:stop")
+        print("[done] I hope you like what I built!")
+    else
+        print(message)
+        SquirtleService.error = message
+    end
+end)
+
+end)
+__bundle_register("lib.features.print3d-service", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@class Print3dService : Service
+local Print3dService = {name = "print3d"}
+
+local isOn = false
+
+function Print3dService.on()
+    isOn = true
+end
+
+function Print3dService.isOn()
+    return isOn
+end
+
+function Print3dService.off()
+    isOn = false
+end
+
+return Print3dService
+
+end)
+__bundle_register("lib.squirtle.squirtle-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local World = require("lib.common.world")
+local ItemStock = require("lib.common.models.item-stock")
+local DatabaseService = require("lib.common.database-service")
+local findPath = require("lib.squirtle.find-path")
+local Inventory = require("lib.inventory.inventory-api")
+local Cardinal = require("lib.common.cardinal")
+local Vector = require("lib.common.vector")
+local State = require("lib.squirtle.state")
+local SquirtleElementalApi = require("lib.squirtle.api-layers.squirtle-elemental-api")
+local Basic = require("lib.squirtle.api-layers.squirtle-basic-api")
+local Advanced = require("lib.squirtle.api-layers.squirtle-advanced-api")
+local Complex = require("lib.squirtle.api-layers.squirtle-complex-api")
+
+---@class SquirtleApi : SquirtleComplexApi
+local SquirtleApi = {}
+setmetatable(SquirtleApi, {__index = Complex})
+
+--- [todo] rework to not accept a predicate. also somehow support block tags (see isCrops() from farmer)
+---@param predicate? (fun(block: Block) : boolean) | string[]
+---@return fun() : nil
+function SquirtleApi.setBreakable(predicate)
+    return State.setBreakable(predicate)
+end
+
+---@param side string
+---@return boolean success if everything could be dumped
+function SquirtleApi.dump(side)
+    local items = SquirtleApi.getStacks()
+
+    for slot in pairs(items) do
+        SquirtleApi.select(slot)
+        SquirtleApi.drop(side)
+    end
+
+    return SquirtleApi.isEmpty()
+end
+
+function SquirtleApi.lookAtChest()
+    SquirtleApi.turn(Inventory.findChest())
+end
+
+---@param target Vector
+---@return boolean, string?
+function SquirtleApi.tryMoveToPoint(target)
+    local delta = Vector.minus(target, SquirtleApi.getPosition())
+
+    if delta.y > 0 then
+        if not SquirtleApi.tryMove("top", delta.y) then
+            return false, "top"
+        end
+    elseif delta.y < 0 then
+        if not SquirtleApi.tryMove("bottom", -delta.y) then
+            return false, "bottom"
+        end
+    end
+
+    if delta.x > 0 then
+        SquirtleApi.face(Cardinal.east)
+        if not SquirtleApi.tryMove("front", delta.x) then
+            return false, "front"
+        end
+    elseif delta.x < 0 then
+        SquirtleApi.face(Cardinal.west)
+        if not SquirtleApi.tryMove("front", -delta.x) then
+            return false, "front"
+        end
+    end
+
+    if delta.z > 0 then
+        SquirtleApi.face(Cardinal.south)
+
+        if not SquirtleApi.tryMove("front", delta.z) then
+            return false, "front"
+        end
+    elseif delta.z < 0 then
+        SquirtleApi.face(Cardinal.north)
+
+        if not SquirtleApi.tryMove("front", -delta.z) then
+            return false, "front"
+        end
+    end
+
+    return true
+end
+
+---@param path Vector[]
+---@return boolean, string?, integer?
+local function movePath(path)
+    for i, next in ipairs(path) do
+        local success, failedSide = SquirtleApi.tryMoveToPoint(next)
+
+        if not success then
+            return false, failedSide, i
+        end
+    end
+
+    return true
+end
+
+---@param to Vector
+---@param world? World
+---@param breakable? function
+function SquirtleApi.navigate(to, world, breakable)
+    breakable = breakable or function()
+        return false
+    end
+
+    local restoreBreakable = SquirtleApi.setBreakable(breakable)
+
+    if not world then
+        local position = SquirtleElementalApi.getPosition()
+        world = World.create(position.x, position.y, position.z)
+    end
+
+    local from = SquirtleElementalApi.getPosition()
+    local facing = SquirtleElementalApi.getFacing()
+
+    while true do
+        local path, msg = findPath(from, to, facing, world)
+
+        if not path then
+            restoreBreakable()
+            return false, msg
+        end
+
+        local distance = Vector.manhattan(from, to)
+        Advanced.refuelTo(distance)
+        local success, failedSide = movePath(path)
+
+        if success then
+            restoreBreakable()
+            return true
+        elseif failedSide then
+            from = SquirtleElementalApi.getPosition()
+            facing = SquirtleElementalApi.getFacing()
+            local scannedLocation = Vector.plus(from, Cardinal.toVector(Cardinal.fromSide(failedSide, facing)))
+            World.setBlock(world, scannedLocation)
+        end
+    end
+end
+
+---@param checkEarlyExit? fun() : boolean
+---@return boolean
+function SquirtleApi.navigateTunnel(checkEarlyExit)
+    local forbidden
+
+    while true do
+        local strategy
+
+        if SquirtleApi.tryWalk("forward") then
+            strategy = "forward"
+            forbidden = "back"
+        elseif forbidden ~= "up" and SquirtleApi.tryWalk("up") then
+            strategy = "up"
+            forbidden = "down"
+        elseif forbidden ~= "down" and SquirtleApi.tryWalk("down") then
+            strategy = "down"
+            forbidden = "up"
+        elseif SquirtleApi.turn("left") and SquirtleApi.tryWalk("forward") then
+            strategy = "forward"
+            forbidden = "back"
+        elseif SquirtleApi.turn("left") and forbidden ~= "back" and SquirtleApi.tryWalk("forward") then
+            strategy = "forward"
+            forbidden = "back"
+        elseif SquirtleApi.turn("left") and SquirtleApi.tryWalk("forward") then
+            strategy = "forward"
+            forbidden = "back"
+        else
+            return true
+        end
+
+        if strategy == "forward" then
+            while SquirtleApi.tryWalk("forward") do
+            end
+        elseif strategy == "up" then
+            while SquirtleApi.tryWalk("up") do
+            end
+        elseif strategy == "down" then
+            while SquirtleApi.tryWalk("down") do
+            end
+        end
+
+        if checkEarlyExit ~= nil and checkEarlyExit() then
+            return checkEarlyExit()
+        end
+    end
+end
+
+---@param initial SimulationDetails?
+---@param target SimulationDetails?
+function SquirtleApi.simulate(initial, target)
+    State.simulate = true
+    State.simulation.initial = initial
+    State.simulation.target = target
+
+    if initial then
+        State.simulation.current = Utils.clone(initial)
+    else
+        State.simulation.current = nil
+    end
+
+    State.checkResumeEnd()
+end
+
+---@class SquirtleConfigOptions
+---@field orientate? "move"|"disk-drive"
+---@field breakDirection? "top"|"front"|"bottom"
+---@field shulkerSides? PlaceSide[]
+---@param options SquirtleConfigOptions
+function SquirtleApi.configure(options)
+    if options.orientate then
+        State.orientationMethod = options.orientate
+    end
+
+    if options.breakDirection then
+        State.breakDirection = options.breakDirection
+    end
+
+    if options.shulkerSides then
+        State.shulkerSides = options.shulkerSides
+    end
+end
+
+function SquirtleApi.recover()
+    local shulkerDirections = {"top", "bottom", "front"}
+
+    for _, direction in pairs(shulkerDirections) do
+        if Basic.probe(direction, "minecraft:shulker_box") then
+            Basic.dig(direction)
+        end
+    end
+end
+
+---@generic T
+---@param name string
+---@param args string[]
+---@param start fun(args:string[]) : T
+---@param main fun(state: T) : unknown|nil
+---@param resume fun(state: T) : unknown|nil
+---@param finish fun(state: T) : unknown|nil
+---@param additionalRequiredItems? ItemStock
+function SquirtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems)
+    local success, message = pcall(function(...)
+        local resumable = DatabaseService.findSquirtleResumable(name)
+
+        if not resumable then
+            local state = start(args)
+
+            if not state then
+                return
+            end
+
+            Utils.writeStartupFile(name)
+            local randomSeed = os.epoch("utc")
+            math.randomseed(randomSeed)
+
+            -- set up initial state for potential later shutdown recovery
+            ---@type SimulationDetails
+            local initialState = {
+                facing = SquirtleElementalApi.getFacing(),
+                fuel = SquirtleElementalApi.getNonInfiniteFuelLevel(),
+                position = SquirtleElementalApi.getPosition()
+            }
+
+            State.simulate = true
+            State.simulation.current = Utils.clone(initialState)
+            main(state)
+            State.simulate = false
+            State.simulation.current = nil
+            Advanced.refuelTo(State.results.steps)
+            local required = State.results.placed
+
+            if additionalRequiredItems then
+                required = ItemStock.add(required, additionalRequiredItems)
+            end
+
+            SquirtleApi.requireItems(required, true)
+            local home = SquirtleElementalApi.getPosition()
+            DatabaseService.createSquirtleResumable({
+                name = name,
+                initialState = initialState,
+                randomSeed = randomSeed,
+                home = home,
+                args = args,
+                state = state
+            })
+        else
+            resume(resumable.state)
+            -- recover from shutdown
+            math.randomseed(resumable.randomSeed)
+            Complex.cleanup() -- replaces recover()
+
+            local initialState = resumable.initialState
+            ---@type SimulationDetails
+            local targetState = {
+                facing = SquirtleElementalApi.getFacing(),
+                fuel = SquirtleElementalApi.getNonInfiniteFuelLevel(),
+                position = SquirtleElementalApi.getPosition()
+            }
+
+            SquirtleApi.simulate(initialState, targetState)
+        end
+
+        resumable = DatabaseService.getSquirtleResumable(name)
+        main(resumable.state)
+        finish(resumable.state)
+        DatabaseService.deleteSquirtleResumable(name)
+        Utils.deleteStartupFile()
+    end)
+
+    return success, message
+end
+
+return SquirtleApi
+
+end)
+__bundle_register("lib.squirtle.api-layers.squirtle-complex-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Vector = require("lib.common.vector")
+local Cardinal = require("lib.common.cardinal")
+local DatabaseService = require("lib.common.database-service")
+local State = require("lib.squirtle.state")
+local getNative = require("lib.squirtle.get-native")
+local Elemental = require("lib.squirtle.api-layers.squirtle-elemental-api")
+local Basic = require("lib.squirtle.api-layers.squirtle-basic-api")
+local Advanced = require("lib.squirtle.api-layers.squirtle-advanced-api")
+local Inventory = require("lib.inventory.inventory-api")
+local requireItems = require("lib.squirtle.require-items")
+local placeShulker = require("lib.squirtle.place-shulker")
+local digShulker = require("lib.squirtle.dig-shulker")
+
+---The complex layer starts having movement functionality.
+---@class SquirtleComplexApi : SquirtleAdvancedApi
+local SquirtleComplexApi = {}
+setmetatable(SquirtleComplexApi, {__index = Advanced})
+
+---@param action string
+---@param direction string
+---@param steps integer
+---@param stepsTaken integer
+---@param originalMessage? string
+---@return string
+local function getGoErrorMessage(action, direction, steps, stepsTaken, originalMessage)
+    originalMessage = originalMessage or "(unknown error)"
+
+    if steps == 1 then
+        return string.format("failed to %s once towards %s: %s", action, direction, originalMessage)
+    else
+        return string.format("failed to %s %d steps (%d steps taken) towards %s: %s", action, steps, stepsTaken, direction, originalMessage)
+    end
+end
+
+---@param direction? string
+---@param steps? integer
+---@return boolean, integer, string?
+function SquirtleComplexApi.tryWalk(direction, steps)
+    direction = direction or "forward"
+    local native = getNative("go", direction)
+    steps = steps or 1
+
+    if State.simulate then
+        -- [note] "tryWalk()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
+        -- and since we're not simulating an actual world we can not really return a meaningful value of steps taken.
+        return false, 0
+    end
+
+    if not Basic.hasFuel(steps) then
+        Advanced.refuelTo(steps)
+    end
+
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, Elemental.getFacing()))
+
+    for step = 1, steps do
+        local success, message = native()
+
+        if success then
+            Elemental.changePosition(delta)
+        else
+            return false, step - 1, message
+        end
+    end
+
+    return true, steps
+end
+
+---@param direction? string
+---@param steps? integer
+function SquirtleComplexApi.walk(direction, steps)
+    direction = direction or "forward"
+    steps = steps or 1
+    local success, stepsTaken, message = SquirtleComplexApi.tryWalk(direction, steps)
+
+    if success then
+        return nil
+    end
+
+    error(getGoErrorMessage("walk", direction, steps, stepsTaken, message))
+end
+
+---@param steps integer?
+---@return boolean, integer, string?
+local function tryMoveBack(steps)
+    steps = steps or 1
+    local native = getNative("go", "back")
+    local didTurnBack = false
+
+    for step = 1, steps do
+        if State.isResuming() and not State.facingTargetReached() and State.fuelTargetReached() then
+            -- we seem to be in correct position but the facing is off, meaning that there must've been
+            -- a block that caused us to turn to try and mine it. in order to resume, we'll just
+            -- stop the simulation and orient the turtle towards the initial state, so that the
+            -- turning code gets run from start.
+            State.simulate = false
+            Basic.face(State.simulation.current.facing)
+        end
+
+        if State.simulate then
+            State.advanceFuel()
+        else
+            while not native() do
+                if not didTurnBack then
+                    Basic.turn("right")
+                    Basic.turn("right")
+                    direction = "forward"
+                    native = getNative("go", "forward")
+                    didTurnBack = true
+                end
+
+                while Basic.tryMine(direction) do
+                end
+
+                local block = Basic.probe(direction)
+
+                if block and not State.canBreak(block) then
+                    Basic.turn("left")
+                    Basic.turn("left")
+
+                    return false, step - 1, string.format("blocked by %s", block.name)
+                end
+            end
+        end
+    end
+
+    if didTurnBack then
+        Basic.turn("left")
+        Basic.turn("left")
+    end
+
+    return true, steps
+end
+
+---@param direction string?
+---@param steps integer?
+---@return boolean, integer, string?
+function SquirtleComplexApi.tryMove(direction, steps)
+    if direction == "back" then
+        return tryMoveBack(steps)
+    end
+
+    direction = direction or "forward"
+    steps = steps or 1
+    local native = getNative("go", direction)
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, Elemental.getFacing()))
+
+    for step = 1, steps do
+        if State.simulate then
+            State.advanceFuel()
+            State.advancePosition(delta)
+        else
+            while not native() do
+                while Basic.tryMine(direction) do
+                end
+
+                local block = Basic.probe(direction)
+
+                if block and not State.canBreak(block) then
+                    return false, step - 1, string.format("blocked by %s", block.name)
+                end
+            end
+
+            Elemental.changePosition(delta)
+        end
+    end
+
+    return true, steps
+end
+
+---@param direction? string
+---@param steps? integer
+function SquirtleComplexApi.move(direction, steps)
+    direction = direction or "forward"
+    steps = steps or 1
+    local success, stepsTaken, message = SquirtleComplexApi.tryMove(direction, steps)
+
+    if success then
+        return nil
+    end
+
+    error(getGoErrorMessage("move", direction, steps, stepsTaken, message))
+end
+
+---@param alsoIgnoreSlot integer
+---@return integer?
+local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
+    for slot = 1, 16 do
+        if alsoIgnoreSlot ~= slot then
+            local item = Basic.getStack(slot)
+
+            if item and item.name ~= "minecraft:shulker_box" then
+                return slot
+            end
+        end
+    end
+end
+
+---@param shulker integer
+---@param item string
+---@return boolean
+local function loadFromShulker(shulker, item)
+    Basic.select(shulker)
+
+    local placedSide = Basic.placeFrontTopOrBottom()
+
+    if not placedSide then
+        if not State.breakDirection then
+            return false
+        end
+
+        SquirtleComplexApi.mine(State.breakDirection)
+        placedSide = Basic.placeFrontTopOrBottom()
+
+        if not placedSide then
+            return false
+        end
+    end
+
+    while not peripheral.isPresent(placedSide) do
+        os.sleep(.1)
+    end
+
+    local stacks = Inventory.getStacks(placedSide)
+
+    for stackSlot, stack in pairs(stacks) do
+        if stack.name == item then
+            Advanced.suckSlot(placedSide, stackSlot)
+            local emptySlot = Basic.firstEmptySlot()
+
+            if not emptySlot then
+                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
+
+                if not slotToPutIntoShulker then
+                    error("i seem to be full with shulkers")
+                end
+
+                Basic.select(slotToPutIntoShulker)
+                Elemental.drop(placedSide)
+                Basic.select(shulker)
+            end
+
+            Elemental.dig(placedSide)
+
+            return true
+        end
+    end
+
+    Elemental.dig(placedSide)
+
+    return false
+end
+
+---@param name string
+---@return false|integer
+function SquirtleComplexApi.selectItem(name)
+    if State.simulate then
+        return false
+    end
+
+    local slot = Basic.find(name, true)
+
+    if not slot then
+        local nextShulkerSlot = 1
+
+        while true do
+            local shulker = Basic.find("minecraft:shulker_box", true, nextShulkerSlot)
+
+            if not shulker then
+                break
+            end
+
+            if loadFromShulker(shulker, name) then
+                -- [note] we can return "shulker" here because the item loaded from the shulker box ends
+                -- up in the slot the shulker originally was
+                return shulker
+            end
+
+            nextShulkerSlot = nextShulkerSlot + 1
+        end
+
+        return false
+    end
+
+    Elemental.select(slot)
+
+    return slot
+end
+
+---@param block? string
+---@return boolean
+local function simulateTryPut(block)
+    if block then
+        if not State.results.placed[block] then
+            State.results.placed[block] = 0
+        end
+
+        State.results.placed[block] = State.results.placed[block] + 1
+    end
+
+    return true
+end
+
+---@param block? string
+local function simulatePut(block)
+    simulateTryPut(block)
+end
+
+---@param side? string
+---@param block? string
+---@return boolean
+function SquirtleComplexApi.tryPut(side, block)
+    side = side or "front"
+    local native = getNative("place", side)
+
+    if State.simulate then
+        return simulateTryPut(block)
+    end
+
+    if block then
+        while not SquirtleComplexApi.selectItem(block) do
+            SquirtleComplexApi.requireItems({[block] = 1})
+        end
+    end
+
+    if native() then
+        return true
+    end
+
+    while Basic.tryMine(side) do
+    end
+
+    -- [todo] band-aid fix
+    while turtle.attack() do
+        os.sleep(1)
+    end
+
+    return native()
+end
+
+---@param side? string
+---@param block? string
+function SquirtleComplexApi.put(side, block)
+    if State.simulate then
+        return simulatePut(block)
+    end
+
+    if not SquirtleComplexApi.tryPut(side, block) then
+        error("failed to place")
+    end
+end
+
+---@param sides? PlaceSide[]
+---@param block? string
+---@return PlaceSide? placedDirection
+function SquirtleComplexApi.tryPutAtOneOf(sides, block)
+    if State.simulate then
+        -- [todo] reconsider if this method should really be simulatable, as its outcome depends on world state
+        return simulatePut(block)
+    end
+
+    sides = sides or {"top", "front", "bottom"}
+
+    if block then
+        while not SquirtleComplexApi.selectItem(block) do
+            SquirtleComplexApi.requireItem(block)
+        end
+    end
+
+    for i = 1, #sides do
+        local native = getNative("place", sides[i])
+
+        if native() then
+            return sides[i]
+        end
+    end
+
+    -- [todo] tryPut() is attacking - should we do it here as well?
+    for i = 1, #sides do
+        local native = getNative("place", sides[i])
+
+        while Basic.tryMine(sides[i]) do
+        end
+
+        if native() then
+            return sides[i]
+        end
+    end
+end
+
+function SquirtleComplexApi.locate()
+    local x, y, z = gps.locate()
+
+    if not x then
+        error("no gps available")
+    end
+
+    Elemental.setPosition(Vector.create(x, y, z))
+
+    return Elemental.getPosition()
+end
+
+---@param position Vector
+local function stepOut(position)
+    Advanced.refuelTo(2)
+
+    if not SquirtleComplexApi.tryWalk("forward") then
+        return false
+    end
+
+    local now = SquirtleComplexApi.locate()
+    Elemental.setFacing(Cardinal.fromVector(Vector.minus(now, position)))
+
+    while not SquirtleComplexApi.tryWalk("back") do
+        print("can't move back, something is blocking me. sleeping 1s...")
+        os.sleep(1)
+    end
+
+    return true
+end
+
+---@param position Vector
+---@param directions? MoveOrientationSide[]
+---@return boolean
+local function orientateSameLayer(position, directions)
+    if stepOut(position) then
+        return true
+    end
+
+    Basic.turn("left")
+
+    if stepOut(position) then
+        Basic.turn("right")
+        return true
+    end
+
+    Basic.turn("left")
+
+    if stepOut(position) then
+        Basic.turn("back")
+        return true
+    end
+
+    Basic.turn("left")
+
+    if stepOut(position) then
+        Basic.turn("left")
+        return true
+    end
+
+    return false
+end
+
+local function addCleanupPlaceDirections(directions)
+end
+
+---@param directions? DiskDriveOrientationSide[]
+---@return integer
+local function orientateUsingDiskDrive(directions)
+    if directions then
+        for i = 1, #directions do
+            if directions[i] ~= "top" and directions[i] ~= "bottom" then
+                error(string.format("invalid disk-drive orientation direction: %s", directions[i]))
+            end
+        end
+    end
+
+    directions = directions or {"top", "bottom"}
+
+    local diskState = DatabaseService.getSquirtleDiskState()
+    diskState.diskDriveSides = directions
+    DatabaseService.saveSquirtleDiskState(diskState)
+    local placedSide = SquirtleComplexApi.tryPutAtOneOf(directions, "computercraft:disk_drive")
+
+    if not placedSide then
+        error("todo: need help from player")
+    else
+        diskState.diskDriveSides = {}
+        diskState.cleanupSides[placedSide] = "computercraft:disk_drive"
+        DatabaseService.saveSquirtleDiskState(diskState)
+    end
+
+    -- while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
+    --     SquirtleComplexApi.requireItems({["computercraft:disk_drive"] = 1})
+    -- end
+
+    -- -- [todo] should use tryPut() instead (which will also call requireItems())
+    -- -- problem with that though is that tryPut() also mines, but I'd like to first
+    -- -- try placing in all directions.
+    -- local placedSide = Elemental.placeAtOneOf(directions)
+
+    -- if not placedSide then
+    --     -- [todo] should use (try?)mine() instead
+    --     local dugSide = Elemental.digAtOneOf(directions)
+
+    --     if not dugSide then
+    --         error("todo: need help from player")
+    --     end
+
+    --     -- if not State.breakDirection or State.breakDirection == "front" then
+    --     --     error("no space to put the disk drive")
+    --     -- end
+
+    --     -- -- [todo] should use put() instead - for that, put() needs to be pulled into at least this layer
+    --     -- SquirtleComplexApi.mine(State.breakDirection)
+
+    --     if not Basic.place(dugSide) then
+    --         error("no space to put the disk drive")
+    --     end
+
+    --     placedSide = dugSide
+    -- end
+
+    while not peripheral.isPresent(placedSide) do
+        os.sleep(.1)
+    end
+
+    local diskDrive = Basic.probe(placedSide, "computercraft:disk_drive")
+
+    if not diskDrive then
+        error("placed a disk-drive, but now it's gone")
+    end
+
+    if not diskDrive.state.facing then
+        error("expected disk drive to have state.facing property")
+    end
+
+    local facing = Cardinal.rotateAround(Cardinal.fromName(diskDrive.state.facing))
+    Basic.dig(placedSide)
+
+    diskState.diskDriveSides[placedSide] = nil
+    DatabaseService.saveSquirtleDiskState(diskState)
+
+    return facing
+end
+
+function SquirtleComplexApi.cleanup()
+    local diskState = DatabaseService.getSquirtleDiskState()
+
+    for side, block in pairs(diskState.cleanupSides) do
+        if SquirtleComplexApi.probe(side, block) then
+            Basic.selectEmpty()
+            SquirtleComplexApi.dig(side)
+        end
+    end
+
+    for i = 1, #diskState.diskDriveSides do
+        local side = diskState.diskDriveSides[i]
+        Basic.selectEmpty()
+
+        if SquirtleComplexApi.probe(side, "computercraft:disk_drive") then
+            SquirtleComplexApi.dig(side)
+            break
+        end
+    end
+
+    for i = 1, #diskState.shulkerSides do
+        local side = diskState.shulkerSides[i]
+        Basic.selectEmpty()
+
+        if SquirtleComplexApi.probe(side, "minecraft:shulker_box") then
+            SquirtleComplexApi.dig(side)
+            break
+        end
+    end
+
+    diskState.cleanupSides = {}
+    diskState.diskDriveSides = {}
+    diskState.shulkerSides = {}
+    DatabaseService.saveSquirtleDiskState(diskState)
+end
+
+---@param method? OrientationMethod
+---@param directions? OrientationSide[]
+---@return integer facing
+function SquirtleComplexApi.orientate(method, directions)
+    method = method or State.orientationMethod
+
+    if method == "disk-drive" then
+        Elemental.setFacing(orientateUsingDiskDrive(directions))
+    else
+        local position = SquirtleComplexApi.locate()
+
+        if not orientateSameLayer(position, directions) then
+            error("failed to orientate. possibly blocked in.")
+        end
+    end
+
+    return Elemental.getFacing()
+end
+
+---@param items table<string, integer>
+---@param shulker? boolean
+function SquirtleComplexApi.requireItems(items, shulker)
+    requireItems(items, shulker)
+end
+
+---@param item string
+---@param quantity? integer
+---@param shulker? boolean
+function SquirtleComplexApi.requireItem(item, quantity, shulker)
+    quantity = quantity or 1
+    SquirtleComplexApi.requireItems({[item] = quantity}, shulker)
+end
+
+---@param direction string
+---@return boolean unloadedAll
+local function loadIntoShulker(direction)
+    local unloadedAll = true
+
+    for slot = 1, Elemental.size() do
+        local stack = Elemental.getStack(slot)
+
+        if stack and not stack.name == "minecraft:shulker_box" and not stack.name == "computercraft:disk_drive" then
+            Elemental.select(slot)
+
+            if not Elemental.drop(direction) then
+                unloadedAll = false
+            end
+        end
+    end
+
+    return unloadedAll
+end
+
+---@return boolean unloadedAll
+function SquirtleComplexApi.tryLoadShulkers()
+    ---@type string?
+    local placedSide = nil
+
+    for slot = 1, Elemental.size() do
+        local stack = Elemental.getStack(slot)
+
+        if stack and stack.name == "minecraft:shulker_box" then
+            Elemental.select(slot)
+            placedSide = placeShulker()
+            local unloadedAll = loadIntoShulker(placedSide)
+            Elemental.select(slot)
+            digShulker(placedSide)
+
+            if unloadedAll then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+return SquirtleComplexApi
+
+end)
+__bundle_register("lib.squirtle.dig-shulker", function(require, _LOADED, __bundle_register, __bundle_modules)
+local DatabaseService = require("lib.common.database-service")
+local SquirtleBasicApi = require("lib.squirtle.api-layers.squirtle-basic-api")
+
+---@param side string
+return function(side)
+    SquirtleBasicApi.dig(side)
+    local diskState = DatabaseService.getSquirtleDiskState()
+    diskState.shulkerSides = {}
+    diskState.cleanupSides[side] = nil
+    DatabaseService.saveSquirtleDiskState(diskState)
+end
+
+end)
+__bundle_register("lib.squirtle.api-layers.squirtle-basic-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local State = require("lib.squirtle.state")
+local getNative = require("lib.squirtle.get-native")
+local SquirtleElementalApi = require("lib.squirtle.api-layers.squirtle-elemental-api")
+
+---@class SquirtleBasicApi : SquirtleElementalApi
+local SquirtleBasicApi = {}
+setmetatable(SquirtleBasicApi, {__index = SquirtleElementalApi})
+
+---@param target integer
+---@param current? integer
+function SquirtleBasicApi.face(target, current)
+    current = current or SquirtleElementalApi.getFacing()
+
+    if not current then
+        error("facing not available")
+    end
+
+    if (current + 2) % 4 == target then
+        SquirtleElementalApi.turn("back")
+    elseif (current + 1) % 4 == target then
+        SquirtleElementalApi.turn("right")
+    elseif (current - 1) % 4 == target then
+        SquirtleElementalApi.turn("left")
+    end
+
+    return target
+end
+
+---Throws an error if:
+--- - no digging tool is equipped
+--- - turtle is not allowed to dig the block
+---@param direction? string
+---@return boolean success
+function SquirtleBasicApi.mine(direction)
+    local success, message = SquirtleBasicApi.tryMine(direction)
+
+    -- if there is no message, then there just wasn't anything to dig, meaning every other case is interpreted as an error
+    if not success and message then
+        error(message)
+    end
+
+    return success
+end
+
+---Throws an error if:
+--- - no digging tool is equipped
+---@param direction? string
+---@return boolean success, string? error
+function SquirtleBasicApi.tryMine(direction)
+    if State.simulate then
+        return true
+    end
+
+    direction = direction or "forward"
+    local native = getNative("dig", direction)
+    local block = SquirtleElementalApi.probe(direction)
+
+    if not block then
+        return false
+    elseif not State.canBreak(block) then
+        return false, string.format("not allowed to mine block %s", block.name)
+    end
+
+    local success, message = native()
+
+    if not success then
+        if message == "Nothing to dig here" then
+            return false
+        elseif string.match(message, "tool") then
+            error(string.format("failed to mine %s: %s", direction, message))
+        end
+    end
+
+    return success, message
+end
+
+---@param side? string
+---@param text? string
+---@return boolean, string?
+function SquirtleBasicApi.tryReplace(side, text)
+    if State.simulate then
+        return true
+    end
+
+    if SquirtleElementalApi.place(side, text) then
+        return true
+    end
+
+    while SquirtleBasicApi.tryMine(side) do
+    end
+
+    return SquirtleElementalApi.place(side, text)
+end
+
+---@param sides? string[]
+---@param text? string
+---@return string?
+function SquirtleBasicApi.tryReplaceAtOneOf(sides, text)
+    if State.simulate then
+        error("tryReplaceAtOneOf() can't be simulated")
+    end
+
+    sides = sides or {"top", "front", "bottom"}
+
+    for i = 1, #sides do
+        local side = sides[i]
+
+        if SquirtleElementalApi.place(side, text) then
+            return side
+        end
+    end
+
+    -- [todo] tryPut() is attacking - should we do it here as well?
+    for i = 1, #sides do
+        local side = sides[i]
+
+        while SquirtleBasicApi.tryMine(side) do
+        end
+
+        if SquirtleElementalApi.place(side, text) then
+            return side
+        end
+    end
+end
+
+---@param fuel integer
+---@return boolean
+function SquirtleBasicApi.hasFuel(fuel)
+    local level = SquirtleElementalApi.getFuelLevel()
+
+    return level == "unlimited" or level >= fuel
+end
+
+---@param limit? integer
+---@return integer
+function SquirtleBasicApi.missingFuel(limit)
+    local current = SquirtleElementalApi.getFuelLevel()
+
+    if current == "unlimited" then
+        return 0
+    end
+
+    return (limit or SquirtleElementalApi.getFuelLimit()) - current
+end
+
+---@param slot integer
+---@return boolean
+function SquirtleBasicApi.selectIfNotEmpty(slot)
+    if SquirtleElementalApi.getItemCount(slot) > 0 then
+        return SquirtleElementalApi.select(slot)
+    else
+        return false
+    end
+end
+
+---@param startAt? number
+---@return integer
+function SquirtleBasicApi.selectEmpty(startAt)
+    startAt = startAt or turtle.getSelectedSlot()
+
+    for i = 0, SquirtleBasicApi.size() - 1 do
+        local slot = startAt + i
+
+        if slot > SquirtleBasicApi.size() then
+            slot = slot - SquirtleBasicApi.size()
+        end
+
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
+            SquirtleBasicApi.select(slot)
+
+            return slot
+        end
+    end
+
+    error("no empty slot available")
+end
+
+---@return integer
+function SquirtleBasicApi.selectFirstEmpty()
+    return SquirtleBasicApi.selectEmpty(1)
+end
+
+---@param startAt? number
+function SquirtleBasicApi.firstEmptySlot(startAt)
+    -- [todo] this startAt logic works a bit differently to "Backpack.selectEmpty()" as it does not wrap around
+    startAt = startAt or 1
+
+    for slot = startAt, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
+            return slot
+        end
+    end
+
+    return nil
+end
+
+---@return integer
+function SquirtleBasicApi.numEmptySlots()
+    local numEmpty = 0
+
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
+            numEmpty = numEmpty + 1
+        end
+    end
+
+    return numEmpty
+end
+
+---@return boolean
+function SquirtleBasicApi.isFull()
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) == 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@return boolean
+function SquirtleBasicApi.isEmpty()
+    for slot = 1, SquirtleBasicApi.size() do
+        if SquirtleBasicApi.getItemCount(slot) > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@return ItemStack[]
+function SquirtleBasicApi.getStacks()
+    local stacks = {}
+
+    for slot = 1, SquirtleBasicApi.size() do
+        local item = SquirtleBasicApi.getStack(slot)
+
+        if item then
+            stacks[slot] = item
+        end
+    end
+
+    return stacks
+end
+
+---@param predicate string|function<boolean, ItemStack>
+---@return integer
+function SquirtleBasicApi.getItemStock(predicate)
+    if type(predicate) == "string" then
+        local name = predicate
+
+        ---@param stack ItemStack
+        ---@type function<boolean, ItemStack>
+        predicate = function(stack)
+            return stack.name == name
+        end
+    end
+
+    local stock = 0
+
+    for _, stack in pairs(SquirtleBasicApi.getStacks()) do
+        if predicate(stack) then
+            stock = stock + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@return table<string, integer>
+function SquirtleBasicApi.getStock()
+    ---@type table<string, integer>
+    local stock = {}
+
+    for _, stack in pairs(SquirtleBasicApi.getStacks()) do
+        stock[stack.name] = (stock[stack.name] or 0) + stack.count
+    end
+
+    return stock
+end
+
+---@param name string
+---@param exact? boolean
+---@param startAtSlot? integer
+---@return integer?
+function SquirtleBasicApi.find(name, exact, startAtSlot)
+    startAtSlot = startAtSlot or 1
+
+    for slot = startAtSlot, SquirtleBasicApi.size() do
+        local item = SquirtleBasicApi.getStack(slot)
+
+        if item and exact and item.name == name then
+            return slot
+        elseif item and not exact and string.find(item.name, name) then
+            return slot
+        end
+    end
+end
+
+---@param item string
+---@param minCount? integer
+---@return boolean
+function SquirtleBasicApi.has(item, minCount)
+    if type(minCount) == "number" then
+        return SquirtleBasicApi.getItemStock(item) >= minCount
+    else
+        for slot = 1, SquirtleBasicApi.size() do
+            local stack = SquirtleBasicApi.getStack(slot)
+
+            if stack and stack.name == item then
+                return true
+            end
+        end
+
+        return false
+    end
+end
+
+function SquirtleBasicApi.condense()
+    if State.simulate then
+        return nil
+    end
+
+    for slot = SquirtleBasicApi.size(), 1, -1 do
+        local item = SquirtleBasicApi.getStack(slot)
+
+        if item then
+            for targetSlot = 1, slot - 1 do
+                local candidate = SquirtleBasicApi.getStack(targetSlot, true)
+
+                if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
+                    SquirtleBasicApi.select(slot)
+                    SquirtleBasicApi.transferTo(targetSlot)
+
+                    if SquirtleBasicApi.getItemCount(slot) == 0 then
+                        break
+                    end
+                elseif not candidate then
+                    SquirtleBasicApi.select(slot)
+                    SquirtleBasicApi.transferTo(targetSlot)
+                    break
+                end
+            end
+        end
+    end
+end
+
+return SquirtleBasicApi
+
+end)
+__bundle_register("lib.squirtle.api-layers.squirtle-elemental-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local Vector = require("lib.common.vector")
+local Cardinal = require("lib.common.cardinal")
+local State = require("lib.squirtle.state")
+local getNative = require("lib.squirtle.get-native")
+
+---@class SquirtleElementalApi
+local SquirtleElementalApi = {}
+
+---@return integer
+function SquirtleElementalApi.getFacing()
+    if State.simulate then
+        return State.simulation.current.facing
+    end
+
+    return State.facing
+end
+
+---@param facing integer
+function SquirtleElementalApi.setFacing(facing)
+    State.facing = facing
+end
+
+---@return Vector
+function SquirtleElementalApi.getPosition()
+    if State.simulate then
+        return Vector.copy(State.simulation.current.position)
+    end
+
+    return Vector.copy(State.position)
+end
+
+---@param position Vector
+function SquirtleElementalApi.setPosition(position)
+    State.position = position
+end
+
+---@param delta Vector
+function SquirtleElementalApi.changePosition(delta)
+    State.position = Vector.plus(State.position, delta)
+end
+
+---@param direction string
+function SquirtleElementalApi.turn(direction)
+    if direction == "back" then
+        SquirtleElementalApi.turn("left")
+        SquirtleElementalApi.turn("left")
+    elseif direction == "left" or direction == "right" then
+        if State.flipTurns then
+            if direction == "left" then
+                direction = "right"
+            elseif direction == "right" then
+                direction = "left"
+            end
+        end
+
+        if State.simulate then
+            State.advanceTurn(direction)
+        else
+            getNative("turn", direction)()
+            State.facing = Cardinal.rotate(State.facing, direction)
+        end
+    end
+end
+
+---@param direction? string
+---@param name? table|string
+---@return Block? block
+function SquirtleElementalApi.probe(direction, name)
+    direction = direction or "front"
+    local success, block = getNative("inspect", direction)()
+
+    if not success then
+        return nil
+    end
+
+    if not name then
+        return block
+    end
+
+    if type(name) == "string" and block.name == name then
+        return block
+    elseif type(name) == "table" and Utils.indexOf(name, block.name) > 0 then
+        return block
+    end
+end
+
+---@param direction? string
+---@param text? string
+---@return boolean, string?
+function SquirtleElementalApi.place(direction, text)
+    if State.simulate then
+        return true
+    end
+
+    direction = direction or "front"
+    return getNative("place", direction)(text)
+end
+
+---@param directions PlaceSide[]
+---@return string? placedDirection
+function SquirtleElementalApi.placeAtOneOf(directions)
+    for i = 1, #directions do
+        if SquirtleElementalApi.place(directions[i]) then
+            return directions[i]
+        end
+    end
+end
+
+---@return string? direction
+function SquirtleElementalApi.placeTopOrBottom()
+    local directions = {"top", "bottom"}
+
+    for _, direction in pairs(directions) do
+        if SquirtleElementalApi.place(direction) then
+            return direction
+        end
+    end
+end
+
+---@return string? direction
+function SquirtleElementalApi.placeFrontTopOrBottom()
+    local directions = {"front", "top", "bottom"}
+
+    for _, direction in pairs(directions) do
+        if SquirtleElementalApi.place(direction) then
+            return direction
+        end
+    end
+end
+
+---@param direction? string
+---@param count? integer
+---@return boolean, string?
+function SquirtleElementalApi.drop(direction, count)
+    if State.simulate then
+        return true
+    end
+
+    direction = direction or "forward"
+    return getNative("drop", direction)(count)
+end
+
+---@param direction? string
+---@param count? integer
+---@return boolean, string?
+function SquirtleElementalApi.suck(direction, count)
+    if State.simulate then
+        return true
+    end
+
+    direction = direction or "forward"
+    return getNative("suck", direction)(count)
+end
+
+---@param direction? string
+function SquirtleElementalApi.suckAll(direction)
+    while SquirtleElementalApi.suck(direction) do
+    end
+end
+
+---@param direction? string
+---@param tool? string
+---@return boolean, string?
+function SquirtleElementalApi.dig(direction, tool)
+    if State.simulate then
+        return true
+    end
+
+    direction = direction or "forward"
+    return getNative("dig", direction)(tool)
+end
+
+---@param directions DigSide[]
+---@return string? dugDirection
+function SquirtleElementalApi.digAtOneOf(directions)
+    for i = 1, #directions do
+        if SquirtleElementalApi.dig(directions[i]) then
+            return directions[i]
+        end
+    end
+end
+
+---@return integer|"unlimited"
+function SquirtleElementalApi.getFuelLevel()
+    if State.simulate then
+        return State.simulation.current.fuel
+    end
+
+    return turtle.getFuelLevel()
+end
+
+---@return integer
+function SquirtleElementalApi.getNonInfiniteFuelLevel()
+    local fuel = SquirtleElementalApi.getFuelLevel()
+
+    if type(fuel) ~= "number" then
+        error("expected to not use unlimited fuel configuration")
+    end
+
+    return fuel
+end
+
+---@return integer|"unlimited"
+function SquirtleElementalApi.getFuelLimit()
+    return turtle.getFuelLimit()
+end
+
+---@param quantity? integer
+---@return boolean, string?
+function SquirtleElementalApi.refuel(quantity)
+    return turtle.refuel(quantity)
+end
+
+---@return integer
+function SquirtleElementalApi.size()
+    return 16
+end
+
+---@param slot? integer
+---@return integer
+function SquirtleElementalApi.getItemCount(slot)
+    return turtle.getItemCount(slot)
+end
+
+---@param slot? integer
+---@return integer
+function SquirtleElementalApi.getItemSpace(slot)
+    return turtle.getItemSpace(slot)
+end
+
+---@param slot integer
+---@return boolean
+function SquirtleElementalApi.select(slot)
+    if State.simulate then
+        return true
+    end
+
+    return turtle.select(slot)
+end
+
+---@return integer
+function SquirtleElementalApi.getSelectedSlot()
+    return turtle.getSelectedSlot()
+end
+
+---@param slot integer
+---@param detailed? boolean
+---@return ItemStack?
+function SquirtleElementalApi.getStack(slot, detailed)
+    return turtle.getItemDetail(slot, detailed)
+end
+
+---@param slot integer
+---@param quantity? integer
+---@return boolean
+function SquirtleElementalApi.transferTo(slot, quantity)
+    return turtle.transferTo(slot, quantity)
+end
+
+return SquirtleElementalApi
+
+end)
+__bundle_register("lib.squirtle.get-native", function(require, _LOADED, __bundle_register, __bundle_modules)
+-- pocket requires SquirtleService, which requires full Squirtle code.
+-- as a workaround, use empty table to prevent error on startup
+local turtle = turtle or {}
+
+local natives = {
+    turn = {left = turtle.turnLeft, right = turtle.turnRight},
+    go = {
+        top = turtle.up,
+        up = turtle.up,
+        front = turtle.forward,
+        forward = turtle.forward,
+        bottom = turtle.down,
+        down = turtle.down,
+        back = turtle.back
+    },
+    dig = {top = turtle.digUp, up = turtle.digUp, front = turtle.dig, forward = turtle.dig, bottom = turtle.digDown, down = turtle.digDown},
+    inspect = {
+        top = turtle.inspectUp,
+        up = turtle.inspectUp,
+        front = turtle.inspect,
+        forward = turtle.inspect,
+        bottom = turtle.inspectDown,
+        down = turtle.inspectDown
+    },
+    suck = {
+        top = turtle.suckUp,
+        up = turtle.suckUp,
+        front = turtle.suck,
+        forward = turtle.suck,
+        bottom = turtle.suckDown,
+        down = turtle.suckDown
+    },
+    place = {
+        top = turtle.placeUp,
+        up = turtle.placeUp,
+        front = turtle.place,
+        forward = turtle.place,
+        bottom = turtle.placeDown,
+        down = turtle.placeDown
+    },
+    drop = {
+        top = turtle.dropUp,
+        up = turtle.dropUp,
+        front = turtle.drop,
+        forward = turtle.drop,
+        bottom = turtle.dropDown,
+        down = turtle.dropDown
+    }
+}
+
+---@param method string
+---@param direction string
+---@return function
+return function(method, direction)
+    local native = (natives[method] or {})[direction]
+
+    if not native then
+        error(string.format("%s does not support direction %s", method, direction))
+    end
+
+    return native
+end
+
+end)
+__bundle_register("lib.squirtle.state", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Cardinal = require("lib.common.cardinal")
+local Vector = require("lib.common.vector")
+
+---@class Simulated
+---@field steps integer
+---@field placed ItemStock
+local SimulationResults = {placed = {}, steps = 0}
+---
+---@alias DigSide "top" | "front" | "bottom"
+---@alias PlaceSide "top" | "front" | "bottom"
+---
+---@alias OrientationMethod "move"|"disk-drive"
+---@alias DiskDriveOrientationSide "top" | "bottom"
+---@alias MoveOrientationSide "front" | "back" | "left" | "right"
+---@alias OrientationSide DiskDriveOrientationSide | MoveOrientationSide
+---
+---@class State
+---@field breakable? fun(block: Block) : boolean
+---@field facing integer
+---@field position Vector
+---@field orientationMethod OrientationMethod
+---@field shulkerSides PlaceSide[]
+---In which direction the turtle is allowed to try to break a block in order to place a shulker that could not be placed at front, top or bottom.
+---@field breakDirection? "top"|"front"|"bottom"
+---If right turns should be left turns and vice versa, useful for mirroring builds.
+---@field flipTurns boolean
+---@field simulate boolean
+---@field results Simulated
+---@field simulateUntilPosition Vector? --[todo] unused
+---@field simulation Simulation
+local State = {
+    facing = Cardinal.south,
+    position = Vector.create(0, 0, 0),
+    orientationMethod = "move",
+    flipTurns = false,
+    simulate = false,
+    results = SimulationResults,
+    simulation = {},
+    shulkerSides = {"front", "top", "bottom"}
+}
+
+---@class Simulation
+---@field current SimulationDetails?
+---@field initial SimulationDetails?
+---@field target SimulationDetails?
+
+---@param block Block
+---@return boolean
+local breakableSafeguard = function(block)
+    return block.name ~= "minecraft:bedrock"
+end
+
+---@param block Block
+---@return boolean
+function State.canBreak(block)
+    return breakableSafeguard(block) and (State.breakable == nil or State.breakable(block))
+end
+
+---@param predicate? (fun(block: Block) : boolean) | string[]
+---@return fun() : nil
+function State.setBreakable(predicate)
+    local current = State.breakable
+
+    local function restore()
+        State.breakable = current
+    end
+
+    if type(predicate) == "table" then
+        State.breakable = function(block)
+            for _, item in pairs(predicate) do
+                if block.name == item then
+                    return true
+                end
+            end
+
+            return false
+        end
+    else
+        State.breakable = predicate
+    end
+
+    return restore
+end
+
+---@return boolean
+function State.isResuming()
+    return (State.simulation.initial and State.simulation.current and State.simulation.target) ~= nil
+end
+
+---@return boolean
+function State.checkResumeEnd()
+    if State.simulation.target and State.simulationCurrentMatchesTarget() then
+        State.simulate = false
+        State.simulation = {}
+
+        return true
+    end
+
+    return false
+end
+
+---@return boolean
+function State.simulationCurrentMatchesTarget()
+    -- [todo] not checking position yet
+    local facing = State.simulation.current.facing == State.simulation.target.facing
+    local fuel = State.simulation.current.fuel == State.simulation.target.fuel
+
+    -- print(State.simulation.current.fuel, State.simulation.target.fuel)
+
+    return facing and fuel
+end
+
+function State.fuelTargetReached()
+    return State.simulation.current.fuel == State.simulation.target.fuel
+end
+
+function State.facingTargetReached()
+    return State.simulation.current.facing == State.simulation.target.facing
+end
+
+function State.advanceFuel()
+    if State.simulation.current then
+        State.simulation.current.fuel = State.simulation.current.fuel - 1
+        State.checkResumeEnd()
+    end
+end
+
+---@param direction string
+function State.advanceTurn(direction)
+    if State.simulation.current then
+        State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
+        State.checkResumeEnd()
+    end
+end
+
+---@param delta Vector
+function State.advancePosition(delta)
+    if State.simulation.current then
+        State.simulation.current.position = Vector.plus(State.simulation.current.position, delta)
+        State.checkResumeEnd()
+    end
+end
+
+return State
+
+end)
+__bundle_register("lib.common.vector", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@class Vector
+---@field x number
+---@field y number
+---@field z number
+local Vector = {}
+
+---@return Vector
+function Vector.create(x, y, z)
+    if type(x) ~= "number" then
+        error("expected x to be a number, was " .. type(x))
+    elseif type(y) ~= "number" then
+        error("expected y to be a number, was " .. type(y))
+    elseif type(z) ~= "number" then
+        error("expected z to be a number, was " .. type(z))
+    end
+
+    local instance = {x = x or 0, y = y or 0, z = z or 0}
+
+    setmetatable(instance, {__tostring = Vector.toString, __concat = Vector.concat})
+
+    return instance
+end
+
+---@param vector Vector
+---@return Vector
+function Vector.copy(vector)
+    return Vector.create(vector.x, vector.y, vector.z)
+end
+
+function Vector.plus(a, b)
+    if (type(a) == "number") then
+        return Vector.create(b.x + a, b.y + a, b.z + a)
+    elseif (type(b) == "number") then
+        return Vector.create(a.x + b, a.y + b, a.z + b)
+    else
+        return Vector.create(a.x + b.x, a.y + b.y, a.z + b.z)
+    end
+end
+
+---@param other Vector
+function Vector.minus(self, other)
+    return Vector.create(self.x - other.x, self.y - other.y, self.z - other.z)
+end
+
+---@param self Vector
+---@param other Vector
+---@return boolean
+function Vector.equals(self, other)
+    return self.x == other.x and self.y == other.y and self.z == other.z
+end
+
+---@param self Vector
+---@return number
+function Vector.length(self)
+    return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+end
+
+---@param a Vector
+---@param b Vector
+---@return number
+function Vector.distance(a, b)
+    return Vector.length(Vector.minus(a, b))
+end
+
+function Vector:negate()
+    return Vector.create(-self.x, -self.y, -self.z)
+end
+
+function Vector:toString()
+    return string.format("%d,%d,%d", self.x, self.y, self.z)
+end
+
+function Vector:concat(other)
+    return tostring(self) .. tostring(other)
+end
+
+---@param a Vector
+---@param b Vector
+---@return number
+function Vector.manhattan(a, b)
+    return math.abs(b.x - a.x) + math.abs(b.y - a.y) + math.abs(b.z - a.z)
+end
+
+---@param vector Vector
+---@param times integer?
+---@return Vector
+function Vector.rotateClockwise(vector, times)
+    times = times or 1
+    local rotated = Vector.create(vector.x, vector.y, vector.z)
+
+    for _ = 1, times do
+        local x = -rotated.z
+        local z = rotated.x
+        rotated.x = x
+        rotated.z = z
+    end
+
+    return rotated
+end
+
+return Vector
+
+end)
+__bundle_register("lib.common.cardinal", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Vector = require("lib.common.vector")
+local Side = require("lib.common.side")
+
+---@class Cardinal
+local Cardinal = {south = 0, west = 1, north = 2, east = 3, up = 4, down = 5}
+
+local names = {
+    [Cardinal.south] = "south",
+    [Cardinal.west] = "west",
+    [Cardinal.north] = "north",
+    [Cardinal.east] = "east",
+    [Cardinal.up] = "up",
+    [Cardinal.down] = "down"
+}
+
+---@param vector Vector
+function Cardinal.fromVector(vector)
+    if vector.x > 0 and vector.y == 0 and vector.z == 0 then
+        return Cardinal.east
+    elseif vector.x < 0 and vector.y == 0 and vector.z == 0 then
+        return Cardinal.west
+    elseif vector.x == 0 and vector.y == 0 and vector.z > 0 then
+        return Cardinal.south
+    elseif vector.x == 0 and vector.y == 0 and vector.z < 0 then
+        return Cardinal.north
+    elseif vector.x == 0 and vector.y > 0 and vector.z == 0 then
+        return Cardinal.up
+    elseif vector.x == 0 and vector.y < 0 and vector.z == 0 then
+        return Cardinal.down
+    end
+
+    error(vector .. " is not a cardinal vector")
+end
+
+---@param cardinal number
+function Cardinal.toVector(cardinal)
+    if cardinal == Cardinal.south then
+        return Vector.create(0, 0, 1)
+    elseif cardinal == Cardinal.west then
+        return Vector.create(-1, 0, 0)
+    elseif cardinal == Cardinal.north then
+        return Vector.create(0, 0, -1)
+    elseif cardinal == Cardinal.east then
+        return Vector.create(1, 0, 0)
+    elseif cardinal == Cardinal.up then
+        return Vector.create(0, 1, 0)
+    elseif cardinal == Cardinal.down then
+        return Vector.create(0, -1, 0)
+    end
+end
+
+---@param cardinal number
+function Cardinal.getName(cardinal)
+    local name = names[cardinal]
+
+    if name == nil then
+        error("not a valid cardinal: " .. tostring(cardinal))
+    end
+
+    return names[cardinal] or tostring(cardinal);
+end
+
+function Cardinal.fromName(name)
+    for cardinal, candidate in pairs(names) do
+        if candidate:lower() == name:lower() then
+            return cardinal
+        end
+    end
+
+    error(string.format("%s is not a valid cardinal name", name))
+end
+-- [todo] why did i comment this out?
+-- function Cardinal.rotate(cardinal, rotation)
+--     return (cardinal + rotation) % 4
+-- end
+
+---@param cardinal integer
+---@param times? number
+---@return integer
+function Cardinal.rotateLeft(cardinal, times)
+    return (cardinal - (times or 1)) % 4
+end
+
+---@param cardinal integer
+---@param times? number
+---@return integer
+function Cardinal.rotateRight(cardinal, times)
+    return (cardinal + (times or 1)) % 4
+end
+
+---@param cardinal integer
+---@return integer
+function Cardinal.rotateAround(cardinal, times)
+    return (cardinal + (2 * (times or 1))) % 4
+end
+
+---@param cardinal integer
+---@param side string|integer
+---@param times? integer
+---@return integer
+function Cardinal.rotate(cardinal, side, times)
+    if side == Side.left or side == "left" then
+        return Cardinal.rotateLeft(cardinal, times)
+    elseif side == Side.right or side == "right" then
+        return Cardinal.rotateRight(cardinal, times)
+    elseif side == Side.back or side == "back" then
+        return Cardinal.rotateAround(cardinal, times)
+    elseif side == Side.front or side == "front" then
+        return cardinal
+    else
+        error(string.format("rotate() doesn't support side %s", Side.getName(side)))
+    end
+end
+
+-- [todo] did i give up?
+-- function Cardinal.rotateBy(cardinal, by)
+--     if (cardinal + 1) % 4 == by then
+--     else if (cardinal - 1) % 4 == by then
+--     else
+--     end
+-- end
+
+function Cardinal.isVertical(cardinal)
+    return cardinal == Cardinal.up or cardinal == Cardinal.down
+end
+
+---@param side string|integer
+---@param facing integer
+---@return integer
+function Cardinal.fromSide(side, facing)
+    if side == Side.front or side == "front" or side == "forward" then
+        return facing
+    elseif side == Side.top or side == "top" or side == "up" then
+        return Cardinal.up
+    elseif side == Side.bottom or side == "bottom" or side == "down" then
+        return Cardinal.down
+    elseif side == Side.left or side == "left" then
+        return Cardinal.rotateLeft(facing)
+    elseif side == Side.right or side == "right" then
+        return Cardinal.rotateRight(facing)
+    elseif side == Side.back or side == "back" then
+        return Cardinal.rotateAround(facing)
+    end
+
+    error(("invalid side: %s"):format(side))
+end
+
+---@param value integer
+function Cardinal.isCardinal(value)
+    return value >= 0 and value <= 5
+end
+
+return Cardinal
+
+end)
+__bundle_register("lib.common.side", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@class Side
+local Side = {front = 0, right = 1, back = 2, left = 3, top = 4, bottom = 5, up = 4, down = 5}
+
+local lookup = {
+    front = 0,
+    [0] = "front",
+    right = 1,
+    [1] = "right",
+    back = 2,
+    [2] = "back",
+    left = 3,
+    [3] = "left",
+    top = 4,
+    [4] = "top",
+    bottom = 5,
+    [5] = "bottom",
+    forward = 0,
+    up = 4,
+    down = 5
+}
+
+if not turtle then
+    Side.right = 3
+    Side.left = 1
+end
+
+local names = {}
+
+for k, v in pairs(Side) do
+    names[v] = k
+end
+
+---@return string[]
+function Side.allNames()
+    return {"front", "right", "back", "left", "top", "bottom"}
+end
+
+---@param side string|integer
+function Side.getName(side)
+    if type(side) == "string" then
+        return side
+    else
+        return names[side] or tostring(side);
+    end
+end
+
+---@param side string
+---@return string
+function Side.rotate180(side)
+    return lookup[(lookup[side] + 2) % 4]
+end
+
+return Side
+
+end)
+__bundle_register("lib.common.utils", function(require, _LOADED, __bundle_register, __bundle_modules)
+local ccPretty = "cc.pretty"
+local Pretty = require(ccPretty)
+
+local Utils = {}
+
+---@param tbl table
+---@param item unknown
+---@return integer
+function Utils.indexOf(tbl, item)
+    for i = 1, #tbl do
+        if (tbl[i] == item) then
+            return i
+        end
+    end
+
+    return -1
+end
+
+---@param list table
+---@param values table
+---@return table
+function Utils.push(list, values)
+    for i = 1, #values do
+        list[#list + 1] = values[i]
+    end
+
+    return list
+end
+
+---@param list table
+---@param value unknown
+---@return boolean
+function Utils.contains(list, value)
+    for i = 1, #list do
+        if list[i] == value then
+            return true
+        end
+    end
+
+    return false
+end
+
+---Creates a shallow copy of the given table.
+---@generic T: table
+---@param tbl T
+---@return T
+function Utils.copy(tbl)
+    local copy = {}
+
+    for k, v in pairs(tbl) do
+        copy[k] = v
+    end
+
+    return copy
+end
+
+local function clone(value, seen)
+    if type(value) ~= "table" then
+        return value
+    end
+
+    if seen and seen[value] then
+        return seen[value]
+    end
+
+    local s = seen or {}
+    local res = setmetatable({}, getmetatable(value))
+    s[value] = res
+
+    for k, v in pairs(value) do
+        res[clone(k, s)] = clone(v, s)
+    end
+
+    return res
+end
+
+---Creates a deep copy of the given table.
+---https://stackoverflow.com/a/26367080/1611592
+---@generic T: table
+---@param tbl T
+---@return T
+function Utils.clone(tbl)
+    return clone(tbl, {})
+end
+
+function Utils.isEmpty(t)
+    for _, _ in pairs(t) do
+        return false
+    end
+
+    return true
+end
+
+---@generic V, K, U
+---@param list table<K, V>
+---@param mapper fun(item: V, index: K): U
+---@return U[]
+function Utils.map(list, mapper)
+    local mapped = {}
+
+    for key, value in pairs(list) do
+        table.insert(mapped, mapper(value, key))
+    end
+
+    return mapped
+end
+
+---@generic K, V
+---@param list table<K, V>
+---@return K[]
+function Utils.getKeys(list)
+    local keys = {}
+
+    for key in pairs(list) do
+        table.insert(keys, key)
+    end
+
+    return keys
+end
+
+---@generic T
+---@param list T[]
+---@param mapper fun(item: T, index: number): integer
+---@return integer
+function Utils.sum(list, mapper)
+    local sum = 0
+
+    for i = 1, #list do
+        sum = sum + mapper(list[i], i)
+    end
+
+    return sum
+end
+
+---@generic T
+---@param list T[]
+---@param property string
+---@return T[]
+function Utils.toMap(list, property)
+    local map = {}
+
+    for _, element in pairs(list) do
+        local id = element[property]
+
+        if type(id) ~= "string" then
+            error("id must be of type string")
+        end
+
+        map[id] = element
+    end
+
+    return map
+end
+
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return T[]
+function Utils.filter(list, predicate)
+    local filtered = {}
+
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            table.insert(filtered, list[i])
+        end
+    end
+
+    return filtered
+end
+
+---@generic V, K
+---@param list table<K, V>
+---@param predicate fun(item: V, index: K): boolean
+---@return table<K, V>
+function Utils.filterMap(list, predicate)
+    local filtered = {}
+
+    for key, value in pairs(list) do
+        if predicate(value, key) then
+            filtered[key] = value
+        end
+    end
+
+    return filtered
+end
+
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return T|nil, integer|nil
+function Utils.find(list, predicate)
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            return list[i], i
+        end
+    end
+end
+
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return integer?
+function Utils.findIndex(list, predicate)
+    for i = 1, #list do
+        if predicate(list[i], i) then
+            return i
+        end
+    end
+end
+
+---@generic T
+---@param list T[]
+---@param first integer
+---@param last integer
+---@return T[]
+function Utils.slice(list, first, last)
+    local sliced = {}
+
+    if last > #list then
+        last = #list
+    end
+
+    for i = first or 1, last or #list do
+        sliced[#sliced + 1] = list[i]
+    end
+
+    return sliced
+end
+
+---@generic T
+---@param ... T[]
+---@return T[]
+function Utils.concat(...)
+    local lists = {...}
+    local concatenated = {}
+
+    for _, list in ipairs(lists) do
+        for _, value in pairs(list) do
+            table.insert(concatenated, value)
+        end
+    end
+
+    return concatenated
+end
+
+---@param tbl table
+function Utils.reverse(tbl)
+    local reversed = {}
+
+    for i = #tbl, 1, -1 do
+        table.insert(reversed, tbl[i])
+    end
+
+    return reversed
+end
+
+function Utils.prettyPrint(value)
+    Pretty.print(Pretty.pretty(value))
+end
+
+function Utils.count(table)
+    local size = 0
+
+    for _ in pairs(table) do
+        size = size + 1
+    end
+
+    return size
+end
+
+---@generic T
+---@param tbl T[]
+---@return T?
+function Utils.first(tbl)
+    for _, item in pairs(tbl) do
+        return item
+    end
+end
+
+---@generic T
+---@param tbl T[]
+---@return T[][]
+function Utils.chunk(tbl, size)
+    assert(size ~= 0, "size can't be 0")
+
+    if #tbl == 0 then
+        return {}
+    elseif size >= #tbl then
+        return {tbl}
+    end
+
+    local chunked = {}
+    local chunk = {}
+
+    for i = 1, #tbl do
+        table.insert(chunk, tbl[i])
+
+        if i % size == 0 then
+            table.insert(chunked, chunk)
+            chunk = {}
+        end
+    end
+
+    table.insert(chunked, chunk)
+
+    return chunked
+end
+
+function Utils.firstEmptySlot(table, size)
+    for index = 1, size do
+        if table[index] == nil then
+            return index
+        end
+    end
+end
+
+---@param text? string
+function Utils.waitForUserToHitEnter(text)
+    if text then
+        print(text)
+    end
+
+    while true do
+        local _, key = os.pullEvent("key")
+        if (key == keys.enter) then
+            break
+        end
+    end
+end
+
+---@param ... string
+function Utils.writeStartupFile(...)
+    local programs = {...}
+    local file = fs.open("startup", "w")
+
+    for i = 1, #programs do
+        file.writeLine(string.format("shell.run(\"%s\")", programs[i]))
+    end
+
+    file.close()
+end
+
+function Utils.deleteStartupFile()
+    local path = "startup"
+
+    if fs.exists(path) then
+        fs.delete(path)
+    end
+end
+
+---@param path string
+---@return table?
+function Utils.readJson(path)
+    local file = fs.open(path, "r")
+
+    if not file then
+        return
+    end
+
+    return textutils.unserializeJSON(file.readAll())
+end
+
+---@param path string
+---@param data table
+function Utils.writeJson(path, data)
+    local file = fs.open(path, "w")
+    file.write(textutils.serialiseJSON(data))
+    file.close()
+end
+
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.padLeft(str, length, char)
+    return string.rep(char or " ", length - #str) .. str
+end
+
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.padRight(str, length, char)
+    return str .. string.rep(char or " ", length - #str)
+end
+
+---@param str string
+---@param length integer
+---@param char string?
+---@return string
+function Utils.pad(str, length, char)
+    return Utils.padLeft(Utils.padRight(str, (length / 2) + #str, char or " "), length, char or " ")
+end
+
+---@param str string
+---@param length integer
+---@return string
+function Utils.ellipsis(str, length)
+    if #str > length then
+        return string.sub(str, 1, length - 3) .. "..."
+    else
+        return str
+    end
+end
+
+---@param current number
+---@param total number
+---@param x integer|nil
+---@param y integer|nil
+---@return integer, integer
+function Utils.printProgress(current, total, x, y)
+    if not x or not y then
+        x, y = term.getCursorPos()
+    end
+
+    ---@type integer
+    local termWidth = term.getSize()
+    local numProgressChars = termWidth - 2
+
+    local numCharsDone = math.ceil((current / total) * numProgressChars)
+    local numCharsOpen = numProgressChars - numCharsDone
+    term.setCursorPos(x, y)
+    term.write("[" .. string.rep("=", numCharsDone) .. string.rep(" ", numCharsOpen) .. "]")
+
+    return x, y
+end
+
+---@param timeout integer
+---@return "timeout" | "key"
+function Utils.waitForTimeoutOrUntilKeyEvent(timeout)
+    local steps = 10
+    local x, y = Utils.printProgress(0, steps)
+
+    local first = parallel.waitForAny(function()
+        local timeoutTick = timeout / steps
+
+        for i = 1, steps do
+            os.sleep(timeoutTick)
+            Utils.printProgress(i, steps, x, y)
+        end
+    end, function()
+        os.pullEvent("key")
+        Utils.printProgress(steps, steps, x, y)
+    end)
+
+    if first == 1 then
+        return "timeout"
+    else
+        return "key"
+    end
+end
+
+return Utils
+
+end)
+__bundle_register("lib.common.database-service", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+
+---@class DatabaseService : Service
+local DatabaseService = {name = "database", folder = "data"}
+
+local entityTypes = {
+    allocatedBuffers = "allocated-buffers",
+    subwayStations = "subway-stations",
+    squirtleResumables = "squirtle-resumables",
+    squirtleDiskState = "squirtle-disk-state"
+}
+
+---@param entity string
+local function getPath(entity)
+    return DatabaseService.folder .. "/" .. entity .. ".json"
+end
+
+---@return string
+local function getIdsPath()
+    return DatabaseService.folder .. "/ids.json"
+end
+
+---@param entity string
+---@return table
+local function readEntities(entity)
+    local data = Utils.readJson(getPath(entity)) or {}
+
+    if data == textutils.empty_json_array then
+        return {}
+    end
+
+    return data
+end
+
+---@param entity string
+---@param entities table
+local function writeEntities(entity, entities)
+    Utils.writeJson(getPath(entity), entities)
+end
+
+---@param entityType string
+---@param entity table
+local function pushEntity(entityType, entity)
+    local entities = readEntities(entityType)
+    table.insert(entities, entity)
+    writeEntities(entityType, entities)
+end
+
+---@param entity string
+---@return integer
+local function nextId(entity)
+    local ids = Utils.readJson(getIdsPath()) or {}
+
+    if not ids[entity] then
+        ids[entity] = 0
+    end
+
+    ids[entity] = ids[entity] + 1
+    Utils.writeJson(getIdsPath(), ids)
+
+    return ids[entity]
+end
+
+---@return SubwayStation[]
+function DatabaseService.getSubwayStations()
+    return readEntities(entityTypes.subwayStations)
+end
+
+---@param stations SubwayStation[]
+function DatabaseService.setSubwayStations(stations)
+    -- [todo] hack - should be fixed with newer cc:tweaked version
+    for _, station in pairs(stations) do
+        if #station.tracks == 0 then
+            station.tracks = {}
+        end
+    end
+
+    writeEntities(entityTypes.subwayStations, stations)
+end
+
+---@return CraftingRecipe[]
+function DatabaseService.getCraftingRecipes()
+    return readEntities("crafting-recipes")
+end
+
+---@param item string
+---@return CraftingRecipe?
+function DatabaseService.getCraftingRecipe(item)
+    local recipe = Utils.find(DatabaseService.getCraftingRecipes(), function(recipe)
+        return recipe.item == item
+    end)
+
+    return recipe
+end
+
+---@param quest Quest
+---@return Quest
+function DatabaseService.createQuest(quest)
+    quest.id = nextId("quests")
+    pushEntity("quests", quest)
+
+    return quest
+end
+
+---@return Quest[]
+function DatabaseService.getQuests()
+    return readEntities("quests")
+end
+
+---@param id integer
+---@return Quest
+function DatabaseService.getQuest(id)
+    local quest = Utils.find(DatabaseService.getQuests(), function(quest)
+        return quest.id == id
+    end)
+
+    if not quest then
+        error(string.format("quest %d doesn't exist", id))
+    end
+
+    return quest
+end
+
+---@param quest Quest
+function DatabaseService.updateQuest(quest)
+    if not quest.id then
+        error("can't update quest: no id assigned")
+    end
+
+    local quests = DatabaseService.getQuests()
+    local index = Utils.findIndex(quests, function(candidate)
+        return candidate.id == quest.id
+    end)
+
+    if not index then
+        error(string.format("can't update quest: quest %d doesn't exist", quest.id))
+    end
+
+    quests[index] = quest
+    writeEntities("quests", quests)
+end
+
+---@param type QuestType
+---@return Quest?
+function DatabaseService.getIssuedQuest(type)
+    return Utils.find(DatabaseService.getQuests(), function(quest)
+        return quest.status == "issued" and quest.type == type
+    end)
+end
+
+---@param acceptedBy string
+---@param questType QuestType
+---@return Quest?
+function DatabaseService.getAcceptedQuest(acceptedBy, questType)
+    return Utils.find(DatabaseService.getQuests(), function(quest)
+        return quest.status == "accepted" and quest.type == questType and quest.acceptedBy == acceptedBy
+    end)
+end
+
+---@param allocatedBy string
+---@param inventories string[]
+---@param questId? integer
+function DatabaseService.createAllocatedBuffer(allocatedBy, inventories, questId)
+    local entityType = entityTypes.allocatedBuffers
+    ---@type AllocatedBuffer
+    local allocatedBuffer = {id = nextId(entityType), allocatedBy = allocatedBy, inventories = inventories, questId = questId}
+    pushEntity(entityType, allocatedBuffer)
+
+    return allocatedBuffer
+end
+
+---@return AllocatedBuffer[]
+function DatabaseService.getAllocatedBuffers()
+    return readEntities(entityTypes.allocatedBuffers)
+end
+
+---@param id integer
+---@return AllocatedBuffer
+function DatabaseService.getAllocatedBuffer(id)
+    local buffer = Utils.find(DatabaseService.getAllocatedBuffers(), function(candidate)
+        return candidate.id == id
+    end)
+
+    if not buffer then
+        error(string.format("allocated buffer %d doesn't exist", id))
+    end
+
+    return buffer
+end
+
+---@param allocatedBy string
+---@param questId? integer
+---@return AllocatedBuffer?
+function DatabaseService.findAllocatedBuffer(allocatedBy, questId)
+    return Utils.find(DatabaseService.getAllocatedBuffers(), function(candidate)
+        return candidate.allocatedBy == allocatedBy and (questId == nil or candidate.questId == questId)
+    end)
+end
+
+---@param bufferId integer
+function DatabaseService.deleteAllocatedBuffer(bufferId)
+    local buffers = Utils.filter(DatabaseService.getAllocatedBuffers(), function(item)
+        return item.id ~= bufferId
+    end)
+
+    writeEntities(entityTypes.allocatedBuffers, buffers)
+end
+
+---@return SquirtleDiskState
+function DatabaseService.getSquirtleDiskState()
+    ---@type SquirtleDiskState
+    local state = readEntities(entityTypes.squirtleDiskState)
+    state.cleanupSides = state.cleanupSides or {}
+    state.diskDriveSides = state.diskDriveSides or {}
+
+    return state
+end
+
+---@param state SquirtleDiskState
+function DatabaseService.saveSquirtleDiskState(state)
+    writeEntities(entityTypes.squirtleDiskState, state)
+end
+
+---@return SquirtleResumable[]
+function DatabaseService.getSquirtleResumables()
+    return readEntities(entityTypes.squirtleResumables)
+end
+
+---@param name string
+---@return SquirtleResumable?
+function DatabaseService.findSquirtleResumable(name)
+    return Utils.find(DatabaseService.getSquirtleResumables(), function(item)
+        return item.name == name
+    end)
+end
+
+---@param name string
+---@return SquirtleResumable
+function DatabaseService.getSquirtleResumable(name)
+    local resumable = DatabaseService.findSquirtleResumable(name)
+
+    if not resumable then
+        error(string.format("squirtle resumable %s doesn't exist", name))
+    end
+
+    return resumable
+end
+
+---@param resumable SquirtleResumable
+---@return SquirtleResumable
+function DatabaseService.createSquirtleResumable(resumable)
+    pushEntity(entityTypes.squirtleResumables, resumable)
+
+    return resumable
+end
+
+---@param name string
+function DatabaseService.deleteSquirtleResumable(name)
+    local resumables = Utils.filter(DatabaseService.getSquirtleResumables(), function(item)
+        return item.name ~= name
+    end)
+
+    writeEntities(entityTypes.squirtleResumables, resumables)
+end
+
+return DatabaseService
+
+end)
+__bundle_register("lib.squirtle.place-shulker", function(require, _LOADED, __bundle_register, __bundle_modules)
+local DatabaseService = require("lib.common.database-service")
+local SquirtleState = require("lib.squirtle.state")
+local SquirtleBasicApi = require("lib.squirtle.api-layers.squirtle-basic-api")
+
+---@return string
+return function()
+    local diskState = DatabaseService.getSquirtleDiskState()
+    diskState.shulkerSides = SquirtleState.shulkerSides
+    DatabaseService.saveSquirtleDiskState(diskState)
+    local placedSide = SquirtleBasicApi.tryReplaceAtOneOf(SquirtleState.shulkerSides, "minecraft:shulker_box")
+
+    if not placedSide then
+        error("todo: need help from player")
+    else
+        diskState.shulkerSides = {}
+        diskState.cleanupSides[placedSide] = "minecraft:shulker_box"
+        DatabaseService.saveSquirtleDiskState(diskState)
+    end
+
+    return placedSide
+end
+
+end)
+__bundle_register("lib.squirtle.require-items", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local Elemental = require("lib.squirtle.api-layers.squirtle-elemental-api")
+local Basic = require("lib.squirtle.api-layers.squirtle-basic-api")
+local placeShulker = require("lib.squirtle.place-shulker")
+local digShulker = require("lib.squirtle.dig-shulker")
+
+-- [todo] add remaining
+local itemMaxCounts = {["minecraft:lava_bucket"] = 1, ["minecraft:water_bucket"] = 1, ["minecraft:bucket"] = 16}
+
+---@param item string
+---@return integer
+local function getItemMaxCount(item)
+    return itemMaxCounts[item] or 64
+end
+
+---@param items table<string, integer>
+---@return integer
+local function itemsToStacks(items)
+    local numStacks = 0
+
+    for item, numItems in pairs(items) do
+        numStacks = numStacks + math.ceil(numItems / getItemMaxCount(item))
+    end
+
+    return numStacks
+end
+
+---@param items table<string, integer>
+local function getMissing(items)
+    ---@type table<string, integer>
+    local open = {}
+    local stock = Basic.getStock()
+
+    for item, required in pairs(items) do
+        local missing = required - (stock[item] or 0)
+
+        if missing > 0 then
+            open[item] = required - (stock[item] or 0)
+        end
+    end
+
+    return open
+end
+
+---@param items table<string, integer>
+---@param shulker string
+local function getMissingInShulker(items, shulker)
+    ---@type table<string, integer>
+    local open = {}
+    ---@type table<string, integer>
+    local stock = {}
+
+    for _, stack in pairs(peripheral.call(shulker, "list")) do
+        stock[stack.name] = (stock[stack.name] or 0) + stack.count
+    end
+
+    for item, required in pairs(items) do
+        local missing = required - (stock[item] or 0)
+
+        if missing > 0 then
+            open[item] = required - (stock[item] or 0)
+        end
+    end
+
+    return open
+end
+
+---@param items table<string, integer>
+local function printItemList(items)
+    term.clear()
+    term.setCursorPos(1, 1)
+    local width, height = term.getSize()
+    print("Required Items")
+    print(string.rep("-", width))
+    local line = 3
+
+    ---@type { name: string, count: integer }[]
+    local list = {}
+
+    for item, count in pairs(items) do
+        table.insert(list, {name = item, count = count})
+    end
+
+    table.sort(list, function(a, b)
+        return a.count > b.count
+    end)
+
+    for _, item in ipairs(list) do
+        term.setCursorPos(1, line)
+        term.write(string.format("%dx %s", item.count, item.name))
+        line = line + 1
+
+        if line >= height then
+            term.setCursorPos(1, line)
+            term.write("...")
+            break
+        end
+    end
+end
+
+---@param items table<string, integer>
+---@param shulker string
+local function fillShulker(items, shulker)
+    while not peripheral.isPresent(shulker) do
+        os.sleep(.1)
+    end
+
+    local open = getMissingInShulker(items, shulker)
+
+    while Utils.count(open) > 0 do
+        printItemList(open)
+        os.pullEvent("turtle_inventory")
+
+        for slot = 1, Elemental.size() do
+            local item = Elemental.getStack(slot)
+
+            if item and item.name ~= "minecraft:shulker_box" then
+                Elemental.select(slot)
+                Basic.drop(shulker)
+            end
+        end
+
+        open = getMissingInShulker(items, shulker)
+    end
+
+    term.clear()
+    term.setCursorPos(1, 1)
+end
+
+-- [todo] assumes that everything stacks to 64
+---@param items table<string, integer>
+---@param numStacks integer
+---@return table<string, integer>, table<string, integer>
+local function sliceNumStacksFromItems(items, numStacks)
+    ---@type table<string, integer>
+    local sliced = {}
+    local remainingStacks = numStacks
+    local leftOver = Utils.copy(items)
+
+    for item, count in pairs(items) do
+        local slicedCount = math.min(count, remainingStacks * getItemMaxCount(item))
+        sliced[item] = slicedCount
+        leftOver[item] = leftOver[item] - slicedCount
+
+        if leftOver[item] == 0 then
+            leftOver[item] = nil
+        end
+
+        remainingStacks = remainingStacks - math.ceil(slicedCount / getItemMaxCount(item))
+
+        if remainingStacks == 0 then
+            break
+        end
+    end
+
+    return sliced, leftOver
+end
+
+---@param items table<string, integer>
+local function requireItemsNoShulker(items)
+    local open = getMissing(items)
+
+    while Utils.count(open) > 0 do
+        ---@type table<string, integer>
+        printItemList(open)
+        os.pullEvent("turtle_inventory")
+        open = getMissing(items)
+    end
+
+    term.clear()
+    term.setCursorPos(1, 1)
+end
+
+---@param items table<string, integer>
+local function requireItemsUsingShulker(items)
+    local numStacks = itemsToStacks(items)
+    -- shulkers have 27 slots, but we want to keep one slot empty per shulker so that suckSlot() doesn't have to temporarily load an item from the shulker into the turtle inventory
+    local maxStacksPerShulker = 26
+    local numShulkers = math.ceil(numStacks / maxStacksPerShulker)
+    local maxShulkers = Elemental.size() - 1
+
+    -- [todo] assumes an empty inventory
+    if numShulkers > maxShulkers then
+        error(string.format("required items would need more than %d shulker boxes", maxShulkers))
+    end
+
+    requireItemsNoShulker({["minecraft:shulker_box"] = numShulkers})
+    ---@type table<string, true>
+    local fullShulkers = {}
+    local openItems = Utils.copy(items)
+
+    for _ = 1, numShulkers do
+        for slot = 1, 16 do
+            local item = Elemental.getStack(slot, true)
+
+            if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
+                Elemental.select(slot)
+                local placedSide = placeShulker()
+                local itemsForShulker, leftOverFromSlice = sliceNumStacksFromItems(openItems, maxStacksPerShulker)
+                openItems = leftOverFromSlice
+                fillShulker(itemsForShulker, placedSide)
+                local shulkerSlot = Basic.selectFirstEmpty()
+                digShulker(placedSide)
+                local shulkerItem = Basic.getStack(shulkerSlot, true)
+
+                if not shulkerItem then
+                    error("my shulker went poof :(")
+                end
+
+                fullShulkers[shulkerItem.nbt] = true
+            end
+        end
+    end
+end
+
+---@param items table<string, integer>
+---@param shulker boolean?
+return function(items, shulker)
+    if Utils.isEmpty(items) then
+        return
+    end
+
+    local numStacks = itemsToStacks(items)
+
+    -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,
+    -- yet we still count stacks of total items required)
+    if shulker or numStacks > Elemental.size() then
+        requireItemsUsingShulker(items)
+    else
+        requireItemsNoShulker(items)
+    end
+end
+
+end)
+__bundle_register("lib.inventory.inventory-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local EventLoop = require("lib.common.event-loop")
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local InventoryReader = require("lib.inventory.inventory-reader")
+local InventoryCollection = require("lib.inventory.inventory-collection")
+
+---@class InventoryApi
+local Inventory = {}
+
+---@param names string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return string[] candidates
+local function getFromCandidates(names, item, tag)
+    return Utils.filter(names, function(name)
+        return InventoryCollection.isMounted(name) and Inventory.canProvideItem(name, item, tag)
+    end)
+end
+
+---@param names string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return string[] candidates
+local function getToCandidates(names, item, tag)
+    return Utils.filter(names, function(name)
+        return InventoryCollection.isMounted(name) and Inventory.canTakeItem(name, item, tag)
+    end)
+end
+
+---@param names string[]
+function Inventory.refresh(names)
+    return InventoryCollection.refreshMany(names)
+end
+
+---@param type InventoryType
+function Inventory.refreshByType(type)
+    return InventoryCollection.refreshByType(type)
+end
+
+---@param type InventoryType?
+---@param refresh boolean?
+---@return string[]
+function Inventory.getInventories(type, refresh)
+    return InventoryCollection.getInventories(type, refresh)
+end
+
+---@param name string
+---@param slotTag InventorySlotTag
+---@return integer
+function Inventory.getInventorySlotCount(name, slotTag)
+    return InventoryCollection.getInventorySlotCount(name, slotTag)
+end
+
+---@param inventoryType InventoryType
+---@param label string
+---@return string?
+function Inventory.findInventoryByTypeAndLabel(inventoryType, label)
+    local inventory = InventoryCollection.findInventoryByTypeAndLabel(inventoryType, label)
+
+    if inventory then
+        return inventory.name
+    end
+end
+
+---@param slot InventorySlot
+---@param stack? ItemStack
+---@param tag InventorySlotTag
+---@param item string
+---@return boolean
+function Inventory.slotCanProvideItem(slot, stack, tag, item)
+    return stack ~= nil and slot.tags[tag] and stack.count > 0 and stack.name == item
+end
+
+---@param name string
+---@param item string
+---@param tag InventorySlotTag
+---@return boolean
+function Inventory.canProvideItem(name, item, tag)
+    local inventory = InventoryCollection.getInventory(name)
+
+    if inventory.items and not inventory.items[item] then
+        return false
+    end
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if Inventory.slotCanProvideItem(slot, stack, tag, item) then
+            return true
+        end
+    end
+
+    return false
+end
+
+---@param slot InventorySlot
+---@param stack? ItemStack
+---@param tag InventorySlotTag
+---@param allowAllocate boolean
+---@param item string
+---@return boolean
+function Inventory.slotCanTakeItem(slot, stack, tag, allowAllocate, item)
+    return slot.tags[tag] and ((stack and stack.name == item and stack.count < stack.maxCount) or (not stack and allowAllocate))
+end
+
+---@param name string
+---@param item string
+---@param tag InventorySlotTag
+---@return boolean
+function Inventory.canTakeItem(name, item, tag)
+    local inventory = InventoryCollection.getInventory(name)
+
+    if not inventory.allowAllocate and inventory.items and not inventory.items[item] then
+        return false
+    end
+
+    for index, slot in pairs(inventory.slots) do
+        if Inventory.slotCanTakeItem(slot, inventory.stacks[index], tag, inventory.allowAllocate, item) then
+            return true
+        end
+    end
+
+    return false
+end
+
+---@param name string
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getItemCount(name, item, tag)
+    local inventory = InventoryCollection.getInventory(name)
+    local stock = 0
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and stack.name == item and slot.tags[tag] then
+            stock = stock + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param inventories string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getTotalItemCount(inventories, item, tag)
+    return Utils.sum(inventories, function(name)
+        return Inventory.getItemCount(name, item, tag)
+    end)
+end
+
+---@param name string
+---@return integer
+function Inventory.getItemsStock(name)
+    ---@type integer
+    local stock = 0
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack then
+            stock = stock + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getStockByTag(tag)
+    return InventoryCollection.getStockByTag(tag)
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getInventoryStockByTag(name, tag)
+    return InventoryCollection.getInventoryStockByTag(name, tag)
+end
+
+---@param inventoryType InventoryType
+---@param slotTag InventorySlotTag
+---@return ItemStock
+function Inventory.getStockByInventoryTypeAndTag(inventoryType, slotTag)
+    return InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getMaxStockByTag(name, tag)
+    ---@type ItemStock
+    local stock = {}
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.maxCount
+        end
+    end
+
+    return stock
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@param item string
+---@return integer
+function Inventory.getItemStockByTag(name, tag, item)
+    local stock = 0
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and stack.name == item and slot.tags[tag] then
+            stock = stock + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@param item string
+---@return integer
+function Inventory.getItemMaxStockByTag(name, tag, item)
+    local maxStock = 0
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and stack.name == item and slot.tags[tag] then
+            maxStock = maxStock + stack.maxCount
+        end
+    end
+
+    return maxStock
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@param item string
+---@return integer
+function Inventory.getItemOpenStockByTag(name, tag, item)
+    local stock = Inventory.getItemStockByTag(name, tag, item)
+    local maxStock = Inventory.getItemMaxStockByTag(name, tag, item)
+
+    return maxStock - stock
+end
+
+---@param inventories string[]
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getStockByTagMultiInventory(inventories, tag)
+    local totalStock = {}
+
+    for _, name in ipairs(inventories) do
+        local stock = InventoryCollection.getInventoryStockByTag(name, tag)
+
+        for item, itemStock in pairs(stock) do
+            totalStock[item] = (totalStock[item] or 0) + itemStock
+        end
+    end
+
+    return totalStock
+end
+
+---@param name string
+---@param slot integer
+---@return ItemStack?
+function Inventory.getStack(name, slot)
+    return InventoryCollection.getInventory(name).stacks[slot]
+end
+
+---@param name string
+---@return table<integer, ItemStack>
+function Inventory.getStacks(name)
+    return InventoryCollection.getInventory(name).stacks
+end
+
+---@param name string
+---@param slot integer
+---@param stack? ItemStack
+function Inventory.setStack(name, slot, stack)
+    InventoryCollection.getInventory(name).stacks[slot] = stack
+end
+
+local function getDefaultRate()
+    return 8
+end
+
+---@param name string
+---@return string
+local function removePrefix(name)
+    local str = string.gsub(name, "minecraft:", "")
+    return str
+end
+
+---@param from string
+---@param to string
+---@param item string
+---@param transfer integer
+local function toPrintTransferString(from, to, item, transfer)
+    return string.format("%s > %s: %dx %s", removePrefix(from), removePrefix(to), transfer, removePrefix(item))
+end
+
+---@param from string
+---@param to string
+---@param fromSlot integer
+---@param limit? integer
+---@param toSlot? integer
+---@return integer
+local function pushItems(from, to, fromSlot, limit, toSlot)
+    os.sleep(.25)
+    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
+end
+
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return InventorySlot? slot, ItemStack? stack
+local function nextFromStack(inventory, item, tag)
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        -- if stack and slot.tags[tag] and stack.count > 0 and stack.name == item then
+        if Inventory.slotCanProvideItem(slot, stack, tag, item) then
+            return slot, stack
+        end
+    end
+end
+
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return InventorySlot? slot
+local function nextToSlot(inventory, item, tag)
+    for index, slot in pairs(inventory.slots) do
+        if Inventory.slotCanTakeItem(slot, inventory.stacks[index], tag, inventory.allowAllocate, item) then
+            return slot
+        end
+    end
+end
+
+---@param from string
+---@param to string
+---@param item string
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@param total? integer
+---@param rate? integer
+---@return integer transferredTotal
+function Inventory.moveItem(from, to, item, fromTag, toTag, total, rate)
+    total = total or Inventory.getItemCount(from, item, fromTag)
+
+    if total == 0 then
+        return 0
+    end
+
+    local fromInventory = InventoryCollection.getInventory(from)
+    local toInventory = InventoryCollection.getInventory(to)
+    InventoryCollection.lock(from, to)
+    local transferredTotal = 0
+
+    pcall(function()
+        rate = rate or getDefaultRate()
+        local fromSlot, fromStack = nextFromStack(fromInventory, item, fromTag)
+        local toSlot = nextToSlot(toInventory, item, toTag)
+
+        while transferredTotal < total and fromSlot and fromStack and fromStack.count > 0 and toSlot do
+            local open = total - transferredTotal
+            local transfer = math.min(open, rate, fromStack.count)
+            local transferred = pushItems(from, to, fromSlot.index, transfer, toSlot.index)
+
+            if transferred == 0 then
+                -- either the "from" or the "to" inventory cache is no longer valid.
+                -- refreshing both so that distributeItem() doesn't run in an endless loop
+                -- [todo] a bit hacky, would like a cleaner way.
+                InventoryCollection.remove(from)
+                InventoryCollection.remove(to)
+                InventoryCollection.mount(from)
+                InventoryCollection.mount(to)
+                break
+            end
+
+            transferredTotal = transferredTotal + transferred
+            fromStack.count = fromStack.count - transferred
+
+            if fromStack.count == 0 and not fromSlot.permanent then
+                fromInventory.stacks[fromSlot.index] = nil
+            end
+
+            local toStack = toInventory.stacks[toSlot.index]
+
+            if toStack then
+                toStack.count = toStack.count + transferred
+            else
+                toInventory.stacks[toSlot.index] = InventoryPeripheral.getStack(to, toSlot.index)
+            end
+
+            fromSlot, fromStack = nextFromStack(fromInventory, item, fromTag)
+            toSlot = nextToSlot(toInventory, item, toTag)
+        end
+
+        if transferredTotal > 0 then
+            print(toPrintTransferString(from, to, item, transferredTotal))
+        end
+    end)
+
+    InventoryCollection.unlock(from, to)
+
+    return transferredTotal
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param item string
+---@param quantity? integer
+---@param options? TransferOptions
+---@return integer transferredTotal
+function Inventory.transferItem(from, fromTag, to, toTag, item, quantity, options)
+    from = getFromCandidates(from, item, fromTag)
+    to = getToCandidates(to, item, toTag)
+    options = options or {}
+    local total = quantity or Inventory.getTotalItemCount(from, item, fromTag)
+    local totalTransferred = 0
+
+    while totalTransferred < total and #from > 0 and #to > 0 do
+        if #from == 1 and #to == 1 and from[1] == to[1] then
+            break
+        end
+
+        local transferPerOutput = (total - totalTransferred)
+
+        if not options.fromSequential then
+            transferPerOutput = transferPerOutput / #from
+        end
+
+        local transferPerInput = math.max(1, math.floor(transferPerOutput))
+
+        if not options.toSequential then
+            transferPerInput = math.max(1, math.floor(transferPerOutput / #to))
+        end
+
+        --- [todo] in regards to locking/unlocking:
+        --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
+        --- we really should have that functionality again to make sure the system is not super slow in some cases.
+        --- I'm thinking of doing that logic exactly here, as I assume all future distribute() methods will make use of distributeItem().
+        for _, fromName in ipairs(from) do
+            for _, toName in ipairs(to) do
+                if fromName ~= toName then
+                    local transferred = Inventory.moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate)
+                    totalTransferred = totalTransferred + transferred
+
+                    if totalTransferred == total then
+                        return totalTransferred
+                    end
+                end
+            end
+        end
+
+        from = getFromCandidates(from, item, fromTag)
+        to = getToCandidates(to, item, toTag)
+    end
+
+    return totalTransferred
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param items ItemStock
+---@param options? TransferOptions
+---@return ItemStock transferredTotal
+function Inventory.transferItems(from, fromTag, to, toTag, items, options)
+    ---@type ItemStock
+    local transferredTotal = {}
+
+    for item, quantity in pairs(items) do
+        local transferred = Inventory.transferItem(from, fromTag, to, toTag, item, quantity, options)
+
+        if transferred > 0 then
+            transferredTotal[item] = transferred
+        end
+    end
+
+    return transferredTotal
+end
+
+--- Transfer items found in slots of "from" inventory matching "fromTag" from one inventory to the other.
+---@param from string
+---@param to string
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@param total? ItemStock
+---@return ItemStock transferredTotal, ItemStock open
+function Inventory.transferFromTag(from, to, fromTag, toTag, total)
+    local itemStock = Inventory.getInventoryStockByTag(from, fromTag)
+    ---@type ItemStock
+    local transferredTotal = {}
+    ---@type ItemStock
+    local open = {}
+    total = total or {}
+
+    for item, stock in pairs(itemStock) do
+        local transfer = total[item] or stock
+        local transferred = Inventory.moveItem(from, to, item, fromTag, toTag, transfer)
+
+        if transferred > 0 then
+            transferredTotal[item] = transferred
+
+            if transferred < transfer then
+                open[item] = transfer - transferred
+            end
+        else
+            open[item] = transfer
+        end
+    end
+
+    return transferredTotal, open
+end
+
+---@param from string[]
+---@param to string[]
+---@param item string
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@param total? integer
+---@return integer transferredTotal
+function Inventory.distributeItem(from, to, item, fromTag, toTag, total)
+    from = getFromCandidates(from, item, fromTag)
+    to = getToCandidates(to, item, toTag)
+    total = total or Inventory.getTotalItemCount(from, item, fromTag)
+    local totalTransferred = 0
+
+    while totalTransferred < total and #from > 0 and #to > 0 do
+        if #from == 1 and #to == 1 and from[1] == to[1] then
+            break
+        end
+
+        local transferPerOutput = (total - totalTransferred) / #from
+        local transferPerInput = math.max(1, math.floor(transferPerOutput / #to))
+
+        --- [todo] in regards to locking/unlocking:
+        --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
+        --- we really should have that functionality again to make sure the system is not super slow in some cases.
+        --- I'm thinking of doing that logic exactly here, as I assume all future distribute() methods will make use of distributeItem().
+        for _, fromName in ipairs(from) do
+            for _, toName in ipairs(to) do
+                if fromName ~= toName then
+                    local transferred = Inventory.moveItem(fromName, toName, item, fromTag, toTag, transferPerInput)
+                    totalTransferred = totalTransferred + transferred
+
+                    if totalTransferred == total then
+                        return totalTransferred
+                    end
+                end
+            end
+        end
+
+        from = getFromCandidates(from, item, fromTag)
+        to = getToCandidates(to, item, toTag)
+    end
+
+    return totalTransferred
+end
+
+---@param from string[]
+---@param to string[]
+---@param items ItemStock
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@return ItemStock transferredTotal
+function Inventory.distributeItems(from, to, items, fromTag, toTag)
+    return Inventory.transferItems(from, fromTag, to, toTag, items)
+end
+
+---@param from string[]
+---@param to string[]
+---@param fromTag InventorySlotTag
+---@param toTag InventorySlotTag
+---@return ItemStock transferredTotal
+function Inventory.distributeFromTag(from, to, fromTag, toTag)
+    if #from == 0 or #to == 0 then
+        return {}
+    end
+
+    local fromStock = Inventory.getStockByTagMultiInventory(from, fromTag)
+    ---@type ItemStock
+    local filteredFromStock = {}
+
+    if Utils.find(to, function(name)
+        return InventoryCollection.getInventory(name).allowAllocate
+    end) then
+        filteredFromStock = fromStock
+    else
+        local toStock = Inventory.getStockByTagMultiInventory(to, toTag)
+
+        for item, quantity in pairs(fromStock) do
+            if toStock[item] then
+                filteredFromStock[item] = quantity
+            end
+        end
+    end
+
+    return Inventory.distributeItems(from, to, filteredFromStock, fromTag, toTag)
+end
+
+local function onPeripheralEventMountInventory()
+    while true do
+        EventLoop.pull("peripheral", function(_, name)
+            if InventoryReader.isInventoryType(name) then
+                InventoryCollection.mount(name)
+            end
+        end)
+    end
+end
+
+function Inventory.discover()
+    print("[inventory] mounting connected inventories...")
+    local names = peripheral.getNames()
+    local mountFns = Utils.map(names, function(name)
+        return function()
+            if InventoryReader.isInventoryType(name) then
+                InventoryCollection.mount(name)
+            end
+        end
+    end)
+
+    local chunkSize = 64
+    local chunkedMountFns = Utils.chunk(mountFns, chunkSize)
+    local x, y = Utils.printProgress(0, #chunkedMountFns)
+
+    for i, chunk in pairs(chunkedMountFns) do
+        EventLoop.run(table.unpack(chunk))
+        x, y = Utils.printProgress(i, #chunkedMountFns, x, y)
+    end
+end
+
+--- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
+--- Call "Inventory.stop()" inside another coroutine to stop.
+function Inventory.start()
+    EventLoop.runUntil("inventory:stop", function()
+        onPeripheralEventMountInventory()
+    end, function()
+        while true do
+            EventLoop.pull("peripheral_detach", function(_, name)
+                if InventoryCollection.isMounted(name) then
+                    print("[unmount]", name)
+                    InventoryCollection.remove(name)
+                end
+            end)
+        end
+    end)
+end
+
+function Inventory.stop()
+    InventoryCollection.clear()
+    EventLoop.queue("inventory:stop")
+end
+
+return Inventory
+
+end)
+__bundle_register("lib.inventory.inventory-collection", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local EventLoop = require("lib.common.event-loop")
+local InventoryReader = require("lib.inventory.inventory-reader")
+
+---@class InventoryCollection
+---@field useCache boolean
+local InventoryCollection = {useCache = false}
+
+---@type table<string, Inventory>
+local inventories = {}
+---@type table<string, string>
+local locks = {}
+
+---@param name string
+---@return Inventory
+function InventoryCollection.getInventory(name)
+    if not inventories[name] then
+        InventoryCollection.mount(name)
+    end
+
+    if InventoryCollection.useCache then
+        return inventories[name]
+    end
+
+    return InventoryCollection.refresh(name)
+end
+
+---@param inventoryType InventoryType
+---@param label string
+---@return Inventory?
+function InventoryCollection.findInventoryByTypeAndLabel(inventoryType, label)
+    for _, inventory in pairs(inventories) do
+        if inventory.type == inventoryType and inventory.label == label then
+            return inventory
+        end
+    end
+end
+
+--- Reads & adds the inventory to the collection if it doesn't already exist.
+---@param name string
+---@param expected? InventoryType
+function InventoryCollection.mount(name, expected)
+    if not inventories[name] then
+        inventories[name] = InventoryReader.read(name, expected)
+    end
+
+    if expected and inventories[name].type ~= expected then
+        error(string.format("inventory %s is not of expected type %s", name, expected))
+    end
+end
+
+---@param name string
+---@return boolean
+function InventoryCollection.isMounted(name)
+    return inventories[name] ~= nil
+end
+
+---@param name string
+function InventoryCollection.remove(name)
+    inventories[name] = nil
+    locks[name] = nil
+    InventoryCollection.removeLocksFrom(name)
+end
+
+---@param name string
+---@return Inventory
+function InventoryCollection.refresh(name)
+    InventoryCollection.lockOne(name)
+    inventories[name] = InventoryReader.read(name)
+    InventoryCollection.unlockOne(name)
+
+    return inventories[name]
+end
+
+---@param names string[]
+function InventoryCollection.refreshMany(names)
+    local fns = Utils.map(names, function(name)
+        return function()
+            InventoryCollection.refresh(name)
+        end
+    end)
+
+    local chunkedFns = Utils.chunk(fns, 32)
+
+    for _, chunk in pairs(chunkedFns) do
+        EventLoop.run(table.unpack(chunk))
+        os.sleep(1)
+    end
+end
+
+---@param type InventoryType
+function InventoryCollection.refreshByType(type)
+    ---@type string[]
+    local names = {}
+
+    for name, inventory in pairs(inventories) do
+        if inventory.type == type then
+            table.insert(names, name)
+        end
+    end
+
+    InventoryCollection.refreshMany(names)
+end
+
+function InventoryCollection.clear()
+    inventories = {}
+    locks = {}
+end
+
+---@param output string
+---@param input string
+function InventoryCollection.lock(output, input)
+    InventoryCollection.waitUntilAllUnlocked(output, input)
+    locks[output] = output
+    locks[input] = output
+end
+
+---@param name string
+function InventoryCollection.lockOne(name)
+    InventoryCollection.waitUntilAllUnlocked(name)
+    locks[name] = name
+end
+
+---@param output string
+---@param input string
+function InventoryCollection.unlock(output, input)
+    locks[output] = nil
+    locks[input] = nil
+end
+
+---@param name string
+function InventoryCollection.unlockOne(name)
+    locks[name] = nil
+end
+
+---@param name string
+function InventoryCollection.removeLocksFrom(name)
+    for locked, lockedBy in pairs(Utils.copy(locks)) do
+        if lockedBy == name then
+            print("[unlock]", locked)
+            locks[locked] = nil
+        end
+    end
+end
+
+---@param name string
+---@return boolean
+function InventoryCollection.isLocked(name)
+    return locks[name] ~= nil
+end
+
+---@param ... Inventory
+---@return Inventory, integer
+function InventoryCollection.waitUntilAnyUnlocked(...)
+    local inventories = {...}
+
+    while true do
+        for index, inventory in pairs(inventories) do
+            if not InventoryCollection.isLocked(inventory.name) then
+                return inventory, index
+            end
+        end
+
+        os.sleep(3)
+    end
+end
+
+---@param ... string
+function InventoryCollection.waitUntilAllUnlocked(...)
+    local inventories = {...}
+
+    while true do
+        local anyLocked = false
+
+        for _, inventory in pairs(inventories) do
+            if InventoryCollection.isLocked(inventory) then
+                anyLocked = true
+                break
+            end
+        end
+
+        if not anyLocked then
+            return nil
+        end
+
+        print("[locked]", table.concat({...}, ", "))
+        os.sleep(3)
+    end
+end
+
+---@param type InventoryType?
+---@param refresh boolean?
+---@return string[]
+function InventoryCollection.getInventories(type, refresh)
+    ---@type string[]
+    local array = {}
+
+    for name, inventory in pairs(inventories) do
+        if type == nil or inventory.type == type then
+            if refresh then
+                inventory = InventoryCollection.refresh(name)
+            end
+
+            table.insert(array, name)
+        end
+    end
+
+    return array
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@return integer
+function InventoryCollection.getInventorySlotCount(name, tag)
+    local inventory = InventoryCollection.getInventory(name)
+    local count = 0
+
+    for _, slot in pairs(inventory.slots) do
+        if slot.tags[tag] == true then
+            count = count + 1
+        end
+    end
+
+    return count
+end
+
+---@param name string
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getInventoryStockByTag(name, tag)
+    ---@type ItemStock
+    local stock = {}
+    local inventory = InventoryCollection.getInventory(name)
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getStockByTag(tag)
+    ---@type ItemStock
+    local stock = {}
+
+    for _, inventory in pairs(inventories) do
+        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(inventory.name, tag)) do
+            stock[item] = (stock[item] or 0) + quantity
+        end
+    end
+
+    return stock
+end
+
+---@param inventoryType InventoryType
+---@param slotTag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
+    local inventories = InventoryCollection.getInventories(inventoryType)
+    ---@type ItemStock
+    local stock = {}
+
+    for _, name in pairs(inventories) do
+        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(name, slotTag)) do
+            stock[item] = (stock[item] or 0) + quantity
+        end
+    end
+
+    return stock
+end
+
+return InventoryCollection
+
+end)
+__bundle_register("lib.inventory.inventory-reader", function(require, _LOADED, __bundle_register, __bundle_modules)
+local constructInventory = require("lib.inventory.construct-inventory")
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local readBuffer = require("lib.inventory.readers.read-buffer")
+local readComposterConfiguration = require("lib.inventory.readers.read-composter-configuration")
+local readComposterInput = require("lib.inventory.readers.read-composter-input")
+local readCrafter = require("lib.inventory.readers.read-crafter")
+local readDump = require("lib.inventory.readers.read-dump")
+local readFurnace = require("lib.inventory.readers.read-furnace")
+local readFurnaceConfiguration = require("lib.inventory.readers.read-furnace-configuration")
+local readFurnaceInput = require("lib.inventory.readers.read-furnace-input")
+local readFurnaceOutput = require("lib.inventory.readers.read-furnace-output")
+local readIo = require("lib.inventory.readers.read-io")
+local readQuickAccess = require("lib.inventory.readers.read-quick-access")
+local readSilo = require("lib.inventory.readers.read-silo")
+local readSiloInput = require("lib.inventory.readers.read-silo-input")
+local readSiloOutput = require("lib.inventory.readers.read-silo-output")
+local readStash = require("lib.inventory.readers.read-stash")
+local readStorage = require("lib.inventory.readers.read-storage")
+local readTrash = require("lib.inventory.readers.read-trash")
+local readTurtleBuffer = require("lib.inventory.readers.read-turtle-buffer")
+
+local baseTypeLookup = {
+    ["minecraft:chest"] = "minecraft:chest",
+    ["minecraft:furna"] = "minecraft:furnace",
+    ["minecraft:shulk"] = "minecraft:shulker_box",
+    ["minecraft:barre"] = "minecraft:barrel",
+    ["minecraft:hoppe"] = "minecraft:hopper"
+}
+
+---@class InventoryReader
+local InventoryReader = {}
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@return integer? slot, string? name
+local function findNameTag(name, stacks)
+    for slot, stack in pairs(stacks) do
+        if stack.name == "minecraft:name_tag" and stack.nbt ~= nil then
+            local stack = InventoryPeripheral.getStack(name, slot)
+            return slot, stack.displayName
+        end
+    end
+end
+
+---@param nameTagName string
+---@return string|nil, string|nil
+local function parseLabeledNameTag(nameTagName)
+    return string.match(nameTagName, "(%w+): ([%w%s]+)")
+end
+
+---@param name string
+---@return Inventory
+local function readIgnore(name)
+    return constructInventory(name, "ignore", {}, {})
+end
+
+---@param name string
+---@return string?
+local function getPeripheralBaseType(name)
+    return baseTypeLookup[string.sub(peripheral.getType(name), 1, 15)]
+end
+
+---@param name string
+---@return boolean
+function InventoryReader.isInventoryType(name)
+    return getPeripheralBaseType(name) ~= nil
+end
+
+---@param name string
+---@param expected? InventoryType
+---@return Inventory
+function InventoryReader.read(name, expected)
+    local function create()
+        local baseType = getPeripheralBaseType(name)
+
+        if not baseType then
+            error(string.format("unknown inventory base type for %s", name))
+        end
+
+        local stacks = InventoryPeripheral.getStacks(name)
+
+        if baseType == "minecraft:furnace" then
+            return readFurnace(name, stacks)
+        elseif baseType == "minecraft:shulker_box" then
+            local shulker = readStorage(name, stacks)
+            shulker.type = "shulker"
+
+            return shulker
+        else
+            local nameTagSlot, nameTagName = findNameTag(name, stacks)
+
+            if nameTagSlot and nameTagName then
+                stacks[nameTagSlot] = nil
+
+                if nameTagName == "I/O" then
+                    return readIo(name, stacks, nameTagSlot)
+                elseif nameTagName == "Drain" or nameTagName == "Dump" then
+                    return readDump(name, stacks, nameTagSlot)
+                elseif nameTagName == "Silo" then
+                    return readSilo(name, stacks, nameTagSlot)
+                elseif nameTagName == "Silo: Input" then
+                    return readSiloInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Silo: Output" then
+                    return readSiloOutput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Crafter" then
+                    return readCrafter(name, stacks, nameTagSlot)
+                elseif nameTagName == "Furnace: Input" then
+                    return readFurnaceOutput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Furnace: Output" then
+                    return readFurnaceInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Furnace: Config" then
+                    return readFurnaceConfiguration(name, stacks, nameTagSlot)
+                elseif nameTagName == "Quick Access" then
+                    return readQuickAccess(name, stacks, nameTagSlot)
+                elseif nameTagName == "Composter: Config" then
+                    return readComposterConfiguration(name, stacks, nameTagSlot)
+                elseif nameTagName == "Composter: Input" then
+                    return readComposterInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Trash" then
+                    return readTrash(name, stacks, nameTagSlot)
+                elseif nameTagName == "Buffer" then
+                    return readBuffer(name, stacks, nameTagSlot)
+                else
+                    local tagName, label = parseLabeledNameTag(nameTagName)
+
+                    if tagName == "Stash" and label ~= nil then
+                        return readStash(name, stacks, nameTagSlot, label)
+                    elseif tagName == "Buffer" and label ~= nil then
+                        return readTurtleBuffer(name, stacks, nameTagSlot, label)
+                    end
+                end
+            elseif baseType == "minecraft:barrel" then
+                return readTurtleBuffer(name, stacks)
+            elseif baseType == "minecraft:hopper" then
+                return readIgnore(name)
+            else
+                return readStorage(name, stacks)
+            end
+        end
+    end
+
+    local inventory = create()
+
+    if expected and not inventory then
+        error(string.format("expected %s to be of type %s, but found nothing", name, expected))
+    elseif expected and inventory.type ~= expected then
+        error(string.format("expected %s to be of type %s, but got %s", name, expected, inventory.type))
+    else
+        return inventory
+    end
+end
+
+return InventoryReader
+
+end)
+__bundle_register("lib.inventory.readers.read-turtle-buffer", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot? integer
+---@param label? string
+---@return Inventory
+return function(name, stacks, nameTagSlot, label)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.buffer = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "turtle-buffer", stacks, slots, true, label)
+end
+
+end)
+__bundle_register("lib.inventory.construct-inventory", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@param name string
+---@param type InventoryType
+---@param stacks ItemStacks
+---@param slots table<integer, InventorySlot>
+---@param allowAllocate? boolean
+---@param label? string
+---@param items? table<string, true>
+---@return Inventory
+return function(name, type, stacks, slots, allowAllocate, label, items)
+    ---@type Inventory
+    local inventory = {
+        name = name,
+        type = type,
+        stacks = stacks,
+        allowAllocate = allowAllocate or false,
+        slots = slots,
+        label = label,
+        items = items
+    }
+
+    return inventory
+end
+
+end)
+__bundle_register("lib.inventory.inventory-peripheral", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@class InventoryPeripheral
+local InventoryPeripheral = {}
+
+---@type table<string, integer>
+local itemMaxCounts = {}
+
+---@type table<string, string>
+local itemDisplayNames = {}
+
+-- [todo] not the best place, but works for now
+function InventoryPeripheral.getItemDisplayNames()
+    return itemDisplayNames
+end
+
+---@param item string
+---@param chest string
+---@param slot integer
+local function getItemMaxCount(item, chest, slot)
+    if not itemMaxCounts[item] then
+        ---@type ItemStack|nil
+        local detailedStack = InventoryPeripheral.getStack(chest, slot)
+
+        if detailedStack then
+            itemMaxCounts[item] = detailedStack.maxCount
+            itemDisplayNames[item] = detailedStack.displayName
+        end
+    end
+
+    return itemMaxCounts[item]
+end
+
+---@param inventory string
+---@return integer
+function InventoryPeripheral.getSize(inventory)
+    return peripheral.call(inventory, "size")
+end
+
+---@param side string
+---@param slot integer
+---@return ItemStack
+function InventoryPeripheral.getStack(side, slot)
+    return peripheral.call(side, "getItemDetail", slot)
+end
+
+---@param name string
+---@param detailed? boolean
+---@return ItemStacks
+function InventoryPeripheral.getStacks(name, detailed)
+    if not detailed then
+        ---@type ItemStacks
+        local stacks = peripheral.call(name, "list")
+
+        for slot, stack in pairs(stacks) do
+            stack.maxCount = getItemMaxCount(stack.name, name, slot)
+        end
+
+        return stacks
+    else
+        local stacks = peripheral.call(name, "list")
+        ---@type ItemStacks
+        local detailedStacks = {}
+
+        for slot, _ in pairs(stacks) do
+            detailedStacks[slot] = InventoryPeripheral.getStack(name, slot)
+        end
+
+        return detailedStacks
+    end
+end
+
+---@param from string
+---@param to string
+---@param fromSlot integer
+---@param limit? integer
+---@param toSlot? integer
+---@return integer
+function InventoryPeripheral.pushItems(from, to, fromSlot, limit, toSlot)
+    os.sleep(.25)
+    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
+end
+
+---@param inventory string
+---@param fromSlot integer
+---@param toSlot? integer
+---@param quantity? integer
+---@return integer
+function InventoryPeripheral.move(inventory, fromSlot, toSlot, quantity)
+    os.sleep(.5) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
+    return InventoryPeripheral.pushItems(inventory, inventory, fromSlot, quantity, toSlot)
+end
+
+return InventoryPeripheral
+
+end)
+__bundle_register("lib.inventory.readers.read-trash", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "trash", stacks, slots, true)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-storage", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param stacks ItemStacks
+---@return boolean
+local function isMonoTypeStacks(stacks)
+    if Utils.isEmpty(stacks) then
+        return false
+    end
+
+    local name
+
+    for _, stack in pairs(stacks) do
+        if not name then
+            name = stack.name
+        elseif name and stack.name ~= name then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@return Inventory
+return function(name, stacks)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+    ---@type table<string, true>
+    local items = {}
+
+    if isMonoTypeStacks(stacks) then
+        local first = Utils.first(stacks)
+        items[first.name] = true
+        ---@type ItemStack
+        local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+
+        for index = 1, InventoryPeripheral.getSize(name) do
+            ---@type InventorySlot
+            -- [todo] find references on "tags" doesn't work? (when using it on the type in inventory-elemental.lua file)
+            local slot = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
+            slots[index] = slot
+            local stack = stacks[index]
+
+            if stack then
+                stack.maxCount = stack.maxCount - 1
+                stack.count = stack.count - 1
+            else
+                stacks[index] = Utils.copy(template)
+            end
+        end
+    else
+        for index, stack in pairs(stacks) do
+            slots[index] = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
+            stack.maxCount = stack.maxCount - 1
+            stack.count = stack.count - 1
+            items[stack.name] = true
+        end
+    end
+
+    return constructInventory(name, "storage", stacks, slots, false, nil, items)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-stash", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@param label string
+---@return Inventory
+return function(name, stacks, nameTagSlot, label)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "stash", stacks, slots, true, label)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-silo-output", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "silo:output", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-silo-input", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+    local first = Utils.first(stacks)
+    ---@type ItemStack?
+    local template
+
+    if first then
+        template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
+    end
+
+    for index = 1, InventoryPeripheral.getSize(name) do
+        if index == nameTagSlot then
+            slots[index] = {index = index, tags = {nameTag = true}}
+        elseif template then
+            slots[index] = {index = index, tags = {input = true}}
+            local stack = stacks[index]
+
+            if stack then
+                stack.maxCount = stack.maxCount - 1
+                stack.count = stack.count - 1
+            else
+                stacks[index] = Utils.copy(template)
+            end
+        end
+    end
+
+    return constructInventory(name, "silo:input", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-silo", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "silo", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-quick-access", function(require, _LOADED, __bundle_register, __bundle_modules)
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot, _ in pairs(stacks) do
+        if slot ~= nameTagSlot then
+            slots[slot] = {index = slot, tags = {input = true, withdraw = true}}
+        end
+    end
+
+    return constructInventory(name, "quick-access", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-io", function(require, _LOADED, __bundle_register, __bundle_modules)
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot, stack in pairs(stacks) do
+        if slot ~= nameTagSlot then
+            stack.count = stack.count - 1
+            stack.maxCount = stack.maxCount - 1
+
+            if slot < nameTagSlot then
+                slots[slot] = {index = slot, permanent = true, tags = {input = true}}
+            elseif slot > nameTagSlot then
+                slots[slot] = {index = slot, permanent = true, tags = {output = true, withdraw = true}}
+            end
+        else
+            slots[slot] = {index = slot, tags = {nameTag = true}}
+        end
+    end
+
+    return constructInventory(name, "io", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-furnace-output", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "furnace-input", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-furnace-input", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "furnace-output", stacks, slots, true)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-furnace-configuration", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.configuration = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "furnace-config", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-furnace", function(require, _LOADED, __bundle_register, __bundle_modules)
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@return Inventory
+return function(name, stacks)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    slots[1] = {index = 1, tags = {input = true}}
+    slots[2] = {index = 2, tags = {fuel = true}}
+    slots[3] = {index = 3, tags = {output = true, withdraw = true}}
+
+    return constructInventory(name, "furnace", {stacks[1], stacks[2], stacks[3]}, slots, true)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-dump", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.output = true
+            tags.withdraw = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "dump", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-crafter", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    local inputSlotOffset = 3
+    local outputSlotOffset = 6
+
+    ---@param slots table<integer, InventorySlot>
+    ---@param offset integer
+    ---@param tags InventorySlotTags
+    local function fillSlots(slots, offset, tags)
+        for i = 1, 9 do
+            local line = math.ceil(i / 3)
+            local offsetRight = (line - 1) * (9 - (offset + 3))
+            local slot = i + (offset * line) + offsetRight
+
+            slots[slot] = {index = slot, tags = Utils.clone(tags)}
+        end
+    end
+
+    -- [todo] nameTag slot handling missing - mainly because current crafter code
+    -- changes position of it, and I have not yet decided how I wanna deal with that.
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+    fillSlots(slots, inputSlotOffset, {input = true})
+    fillSlots(slots, outputSlotOffset, {output = true})
+
+    return constructInventory(name, "crafter", stacks, slots, true)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-composter-input", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.input = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "composter-input", stacks, slots, true)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-composter-configuration", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.configuration = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "composter-config", stacks, slots)
+end
+
+end)
+__bundle_register("lib.inventory.readers.read-buffer", function(require, _LOADED, __bundle_register, __bundle_modules)
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local constructInventory = require("lib.inventory.construct-inventory")
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@param nameTagSlot integer
+---@return Inventory
+return function(name, stacks, nameTagSlot)
+    ---@type table<integer, InventorySlot>
+    local slots = {}
+
+    for slot = 1, InventoryPeripheral.getSize(name) do
+        ---@type InventorySlotTags
+        local tags = {}
+
+        if slot == nameTagSlot then
+            tags.nameTag = true
+        else
+            tags.buffer = true
+        end
+
+        slots[slot] = {index = slot, tags = tags}
+    end
+
+    return constructInventory(name, "buffer", stacks, slots, true)
+end
+
+end)
+__bundle_register("lib.common.event-loop", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+
+---@class EventLoopThread
+---@field coroutine thread
+---@field event? string
+---@field callback? function
+
+local EventLoop = {}
+
+---@param fn function
+---@param event? string
+---@return EventLoopThread
+local function createThread(fn, event)
+    ---@type EventLoopThread
+    local thread = {coroutine = coroutine.create(fn), event = event}
+
+    return thread
+end
+
+---@param thread EventLoopThread
+---@param event table
+local function runThread(thread, event)
+    local start = os.epoch("utc")
+    local result = table.pack(coroutine.resume(thread.coroutine, table.unpack(event)))
+    local duration = os.epoch("utc") - start
+
+    if duration >= 250 then
+        print(string.format("[event-loop] thread took %dms", duration))
+    end
+
+    if not result[1] then
+        error(result[2])
+    end
+
+    if coroutine.status(thread.coroutine) == "dead" then
+        return false
+    end
+
+    thread.event = result[2]
+
+    if type(result[3]) == "function" then
+        thread.callback = result[3]
+    else
+        thread.callback = nil
+    end
+
+    return true
+end
+
+---@param threads EventLoopThread[]
+---@param event table
+---@return EventLoopThread[]
+local function runThreads(threads, event)
+    ---@type EventLoopThread[]
+    local nextThreads = {}
+
+    for _, thread in ipairs(Utils.copy(threads)) do
+        if thread.event == nil or thread.event == event[1] then
+            if runThread(thread, event) then
+                table.insert(nextThreads, thread)
+
+                if thread.callback then
+                    table.insert(nextThreads, createThread(thread.callback, thread.event))
+                end
+            end
+        else
+            table.insert(nextThreads, thread)
+        end
+    end
+
+    return nextThreads
+end
+
+---@param event? string
+---@param callback? function
+function EventLoop.pull(event, callback)
+    return coroutine.yield(event, callback)
+end
+
+---@param event string
+---@param ... unknown
+function EventLoop.queue(event, ...)
+    os.queueEvent(event, ...)
+end
+
+---@param event string
+---@param time number
+function EventLoop.debounce(event, time)
+    local result = table.pack(EventLoop.pull(event))
+    local debounce = os.startTimer(time)
+
+    parallel.waitForAny(function()
+        repeat
+            local _, timerId = EventLoop.pull("timer")
+        until timerId == debounce
+    end, function()
+        while true do
+            result = table.pack(EventLoop.pull(event))
+            debounce = os.startTimer(3)
+        end
+    end)
+
+    return table.unpack(result)
+end
+
+---@param ... function
+function EventLoop.run(...)
+    local threads = Utils.map({...}, function(fn)
+        return createThread(fn)
+    end)
+
+    threads = runThreads(threads, {})
+
+    while #threads > 0 do
+        threads = runThreads(threads, table.pack(os.pullEvent()))
+    end
+end
+
+---Run functions until a specific event is pulled.
+---@param event string
+---@param ... function
+function EventLoop.runUntil(event, ...)
+    local fns = {...}
+    EventLoop.waitForAny(function()
+        EventLoop.pull(event)
+    end, function()
+        EventLoop.run(table.unpack(fns))
+    end)
+end
+
+---@param ... function
+function EventLoop.waitForAny(...)
+    local anyFinished = false
+    local threads = Utils.map({...}, function(fn)
+        return createThread(function()
+            fn()
+            anyFinished = true
+        end)
+    end)
+
+    threads = runThreads(threads, {})
+
+    while not anyFinished do
+        threads = runThreads(threads, table.pack(os.pullEvent()))
+    end
+end
+
+---@param min integer
+---@param max integer
+---@return integer
+function EventLoop.pullInteger(min, max)
+    if min < 0 or min > 9 then
+        error(string.format("min must be in range [0, 9] (got %d)", min))
+    end
+
+    if max < 0 or max > 9 then
+        error(string.format("max must be in range [0, 9] (got %d)", max))
+    end
+
+    if min > max then
+        error(string.format("max must be greater than min (got %d, %d)", min, max))
+    end
+
+    while true do
+        local event, key = EventLoop.pull("char")
+
+        if event == "terminate" then
+            error("terminated")
+        end
+
+        local int = tonumber(key)
+
+        if int ~= nil and int >= min and int <= max then
+            return int
+        end
+    end
+end
+
+return EventLoop
+
+end)
+__bundle_register("lib.squirtle.api-layers.squirtle-advanced-api", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils")
+local InventoryPeripheral = require("lib.inventory.inventory-peripheral")
+local Inventory = require("lib.inventory.inventory-api")
+local SquirtleElementalApi = require("lib.squirtle.api-layers.squirtle-elemental-api")
+local SquirtleBasicApi = require("lib.squirtle.api-layers.squirtle-basic-api")
+
+local bucket = "minecraft:bucket"
+local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
+
+---@class SquirtleAdvancedApi : SquirtleBasicApi
+local SquirtleAdvancedApi = {}
+setmetatable(SquirtleAdvancedApi, {__index = SquirtleBasicApi})
+
+---@param stacks ItemStack[]
+---@param fuel number
+---@param allowLava? boolean
+---@return ItemStack[] fuelStacks, number openFuel
+local function pickFuelStacks(stacks, fuel, allowLava)
+    local pickedStacks = {}
+    local openFuel = fuel
+
+    for slot, stack in pairs(stacks) do
+        if fuelItems[stack.name] and (allowLava or stack.name ~= "minecraft:lava_bucket") then
+            local itemRefuelAmount = fuelItems[stack.name]
+            local numItems = math.ceil(openFuel / itemRefuelAmount)
+            stack = Utils.clone(stack)
+            stack.count = numItems
+            pickedStacks[slot] = stack
+            openFuel = openFuel - (numItems * itemRefuelAmount)
+
+            if openFuel <= 0 then
+                break
+            end
+        end
+    end
+
+    return pickedStacks, math.max(openFuel, 0)
+end
+
+---@param fuel? integer
+---@param allowLava? boolean
+local function refuelFromBackpack(fuel, allowLava)
+    fuel = fuel or SquirtleBasicApi.missingFuel()
+    local fuelStacks = pickFuelStacks(SquirtleBasicApi.getStacks(), fuel, allowLava)
+    local emptyBucketSlot = SquirtleBasicApi.find(bucket)
+
+    for slot, stack in pairs(fuelStacks) do
+        SquirtleBasicApi.select(slot)
+        SquirtleBasicApi.refuel(stack.count)
+
+        local remaining = SquirtleBasicApi.getStack(slot)
+
+        if remaining and remaining.name == bucket then
+            if not emptyBucketSlot or not SquirtleBasicApi.transferTo(emptyBucketSlot) then
+                emptyBucketSlot = slot
+            end
+        end
+    end
+end
+
+---@param fuel? integer
+local function refuelWithHelpFromPlayer(fuel)
+    fuel = fuel or SquirtleBasicApi.missingFuel()
+    local _, y = term.getCursorPos()
+
+    while not SquirtleBasicApi.hasFuel(fuel) do
+        term.setCursorPos(1, y)
+        term.clearLine()
+        local openFuel = fuel - SquirtleBasicApi.getFuelLevel()
+        term.write(string.format("[help] need %d more fuel please", openFuel))
+        term.setCursorPos(1, y + 1)
+        os.pullEvent("turtle_inventory")
+        refuelFromBackpack(openFuel)
+    end
+end
+
+---@param fuel integer
+function SquirtleAdvancedApi.refuelTo(fuel)
+    if SquirtleBasicApi.hasFuel(fuel) then
+        return true
+    elseif fuel > SquirtleBasicApi.getFuelLimit() then
+        error(string.format("required fuel is %d more than the tank can hold", fuel - SquirtleBasicApi.getFuelLimit()))
+    end
+
+    refuelFromBackpack(fuel)
+
+    if not SquirtleBasicApi.hasFuel(fuel) then
+        refuelWithHelpFromPlayer(fuel)
+    end
+end
+
+---@param inventory string
+---@param slot integer
+---@param quantity? integer
+---@return boolean, string?
+function SquirtleAdvancedApi.suckSlot(inventory, slot, quantity)
+    if slot == 1 then
+        return SquirtleElementalApi.suck(inventory, quantity)
+    end
+
+    local items = InventoryPeripheral.getStacks(inventory)
+
+    if items[1] == nil then
+        InventoryPeripheral.move(inventory, slot, 1, quantity)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
+        InventoryPeripheral.move(inventory, 1, slot)
+
+        return success, message
+    end
+
+    local firstEmptySlot = Utils.firstEmptySlot(items, InventoryPeripheral.getSize(inventory))
+
+    if not firstEmptySlot and SquirtleBasicApi.isFull() then
+        error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
+    elseif firstEmptySlot then
+        InventoryPeripheral.move(inventory, 1, firstEmptySlot)
+        InventoryPeripheral.move(inventory, slot, 1, quantity)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
+        InventoryPeripheral.move(inventory, 1, slot)
+
+        return success, message
+    else
+        local initialSlot = SquirtleElementalApi.getSelectedSlot()
+        SquirtleBasicApi.selectFirstEmpty()
+        SquirtleElementalApi.suck(inventory)
+        InventoryPeripheral.move(inventory, slot, 1)
+        SquirtleElementalApi.drop(inventory)
+        local success, message = SquirtleElementalApi.suck(inventory, quantity)
+        SquirtleElementalApi.select(initialSlot)
+
+        return success, message
+    end
+end
+
+---@param from string
+---@param to string
+---@return ItemStock transferredTotal, ItemStock open
+function SquirtleAdvancedApi.pushOutput(from, to)
+    return Inventory.transferFromTag(from, to, "buffer", "output")
+end
+
+---@param from string
+---@param to string
+function SquirtleAdvancedApi.pushAllOutput(from, to)
+    local _, open = SquirtleAdvancedApi.pushOutput(from, to)
+
+    if Utils.count(open) > 0 then
+        print("output full, waiting...")
+    end
+
+    while Utils.count(open) > 0 do
+        os.sleep(7)
+        _, open = SquirtleAdvancedApi.pushOutput(from, to)
+    end
+end
+
+---@param from string
+---@param to string
+---@param transferredOutput? ItemStock
+---@return ItemStock transferredTotal, ItemStock open
+function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
+    local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
+    local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
+    local toStock = Inventory.getInventoryStockByTag(to, "buffer")
+    transferredOutput = transferredOutput or {}
+
+    ---@type ItemStock
+    local total = {}
+
+    -- in case the chest we're pulling from has the same item in input as it does in output,
+    -- we need to make sure to not pull more input than is allowed by checking what parts of
+    -- the "to" chest are output stock.
+    for item, maxInputStock in pairs(fromMaxInputStock) do
+        local inputInToStock = toStock[item] or 0
+
+        if fromMaxOutputStock[item] and toStock[item] then
+            inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
+        end
+
+        total[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
+    end
+
+    return Inventory.transferFromTag(from, to, "input", "buffer", total)
+end
+
+return SquirtleAdvancedApi
+
+end)
+__bundle_register("lib.squirtle.find-path", function(require, _LOADED, __bundle_register, __bundle_modules)
+local World = require("lib.common.world")
+local Cardinal = require("lib.common.cardinal")
+local Vector = require("lib.common.vector")
+
+---@param hierarchy Vector[]
+---@param start Vector
+---@param goal Vector
+local function toPath(hierarchy, start, goal)
+    local path = {}
+    local next = goal
+
+    while not Vector.equals(next, start) do
+        table.insert(path, 1, next)
+        next = hierarchy[Vector.toString(next)]
+    end
+
+    return path
+end
+
+---@param open Vector[]
+---@param naturals Vector[]
+---@param forced Vector[]
+---@param pruned Vector[]
+---@param totalCost number[]
+local function findBest(open, naturals, forced, pruned, totalCost)
+    local lowestF = nil
+    local bestType = nil
+
+    ---@type Vector
+    local best = nil
+
+    for key, value in pairs(open) do
+        local type = 3
+
+        if naturals[key] then
+            type = 0
+        elseif forced[key] then
+            type = 1
+        elseif pruned[key] then
+            type = 2
+        end
+
+        if lowestF == nil or totalCost[key] < lowestF or (totalCost[key] <= lowestF and type < bestType) then
+            best = value
+            lowestF = totalCost[key]
+            bestType = type
+        end
+    end
+
+    return best
+end
+
+---@param start Vector
+---@param goal Vector
+---@param orientation integer
+---@param world? World
+return function(start, goal, orientation, world)
+    if not world then
+        world = World.create(start.x, start.y, start.z)
+    end
+
+    if World.isBlocked(world, goal) then
+        return false, "goal is blocked"
+    end
+
+    ---@type Vector[]
+    local open = {}
+    local numOpen = 0
+    local closed = {}
+
+    ---@type Vector[]
+    local reverseMap = {}
+    local pastCost = {}
+    local futureCost = {}
+    local totalCost = {}
+    local startKey = Vector.toString(start)
+    local naturals = {}
+    local forced = {}
+    local pruned = {}
+
+    open[startKey] = start
+    pastCost[startKey] = 0
+    futureCost[startKey] = Vector.manhattan(start, goal)
+    totalCost[startKey] = pastCost[startKey] + futureCost[startKey]
+    numOpen = numOpen + 1
+
+    local cycles = 0
+    local timeStarted = os.clock()
+    local timeout = 3
+
+    while (numOpen > 0) do
+        cycles = cycles + 1
+
+        if cycles % 100 == 0 then
+            if os.clock() - timeStarted >= timeout then
+                return false, timeout .. "s timeout reached"
+            end
+
+            -- [todo] make event name more unique to prevent collisions?
+            os.queueEvent("a-star-progress")
+            os.pullEvent("a-star-progress")
+        end
+
+        local current = findBest(open, naturals, forced, pruned, totalCost)
+
+        if Vector.equals(current, goal) then
+            return toPath(reverseMap, start, goal)
+        end
+
+        local currentKey = Vector.toString(current)
+
+        open[currentKey] = nil
+        closed[currentKey] = current
+        numOpen = numOpen - 1
+
+        if reverseMap[currentKey] then
+            local delta = Vector.minus(current, reverseMap[currentKey])
+            orientation = Cardinal.fromVector(delta)
+        end
+
+        local neighbours = {}
+
+        for i = 0, 5 do
+            local neighbour = Vector.plus(current, Cardinal.toVector(i))
+            local neighbourKey = Vector.toString(neighbour)
+            local requiresTurn = false
+
+            if i ~= orientation and not Cardinal.isVertical(i) then
+                requiresTurn = true
+            end
+
+            if closed[neighbourKey] == nil and World.isInBounds(world, neighbour) and not World.isBlocked(world, neighbour) then
+                local tentativePastCost = pastCost[currentKey] + 1
+
+                if (requiresTurn) then
+                    tentativePastCost = tentativePastCost + 1
+                end
+
+                if open[neighbourKey] == nil or tentativePastCost < pastCost[neighbourKey] then
+                    pastCost[neighbourKey] = tentativePastCost
+
+                    local neighbourFutureCost = Vector.manhattan(neighbour, goal)
+
+                    if (neighbour.x ~= goal.x) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.z ~= goal.z) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+                    if (neighbour.y ~= goal.y) then
+                        neighbourFutureCost = neighbourFutureCost + 1
+                    end
+
+                    futureCost[neighbourKey] = neighbourFutureCost
+                    totalCost[neighbourKey] = pastCost[neighbourKey] + neighbourFutureCost
+                    reverseMap[neighbourKey] = current
+
+                    if (open[neighbourKey] == nil) then
+                        open[neighbourKey] = neighbour
+                        neighbours[i] = neighbour
+                        numOpen = numOpen + 1
+                    end
+                end
+            end
+        end
+
+        -- pruning
+        if (reverseMap[currentKey] ~= nil) then
+            for neighbourOrientation, neighbour in pairs(neighbours) do
+                local neighbourKey = Vector.toString(neighbour)
+
+                if (neighbourOrientation == orientation) then
+                    -- add natural neighbour
+                    naturals[neighbourKey] = neighbour
+                else
+                    -- check blockade
+                    local check = Vector.plus(reverseMap[currentKey],
+                                              Vector.minus(Cardinal.toVector(neighbourOrientation), Cardinal.toVector(orientation)))
+
+                    -- if (world[checkKey] == nil) then
+                    if not World.isBlocked(world, check) then
+                        -- add neighbour to prune
+                        pruned[neighbourKey] = neighbour
+                    else
+                        -- add neighbour to forced
+                        forced[neighbourKey] = neighbour
+                    end
+                end
+            end
+        end
+    end
+
+    return false, "no path available"
+end
+
+end)
+__bundle_register("lib.common.world", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Vector = require("lib.common.vector")
+
+---@class World
+---@field width? integer
+---@field height? integer
+---@field depth? integer
+---@field blocked table<string, unknown>
+---@field x integer
+---@field y integer
+---@field z integer
+---
+
+local function swap(a, b)
+    return b, a
+end
+
+---@param value integer
+---@param from integer
+---@param length? integer
+---@return boolean
+local function isInRange(value, from, length)
+    if length == nil then
+        return true
+    elseif length == 0 then
+        return false
+    end
+
+    local to = from + length
+
+    if to < from then
+        from, to = swap(from, to)
+    end
+
+    return value >= from and value < to
+end
+
+---@param x integer
+---@param y integer
+---@param z integer
+---@param width? integer
+---@param height? integer
+---@param depth? integer
+---@return World
+local function create(x, y, z, width, height, depth)
+    if (width ~= nil and width < 1) or (height ~= nil and height < 1) or (depth ~= nil and depth < 1) then
+        error("can't create world with width/height/depth less than 1")
+    end
+
+    ---@type World
+    local world = {x = x, y = y, z = z, width = width, height = height, depth = depth, blocked = {}}
+
+    return world
+end
+
+---@param world World
+---@param x integer
+local function isInBoundsX(world, x)
+    return isInRange(x, world.x, world.width)
+end
+
+---@param world World
+---@param y integer
+local function isInBoundsY(world, y)
+    return isInRange(y, world.y, world.height)
+end
+
+---@param world World
+---@param z integer
+local function isInBoundsZ(world, z)
+    return isInRange(z, world.z, world.depth)
+end
+
+---@param world World
+---@param point Vector
+local function isInBounds(world, point)
+    return isInBoundsX(world, point.x) and isInBoundsY(world, point.y) and isInBoundsZ(world, point.z)
+end
+
+---@param world World
+---@param point Vector
+local function isInBottomPlane(world, point)
+    return point.y == world.y
+end
+
+---@param world World
+---@param point Vector
+local function isInTopPlane(world, point)
+    return point.y == world.y + world.height - 1
+end
+
+---@param world World
+---@param point Vector
+---@return boolean
+local function isBlocked(world, point)
+    if not isInBounds(world, point) then
+        return false
+    else
+        return world.blocked[tostring(point)] ~= nil
+    end
+end
+
+---@param world World
+---@param point Vector
+local function setBlock(world, point)
+    world.blocked[tostring(point)] = true
+end
+
+---@param world World
+---@param point Vector
+local function clearBlock(world, point)
+    world.blocked[tostring(point)] = nil
+end
+
+---@param world World
+local function getCorners(world)
+    return {
+        Vector.create(world.x, world.y, world.z),
+        Vector.create(world.x + world.width - 1, world.y, world.z),
+        Vector.create(world.x, world.y + world.height - 1, world.z),
+        Vector.create(world.x + world.width - 1, world.y + world.height - 1, world.z),
+        --
+        Vector.create(world.x, world.y, world.z + world.depth - 1),
+        Vector.create(world.x + world.width - 1, world.y, world.z + world.depth - 1),
+        Vector.create(world.x, world.y + world.height - 1, world.z + world.depth - 1),
+        Vector.create(world.x + world.width - 1, world.y + world.height - 1, world.z + world.depth - 1)
+    }
+end
+
+---@param world World
+---@param point Vector
+local function getClosestCorner(world, point)
+    local corners = getCorners(world)
+
+    ---@type Vector
+    local best
+
+    for i = 1, #corners do
+        if best == nil or Vector.distance(best, point) > Vector.distance(corners[i], point) then
+            best = corners[i]
+        end
+    end
+
+    return best
+end
+
+return {
+    create = create,
+    isInBoundsX = isInBoundsX,
+    isInBoundsY = isInBoundsY,
+    isInBoundsZ = isInBoundsZ,
+    isInBounds = isInBounds,
+    isInBottomPlane = isInBottomPlane,
+    isInTopPlane = isInTopPlane,
+    isBlocked = isBlocked,
+    setBlock = setBlock,
+    clearBlock = clearBlock,
+    getCorners = getCorners,
+    getClosestCorner = getClosestCorner
+}
+
+end)
+__bundle_register("lib.common.models.item-stock", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Utils = require("lib.common.utils");
+
+---@alias ItemStock table<string, integer>
+---
+---@param what ItemStock
+---@param by ItemStock
+local function subtract(what, by)
+    ---@type ItemStock
+    local subtracted = {}
+
+    for item, quantity in pairs(what) do
+        local newQuantity = quantity - (by[item] or 0)
+
+        if newQuantity > 0 then
+            subtracted[item] = newQuantity
+        end
+    end
+
+    return subtracted
+end
+
+---@param what ItemStock
+---@param with ItemStock
+---@return ItemStock
+local function add(what, with)
+    ---@type ItemStock
+    local added = Utils.copy(what)
+
+    for item, quantity in pairs(with) do
+        local newQuantity = quantity + (added[item] or 0)
+
+        if newQuantity > 0 then
+            added[item] = newQuantity
+        end
+    end
+
+    return added
+end
+
+return {subtract = subtract, add = add}
+
+end)
+__bundle_register("lib.squirtle.squirtle-service", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Squirtle = require("lib.squirtle.squirtle-api")
+
+---@class SquirtleService : Service
+---@field error string?
+local SquirtleService = {name = "squirtle", error = nil}
+
+function SquirtleService.locate()
+    return Squirtle.locate()
+end
+
+---@return string?
+function SquirtleService.getError()
+    return SquirtleService.error
+end
+
+function SquirtleService.shutdown()
+    os.shutdown()
+end
+
+return SquirtleService
+
+end)
+__bundle_register("lib.common.rpc", function(require, _LOADED, __bundle_register, __bundle_modules)
+local EventLoop = require("lib.common.event-loop")
+
+---@class RpcPingPacket
+---@field type "ping"
+---@field service string
+---@field host? string
+
+---@class RpcPongPacket
+---@field type "pong"
+---@field service string
+---@field host string
+---@field maxDistance? integer
+
+---@class RpcRequestPacket
+---@field callId string
+---@field service string
+---@field method string
+---@field arguments table
+---@field host string
+---@field type "request"
+
+---@class RpcResponsePacket
+---@field callId string
+---@field success boolean
+---@field response table|string
+---@field type "response"
+
+---@class RpcClient
+---@field host string
+---@field distance number?
+
+---@class Service
+---@field host string
+---@field name string
+---@field maxDistance? integer
+
+local callId = 0
+local channel = 64
+
+---@return string
+local function nextCallId()
+    callId = callId + 1
+
+    return tostring(callId)
+end
+
+---@return table
+local function getWirelessModem()
+    return peripheral.find("modem", function(_, modem)
+        return modem.isWireless()
+    end) or error("no wireless modem equipped")
+end
+
+---@param name? string
+---@return table
+local function getModem(name)
+    if not name then
+        return getWirelessModem()
+    else
+        local modem = peripheral.wrap(name)
+
+        if not modem then
+            error(string.format("peripheral $s not found", name))
+        end
+
+        return modem
+    end
+end
+
+---@class Rpc
+local Rpc = {}
+
+---@param service Service
+---@param modemName? string 
+---@param maxDistance? number
+---@return { host:string, distance:number }[]
+local function findAllHosts(service, modemName, maxDistance)
+    local modem = getModem(modemName)
+    modem.open(channel)
+
+    ---@type { host:string, distance:number }[]
+    local hosts = {}
+
+    parallel.waitForAny(function()
+        os.sleep(0.25)
+    end, function()
+        ---@type RpcPingPacket
+        local ping = {type = "ping", service = service.name}
+        modem.transmit(channel, channel, ping)
+
+        while true do
+            local event = table.pack(EventLoop.pull("modem_message"))
+            ---@type RpcPongPacket
+            local message = event[5]
+            ---@type integer
+            local distance = event[6]
+
+            if type(message) == "table" and message.type == "pong" and message.service == service.name then
+                if not message.maxDistance or (message.maxDistance and distance <= message.maxDistance) then
+                    if maxDistance then
+                        if distance <= maxDistance then
+                            table.insert(hosts, {host = message.host, distance = distance})
+                        end
+                    else
+                        table.insert(hosts, {host = message.host, distance = distance})
+                    end
+                end
+            end
+        end
+    end)
+
+    return hosts
+end
+
+---@generic T
+---@param service T | Service
+---@param modem? string
+---@param maxDistance? number
+---@return (T|RpcClient)?, number?
+function Rpc.nearest(service, modem, maxDistance)
+    if os.getComputerLabel() ~= nil and service.host == os.getComputerLabel() then
+        return service, 0
+    end
+
+    local hosts = findAllHosts(service, modem, maxDistance)
+
+    ---@type { host:string, distance:number }?
+    local best = nil
+
+    for i = 1, #hosts do
+        if best == nil or hosts[i].distance < best.distance then
+            best = hosts[i]
+        end
+    end
+
+    if best then
+        return Rpc.client(service, best.host), best.distance
+    end
+end
+
+---@generic T
+---@param service T | Service
+---@param modem? string
+---@param maxDistance? number
+---@return (T|RpcClient)[]
+function Rpc.all(service, modem, maxDistance)
+    local hosts = findAllHosts(service, modem, maxDistance)
+    ---@type RpcClient[]
+    local clients = {}
+
+    for i = 1, #hosts do
+        table.insert(clients, Rpc.client(service, hosts[i].host))
+    end
+
+    return clients
+end
+
+---@param service Service
+---@param modemName? string
+function Rpc.server(service, modemName)
+    service.host = os.getComputerLabel()
+    local modem = getModem(modemName)
+    modem.open(channel)
+    print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
+
+    EventLoop.run(function()
+        while true do
+            ---@param modem string
+            ---@param message RpcRequestPacket|RpcPingPacket
+            EventLoop.pull("modem_message", function(_, modem, _, _, message)
+                -- todo: make type safe
+                if type(message) == "table" and message.type == "request" and message.service == service.name and message.host ==
+                    service.host and type(service[message.method]) == "function" then
+                    local success, response = pcall(function()
+                        return table.pack(service[message.method](table.unpack(message.arguments)))
+                    end)
+
+                    ---@type RpcResponsePacket
+                    local packet = {callId = message.callId, type = "response", response = response, success = success}
+                    peripheral.call(modem, "transmit", channel, channel, packet)
+                elseif type(message) == "table" and message.type == "ping" and message.service == service.name then
+                    ---@type RpcPongPacket
+                    local pong = {type = "pong", host = service.host, service = service.name, maxDistance = service.maxDistance}
+                    peripheral.call(modem, "transmit", channel, channel, pong)
+                end
+            end)
+        end
+    end)
+end
+
+---@generic T
+---@param service T | Service
+---@param host string
+---@return T|RpcClient
+function Rpc.client(service, host)
+    ---@type RpcClient
+    local client = {host = host, distance = nil}
+    local modem = getWirelessModem()
+    modem.open(channel)
+
+    for k, v in pairs(service) do
+        if type(v) == "function" then
+            client[k] = function(...)
+                local callId = nextCallId()
+
+                ---@type RpcRequestPacket
+                local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
+                modem.transmit(channel, channel, packet)
+
+                while true do
+                    local event = {EventLoop.pull("modem_message")}
+                    local message = event[5] --[[@as RpcResponsePacket]]
+                    local distance = event[6] --[[@as number|nil]]
+
+                    if type(message) == "table" and message.callId == callId and message.type == "response" then
+                        client.distance = distance
+
+                        if message.success then
+                            return table.unpack(message.response --[[@as table]] )
+                        else
+                            error(message.response)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return client
+end
+
+return Rpc
+
+end)
+return __bundle_require("__root")
