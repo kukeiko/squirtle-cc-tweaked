@@ -126,11 +126,16 @@ if not depth or not height or depth < 1 or height < 1 then
     return printUsage()
 end
 
+-- [todo] make this app resumable, however: in case of a crash, the player has to help the turtle orientate itself
+-- by providing a disk-drive and breaking a block at top or bottom for the turtle to place it.
+-- should use SquirtleService to communicate that the turtle needs help from the player.
 state.patternMode = promptPatternMode()
 state.pattern = promptPattern(state.patternMode)
 state.depth = depth
 state.height = height
 SquirtleState.simulate = true
+-- [todo] hotfix - need easier way to simulate placed blocks
+SquirtleState.simulation.current = {facing = 0, fuel = 0, position = {x = 0, y = 0, z = 0}}
 sequence(state)
 SquirtleState.simulate = false
 Squirtle.requireItems(SquirtleState.results.placed)

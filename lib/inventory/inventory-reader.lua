@@ -129,7 +129,9 @@ function InventoryReader.read(name, expected)
                         return readTurtleBuffer(name, stacks, nameTagSlot, label)
                     end
                 end
-            elseif baseType == "minecraft:barrel" or baseType == "minecraft:hopper" then
+            elseif baseType == "minecraft:barrel" then
+                return readTurtleBuffer(name, stacks)
+            elseif baseType == "minecraft:hopper" then
                 return readIgnore(name)
             else
                 return readStorage(name, stacks)

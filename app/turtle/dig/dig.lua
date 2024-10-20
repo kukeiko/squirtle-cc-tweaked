@@ -75,6 +75,7 @@ local function tryLoadShulkers()
 
         if stack and stack.name:match("shulker") then
             Squirtle.select(slot)
+            -- [todo] there is a chance that the shulker gets placed into the digging area of another turtle
             placedSide = placeAnywhere()
 
             if not placedSide then

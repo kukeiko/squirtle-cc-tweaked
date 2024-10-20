@@ -3,7 +3,12 @@ local Utils = require "lib.common.utils"
 ---@class DatabaseService : Service
 local DatabaseService = {name = "database", folder = "data"}
 
-local entityTypes = {allocatedBuffers = "allocated-buffers", subwayStations = "subway-stations", squirtleResumables = "squirtle-resumables"}
+local entityTypes = {
+    allocatedBuffers = "allocated-buffers",
+    subwayStations = "subway-stations",
+    squirtleResumables = "squirtle-resumables",
+    squirtleDiskState = "squirtle-disk-state"
+}
 
 ---@param entity string
 local function getPath(entity)
@@ -16,7 +21,7 @@ local function getIdsPath()
 end
 
 ---@param entity string
----@return table[]
+---@return table
 local function readEntities(entity)
     local data = Utils.readJson(getPath(entity)) or {}
 
@@ -28,7 +33,7 @@ local function readEntities(entity)
 end
 
 ---@param entity string
----@param entities table[]
+---@param entities table
 local function writeEntities(entity, entities)
     Utils.writeJson(getPath(entity), entities)
 end
@@ -199,6 +204,21 @@ function DatabaseService.deleteAllocatedBuffer(bufferId)
     end)
 
     writeEntities(entityTypes.allocatedBuffers, buffers)
+end
+
+---@return SquirtleDiskState
+function DatabaseService.getSquirtleDiskState()
+    ---@type SquirtleDiskState
+    local state = readEntities(entityTypes.squirtleDiskState)
+    state.cleanupSides = state.cleanupSides or {}
+    state.diskDriveSides = state.diskDriveSides or {}
+
+    return state
+end
+
+---@param state SquirtleDiskState
+function DatabaseService.saveSquirtleDiskState(state)
+    writeEntities(entityTypes.squirtleDiskState, state)
 end
 
 ---@return SquirtleResumable[]

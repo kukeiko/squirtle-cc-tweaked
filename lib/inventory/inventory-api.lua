@@ -508,7 +508,7 @@ end
 ---@param total? ItemStock
 ---@return ItemStock transferredTotal, ItemStock open
 function Inventory.transferFromTag(from, to, fromTag, toTag, total)
-    local itemStock = Inventory.InventoryCollection(from, fromTag)
+    local itemStock = Inventory.getInventoryStockByTag(from, fromTag)
     ---@type ItemStock
     local transferredTotal = {}
     ---@type ItemStock

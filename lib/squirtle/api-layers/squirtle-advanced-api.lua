@@ -136,7 +136,7 @@ end
 ---@param to string
 ---@return ItemStock transferredTotal, ItemStock open
 function SquirtleAdvancedApi.pushOutput(from, to)
-    return Inventory.transferFromTag(from, to, "output", "output")
+    return Inventory.transferFromTag(from, to, "buffer", "output")
 end
 
 ---@param from string
@@ -161,7 +161,7 @@ end
 function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
     local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
     local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
-    local toStock = Inventory.getInventoryStockByTag(to, "input")
+    local toStock = Inventory.getInventoryStockByTag(to, "buffer")
     transferredOutput = transferredOutput or {}
 
     ---@type ItemStock
@@ -180,7 +180,7 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
         total[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
     end
 
-    return Inventory.transferFromTag(from, to, "input", "input", total)
+    return Inventory.transferFromTag(from, to, "input", "buffer", total)
 end
 
 return SquirtleAdvancedApi

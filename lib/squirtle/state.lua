@@ -5,18 +5,28 @@ local Vector = require "lib.common.vector"
 ---@field steps integer
 ---@field placed ItemStock
 local SimulationResults = {placed = {}, steps = 0}
-
+---
+---@alias DigSide "top" | "front" | "bottom"
+---@alias PlaceSide "top" | "front" | "bottom"
+---
+---@alias OrientationMethod "move"|"disk-drive"
+---@alias DiskDriveOrientationSide "top" | "bottom"
+---@alias MoveOrientationSide "front" | "back" | "left" | "right"
+---@alias OrientationSide DiskDriveOrientationSide | MoveOrientationSide
+---
 ---@class State
 ---@field breakable? fun(block: Block) : boolean
 ---@field facing integer
 ---@field position Vector
----@field orientationMethod "move"|"disk-drive"
+---@field orientationMethod OrientationMethod
+---@field shulkerSides PlaceSide[]
 ---In which direction the turtle is allowed to try to break a block in order to place a shulker that could not be placed at front, top or bottom.
 ---@field breakDirection? "top"|"front"|"bottom"
+---If right turns should be left turns and vice versa, useful for mirroring builds.
 ---@field flipTurns boolean
 ---@field simulate boolean
 ---@field results Simulated
----@field simulateUntilPosition Vector?
+---@field simulateUntilPosition Vector? --[todo] unused
 ---@field simulation Simulation
 local State = {
     facing = Cardinal.south,
@@ -25,7 +35,8 @@ local State = {
     flipTurns = false,
     simulate = false,
     results = SimulationResults,
-    simulation = {}
+    simulation = {},
+    shulkerSides = {"front", "top", "bottom"}
 }
 
 ---@class Simulation
@@ -90,6 +101,7 @@ end
 
 ---@return boolean
 function State.simulationCurrentMatchesTarget()
+    -- [todo] not checking position yet
     local facing = State.simulation.current.facing == State.simulation.target.facing
     local fuel = State.simulation.current.fuel == State.simulation.target.fuel
 
@@ -117,6 +129,14 @@ end
 function State.advanceTurn(direction)
     if State.simulation.current then
         State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
+        State.checkResumeEnd()
+    end
+end
+
+---@param delta Vector
+function State.advancePosition(delta)
+    if State.simulation.current then
+        State.simulation.current.position = Vector.plus(State.simulation.current.position, delta)
         State.checkResumeEnd()
     end
 end

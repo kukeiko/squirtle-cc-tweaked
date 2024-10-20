@@ -1,6 +1,8 @@
 local Utils = require "lib.common.utils"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
+local placeShulker = require "lib.squirtle.place-shulker"
+local digShulker = require "lib.squirtle.dig-shulker"
 
 -- [todo] add remaining
 local itemMaxCounts = {["minecraft:lava_bucket"] = 1, ["minecraft:water_bucket"] = 1, ["minecraft:bucket"] = 16}
@@ -172,8 +174,7 @@ end
 ---@param items table<string, integer>
 local function requireItemsUsingShulker(items)
     local numStacks = itemsToStacks(items)
-    -- shulkers have 27 slots, but we want to keep one slot empty per shulker
-    -- so that suckSlot() doesn't have to temporarily load an item from the shulker into the turtle inventory
+    -- shulkers have 27 slots, but we want to keep one slot empty per shulker so that suckSlot() doesn't have to temporarily load an item from the shulker into the turtle inventory
     local maxStacksPerShulker = 26
     local numShulkers = math.ceil(numStacks / maxStacksPerShulker)
     local maxShulkers = Elemental.size() - 1
@@ -194,17 +195,12 @@ local function requireItemsUsingShulker(items)
 
             if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
                 Elemental.select(slot)
-                local placedSide = Basic.placeFrontTopOrBottom()
-
-                if not placedSide then
-                    error("no space to place shulker box")
-                end
-
+                local placedSide = placeShulker()
                 local itemsForShulker, leftOverFromSlice = sliceNumStacksFromItems(openItems, maxStacksPerShulker)
                 openItems = leftOverFromSlice
                 fillShulker(itemsForShulker, placedSide)
                 local shulkerSlot = Basic.selectFirstEmpty()
-                Elemental.dig(placedSide)
+                digShulker(placedSide)
                 local shulkerItem = Basic.getStack(shulkerSlot, true)
 
                 if not shulkerItem then

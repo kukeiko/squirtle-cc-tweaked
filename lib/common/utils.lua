@@ -314,7 +314,12 @@ function Utils.firstEmptySlot(table, size)
     end
 end
 
-function Utils.waitForUserToHitEnter()
+---@param text? string
+function Utils.waitForUserToHitEnter(text)
+    if text then
+        print(text)
+    end
+
     while true do
         local _, key = os.pullEvent("key")
         if (key == keys.enter) then
@@ -323,11 +328,15 @@ function Utils.waitForUserToHitEnter()
     end
 end
 
----@param ... string|number
+---@param ... string
 function Utils.writeStartupFile(...)
-    local args = {...}
+    local programs = {...}
     local file = fs.open("startup", "w")
-    file.write("shell.run(\"" .. table.concat(args, " ") .. "\")")
+
+    for i = 1, #programs do
+        file.writeLine(string.format("shell.run(\"%s\")", programs[i]))
+    end
+
     file.close()
 end
 

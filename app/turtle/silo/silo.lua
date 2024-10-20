@@ -13,6 +13,9 @@ if not state then
     return nil
 end
 
+--[note] importante when making resumability easier to use:
+-- orientate() relies on Simulation being inactive - otherwise placing the disk drive would be simulated :D
+
 SquirtleState.simulate = true
 sequence(state)
 -- [todo] also require fuel based on steps taken

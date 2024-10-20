@@ -1,13 +1,11 @@
 package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
-local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local SquirtleState = require "lib.squirtle.state"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local Rpc = require "lib.common.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
-local AppState = require "lib.common.app-state"
 
 ---@class PyramidAppState
 ---@field width integer
@@ -25,67 +23,36 @@ local function printUsage()
     print(" - height is optional ")
 end
 
--- [todo] copied from dig app
----@param direction string
----@return boolean unloadedAll
-local function loadIntoShulker(direction)
-    local unloadedAll = true
+---@param args string[]
+---@return PyramidAppState?
+local function start(args)
+    local width = tonumber(args[1])
 
-    for slot = 1, 16 do
-        local stack = Squirtle.getStack(slot)
-
-        -- [todo] added disk_drive to exclusion for orientate to work better.
-        -- orientate() should work even if a disk drive is inside a shulker box, but currently too eager
-        -- to build the pyramid to test it
-        if stack and not stack.name:match("shulker") and not stack.name:match("disk_drive") then
-            Squirtle.select(slot)
-            if not Squirtle.drop(direction) then
-                unloadedAll = false
-            end
-        end
+    if not width or width % 2 == 0 then
+        return printUsage()
     end
 
-    return unloadedAll
-end
+    local height = tonumber(args[2]) or math.ceil(width / 2)
+    Squirtle.configure({shulkerSides = {"top"}})
+    local home = Squirtle.locate()
+    Squirtle.orientate("disk-drive", {"top"})
 
--- [todo] copied from dig app
--- [todo] move to Squirtle
----@return boolean unloadedAll
-local function tryLoadShulkers()
-    ---@type string?
-    local placedSide = nil
+    ---@type PyramidAppState
+    local state = {
+        width = width,
+        height = height,
+        block = "minecraft:stone",
+        borderBlock = "minecraft:stone_bricks",
+        borderBlockAlt = "minecraft:mossy_stone_bricks",
+        home = home,
+        returnHome = args[2] == "home" or args[3] == "home"
+    }
 
-    for slot = 1, 16 do
-        local stack = Squirtle.getStack(slot)
-
-        if stack and stack.name:match("shulker") then
-            Squirtle.select(slot)
-            -- [todo] for pyramid app, it is not allowed to place in front as it might be facing towards a pyramid lane of another turtle
-            placedSide = Squirtle.placeFrontTopOrBottom()
-
-            if not placedSide then
-                print("failed to place shulker, no space :(")
-                -- [todo] bit of an issue returning false here - shulkers might have enough space for items,
-                -- yet we effectively return "shulkers are full" just because we couldn't place it
-                -- however, this should only be an issue when digging a 1-high layer
-                return false
-            else
-                local unloadedAll = loadIntoShulker(placedSide)
-                Squirtle.select(slot)
-                Squirtle.mine(placedSide)
-
-                if unloadedAll then
-                    return true
-                end
-            end
-        end
-    end
-
-    return false
+    return state
 end
 
 ---@param state PyramidAppState
-local function sequence(state)
+local function main(state)
     Squirtle.move()
     Squirtle.turn("back")
 
@@ -103,7 +70,7 @@ local function sequence(state)
 
     for layer = 1, state.height do
         if Squirtle.isFull() then
-            tryLoadShulkers()
+            Squirtle.tryLoadShulkers()
         end
 
         Squirtle.put("front", pickRandomBorderBlock(layer))
@@ -140,66 +107,40 @@ local function sequence(state)
         end
     end
 
-    tryLoadShulkers()
+    Squirtle.tryLoadShulkers()
+end
 
-    -- [todo] returning home needs to be part of Squirtle.runResumable() as it is incompatible with simulation.
-    -- for now its fine as long as the turtle doesn't reboot during returning home.
+---@param state PyramidAppState
+local function resume(state)
+    Squirtle.configure({shulkerSides = {"top"}})
+    -- [todo] the position could actually be inferred during simulation. would make it so that gps is only required when starting.
+    Squirtle.locate()
+    Squirtle.orientate("disk-drive", {"top"})
+end
+
+---@param state PyramidAppState
+local function finish(state)
+    -- [todo] home is actually blocked by a block this program placed - either pick the one above as a goal or the one in front of it.
     if state.returnHome then
-        if not SquirtleState.simulate then
-            print("[return] home")
-        end
-
+        print("[return] home")
         Squirtle.navigate(state.home)
     end
 end
 
----@param args string[]
----@return PyramidAppState?
-local function start(args)
-    local width = tonumber(args[1])
+print("[pyramid v3.0.0-dev] booting...")
 
-    if not width or width % 2 == 0 then
-        return printUsage()
-    end
-
-    local height = tonumber(args[2]) or math.ceil(width / 2)
-    local home = Squirtle.locate()
-    Squirtle.orientate()
-
-    ---@type PyramidAppState
-    local state = {
-        width = width,
-        height = height,
-        block = "minecraft:stone",
-        borderBlock = "minecraft:stone_bricks",
-        borderBlockAlt = "minecraft:mossy_stone_bricks",
-        home = home,
-        returnHome = args[2] == "home" or args[3] == "home"
-    }
-
-    return state
-end
-
----@param args string[]
-local function main(args)
-    print("[pyramid v3.0.0-dev] booting...")
-
-    EventLoop.run(function()
-        EventLoop.runUntil("pyramid:stop", function()
-            Rpc.server(SquirtleService)
-        end)
-    end, function()
-        local success, message = Squirtle.runResumable("app/turtle/pyramid", args, start, sequence,
-                                                       {orientate = "disk-drive", breakDirection = "top"})
-
-        if success then
-            EventLoop.queue("pyramid:stop")
-        else
-            print(message)
-            SquirtleService.error = message
-        end
+EventLoop.run(function()
+    EventLoop.runUntil("pyramid:stop", function()
+        Rpc.server(SquirtleService)
     end)
-end
+end, function()
+    local success, message = Squirtle.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)
 
-main(arg)
+    if success then
+        EventLoop.queue("pyramid:stop")
+    else
+        print(message)
+        SquirtleService.error = message
+    end
+end)
 

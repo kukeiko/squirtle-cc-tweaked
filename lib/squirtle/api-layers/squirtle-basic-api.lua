@@ -9,10 +9,6 @@ setmetatable(SquirtleBasicApi, {__index = SquirtleElementalApi})
 ---@param target integer
 ---@param current? integer
 function SquirtleBasicApi.face(target, current)
-    if State.simulate then
-        return nil
-    end
-
     current = current or SquirtleElementalApi.getFacing()
 
     if not current then
@@ -28,28 +24,6 @@ function SquirtleBasicApi.face(target, current)
     end
 
     return target
-end
-
----@return string? direction
-function SquirtleBasicApi.placeFrontTopOrBottom()
-    local directions = {"front", "top", "bottom"}
-
-    for _, direction in pairs(directions) do
-        if SquirtleElementalApi.place(direction) then
-            return direction
-        end
-    end
-end
-
----@return string? direction
-function SquirtleBasicApi.placeTopOrBottom()
-    local directions = {"top", "bottom"}
-
-    for _, direction in pairs(directions) do
-        if SquirtleElementalApi.place(direction) then
-            return direction
-        end
-    end
 end
 
 ---Throws an error if:
@@ -98,6 +72,55 @@ function SquirtleBasicApi.tryMine(direction)
     end
 
     return success, message
+end
+
+---@param side? string
+---@param text? string
+---@return boolean, string?
+function SquirtleBasicApi.tryReplace(side, text)
+    if State.simulate then
+        return true
+    end
+
+    if SquirtleElementalApi.place(side, text) then
+        return true
+    end
+
+    while SquirtleBasicApi.tryMine(side) do
+    end
+
+    return SquirtleElementalApi.place(side, text)
+end
+
+---@param sides? string[]
+---@param text? string
+---@return string?
+function SquirtleBasicApi.tryReplaceAtOneOf(sides, text)
+    if State.simulate then
+        error("tryReplaceAtOneOf() can't be simulated")
+    end
+
+    sides = sides or {"top", "front", "bottom"}
+
+    for i = 1, #sides do
+        local side = sides[i]
+
+        if SquirtleElementalApi.place(side, text) then
+            return side
+        end
+    end
+
+    -- [todo] tryPut() is attacking - should we do it here as well?
+    for i = 1, #sides do
+        local side = sides[i]
+
+        while SquirtleBasicApi.tryMine(side) do
+        end
+
+        if SquirtleElementalApi.place(side, text) then
+            return side
+        end
+    end
 end
 
 ---@param fuel integer

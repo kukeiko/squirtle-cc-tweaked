@@ -1,5 +1,6 @@
 local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
+local DatabaseService = require "lib.common.database-service"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
@@ -7,6 +8,8 @@ local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
 local Inventory = require "lib.inventory.inventory-api"
 local requireItems = require "lib.squirtle.require-items"
+local placeShulker = require "lib.squirtle.place-shulker"
+local digShulker = require "lib.squirtle.dig-shulker"
 
 ---The complex layer starts having movement functionality.
 ---@class SquirtleComplexApi : SquirtleAdvancedApi
@@ -144,6 +147,7 @@ function SquirtleComplexApi.tryMove(direction, steps)
     for step = 1, steps do
         if State.simulate then
             State.advanceFuel()
+            State.advancePosition(delta)
         else
             while not native() do
                 while Basic.tryMine(direction) do
@@ -195,22 +199,8 @@ end
 ---@param item string
 ---@return boolean
 local function loadFromShulker(shulker, item)
-    Basic.select(shulker)
-
-    local placedSide = Basic.placeFrontTopOrBottom()
-
-    if not placedSide then
-        if not State.breakDirection then
-            return false
-        end
-
-        SquirtleComplexApi.mine(State.breakDirection)
-        placedSide = Basic.placeFrontTopOrBottom()
-
-        if not placedSide then
-            return false
-        end
-    end
+    Elemental.select(shulker)
+    local placedSide = placeShulker()
 
     while not peripheral.isPresent(placedSide) do
         os.sleep(.1)
@@ -235,13 +225,13 @@ local function loadFromShulker(shulker, item)
                 Basic.select(shulker)
             end
 
-            Elemental.dig(placedSide)
+            digShulker(placedSide)
 
             return true
         end
     end
 
-    Elemental.dig(placedSide)
+    digShulker(placedSide)
 
     return false
 end
@@ -282,6 +272,107 @@ function SquirtleComplexApi.selectItem(name)
     return slot
 end
 
+---@param block? string
+---@return boolean
+local function simulateTryPut(block)
+    if block then
+        if not State.results.placed[block] then
+            State.results.placed[block] = 0
+        end
+
+        State.results.placed[block] = State.results.placed[block] + 1
+    end
+
+    return true
+end
+
+---@param block? string
+local function simulatePut(block)
+    simulateTryPut(block)
+end
+
+---@param side? string
+---@param block? string
+---@return boolean
+function SquirtleComplexApi.tryPut(side, block)
+    side = side or "front"
+    local native = getNative("place", side)
+
+    if State.simulate then
+        return simulateTryPut(block)
+    end
+
+    if block then
+        while not SquirtleComplexApi.selectItem(block) do
+            SquirtleComplexApi.requireItems({[block] = 1})
+        end
+    end
+
+    if native() then
+        return true
+    end
+
+    while Basic.tryMine(side) do
+    end
+
+    -- [todo] band-aid fix
+    while turtle.attack() do
+        os.sleep(1)
+    end
+
+    return native()
+end
+
+---@param side? string
+---@param block? string
+function SquirtleComplexApi.put(side, block)
+    if State.simulate then
+        return simulatePut(block)
+    end
+
+    if not SquirtleComplexApi.tryPut(side, block) then
+        error("failed to place")
+    end
+end
+
+---@param sides? PlaceSide[]
+---@param block? string
+---@return PlaceSide? placedDirection
+function SquirtleComplexApi.tryPutAtOneOf(sides, block)
+    if State.simulate then
+        -- [todo] reconsider if this method should really be simulatable, as its outcome depends on world state
+        return simulatePut(block)
+    end
+
+    sides = sides or {"top", "front", "bottom"}
+
+    if block then
+        while not SquirtleComplexApi.selectItem(block) do
+            SquirtleComplexApi.requireItem(block)
+        end
+    end
+
+    for i = 1, #sides do
+        local native = getNative("place", sides[i])
+
+        if native() then
+            return sides[i]
+        end
+    end
+
+    -- [todo] tryPut() is attacking - should we do it here as well?
+    for i = 1, #sides do
+        local native = getNative("place", sides[i])
+
+        while Basic.tryMine(sides[i]) do
+        end
+
+        if native() then
+            return sides[i]
+        end
+    end
+end
+
 function SquirtleComplexApi.locate()
     local x, y, z = gps.locate()
 
@@ -314,8 +405,9 @@ local function stepOut(position)
 end
 
 ---@param position Vector
+---@param directions? MoveOrientationSide[]
 ---@return boolean
-local function orientateSameLayer(position)
+local function orientateSameLayer(position, directions)
     if stepOut(position) then
         return true
     end
@@ -344,28 +436,65 @@ local function orientateSameLayer(position)
     return false
 end
 
+local function addCleanupPlaceDirections(directions)
+end
+
+---@param directions? DiskDriveOrientationSide[]
 ---@return integer
-local function orientateUsingDiskDrive()
-    while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
-        SquirtleComplexApi.requireItems({["computercraft:disk_drive"] = 1})
+local function orientateUsingDiskDrive(directions)
+    if directions then
+        for i = 1, #directions do
+            if directions[i] ~= "top" and directions[i] ~= "bottom" then
+                error(string.format("invalid disk-drive orientation direction: %s", directions[i]))
+            end
+        end
     end
 
-    local placedSide = Basic.placeTopOrBottom()
+    directions = directions or {"top", "bottom"}
+
+    local diskState = DatabaseService.getSquirtleDiskState()
+    diskState.diskDriveSides = directions
+    DatabaseService.saveSquirtleDiskState(diskState)
+    local placedSide = SquirtleComplexApi.tryPutAtOneOf(directions, "computercraft:disk_drive")
 
     if not placedSide then
-        if not State.breakDirection or State.breakDirection == "front" then
-            error("no space to put the disk drive")
-        end
-
-        -- [todo] should use put() instead - for that, put() needs to be pulled into at least this layer
-        SquirtleComplexApi.mine(State.breakDirection)
-
-        if not Basic.place(State.breakDirection) then
-            error("no space to put the disk drive")
-        end
-
-        placedSide = State.breakDirection
+        error("todo: need help from player")
+    else
+        diskState.diskDriveSides = {}
+        diskState.cleanupSides[placedSide] = "computercraft:disk_drive"
+        DatabaseService.saveSquirtleDiskState(diskState)
     end
+
+    -- while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
+    --     SquirtleComplexApi.requireItems({["computercraft:disk_drive"] = 1})
+    -- end
+
+    -- -- [todo] should use tryPut() instead (which will also call requireItems())
+    -- -- problem with that though is that tryPut() also mines, but I'd like to first
+    -- -- try placing in all directions.
+    -- local placedSide = Elemental.placeAtOneOf(directions)
+
+    -- if not placedSide then
+    --     -- [todo] should use (try?)mine() instead
+    --     local dugSide = Elemental.digAtOneOf(directions)
+
+    --     if not dugSide then
+    --         error("todo: need help from player")
+    --     end
+
+    --     -- if not State.breakDirection or State.breakDirection == "front" then
+    --     --     error("no space to put the disk drive")
+    --     -- end
+
+    --     -- -- [todo] should use put() instead - for that, put() needs to be pulled into at least this layer
+    --     -- SquirtleComplexApi.mine(State.breakDirection)
+
+    --     if not Basic.place(dugSide) then
+    --         error("no space to put the disk drive")
+    --     end
+
+    --     placedSide = dugSide
+    -- end
 
     while not peripheral.isPresent(placedSide) do
         os.sleep(.1)
@@ -384,17 +513,60 @@ local function orientateUsingDiskDrive()
     local facing = Cardinal.rotateAround(Cardinal.fromName(diskDrive.state.facing))
     Basic.dig(placedSide)
 
+    diskState.diskDriveSides[placedSide] = nil
+    DatabaseService.saveSquirtleDiskState(diskState)
+
     return facing
 end
 
+function SquirtleComplexApi.cleanup()
+    local diskState = DatabaseService.getSquirtleDiskState()
+
+    for side, block in pairs(diskState.cleanupSides) do
+        if SquirtleComplexApi.probe(side, block) then
+            Basic.selectEmpty()
+            SquirtleComplexApi.dig(side)
+        end
+    end
+
+    for i = 1, #diskState.diskDriveSides do
+        local side = diskState.diskDriveSides[i]
+        Basic.selectEmpty()
+
+        if SquirtleComplexApi.probe(side, "computercraft:disk_drive") then
+            SquirtleComplexApi.dig(side)
+            break
+        end
+    end
+
+    for i = 1, #diskState.shulkerSides do
+        local side = diskState.shulkerSides[i]
+        Basic.selectEmpty()
+
+        if SquirtleComplexApi.probe(side, "minecraft:shulker_box") then
+            SquirtleComplexApi.dig(side)
+            break
+        end
+    end
+
+    diskState.cleanupSides = {}
+    diskState.diskDriveSides = {}
+    diskState.shulkerSides = {}
+    DatabaseService.saveSquirtleDiskState(diskState)
+end
+
+---@param method? OrientationMethod
+---@param directions? OrientationSide[]
 ---@return integer facing
-function SquirtleComplexApi.orientate()
-    if State.orientationMethod == "disk-drive" then
-        Elemental.setFacing(orientateUsingDiskDrive())
+function SquirtleComplexApi.orientate(method, directions)
+    method = method or State.orientationMethod
+
+    if method == "disk-drive" then
+        Elemental.setFacing(orientateUsingDiskDrive(directions))
     else
         local position = SquirtleComplexApi.locate()
 
-        if not orientateSameLayer(position) then
+        if not orientateSameLayer(position, directions) then
             error("failed to orientate. possibly blocked in.")
         end
     end
@@ -403,9 +575,61 @@ function SquirtleComplexApi.orientate()
 end
 
 ---@param items table<string, integer>
----@param shulker boolean?
+---@param shulker? boolean
 function SquirtleComplexApi.requireItems(items, shulker)
     requireItems(items, shulker)
+end
+
+---@param item string
+---@param quantity? integer
+---@param shulker? boolean
+function SquirtleComplexApi.requireItem(item, quantity, shulker)
+    quantity = quantity or 1
+    SquirtleComplexApi.requireItems({[item] = quantity}, shulker)
+end
+
+---@param direction string
+---@return boolean unloadedAll
+local function loadIntoShulker(direction)
+    local unloadedAll = true
+
+    for slot = 1, Elemental.size() do
+        local stack = Elemental.getStack(slot)
+
+        if stack and not stack.name == "minecraft:shulker_box" and not stack.name == "computercraft:disk_drive" then
+            Elemental.select(slot)
+
+            if not Elemental.drop(direction) then
+                unloadedAll = false
+            end
+        end
+    end
+
+    return unloadedAll
+end
+
+---@return boolean unloadedAll
+function SquirtleComplexApi.tryLoadShulkers()
+    ---@type string?
+    local placedSide = nil
+
+    for slot = 1, Elemental.size() do
+        local stack = Elemental.getStack(slot)
+
+        if stack and stack.name == "minecraft:shulker_box" then
+            Elemental.select(slot)
+            placedSide = placeShulker()
+            local unloadedAll = loadIntoShulker(placedSide)
+            Elemental.select(slot)
+            digShulker(placedSide)
+
+            if unloadedAll then
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 return SquirtleComplexApi

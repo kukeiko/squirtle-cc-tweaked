@@ -119,13 +119,19 @@ end
 ---Run functions until a specific event is pulled.
 ---@param event string
 ---@param ... function
+---@return boolean
 function EventLoop.runUntil(event, ...)
     local fns = {...}
+    local hitEvent = false
+
     EventLoop.waitForAny(function()
         EventLoop.pull(event)
+        hitEvent = true
     end, function()
         EventLoop.run(table.unpack(fns))
     end)
+
+    return hitEvent
 end
 
 ---@param ... function
@@ -142,6 +148,37 @@ function EventLoop.waitForAny(...)
 
     while not anyFinished do
         threads = runThreads(threads, table.pack(os.pullEvent()))
+    end
+end
+
+---@param min integer
+---@param max integer
+---@return integer
+function EventLoop.pullInteger(min, max)
+    if min < 0 or min > 9 then
+        error(string.format("min must be in range [0, 9] (got %d)", min))
+    end
+
+    if max < 0 or max > 9 then
+        error(string.format("max must be in range [0, 9] (got %d)", max))
+    end
+
+    if min > max then
+        error(string.format("max must be greater than min (got %d, %d)", min, max))
+    end
+
+    while true do
+        local event, key = EventLoop.pull("char")
+
+        if event == "terminate" then
+            error("terminated")
+        end
+
+        local int = tonumber(key)
+
+        if int ~= nil and int >= min and int <= max then
+            return int
+        end
     end
 end
 

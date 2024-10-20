@@ -9,6 +9,10 @@ local SquirtleElementalApi = {}
 
 ---@return integer
 function SquirtleElementalApi.getFacing()
+    if State.simulate then
+        return State.simulation.current.facing
+    end
+
     return State.facing
 end
 
@@ -19,6 +23,10 @@ end
 
 ---@return Vector
 function SquirtleElementalApi.getPosition()
+    if State.simulate then
+        return Vector.copy(State.simulation.current.position)
+    end
+
     return Vector.copy(State.position)
 end
 
@@ -89,6 +97,27 @@ function SquirtleElementalApi.place(direction, text)
     return getNative("place", direction)(text)
 end
 
+---@param directions PlaceSide[]
+---@return string? placedDirection
+function SquirtleElementalApi.placeAtOneOf(directions)
+    for i = 1, #directions do
+        if SquirtleElementalApi.place(directions[i]) then
+            return directions[i]
+        end
+    end
+end
+
+---@return string? direction
+function SquirtleElementalApi.placeTopOrBottom()
+    local directions = {"top", "bottom"}
+
+    for _, direction in pairs(directions) do
+        if SquirtleElementalApi.place(direction) then
+            return direction
+        end
+    end
+end
+
 ---@return string? direction
 function SquirtleElementalApi.placeFrontTopOrBottom()
     local directions = {"front", "top", "bottom"}
@@ -125,6 +154,12 @@ function SquirtleElementalApi.suck(direction, count)
 end
 
 ---@param direction? string
+function SquirtleElementalApi.suckAll(direction)
+    while SquirtleElementalApi.suck(direction) do
+    end
+end
+
+---@param direction? string
 ---@param tool? string
 ---@return boolean, string?
 function SquirtleElementalApi.dig(direction, tool)
@@ -136,8 +171,22 @@ function SquirtleElementalApi.dig(direction, tool)
     return getNative("dig", direction)(tool)
 end
 
+---@param directions DigSide[]
+---@return string? dugDirection
+function SquirtleElementalApi.digAtOneOf(directions)
+    for i = 1, #directions do
+        if SquirtleElementalApi.dig(directions[i]) then
+            return directions[i]
+        end
+    end
+end
+
 ---@return integer|"unlimited"
 function SquirtleElementalApi.getFuelLevel()
+    if State.simulate then
+        return State.simulation.current.fuel
+    end
+
     return turtle.getFuelLevel()
 end
 

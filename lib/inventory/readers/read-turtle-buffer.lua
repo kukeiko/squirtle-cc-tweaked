@@ -3,8 +3,8 @@ local constructInventory = require "lib.inventory.construct-inventory"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
----@param nameTagSlot integer
----@param label string
+---@param nameTagSlot? integer
+---@param label? string
 ---@return Inventory
 return function(name, stacks, nameTagSlot, label)
     ---@type table<integer, InventorySlot>

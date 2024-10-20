@@ -1,3 +1,12 @@
+---@class SquirtleDiskState
+---In which directions the turtle should check for placed shulkers & disk drives that are "left over"
+---due to a reboot/unload during shulker item transfer or orientating via disk drives.
+---@field cleanupSides table<PlaceSide, string>
+---In which directions the turtle is about to try to place a disk drive.
+---@field diskDriveSides PlaceSide[]
+---In which directions the turtle is about to try to place a shulker.
+---@field shulkerSides PlaceSide[]
+---
 ---@class SquirtleResumable
 ---@field name string
 ---@field home Vector
@@ -9,3 +18,4 @@
 ---@class SimulationDetails
 ---@field fuel integer
 ---@field facing integer
+---@field position Vector

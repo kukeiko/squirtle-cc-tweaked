@@ -1,4 +1,5 @@
 local Utils = require "lib.common.utils"
+local EventLoop = require "lib.common.event-loop"
 local World = require "lib.common.world"
 local ItemStock = require "lib.common.models.item-stock"
 local DatabaseService = require "lib.common.database-service"
@@ -7,7 +8,6 @@ local Inventory = require "lib.inventory.inventory-api"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local State = require "lib.squirtle.state"
-local getNative = require "lib.squirtle.get-native"
 local SquirtleElementalApi = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
@@ -22,69 +22,6 @@ setmetatable(SquirtleApi, {__index = Complex})
 ---@return fun() : nil
 function SquirtleApi.setBreakable(predicate)
     return State.setBreakable(predicate)
-end
-
----@param block? string
----@return boolean
-local function simulateTryPut(block)
-    if block then
-        if not State.results.placed[block] then
-            State.results.placed[block] = 0
-        end
-
-        State.results.placed[block] = State.results.placed[block] + 1
-    end
-
-    return true
-end
-
----@param block? string
-local function simulatePut(block)
-    simulateTryPut(block)
-end
-
----@param side? string
----@param block? string
----@return boolean
-function SquirtleApi.tryPut(side, block)
-    side = side or "front"
-    local native = getNative("place", side)
-
-    if State.simulate then
-        return simulateTryPut(block)
-    end
-
-    if block then
-        while not SquirtleApi.selectItem(block) do
-            SquirtleApi.requireItems({[block] = 1})
-        end
-    end
-
-    if native() then
-        return true
-    end
-
-    while SquirtleApi.tryMine(side) do
-    end
-
-    -- [todo] band-aid fix
-    while turtle.attack() do
-        os.sleep(1)
-    end
-
-    return native()
-end
-
----@param side? string
----@param block? string
-function SquirtleApi.put(side, block)
-    if State.simulate then
-        return simulatePut(block)
-    end
-
-    if not SquirtleApi.tryPut(side, block) then
-        error("failed to place")
-    end
 end
 
 ---@param side string
@@ -106,8 +43,8 @@ end
 
 ---@param target Vector
 ---@return boolean, string?
-function SquirtleApi.moveToPoint(target)
-    local delta = Vector.minus(target, SquirtleApi.locate())
+function SquirtleApi.tryMoveToPoint(target)
+    local delta = Vector.minus(target, SquirtleApi.getPosition())
 
     if delta.y > 0 then
         if not SquirtleApi.tryMove("top", delta.y) then
@@ -133,11 +70,13 @@ function SquirtleApi.moveToPoint(target)
 
     if delta.z > 0 then
         SquirtleApi.face(Cardinal.south)
+
         if not SquirtleApi.tryMove("front", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
         SquirtleApi.face(Cardinal.north)
+
         if not SquirtleApi.tryMove("front", -delta.z) then
             return false, "front"
         end
@@ -150,7 +89,7 @@ end
 ---@return boolean, string?, integer?
 local function movePath(path)
     for i, next in ipairs(path) do
-        local success, failedSide = SquirtleApi.moveToPoint(next)
+        local success, failedSide = SquirtleApi.tryMoveToPoint(next)
 
         if not success then
             return false, failedSide, i
@@ -268,6 +207,7 @@ end
 ---@class SquirtleConfigOptions
 ---@field orientate? "move"|"disk-drive"
 ---@field breakDirection? "top"|"front"|"bottom"
+---@field shulkerSides? PlaceSide[]
 ---@param options SquirtleConfigOptions
 function SquirtleApi.configure(options)
     if options.orientate then
@@ -277,17 +217,13 @@ function SquirtleApi.configure(options)
     if options.breakDirection then
         State.breakDirection = options.breakDirection
     end
+
+    if options.shulkerSides then
+        State.shulkerSides = options.shulkerSides
+    end
 end
 
 function SquirtleApi.recover()
-    local diskDriveDirections = {"top", "bottom"}
-
-    for _, direction in pairs(diskDriveDirections) do
-        if Basic.probe(direction, "computercraft:disk_drive") then
-            Basic.dig(direction)
-        end
-    end
-
     local shulkerDirections = {"top", "bottom", "front"}
 
     for _, direction in pairs(shulkerDirections) do
@@ -301,16 +237,13 @@ end
 ---@param name string
 ---@param args string[]
 ---@param start fun(args:string[]) : T
+---@param main fun(state: T) : unknown|nil
 ---@param resume fun(state: T) : unknown|nil
----@param config? SquirtleConfigOptions
+---@param finish fun(state: T) : unknown|nil
 ---@param additionalRequiredItems? ItemStock
-function SquirtleApi.runResumable(name, args, start, resume, config, additionalRequiredItems)
+function SquirtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems)
     local success, message = pcall(function(...)
         local resumable = DatabaseService.findSquirtleResumable(name)
-
-        if config then
-            SquirtleApi.configure(config)
-        end
 
         if not resumable then
             local state = start(args)
@@ -322,9 +255,20 @@ function SquirtleApi.runResumable(name, args, start, resume, config, additionalR
             Utils.writeStartupFile(name)
             local randomSeed = os.epoch("utc")
             math.randomseed(randomSeed)
+
+            -- set up initial state for potential later shutdown recovery
+            ---@type SimulationDetails
+            local initialState = {
+                facing = SquirtleElementalApi.getFacing(),
+                fuel = SquirtleElementalApi.getNonInfiniteFuelLevel(),
+                position = SquirtleElementalApi.getPosition()
+            }
+
             State.simulate = true
-            resume(state)
+            State.simulation.current = Utils.clone(initialState)
+            main(state)
             State.simulate = false
+            State.simulation.current = nil
             Advanced.refuelTo(State.results.steps)
             local required = State.results.placed
 
@@ -333,34 +277,44 @@ function SquirtleApi.runResumable(name, args, start, resume, config, additionalR
             end
 
             SquirtleApi.requireItems(required, true)
-
-            -- set up initial state for potential later shutdown recovery
             local home = SquirtleElementalApi.getPosition()
-            local facing = SquirtleElementalApi.getFacing()
-            ---@type SimulationDetails
-            local initialState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
             DatabaseService.createSquirtleResumable({
                 name = name,
                 initialState = initialState,
                 randomSeed = randomSeed,
-                home = home, -- [todo] not used yet
+                home = home,
                 args = args,
                 state = state
             })
         else
+            resume(resumable.state)
             -- recover from shutdown
             math.randomseed(resumable.randomSeed)
-            SquirtleApi.recover()
-            Complex.locate(true) -- [todo] needs to be configurable
-            local facing = Complex.orientate() -- the actual facing of the turtle is required to run the simulation
-            ---@type SimulationDetails
-            local targetState = {facing = facing, fuel = Basic.getNonInfiniteFuelLevel()}
+            Complex.cleanup() -- replaces recover()
+
             local initialState = resumable.initialState
+            ---@type SimulationDetails
+            local targetState = {
+                facing = SquirtleElementalApi.getFacing(),
+                fuel = SquirtleElementalApi.getNonInfiniteFuelLevel(),
+                position = SquirtleElementalApi.getPosition()
+            }
+
             SquirtleApi.simulate(initialState, targetState)
         end
 
         resumable = DatabaseService.getSquirtleResumable(name)
-        resume(resumable.state)
+
+        local aborted = EventLoop.runUntil(string.format("%s:abort", name), function()
+            main(resumable.state)
+        end)
+
+        if aborted then
+            -- [todo] it is possible that the cached position/facing is no longer valid due to abortion.
+            Complex.cleanup()
+        end
+
+        finish(resumable.state)
         DatabaseService.deleteSquirtleResumable(name)
         Utils.deleteStartupFile()
     end)
