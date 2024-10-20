@@ -53,18 +53,21 @@ local Vector = require("lib.common.vector")
 local Cardinal = require("lib.common.cardinal")
 local Squirtle = require("lib.squirtle.squirtle-api")
 local Print3dService = require("lib.features.print3d-service")
+local SquirtleService = require("lib.squirtle.squirtle-service")
 
 ---@class ColoredPoint
 ---@field vector Vector
 ---@field block string?
 ---
 ---@class Blueprint3D
+---@field x integer
 ---@field fuel integer
 ---@field palette string[]
 ---@field points [integer, integer, integer, integer][]
 ---
 ---@class Print3DState
 ---@field home Vector
+---@field offset Vector
 ---@field points ColoredPoint[]
 ---
 
@@ -119,8 +122,19 @@ local function start(args)
         os.sleep(.5)
     end
 
+    -- [todo] offset needs to be tested
+    local offset = Vector.create(blueprint.x, 0, 0)
+
+    if facing == Cardinal.east then
+        offset = Vector.rotateClockwise(offset, 1)
+    elseif facing == Cardinal.south then
+        offset = Vector.rotateClockwise(offset, 2)
+    elseif facing == Cardinal.west then
+        offset = Vector.rotateClockwise(offset, 3)
+    end
+
     ---@type Print3DState
-    local state = {home = home, points = points}
+    local state = {home = home, points = points, offset = offset}
 
     return state
 end
@@ -128,8 +142,12 @@ end
 ---@param state Print3DState
 local function main(state)
     for _, point in pairs(state.points) do
+        while not Print3dService.isOn() do
+            os.sleep(1)
+        end
+
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
-        local worldPoint = Vector.plus(state.home, above)
+        local worldPoint = Vector.minus(Vector.plus(state.home, above), state.offset)
         local success, message = Squirtle.navigate(worldPoint, nil, function()
             return true
         end)
@@ -157,8 +175,11 @@ end
 
 -- https://3dviewer.net/ for rotating
 -- https://drububu.com/miscellaneous/voxelizer/?out=obj for voxelizing
-print("[print3d v2.0.0-dev]")
+print("[print3d v2.1.0-dev]")
+os.sleep(1)
 
+-- [todo] add kill-switch - turtle should return home
+-- app\turtle\print3d\print3d.lua 3d-blueprints\fat-tree\printing\
 EventLoop.run(function()
     EventLoop.runUntil("print3d:stop", function()
         Rpc.server(SquirtleService)
@@ -180,29 +201,32 @@ end, function()
 end)
 
 end)
-__bundle_register("lib.features.print3d-service", function(require, _LOADED, __bundle_register, __bundle_modules)
----@class Print3dService : Service
-local Print3dService = {name = "print3d"}
+__bundle_register("lib.squirtle.squirtle-service", function(require, _LOADED, __bundle_register, __bundle_modules)
+local Squirtle = require("lib.squirtle.squirtle-api")
 
-local isOn = false
+---@class SquirtleService : Service
+---@field error string?
+local SquirtleService = {name = "squirtle", error = nil}
 
-function Print3dService.on()
-    isOn = true
+function SquirtleService.locate()
+    return Squirtle.locate()
 end
 
-function Print3dService.isOn()
-    return isOn
+---@return string?
+function SquirtleService.getError()
+    return SquirtleService.error
 end
 
-function Print3dService.off()
-    isOn = false
+function SquirtleService.shutdown()
+    os.shutdown()
 end
 
-return Print3dService
+return SquirtleService
 
 end)
 __bundle_register("lib.squirtle.squirtle-api", function(require, _LOADED, __bundle_register, __bundle_modules)
 local Utils = require("lib.common.utils")
+local EventLoop = require("lib.common.event-loop")
 local World = require("lib.common.world")
 local ItemStock = require("lib.common.models.item-stock")
 local DatabaseService = require("lib.common.database-service")
@@ -507,7 +531,16 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
         end
 
         resumable = DatabaseService.getSquirtleResumable(name)
-        main(resumable.state)
+
+        local aborted = EventLoop.runUntil(string.format("%s:abort", name), function()
+            main(resumable.state)
+        end)
+
+        if aborted then
+            -- [todo] it is possible that the cached position/facing is no longer valid due to abortion.
+            Complex.cleanup()
+        end
+
         finish(resumable.state)
         DatabaseService.deleteSquirtleResumable(name)
         Utils.deleteStartupFile()
@@ -721,22 +754,8 @@ end
 ---@param item string
 ---@return boolean
 local function loadFromShulker(shulker, item)
-    Basic.select(shulker)
-
-    local placedSide = Basic.placeFrontTopOrBottom()
-
-    if not placedSide then
-        if not State.breakDirection then
-            return false
-        end
-
-        SquirtleComplexApi.mine(State.breakDirection)
-        placedSide = Basic.placeFrontTopOrBottom()
-
-        if not placedSide then
-            return false
-        end
-    end
+    Elemental.select(shulker)
+    local placedSide = placeShulker()
 
     while not peripheral.isPresent(placedSide) do
         os.sleep(.1)
@@ -761,13 +780,13 @@ local function loadFromShulker(shulker, item)
                 Basic.select(shulker)
             end
 
-            Elemental.dig(placedSide)
+            digShulker(placedSide)
 
             return true
         end
     end
 
-    Elemental.dig(placedSide)
+    digShulker(placedSide)
 
     return false
 end
@@ -5240,13 +5259,19 @@ end
 ---Run functions until a specific event is pulled.
 ---@param event string
 ---@param ... function
+---@return boolean
 function EventLoop.runUntil(event, ...)
     local fns = {...}
+    local hitEvent = false
+
     EventLoop.waitForAny(function()
         EventLoop.pull(event)
+        hitEvent = true
     end, function()
         EventLoop.run(table.unpack(fns))
     end)
+
+    return hitEvent
 end
 
 ---@param ... function
@@ -5891,27 +5916,29 @@ end
 return {subtract = subtract, add = add}
 
 end)
-__bundle_register("lib.squirtle.squirtle-service", function(require, _LOADED, __bundle_register, __bundle_modules)
-local Squirtle = require("lib.squirtle.squirtle-api")
+__bundle_register("lib.features.print3d-service", function(require, _LOADED, __bundle_register, __bundle_modules)
+---@class Print3dService : Service
+local Print3dService = {name = "print3d"}
 
----@class SquirtleService : Service
----@field error string?
-local SquirtleService = {name = "squirtle", error = nil}
+local isOn = false
 
-function SquirtleService.locate()
-    return Squirtle.locate()
+function Print3dService.on()
+    isOn = true
 end
 
----@return string?
-function SquirtleService.getError()
-    return SquirtleService.error
+function Print3dService.isOn()
+    return isOn
 end
 
-function SquirtleService.shutdown()
-    os.shutdown()
+function Print3dService.off()
+    isOn = false
 end
 
-return SquirtleService
+function Print3dService.abort()
+    return os.queueEvent("print3d:abort")
+end
+
+return Print3dService
 
 end)
 __bundle_register("lib.common.rpc", function(require, _LOADED, __bundle_register, __bundle_modules)
