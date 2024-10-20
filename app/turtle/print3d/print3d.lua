@@ -131,10 +131,10 @@ end
 
 -- https://3dviewer.net/ for rotating
 -- https://drububu.com/miscellaneous/voxelizer/?out=obj for voxelizing
-print("[print3d v2.0.0-dev]")
+print("[print3d v2.1.0]")
+os.sleep(1)
 
 -- [todo] add kill-switch - turtle should return home
--- app\turtle\print3d\print3d.lua 3d-blueprints\fat-tree\printing\
 EventLoop.run(function()
     EventLoop.runUntil("print3d:stop", function()
         Rpc.server(SquirtleService)

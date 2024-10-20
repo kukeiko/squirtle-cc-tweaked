@@ -2,7 +2,7 @@ package.path = package.path .. ";/?.lua"
 local Rpc = require "lib.common.rpc"
 local Print3dService = require "lib.features.print3d-service"
 
-print("[print3d v1.0.0-dev]")
+print("[print3d v2.1.0]")
 local on = arg[1] == "on"
 local off = arg[1] == "off"
 local abort = arg[1] == "abort"
