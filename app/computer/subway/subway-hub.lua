@@ -10,7 +10,7 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-hub v3.2.0] booting...")
+    print("[subway-hub v3.2.1-dev] booting...")
 
     SubwayService.lockAnalogSide = args[1]
     SubwayService.signalDuration = tonumber(args[2]) or SubwayService.signalDuration
@@ -25,7 +25,7 @@ local function main(args)
     print("[max-distance]", SubwayService.maxDistance)
 
     if not turtle and not string.find(os.getComputerLabel(), "dev") then
-        Utils.writeStartupFile("subway-hub", SubwayService.lockAnalogSide, SubwayService.signalDuration, SubwayService.maxDistance)
+        Utils.writeStartupFile(string.format("subway-hub %s %d %d", SubwayService.lockAnalogSide, SubwayService.signalDuration, SubwayService.maxDistance))
     else
         print("[debug] skipping creation of startup file")
     end
