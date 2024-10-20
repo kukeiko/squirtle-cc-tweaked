@@ -1,5 +1,19 @@
+local EventLoop = require "lib.common.event-loop"
+
 ---@class BoneMealService : Service
 local BoneMealService = {name = "bone-meal"}
+
+function BoneMealService.run()
+    while true do
+        local event = EventLoop.pull()
+
+        if event == "terminate" then
+            return
+        elseif event == "bone-meal:reboot" then
+            os.reboot()
+        end
+    end
+end
 
 function BoneMealService.on()
     local isFull = BoneMealService.getStock()
@@ -7,6 +21,14 @@ function BoneMealService.on()
     if not isFull then
         redstone.setOutput("bottom", false)
     end
+end
+
+function BoneMealService.off()
+    redstone.setOutput("bottom", true)
+end
+
+function BoneMealService.reboot()
+    EventLoop.queue("bone-meal:reboot")
 end
 
 ---@return boolean, integer, string
@@ -32,10 +54,6 @@ function BoneMealService.getStock()
     local percentage = string.format("%.0f%%", (stock / chestSpace) * 100)
 
     return stock >= chestSpace, stock, percentage
-end
-
-function BoneMealService.off()
-    redstone.setOutput("bottom", true)
 end
 
 return BoneMealService

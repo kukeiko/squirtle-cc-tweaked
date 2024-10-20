@@ -2,9 +2,11 @@ package.path = package.path .. ";/?.lua"
 local Rpc = require "lib.common.rpc"
 local BoneMealService = require "lib.features.bone-meal-service"
 
-print("[bone-meal v1.2.0] booting...")
+print("[bone-meal v1.3.0-dev] booting...")
 local on = arg[1] == "on"
 local off = arg[1] == "off"
+local reboot = arg[1] == "reboot"
+
 local boneMeals = Rpc.all(BoneMealService)
 
 for _, boneMeal in pairs(boneMeals) do
@@ -14,6 +16,8 @@ for _, boneMeal in pairs(boneMeals) do
     elseif off then
         print(string.format("[off] %s", boneMeal.host))
         boneMeal.off()
+    elseif reboot then
+        boneMeal.reboot()
     else
         local _, _, percentage = boneMeal.getStock()
         print(string.format("[stock] %s", percentage))
