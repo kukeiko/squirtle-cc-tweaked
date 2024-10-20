@@ -4,6 +4,21 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "build turtle:oak",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/oak.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/oak",
+        },
+        {
+            "label": "build pocket:oak",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/oak"
+        },
+        {
+            "label": "build pocket:oak:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o ../23/oak.lua"
+        },
+        {
             "label": "build turtle:io-chestcart",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-chestcart",
@@ -124,6 +139,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update-host.lua -p app/computer/?.lua -p ?.lua -o dist/computer/update-host"
         },
         {
+            "label": "build computer:update",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update.lua -p app/computer/?.lua -p ?.lua -o dist/computer/update"
+        },
+        {
             "label": "build pocket:update",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/update.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/update"
@@ -167,6 +187,16 @@
             "label": "build turtle:print3d",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/print3d/print3d.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/print3d"
+        },
+        {
+            "label": "build pocket:print3d",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/print3d"
+        },
+        {
+            "label": "build pocket:print3d:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o ../23/print3d.lua"
         },
     ]
 }
