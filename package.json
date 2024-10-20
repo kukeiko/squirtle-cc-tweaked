@@ -3,6 +3,8 @@
   "dependencies": {
     "luabundler": "^1.2.2",
     "luamin": "1.0.4",
-    "fast-average-color-node": "2.6.0"
+    "fast-average-color-node": "2.6.0",
+    "color-diff": "1.4.0",
+    "bmp-js": "0.1.0"
   }
 }
