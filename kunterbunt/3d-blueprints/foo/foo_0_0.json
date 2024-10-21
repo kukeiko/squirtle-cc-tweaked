@@ -1,0 +1,55 @@
+{
+    "x": 0,
+    "fuel": 7,
+    "shulkers": 1,
+    "blocks": {
+        "minecraft:prismarine_bricks": 7
+    },
+    "palette": [
+        "minecraft:prismarine_bricks"
+    ],
+    "points": [
+        [
+            0,
+            0,
+            -1,
+            1
+        ],
+        [
+            0,
+            0,
+            -2,
+            1
+        ],
+        [
+            0,
+            0,
+            -3,
+            1
+        ],
+        [
+            0,
+            0,
+            -4,
+            1
+        ],
+        [
+            1,
+            0,
+            -4,
+            1
+        ],
+        [
+            1,
+            0,
+            -3,
+            1
+        ],
+        [
+            1,
+            0,
+            -2,
+            1
+        ]
+    ]
+}

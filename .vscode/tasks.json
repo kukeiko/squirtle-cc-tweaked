@@ -186,7 +186,7 @@
         {
             "label": "build turtle:print3d",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/print3d/print3d.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/print3d"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/print3d.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/print3d"
         },
         {
             "label": "build pocket:print3d",

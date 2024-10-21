@@ -40,5 +40,5 @@
  * @property {number} shulkers
  * @property {Record<string, number>} blocks
  * @property {string[]} palette
- * @property {[number, number, number, number][]} points
+ * @property {number[]} points
  */

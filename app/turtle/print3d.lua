@@ -1,10 +1,10 @@
 package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
+local version = require "version"
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
-local SquirtleService = require "lib.squirtle.squirtle-service"
 local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
@@ -23,6 +23,7 @@ local SquirtleService = require "lib.squirtle.squirtle-service"
 ---
 ---@class Print3DState
 ---@field home Vector
+---@field homeFacing integer
 ---@field offset Vector
 ---@field points ColoredPoint[]
 ---
@@ -40,11 +41,16 @@ local function start(args)
         return printUsage()
     end
 
+    if not fs.exists(filename) then
+        error(string.format("file %s doesn't exist", filename))
+    elseif fs.isDir(filename) then
+        error(string.format("%s is a directory, not a file", filename))
+    end
+
     local file = fs.open(filename, "r")
     ---@type Blueprint3D
     local blueprint = textutils.unserializeJSON(file.readAll())
     file.close()
-
     Squirtle.configure({shulkerSides = {"top"}})
     Squirtle.refuelTo(blueprint.fuel + 1000);
     local facing = Squirtle.orientate("disk-drive", {"top"})
@@ -52,22 +58,40 @@ local function start(args)
     ---@type ItemStock
     local blocks = {}
 
+    ---@type Vector
+    local previousPoint = Vector.create(0, 0, 0);
+
     ---@type ColoredPoint[]
-    local points = Utils.map(blueprint.points, function(point)
-        local block = blueprint.palette[point[4]]
-        local point = Vector.create(point[1], point[2], point[3])
+    local points = {}
 
-        if facing == Cardinal.east then
-            point = Vector.rotateClockwise(point, 1)
-        elseif facing == Cardinal.south then
-            point = Vector.rotateClockwise(point, 2)
-        elseif facing == Cardinal.west then
-            point = Vector.rotateClockwise(point, 3)
-        end
-
+    for i = 1, #blueprint.points, 4 do
+        local deltaX = blueprint.points[i]
+        local deltaY = blueprint.points[i + 1]
+        local deltaZ = blueprint.points[i + 2]
+        local block = blueprint.palette[blueprint.points[i + 3]]
         blocks[block] = (blocks[block] or 0) + 1
 
-        return {vector = point, block = block}
+        local pointVector = Vector.create(previousPoint.x + deltaX, previousPoint.y + deltaY, previousPoint.z + deltaZ)
+        ---@type ColoredPoint
+        local point = {vector = pointVector, block = block}
+        table.insert(points, point)
+        previousPoint = Vector.copy(pointVector)
+    end
+
+    print(string.format("[found] %dx voxels", #points))
+    os.sleep(1)
+
+    ---@type ColoredPoint[]
+    points = Utils.map(points, function(point)
+        if facing == Cardinal.east then
+            point.vector = Vector.rotateClockwise(point.vector, 1)
+        elseif facing == Cardinal.south then
+            point.vector = Vector.rotateClockwise(point.vector, 2)
+        elseif facing == Cardinal.west then
+            point.vector = Vector.rotateClockwise(point.vector, 3)
+        end
+
+        return point
     end)
 
     Squirtle.requireItems(blocks, true)
@@ -78,7 +102,6 @@ local function start(args)
         os.sleep(.5)
     end
 
-    -- [todo] offset needs to be tested
     local offset = Vector.create(blueprint.x, 0, 0)
 
     if facing == Cardinal.east then
@@ -90,7 +113,7 @@ local function start(args)
     end
 
     ---@type Print3DState
-    local state = {home = home, points = points, offset = offset}
+    local state = {home = home, homeFacing = facing, points = points, offset = offset}
 
     return state
 end
@@ -127,11 +150,13 @@ local function finish(state)
     Squirtle.navigate(state.home, nil, function()
         return false
     end)
+
+    Squirtle.face(state.homeFacing)
 end
 
 -- https://3dviewer.net/ for rotating
 -- https://drububu.com/miscellaneous/voxelizer/?out=obj for voxelizing
-print("[print3d v2.1.0]")
+print(string.format("[print3d %s]", version()))
 os.sleep(1)
 
 -- [todo] add kill-switch - turtle should return home

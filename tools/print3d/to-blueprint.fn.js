@@ -4,6 +4,20 @@
  */
 export function toBlueprint(column) {
     const palette = Array.from(column.blocks.keys());
+    /** @type {number[]} */
+    const points = [];
+
+    column.points.reduce((previous, current) => {
+        if (!previous) {
+            points.push(current.x, current.y, current.z, palette.findIndex(block => block === current.block) + 1);
+            return current;
+        }
+
+        let [x, y, z] = [current.x - previous.x, current.y - previous.y, current.z - previous.z];
+        points.push(x, y, z, palette.findIndex(block => block === current.block) + 1);
+
+        return current;
+    }, undefined)
 
     /** @type {Blueprint} */
     const blueprint = {
@@ -12,7 +26,7 @@ export function toBlueprint(column) {
         shulkers: column.shulkers,
         blocks: Object.fromEntries(column.blocks.entries()),
         palette,
-        points: column.points.map(point => [point.x, point.y, point.z, palette.findIndex(block => block === point.block) + 1])
+        points
     }
 
     return blueprint;

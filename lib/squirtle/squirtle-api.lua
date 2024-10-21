@@ -287,6 +287,7 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
                 state = state
             })
         else
+            print("[resume] ...")
             resume(resumable.state)
             -- recover from shutdown
             math.randomseed(resumable.randomSeed)
@@ -300,7 +301,9 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
                 position = SquirtleElementalApi.getPosition()
             }
 
+            print("[simulate] to target state...")
             SquirtleApi.simulate(initialState, targetState)
+            print("[simulate] done!")
         end
 
         resumable = DatabaseService.getSquirtleResumable(name)

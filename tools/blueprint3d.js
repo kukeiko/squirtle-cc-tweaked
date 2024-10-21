@@ -13,7 +13,8 @@ import { parseBmpFiles } from "./print3d/parse-bmp-files.js"
 
 const inputFilePath = process.argv[2];
 const unpackedMinecraftFolder = process.argv[3];
-const maxShulkers = +(process.argv[4] ?? "12");
+const doExportBmp = (process.argv[4] === "true");
+const maxShulkers = +(process.argv[5] ?? "12");
 
 if (typeof (inputFilePath) !== "string" || !inputFilePath.length) {
     console.error(".obj file argument invalid or missing")
@@ -45,7 +46,9 @@ if (parse(inputFilePath).ext === ".bmp") {
 const points = await (isBmp ? parseBmpFiles(inputFilePath) : parseObjFile(inputFilePath));
 const dimensions = getDimensions(points);
 
-await exportBmp(dirname(inputFilePath), parse(inputFilePath).name, points, dimensions);
+if (doExportBmp) {
+    await exportBmp(dirname(inputFilePath), parse(inputFilePath).name, points, dimensions);
+}
 
 console.log(`found ${points.length} voxels`);
 console.log("dimensions:", dimensions);
