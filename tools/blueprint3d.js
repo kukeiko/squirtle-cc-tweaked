@@ -11,11 +11,11 @@ import { assertIsDirectory, assertIsFile, fileExists } from "./utils.js";
 import { exportBmp } from "./print3d/export-bmp.js"
 import { parseBmpFiles } from "./print3d/parse-bmp-files.js"
 
-const objFilename = process.argv[2];
+const inputFilePath = process.argv[2];
 const unpackedMinecraftFolder = process.argv[3];
 const maxShulkers = +(process.argv[4] ?? "12");
 
-if (typeof (objFilename) !== "string" || !objFilename.length) {
+if (typeof (inputFilePath) !== "string" || !inputFilePath.length) {
     console.error(".obj file argument invalid or missing")
     process.exit();
 }
@@ -30,25 +30,27 @@ if (isNaN(maxShulkers) || maxShulkers < 1 || maxShulkers > 14) {
     process.exit();
 }
 
-assertIsFile(objFilename);
+assertIsFile(inputFilePath);
 assertIsDirectory(unpackedMinecraftFolder);
 
 let isBmp = false;
 
-if (parse(objFilename).ext === ".bmp") {
+console.log(`using ${inputFilePath} as input`);
+
+if (parse(inputFilePath).ext === ".bmp") {
     isBmp = true;
-    console.log("using .bmp as input");
+    console.log("using .bmp mode");
 }
 
-const points = await (isBmp ? parseBmpFiles(objFilename) : parseObjFile(objFilename));
+const points = await (isBmp ? parseBmpFiles(inputFilePath) : parseObjFile(inputFilePath));
 const dimensions = getDimensions(points);
 
-await exportBmp(dirname(objFilename), parse(objFilename).name, points, dimensions);
+await exportBmp(dirname(inputFilePath), parse(inputFilePath).name, points, dimensions);
 
 console.log(`found ${points.length} voxels`);
 console.log("dimensions:", dimensions);
 
-const blockPaletteFilename = join(dirname(objFilename), "block-palette.json");
+const blockPaletteFilename = join(dirname(inputFilePath), "block-palette.json");
 
 /** @type {string[]} */
 let blockPalette = [];
@@ -86,7 +88,7 @@ for await (const blueprint of blueprints) {
         blockTotals[block] = (blockTotals[block] || 0) + quantity
     }
 
-    const blueprintFilename = join(dirname(objFilename), `${parse(objFilename).name}_${blueprint.x}.json`);
+    const blueprintFilename = join(dirname(inputFilePath), `${parse(inputFilePath).name}_${blueprint.x}.json`);
     await writeFile(blueprintFilename, JSON.stringify(blueprint));
 }
 
@@ -97,15 +99,14 @@ for (const [block, quantity] of Object.entries(blockTotals)) {
 }
 
 const firstPoint = points.filter(point => point.y === 0).reduce((nearest, current) => {
-    // [todo] when inverting z later on (making it positive), fix here
     if (current.z > nearest.z) {
         return current;
-    } else if(current.z == nearest.z && current.x < nearest.x) {
+    } else if (current.z == nearest.z && current.x < nearest.x) {
         return current;
     }
 
     return nearest;
-}, { x: Infinity, y: Infinity, z: -Infinity }) // [todo] when inverting z later on (making it positive), fix here
+}, { x: Infinity, y: Infinity, z: -Infinity })
 
 
 console.log("nearest:", firstPoint.x, firstPoint.y, firstPoint.z);

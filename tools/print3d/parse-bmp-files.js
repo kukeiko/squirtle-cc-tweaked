@@ -1,7 +1,7 @@
+import { decode } from "bmp-js";
+import { readFile } from "fs/promises";
 import { join, parse } from "path";
-import { decode, encode } from "bmp-js"
-import { readFile, writeFile } from "fs/promises"
-import { fileExists } from "../utils.js"
+import { fileExists } from "../utils.js";
 
 /**
  * @param {string} objFilename
@@ -18,7 +18,6 @@ export async function parseBmpFiles(objFilename) {
 
     while (true) {
         const filename = `${nameWithoutY}_${y}.bmp`;
-        // console.log("🌵", filename);
         const exists = await fileExists(join(dir, filename));
 
         if (!exists) {
@@ -31,9 +30,10 @@ export async function parseBmpFiles(objFilename) {
 
         for (let z = 0; z < imgData.height; z++) {
             for (let x = 0; x < imgData.width; x++) {
-                const [a, b, g, r] = [imgData.data[offset++], imgData.data[offset++], imgData.data[offset++], imgData.data[offset++]];
+                const [_, b, g, r] = [imgData.data[offset++], imgData.data[offset++], imgData.data[offset++], imgData.data[offset++]];
 
-                if (a !== 255 && b !== 255 && g !== 255 && r !== 255) {
+                // ignore white
+                if (![b, g, r].every(value => value === 255)) {
                     points.push({ x, y, z: z - (imgData.height - 1), b, g, r })
                 }
             }

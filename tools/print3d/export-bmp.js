@@ -1,6 +1,6 @@
 import { join } from "path";
-import { decode, encode } from "bmp-js"
-import { readFile, writeFile } from "fs/promises"
+import { encode } from "bmp-js"
+import { writeFile } from "fs/promises"
 
 /**
  * @param {string} directory

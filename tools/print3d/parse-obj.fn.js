@@ -41,31 +41,27 @@ function assignPointColor(point, mtlLine, colors, toGrayscale = false) {
  * @param {Point[]} points
  */
 function translatePointsToZeroOrigin(points) {
-    const offsetBy = points.reduce((offset, value) => {
-        if (!offset) {
-            return value;
+    const offset = { x: Infinity, y: Infinity, z: -Infinity };
+
+    for (const point of points) {
+        if (point.x < offset.x) {
+            offset.x = point.x;
         }
 
-        if (value.x < offset.x) {
-            offset.x = value.x;
+        if (point.y < offset.y) {
+            offset.y = point.y;
         }
 
-        if (value.y < offset.y) {
-            offset.y = value.y;
+        if (point.z > offset.z) {
+            offset.z = point.z;
         }
+    }
 
-        if (value.z > offset.z) {
-            offset.z = value.z;
-        }
-
-        return offset;
-    }, { x: Infinity, y: Infinity, z: -Infinity })
-
-    points.forEach(point => {
-        point.x -= offsetBy.x;
-        point.y -= offsetBy.y;
-        point.z -= offsetBy.z;
-    });
+    for (const point of points) {
+        point.x -= offset.x;
+        point.y -= offset.y;
+        point.z -= offset.z;
+    }
 }
 
 /**
@@ -73,11 +69,11 @@ function translatePointsToZeroOrigin(points) {
  * @param {number} magnitude
  */
 function normalizePoints(points, magnitude) {
-    points.forEach(point => {
+    for (const point of points) {
         point.x = Math.round(point.x / magnitude);
         point.y = Math.round(point.y / magnitude);
         point.z = Math.round(point.z / magnitude);
-    });
+    }
 }
 
 /**

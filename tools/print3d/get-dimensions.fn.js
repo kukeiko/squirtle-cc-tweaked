@@ -4,7 +4,10 @@
  * @returns {Dimensions}
  */
 export function getDimensions(points) {
-    const dimensions = points.reduce((dimensions, point) => {
+    /** @type {Dimensions} */
+    const dimensions = { x: 0, y: 0, z: 0 };
+
+    for (const point of points) {
         if (point.x > dimensions.x) {
             dimensions.x = point.x;
         }
@@ -16,9 +19,7 @@ export function getDimensions(points) {
         if (point.z < dimensions.z) {
             dimensions.z = point.z;
         }
-
-        return dimensions;
-    }, { x: 0, y: 0, z: 0 });
+    }
 
     dimensions.x += 1;
     dimensions.y += 1;
