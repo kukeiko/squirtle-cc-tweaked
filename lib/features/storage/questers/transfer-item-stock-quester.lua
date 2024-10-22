@@ -4,37 +4,83 @@ local Rpc = require "lib.common.rpc"
 local StorageService = require "lib.features.storage.storage-service"
 local QuestService = require "lib.common.quest-service"
 
+---@param quest TransferItemsQuest
+---@param storageService StorageService|RpcClient
+---@return ItemStock
+local function fillBuffer(quest, storageService)
+    local bufferStock = storageService.getBufferStock(quest.bufferId)
+    local openStock = ItemStock.subtract(quest.items, bufferStock)
+
+    if not Utils.isEmpty(openStock) then
+        print("transfer stock to buffer...")
+        storageService.transferStockToBuffer(quest.bufferId, openStock)
+    end
+
+    return storageService.getBufferStock(quest.bufferId)
+end
+
+---@param quest TransferItemsQuest
+---@param storageService StorageService|RpcClient
+---@param questService QuestService|RpcClient
+local function updateTransferred(quest, storageService, questService)
+    local bufferStock = storageService.getBufferStock(quest.bufferId)
+    local transferred = ItemStock.subtract(quest.found, bufferStock)
+    quest.transferred = transferred
+    quest.transferredAll = Utils.isEmpty(ItemStock.subtract(quest.items, transferred))
+    questService.updateQuest(quest)
+end
+
+---@param quest TransferItemsQuest
+---@param storageService StorageService|RpcClient
+---@param questService QuestService|RpcClient
+local function emptyBuffer(quest, storageService, questService)
+    print("transfer stock from buffer to target...", quest.to)
+    ---@type ItemStock
+    storageService.transferBufferStock(quest.bufferId, quest.to, quest.toTag)
+    updateTransferred(quest, storageService, questService)
+
+    local bufferStock = storageService.getBufferStock(quest.bufferId)
+
+    if not Utils.isEmpty(bufferStock) then
+        print("trying to empty out the buffer...")
+
+        while not Utils.isEmpty(bufferStock) do
+            os.sleep(1)
+            storageService.transferBufferStock(quest.bufferId, quest.to, quest.toTag)
+            updateTransferred(quest, storageService, questService)
+            bufferStock = storageService.getBufferStock(quest.bufferId)
+        end
+
+        print("managed to empty out buffer!")
+    end
+end
+
+-- [todo] if it crashes, any allocated buffers need to be cleaned out
 return function()
     local questService = Rpc.nearest(QuestService)
     local storageService = Rpc.nearest(StorageService)
 
-    while true do
+    while questService and storageService do
+        print("waiting for new quest...")
         local quest = questService.acceptTransferItemsQuest(os.getComputerLabel())
+        print("got quest!")
         -- [todo] hardcoded slotCount
         local bufferId = quest.bufferId or storageService.allocateQuestBuffer(quest)
 
         if not quest.bufferId then
             quest.bufferId = bufferId
             questService.updateQuest(quest)
+            print("allocated new buffer", bufferId)
         end
 
-        local bufferStock = storageService.getBufferStock(bufferId)
-        local openStock = ItemStock.subtract(quest.items, bufferStock)
-
-        if not Utils.isEmpty(openStock) then
-            storageService.transferStockToBuffer(bufferId, openStock)
+        if not quest.found then
+            quest.found = fillBuffer(quest, storageService)
+            questService.updateQuest(quest)
         end
 
-        quest.found = storageService.getBufferStock(bufferId)
-        questService.updateQuest(quest)
-
-        -- [todo] what if buffer could not be emptied?
-        local transferred = storageService.transferBufferStock(bufferId, quest.to, quest.toTag)
-        quest.transferred = transferred
-        quest.transferredAll = Utils.isEmpty(ItemStock.subtract(quest.items, transferred))
-        questService.updateQuest(quest)
+        emptyBuffer(quest, storageService, questService)
+        print("finishing quest!")
         questService.finishQuest(quest.id)
-        -- [todo] test that "free buffer" is working
         storageService.freeBuffer(bufferId)
     end
 end

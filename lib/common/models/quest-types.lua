@@ -1,20 +1,28 @@
----@alias QuestType "provide-items" | "craft-items" | "transfer-items" | "craft-item" | "dance"
+---@alias QuestType "provide-items" | "craft-items" | "transfer-items" | "dance"
 ---
 ---@class Quest
 ---@field id integer
 ---@field issuedBy string
 ---@field acceptedBy? string
----@field partOfQuestId? integer 
+---@field partOfQuestId? integer
 ---@field status "issued" | "accepted" | "finished" | "failed"
 ---@field type QuestType
 ---
 ---@class ProvideItemsQuest : Quest
 ---@field type "provide-items"
+---@field craftMode "missing" | "all" | "none"
 ---@field transferredInitial boolean
 ---@field craftMissingQuestId? integer
 ---@field items ItemStock
----@field targetInventory string
+---@field to string[]
+---@field toTag InventorySlotTag
 ---
+---my current idea is that CraftItemsQuest will pull ingredients from storage itself.
+---if it doesn't manage to pull all required ingredients, it will try to craft the missing ones - doing the whole process recursively.
+---this opens up a few issues:
+--- - required buffer size might explode
+--- - how to keep track of this recursivity
+--- - what should happen if some ingredients are missing and need to be gathered? should we just fail?
 ---@class CraftItemsQuest : Quest
 ---@field type "craft-items"
 ---@field item string
@@ -27,12 +35,9 @@
 ---@field toTag InventorySlotTag
 ---@field items ItemStock
 ---@field bufferId? integer
----@field found ItemStock 
+---@field found? ItemStock 
 ---@field transferred ItemStock
 ---@field transferredAll boolean
----
----@class CraftItemQuest : Quest
----@field type "craft-item"
 ---
 ---@class DanceQuest : Quest
 ---@field type "dance"

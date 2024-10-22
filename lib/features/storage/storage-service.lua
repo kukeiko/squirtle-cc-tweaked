@@ -22,15 +22,21 @@ local function getAllocatedInventories()
 end
 
 ---@param stashLabel string
----@param itemStock ItemStock
----@return ItemStock
-function StorageService.transferStockToStash(stashLabel, itemStock)
+function StorageService.getStashName(stashLabel)
     local stash = InventoryApi.findInventoryByTypeAndLabel("stash", stashLabel)
 
     if not stash then
         error(string.format("stash %s doesn't exist", stashLabel))
     end
 
+    return stash
+end
+
+---@param stashLabel string
+---@param itemStock ItemStock
+---@return ItemStock
+function StorageService.transferStockToStash(stashLabel, itemStock)
+    local stash = StorageService.getStashName(stashLabel)
     return InventoryApi.distributeItems(InventoryApi.getInventories(), {stash}, itemStock, "withdraw", "input")
 end
 

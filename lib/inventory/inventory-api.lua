@@ -629,6 +629,11 @@ local function onPeripheralEventMountInventory()
     end
 end
 
+---@param flag boolean
+function Inventory.useCache(flag)
+    InventoryCollection.useCache = flag
+end
+
 function Inventory.discover()
     print("[inventory] mounting connected inventories...")
     local names = peripheral.getNames()

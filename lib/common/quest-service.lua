@@ -69,7 +69,6 @@ function QuestService.issueTransferItemsQuest(issuedBy, to, toTag, targetStock)
     quest.to = to
     quest.toTag = toTag
     quest.items = targetStock
-    quest.found = {}
     quest.transferred = {}
     quest.transferredAll = false
     quest = DatabaseService.createQuest(quest) --[[@as TransferItemsQuest]]
