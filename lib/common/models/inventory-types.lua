@@ -14,7 +14,7 @@
 ---@field allowAllocate boolean
 ---@field type InventoryType
 ---@field label? string
----@field items? table<string, true>
+---@field items? table<string, integer>
 ---
 ---@alias FurnaceInventoryTypes "furnace" | "furnace-config" | "furnace-input" | "furnace-output"
 ---@alias ComposterInventoryTypes "composter-config" | "composter-input"

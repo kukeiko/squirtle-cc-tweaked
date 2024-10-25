@@ -1,4 +1,4 @@
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local readBuffer = require "lib.inventory.readers.read-buffer"
 local readComposterConfiguration = require "lib.inventory.readers.read-composter-configuration"
@@ -51,13 +51,19 @@ end
 ---@param name string
 ---@return Inventory
 local function readIgnore(name)
-    return constructInventory(name, "ignore", {}, {})
+    return Inventory.create(name, "ignore", {}, {})
 end
 
 ---@param name string
 ---@return string?
 local function getPeripheralBaseType(name)
-    return baseTypeLookup[string.sub(peripheral.getType(name), 1, 15)]
+    local peripheralType = peripheral.getType(name)
+
+    if not peripheralType then
+        return nil
+    end
+
+    return baseTypeLookup[string.sub(peripheralType, 1, 15)]
 end
 
 ---@param name string
@@ -145,9 +151,9 @@ function InventoryReader.read(name, expected)
         error(string.format("expected %s to be of type %s, but found nothing", name, expected))
     elseif expected and inventory.type ~= expected then
         error(string.format("expected %s to be of type %s, but got %s", name, expected, inventory.type))
-    else
-        return inventory
     end
+
+    return inventory
 end
 
 return InventoryReader

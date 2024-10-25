@@ -2,11 +2,11 @@ local Inventory = require "lib.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function(...)
-        local shulkers = Inventory.getInventories("shulker", true)
-        local siloOutputs = Inventory.getInventories("silo:output")
-        Inventory.distributeFromTag(siloOutputs, shulkers, "output", "input")
-        local storages = Inventory.getInventories("storage")
-        Inventory.distributeFromTag(storages, shulkers, "output", "input")
+        local shulkers = Inventory.getByType("shulker", true)
+        local siloOutputs = Inventory.getByType("silo:output")
+        Inventory.transfer(siloOutputs, "output", shulkers, "input")
+        local storages = Inventory.getByType("storage")
+        Inventory.transfer(storages, "output", shulkers, "input")
     end)
 
     if not success then

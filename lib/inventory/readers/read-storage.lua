@@ -1,6 +1,6 @@
 local Utils = require "lib.common.utils"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 
 ---@param stacks ItemStacks
 ---@return boolean
@@ -28,12 +28,12 @@ end
 return function(name, stacks)
     ---@type table<integer, InventorySlot>
     local slots = {}
-    ---@type table<string, true>
+    ---@type table<string, integer>
     local items = {}
 
     if isMonoTypeStacks(stacks) then
         local first = Utils.first(stacks)
-        items[first.name] = true
+        items[first.name] = 0
         ---@type ItemStack
         local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
 
@@ -47,6 +47,7 @@ return function(name, stacks)
             if stack then
                 stack.maxCount = stack.maxCount - 1
                 stack.count = stack.count - 1
+                items[stack.name] = items[stack.name] + stack.count
             else
                 stacks[index] = Utils.copy(template)
             end
@@ -56,9 +57,9 @@ return function(name, stacks)
             slots[index] = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
             stack.maxCount = stack.maxCount - 1
             stack.count = stack.count - 1
-            items[stack.name] = true
+            items[stack.name] = (items[stack.name] or 0) + stack.count
         end
     end
 
-    return constructInventory(name, "storage", stacks, slots, false, nil, items)
+    return Inventory.create(name, "storage", stacks, slots, false, nil, items)
 end

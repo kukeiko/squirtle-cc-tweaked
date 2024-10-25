@@ -1,6 +1,6 @@
 local Utils = require "lib.common.utils"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -33,5 +33,5 @@ return function(name, stacks, nameTagSlot)
         end
     end
 
-    return constructInventory(name, "silo:input", stacks, slots)
+    return Inventory.create(name, "silo:input", stacks, slots)
 end

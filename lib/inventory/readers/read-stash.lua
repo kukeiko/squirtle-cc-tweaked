@@ -1,5 +1,5 @@
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -24,5 +24,5 @@ return function(name, stacks, nameTagSlot, label)
         slots[slot] = {index = slot, tags = tags}
     end
 
-    return constructInventory(name, "stash", stacks, slots, true, label)
+    return Inventory.create(name, "stash", stacks, slots, true, label)
 end

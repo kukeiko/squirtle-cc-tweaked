@@ -36,7 +36,7 @@ end
 
 ---@param stashLabel string
 function StorageService.getStashName(stashLabel)
-    local stash = InventoryApi.findInventoryByTypeAndLabel("stash", stashLabel)
+    local stash = InventoryApi.findByTypeAndLabel("stash", stashLabel)
 
     if not stash then
         error(string.format("stash %s doesn't exist", stashLabel))
@@ -47,10 +47,10 @@ end
 
 ---@param stashLabel string
 ---@param itemStock ItemStock
----@return ItemStock
+---@return ItemStock, ItemStock open
 function StorageService.transferStockToStash(stashLabel, itemStock)
     local stash = StorageService.getStashName(stashLabel)
-    return InventoryApi.distributeItems(InventoryApi.getInventories(), {stash}, itemStock, "withdraw", "input")
+    return InventoryApi.transferItems(InventoryApi.getAll(), "withdraw", {stash}, "input", itemStock)
 end
 
 ---@param stashLabel string
@@ -99,7 +99,7 @@ function StorageService.allocateQuestBuffer(quest, slotCount)
         return allocatedBuffer.id
     end
 
-    local buffers = InventoryApi.getInventories("buffer")
+    local buffers = InventoryApi.getByType("buffer")
     local alreadyAllocated = getAllocatedInventories()
     ---@type string[]
     local newlyAllocated = {}
@@ -108,7 +108,7 @@ function StorageService.allocateQuestBuffer(quest, slotCount)
     for _, buffer in pairs(buffers) do
         if not alreadyAllocated[buffer] then
             table.insert(newlyAllocated, buffer)
-            openSlots = openSlots - InventoryApi.getInventorySlotCount(buffer, "buffer")
+            openSlots = openSlots - InventoryApi.getSlotCount(buffer, "buffer")
 
             if openSlots <= 0 then
                 break
@@ -133,7 +133,7 @@ end
 
 ---@param bufferId integer
 function StorageService.flushBuffer(bufferId)
-    local storages = InventoryApi.getInventories("storage")
+    local storages = InventoryApi.getByType("storage")
 
     while not Utils.isEmpty(StorageService.getBufferStock(bufferId)) do
         StorageService.transferBufferStock(bufferId, storages, "input")
@@ -148,8 +148,7 @@ end
 function StorageService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
     local databaseService = getDatabaseService()
     local buffer = databaseService.getAllocatedBuffer(bufferId)
-    InventoryApi.refresh(buffer.inventories) -- [todo] for testing purposes
-    local storages = InventoryApi.getInventories(fromType or "storage")
+    local storages = InventoryApi.getByType(fromType or "storage")
     InventoryApi.transferItems(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
 
@@ -159,7 +158,6 @@ end
 function StorageService.transferInventoryStockToBuffer(bufferId, from, fromTag)
     local databaseService = getDatabaseService()
     local buffer = databaseService.getAllocatedBuffer(bufferId)
-    InventoryApi.refresh(buffer.inventories) -- [todo] for testing purposes
     local itemStock = InventoryApi.getInventoryStockByTag(from, fromTag, true) -- [todo] for testing purposes / re-evaluate
     InventoryApi.transferItems({from}, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
@@ -190,7 +188,7 @@ end
 ---@param to string[]
 ---@param toTag InventorySlotTag
 ---@param stock? ItemStock
----@return ItemStock
+---@return ItemStock, ItemStock open
 function StorageService.transferBufferStock(bufferId, to, toTag, stock)
     local databaseService = getDatabaseService()
     local buffer = databaseService.getAllocatedBuffer(bufferId)

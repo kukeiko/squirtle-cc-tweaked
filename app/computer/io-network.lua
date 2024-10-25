@@ -64,10 +64,9 @@ local function main()
         while true do
             os.sleep(10)
             print("[refresh] storages, silos & stashes")
-            Inventory.refreshByType("storage")
-            Inventory.refreshByType("silo:input")
-            Inventory.refreshByType("silo:output")
-            Inventory.refreshByType("stash")
+            Inventory.refresh("storage")
+            Inventory.refresh("silo:input")
+            Inventory.refresh("stash")
         end
     end, function()
         transferItemStockQuester()

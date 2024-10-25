@@ -1,4 +1,4 @@
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -23,5 +23,5 @@ return function(name, stacks, nameTagSlot)
         end
     end
 
-    return constructInventory(name, "io", stacks, slots)
+    return Inventory.create(name, "io", stacks, slots)
 end

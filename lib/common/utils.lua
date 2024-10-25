@@ -184,6 +184,23 @@ function Utils.filterMap(list, predicate)
     return filtered
 end
 
+---@generic V, K, U
+---@param list table<K, V>
+---@param predicate fun(item: V, index: K): boolean
+---@param project fun(item: V, index: K): U
+---@return U[]
+function Utils.filterMapProjectList(list, predicate, project)
+    local filtered = {}
+
+    for key, value in pairs(list) do
+        if predicate(value, key) then
+            table.insert(filtered, project(value, key))
+        end
+    end
+
+    return filtered
+end
+
 ---@generic T
 ---@param list T[]
 ---@param predicate fun(item: T, index: number): boolean

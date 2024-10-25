@@ -1,5 +1,5 @@
 local Utils = require "lib.common.utils"
-local constructInventory = require "lib.inventory.construct-inventory"
+local Inventory = require "lib.inventory.inventory"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -29,5 +29,5 @@ return function(name, stacks, nameTagSlot)
     fillSlots(slots, inputSlotOffset, {input = true})
     fillSlots(slots, outputSlotOffset, {output = true})
 
-    return constructInventory(name, "crafter", stacks, slots, true)
+    return Inventory.create(name, "crafter", stacks, slots, true)
 end

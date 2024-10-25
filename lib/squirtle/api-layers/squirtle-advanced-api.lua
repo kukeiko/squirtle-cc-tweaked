@@ -136,7 +136,7 @@ end
 ---@param to string
 ---@return ItemStock transferredTotal, ItemStock open
 function SquirtleAdvancedApi.pushOutput(from, to)
-    return Inventory.transferFromTag(from, to, "buffer", "output")
+    return Inventory.transfer({from}, "buffer", {to}, "output")
 end
 
 ---@param from string
@@ -165,7 +165,7 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
     transferredOutput = transferredOutput or {}
 
     ---@type ItemStock
-    local total = {}
+    local items = {}
 
     -- in case the chest we're pulling from has the same item in input as it does in output,
     -- we need to make sure to not pull more input than is allowed by checking what parts of
@@ -177,10 +177,10 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
             inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
         end
 
-        total[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
+        items[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
     end
 
-    return Inventory.transferFromTag(from, to, "input", "buffer", total)
+    return Inventory.transfer({from}, "input", {to}, "buffer", items)
 end
 
 return SquirtleAdvancedApi

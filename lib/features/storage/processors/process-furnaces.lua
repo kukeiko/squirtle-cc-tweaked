@@ -28,25 +28,25 @@ end
 
 return function()
     local success, e = pcall(function()
-        local outputs = Inventory.getInventories("furnace-output", true)
-        local furnaces = Inventory.getInventories("furnace", true)
-        local storages = Inventory.getInventories("storage")
-        local siloInputs = Inventory.getInventories("silo:input")
-        Inventory.distributeFromTag(furnaces, storages, "output", "input")
-        Inventory.distributeFromTag(furnaces, outputs, "output", "input")
-        Inventory.distributeFromTag(furnaces, siloInputs, "output", "input")
-        Inventory.distributeFromTag(outputs, storages, "output", "input")
-        Inventory.distributeFromTag(outputs, siloInputs, "output", "input")
-        Inventory.distributeItem(furnaces, storages, "minecraft:bucket", "fuel", "input")
+        local outputs = Inventory.getByType("furnace-output", true)
+        local furnaces = Inventory.getByType("furnace", true)
+        local storages = Inventory.getByType("storage")
+        local siloInputs = Inventory.getByType("silo:input")
+        Inventory.transfer(furnaces, "output", storages, "input")
+        Inventory.transfer(furnaces, "output", outputs, "input")
+        Inventory.transfer(furnaces, "output", siloInputs, "input")
+        Inventory.transfer(outputs, "output", storages, "input")
+        Inventory.transfer(outputs, "output", siloInputs, "input")
+        Inventory.transferItem(furnaces, "fuel", storages, "input", "minecraft:bucket")
 
         print("[move] fuel from input")
-        local inputs = Inventory.getInventories("furnace-input", true)
+        local inputs = Inventory.getByType("furnace-input", true)
 
         for _, fuelItem in ipairs(fuelItems) do
-            Inventory.distributeItem(inputs, furnaces, fuelItem, "output", "fuel")
+            Inventory.transferItem(inputs, "output", furnaces, "fuel", fuelItem)
         end
 
-        local configurations = Inventory.getInventories("furnace-config", true)
+        local configurations = Inventory.getByType("furnace-config", true)
 
         if #configurations > 0 then
             local config = Inventory.getStockByTagMultiInventory(configurations, "configuration")
@@ -55,7 +55,7 @@ return function()
             for smeltableItem, maxFurnaces in pairs(config) do
                 local targetFurnaces = getFurnacesForSmelting(furnaces, smeltableItem, maxFurnaces)
                 print(string.format("[config] %dx %s, %dx available", maxFurnaces, smeltableItem, #targetFurnaces))
-                Inventory.distributeItem(inputs, targetFurnaces, smeltableItem, "output", "input")
+                Inventory.transferItem(inputs, "output", targetFurnaces, "input", smeltableItem)
             end
         else
             print("[info] no furnace configuration found")
