@@ -1,5 +1,4 @@
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local Inventory = require "lib.inventory.inventory"
+local readCommon = require "lib.inventory.readers.read-common"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -7,22 +6,6 @@ local Inventory = require "lib.inventory.inventory"
 ---@param label string
 ---@return Inventory
 return function(name, stacks, nameTagSlot, label)
-    ---@type table<integer, InventorySlot>
-    local slots = {}
-
-    for slot = 1, InventoryPeripheral.getSize(name) do
-        ---@type InventorySlotTags
-        local tags = {}
-
-        if slot == nameTagSlot then
-            tags.nameTag = true
-        else
-            tags.input = true
-            tags.buffer = true -- [todo] to make io-crafter work. revisit
-        end
-
-        slots[slot] = {index = slot, tags = tags}
-    end
-
-    return Inventory.create(name, "stash", stacks, slots, true, label)
+    -- [todo] "buffer" tag is to make io-crafter work. revisit
+    return readCommon(name, "stash", stacks, nameTagSlot, {input = true, buffer = true}, label)
 end

@@ -28,6 +28,8 @@ end
 return function(name, stacks)
     ---@type table<integer, InventorySlot>
     local slots = {}
+    ---@type InventorySlotTags
+    local slotTags = {input = true, output = true, withdraw = true}
     ---@type table<string, integer>
     local items = {}
 
@@ -39,8 +41,8 @@ return function(name, stacks)
 
         for index = 1, InventoryPeripheral.getSize(name) do
             ---@type InventorySlot
-            -- [todo] find references on "tags" doesn't work? (when using it on the type in inventory-elemental.lua file)
-            local slot = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
+            -- [todo] remove clone once cc:tweaked is updated
+            local slot = {index = index, tags = Utils.clone(slotTags), permanent = true}
             slots[index] = slot
             local stack = stacks[index]
 
@@ -54,7 +56,8 @@ return function(name, stacks)
         end
     else
         for index, stack in pairs(stacks) do
-            slots[index] = {index = index, tags = {input = true, output = true, withdraw = true}, permanent = true}
+            -- [todo] remove clone once cc:tweaked is updated
+            slots[index] = {index = index, tags = Utils.clone(slotTags), permanent = true}
             stack.maxCount = stack.maxCount - 1
             stack.count = stack.count - 1
             items[stack.name] = (items[stack.name] or 0) + stack.count

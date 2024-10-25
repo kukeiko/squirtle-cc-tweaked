@@ -11,5 +11,12 @@ return function(name, stacks)
     slots[2] = {index = 2, tags = {fuel = true}}
     slots[3] = {index = 3, tags = {output = true, withdraw = true}}
 
-    return Inventory.create(name, "furnace", {stacks[1], stacks[2], stacks[3]}, slots, true)
+    ---@type ItemStock
+    local items = {}
+
+    for _, stack in pairs(stacks) do
+        items[stack.name] = (items[stack.name] or 0) + stack.count
+    end
+
+    return Inventory.create(name, "furnace", {stacks[1], stacks[2], stacks[3]}, slots, true, nil, items)
 end

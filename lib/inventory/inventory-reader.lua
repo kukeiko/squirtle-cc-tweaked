@@ -4,12 +4,11 @@ local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local readBuffer = require "lib.inventory.readers.read-buffer"
 local readComposterConfiguration = require "lib.inventory.readers.read-composter-configuration"
 local readComposterInput = require "lib.inventory.readers.read-composter-input"
-local readCrafter = require "lib.inventory.readers.read-crafter"
 local readDump = require "lib.inventory.readers.read-dump"
 local readFurnace = require "lib.inventory.readers.read-furnace"
 local readFurnaceConfiguration = require "lib.inventory.readers.read-furnace-configuration"
-local readFurnaceInput = require "lib.inventory.readers.read-furnace-input"
 local readFurnaceOutput = require "lib.inventory.readers.read-furnace-output"
+local readFurnaceInput = require "lib.inventory.readers.read-furnace-input"
 local readIo = require "lib.inventory.readers.read-io"
 local readQuickAccess = require "lib.inventory.readers.read-quick-access"
 local readSilo = require "lib.inventory.readers.read-silo"
@@ -116,12 +115,10 @@ function InventoryReader.read(name, expected)
                     return readSiloInput(name, stacks, nameTagSlot)
                 elseif nameTagName == "Silo: Output" then
                     return readSiloOutput(name, stacks, nameTagSlot)
-                elseif nameTagName == "Crafter" then
-                    return readCrafter(name, stacks, nameTagSlot)
                 elseif nameTagName == "Furnace: Input" then
-                    return readFurnaceOutput(name, stacks, nameTagSlot)
-                elseif nameTagName == "Furnace: Output" then
                     return readFurnaceInput(name, stacks, nameTagSlot)
+                elseif nameTagName == "Furnace: Output" then
+                    return readFurnaceOutput(name, stacks, nameTagSlot)
                 elseif nameTagName == "Furnace: Config" then
                     return readFurnaceConfiguration(name, stacks, nameTagSlot)
                 elseif nameTagName == "Quick Access" then

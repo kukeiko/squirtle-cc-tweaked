@@ -67,10 +67,10 @@ function InventoryCollection.get(inventory)
     return cache[inventory]
 end
 
----@return string[]
+---@return Inventory[]
 function InventoryCollection.getAll()
-    return Utils.map(cache, function(_, index)
-        return index
+    return Utils.map(cache, function(inventory)
+        return inventory
     end)
 end
 

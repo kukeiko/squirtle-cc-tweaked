@@ -36,7 +36,9 @@ end
 
 ---@return string[]
 function InventoryApi.getAll()
-    return InventoryCollection.getAll()
+    return Utils.map(InventoryCollection.getAll(), function(item)
+        return item.name
+    end)
 end
 
 ---@param type InventoryType
