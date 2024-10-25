@@ -1,3 +1,4 @@
+local Utils = require "lib.common.utils"
 local Inventory = require "lib.inventory.inventory"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local readBuffer = require "lib.inventory.readers.read-buffer"
@@ -30,22 +31,29 @@ local baseTypeLookup = {
 ---@class InventoryReader
 local InventoryReader = {}
 
----@param name string
----@param stacks table<integer, ItemStack>
----@return integer? slot, string? name
-local function findNameTag(name, stacks)
-    for slot, stack in pairs(stacks) do
-        if stack.name == "minecraft:name_tag" and stack.nbt ~= nil then
-            local stack = InventoryPeripheral.getStack(name, slot)
-            return slot, stack.displayName
-        end
-    end
-end
-
 ---@param nameTagName string
 ---@return string|nil, string|nil
-local function parseLabeledNameTag(nameTagName)
-    return string.match(nameTagName, "(%w+): ([%w%s]+)")
+local function parseNameAndLabel(nameTagName)
+    local name, label = string.match(nameTagName, "^([%a%s%p]+)%s*@%s*([%a%s%p]+)$")
+
+    if not name then
+        return Utils.trim(nameTagName)
+    end
+
+    return Utils.trim(name), Utils.trim(label)
+end
+
+---@param name string
+---@param stacks table<integer, ItemStack>
+---@return integer? slot, string? name, string? label
+local function findNameTag(name, stacks)
+    for slot, stack in pairs(stacks) do
+        if stack.name == "minecraft:name_tag" and stack.count == 1 and stack.nbt ~= nil then
+            local stack = InventoryPeripheral.getStack(name, slot)
+
+            return slot, parseNameAndLabel(stack.displayName)
+        end
+    end
 end
 
 ---@param name string
@@ -93,7 +101,7 @@ function InventoryReader.read(name, expected)
 
             return shulker
         else
-            local nameTagSlot, nameTagName = findNameTag(name, stacks)
+            local nameTagSlot, nameTagName, nameTagLabel = findNameTag(name, stacks)
 
             if nameTagSlot and nameTagName then
                 stacks[nameTagSlot] = nil
@@ -126,14 +134,10 @@ function InventoryReader.read(name, expected)
                     return readTrash(name, stacks, nameTagSlot)
                 elseif nameTagName == "Buffer" then
                     return readBuffer(name, stacks, nameTagSlot)
-                else
-                    local tagName, label = parseLabeledNameTag(nameTagName)
-
-                    if tagName == "Stash" and label ~= nil then
-                        return readStash(name, stacks, nameTagSlot, label)
-                    elseif tagName == "Buffer" and label ~= nil then
-                        return readTurtleBuffer(name, stacks, nameTagSlot, label)
-                    end
+                elseif nameTagName == "Stash" and nameTagLabel ~= nil then
+                    return readStash(name, stacks, nameTagSlot, nameTagLabel)
+                elseif nameTagName == "Buffer" and nameTagLabel ~= nil then
+                    return readTurtleBuffer(name, stacks, nameTagSlot, nameTagLabel)
                 end
             elseif baseType == "minecraft:barrel" then
                 return readTurtleBuffer(name, stacks)

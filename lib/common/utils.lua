@@ -16,6 +16,14 @@ function Utils.indexOf(tbl, item)
     return -1
 end
 
+---@param str string
+---@return string
+function Utils.trim(str)
+    str = str:gsub("^%s+", ""):gsub("%s+$", "")
+
+    return str
+end
+
 ---@param list table
 ---@param values table
 ---@return table
