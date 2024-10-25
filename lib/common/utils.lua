@@ -135,7 +135,7 @@ end
 ---@generic T
 ---@param list T[]
 ---@param property string
----@return T[]
+---@return table<string, T>
 function Utils.toMap(list, property)
     local map = {}
 
@@ -330,6 +330,10 @@ end
 
 ---@param ... string
 function Utils.writeStartupFile(...)
+    if fs.exists("package.json") then
+        print("[skip] startup file creation")
+    end
+
     local programs = {...}
     local file = fs.open("startup", "w")
 
@@ -357,7 +361,10 @@ function Utils.readJson(path)
         return
     end
 
-    return textutils.unserializeJSON(file.readAll())
+    local content = file.readAll()
+    file.close()
+
+    return textutils.unserializeJSON(content)
 end
 
 ---@param path string
