@@ -3,9 +3,19 @@
 ---@field content? string
 ---
 ---@class CraftingRecipe
----@field item string
----@field count integer
----@field ingredients table<string, integer[]>
+---@field item string The item that is crafted.
+---@field quantity integer How many of the item will be crafted.
+---@field ingredients table<string, integer[]> The ingredients required to craft the item.
+---
+---@class UsedCraftingRecipe : CraftingRecipe
+---@field timesUsed integer
+---
+---[todo] find a better name
+---@class CraftingDetails
+---@field available ItemStock
+---@field unavailable ItemStock
+---@field leftOver ItemStock
+---@field usedRecipes UsedCraftingRecipe[]
 ---
 ---@class Block
 ---@field name string

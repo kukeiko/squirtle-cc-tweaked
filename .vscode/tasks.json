@@ -198,5 +198,15 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o ../23/print3d.lua"
         },
+        {
+            "label": "build turtle:io-crafter",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-crafter"
+        },
+        {
+            "label": "build pocket:craft",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/craft"
+        },
     ]
 }

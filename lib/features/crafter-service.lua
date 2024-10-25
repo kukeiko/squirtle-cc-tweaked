@@ -18,9 +18,8 @@ end
 
 -- [todo] check that sufficient crafting materials are provided
 ---@param recipe CraftingRecipe
----@param quantity? integer
+---@param quantity integer
 function CrafterService.craft(recipe, quantity)
-    quantity = math.max(quantity or 1, recipe.count)
     local inventory = "bottom"
     local workbench = peripheral.find("workbench")
 
@@ -38,7 +37,7 @@ function CrafterService.craft(recipe, quantity)
 
             local turtleSlot = recipeSlot + math.ceil(recipeSlot / 3) - 1
             Squirtle.select(turtleSlot)
-            Squirtle.suckSlot(inventory, inventorySlot, quantity / recipe.count)
+            Squirtle.suckSlot(inventory, inventorySlot, quantity)
         end
     end
 
@@ -46,18 +45,20 @@ function CrafterService.craft(recipe, quantity)
     Squirtle.dump(inventory)
 end
 
+---[todo] "recipes" argument should instead just be CraftingRecipe[]
+---[todo] throw error if targetStock contains items for which there are no recipes
 ---@param targetStock ItemStock
 ---@param currentStock ItemStock
 ---@param recipes table<string, CraftingRecipe>
----@return ItemStock expanded, ItemStock unavailable, ItemStock leftover, table<string, integer> recipes
-function CrafterService.expandItemStock(targetStock, currentStock, recipes)
+---@return CraftingDetails
+function CrafterService.getCraftingDetails(targetStock, currentStock, recipes)
     ---@type ItemStock
     local expandedStock = {}
     ---@type ItemStock
     local unavailableStock = {}
     ---@type ItemStock
     local craftedLeftoverStock = {}
-    ---@type table<string, integer>
+    ---@type UsedCraftingRecipe[]
     local usedRecipes = {}
     local openStock = Utils.clone(targetStock)
     currentStock = Utils.clone(currentStock)
@@ -84,9 +85,16 @@ function CrafterService.expandItemStock(targetStock, currentStock, recipes)
                 local recipe = recipes[item]
 
                 if recipe then
-                    local timesCrafted = math.ceil(open / recipe.count)
-                    local craftedQuantity = timesCrafted * recipe.count
-                    usedRecipes[item] = (usedRecipes[item] or 0) + timesCrafted
+                    local timesCrafted = math.ceil(open / recipe.quantity)
+                    local craftedQuantity = timesCrafted * recipe.quantity
+                    ---@type UsedCraftingRecipe
+                    local usedRecipe = {
+                        ingredients = recipe.ingredients,
+                        item = recipe.item,
+                        quantity = recipe.quantity,
+                        timesUsed = timesCrafted
+                    }
+                    table.insert(usedRecipes, usedRecipe)
 
                     for ingredient, ingredientSlots in pairs(recipe.ingredients) do
                         local ingredientQuantity = timesCrafted * #ingredientSlots
@@ -106,6 +114,9 @@ function CrafterService.expandItemStock(targetStock, currentStock, recipes)
     end
 
     -- remove or reduce from expandedStock the items that were crafted during fulfillment of the targetStock
+    -- [example] craft 2x redstone torch, have: 2x redstone, 1x stick, 2x planks.
+    -- because 1x more stick is needed, 4x sticks need to be crafted from the planks. since we now have plenty
+    -- of sticks, we don't need to pull any from the storage.
     for item, quantity in pairs(craftedLeftoverStock) do
         if expandedStock[item] then
             local available = math.min(quantity, expandedStock[item])
@@ -122,7 +133,15 @@ function CrafterService.expandItemStock(targetStock, currentStock, recipes)
         end
     end
 
-    return expandedStock, unavailableStock, craftedLeftoverStock, usedRecipes
+    ---@type CraftingDetails
+    local craftingDetails = {
+        available = expandedStock,
+        leftOver = craftedLeftoverStock,
+        unavailable = unavailableStock,
+        usedRecipes = Utils.reverse(usedRecipes)
+    }
+
+    return craftingDetails
 end
 
 return CrafterService

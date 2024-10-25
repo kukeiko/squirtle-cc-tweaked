@@ -226,8 +226,13 @@ end
 
 ---@param name string
 ---@param tag InventorySlotTag
+---@param refresh? boolean
 ---@return ItemStock
-function InventoryCollection.getInventoryStockByTag(name, tag)
+function InventoryCollection.getInventoryStockByTag(name, tag, refresh)
+    if refresh then
+        InventoryCollection.refresh(name)
+    end
+
     ---@type ItemStock
     local stock = {}
     local inventory = InventoryCollection.getInventory(name)

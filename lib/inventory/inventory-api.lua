@@ -178,9 +178,10 @@ end
 
 ---@param name string
 ---@param tag InventorySlotTag
+---@param refresh? boolean
 ---@return ItemStock
-function Inventory.getInventoryStockByTag(name, tag)
-    return InventoryCollection.getInventoryStockByTag(name, tag)
+function Inventory.getInventoryStockByTag(name, tag, refresh)
+    return InventoryCollection.getInventoryStockByTag(name, tag, refresh)
 end
 
 ---@param inventoryType InventoryType

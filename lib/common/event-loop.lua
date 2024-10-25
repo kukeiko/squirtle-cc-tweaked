@@ -71,6 +71,7 @@ local function runThreads(threads, event)
     return nextThreads
 end
 
+-- [todo] throw error if not called within a coroutine run by EventLoop, as we otherwise can't properly deal with the "terminate" event (i think)
 ---@param event? string
 ---@param callback? function
 function EventLoop.pull(event, callback)

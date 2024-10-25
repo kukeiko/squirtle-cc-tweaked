@@ -18,6 +18,7 @@ return function(name, stacks, nameTagSlot, label)
             tags.nameTag = true
         else
             tags.input = true
+            tags.buffer = true -- [todo] to make io-crafter work. revisit
         end
 
         slots[slot] = {index = slot, tags = tags}

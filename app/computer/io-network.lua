@@ -5,7 +5,6 @@ local version = require "version"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
 local Inventory = require "lib.inventory.inventory-api"
-local QuestService = require "lib.common.quest-service"
 local StorageService = require "lib.features.storage.storage-service"
 local processDumps = require "lib.features.storage.processors.process-dumps"
 local processFurnaces = require "lib.features.storage.processors.process-furnaces"
@@ -26,8 +25,6 @@ local function main()
         Inventory.start()
     end, function()
         Rpc.server(StorageService)
-    end, function()
-        Rpc.server(QuestService)
     end, function()
         while true do
             processDumps()

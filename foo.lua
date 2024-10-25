@@ -3,6 +3,7 @@ local Pretty = require(ccPretty)
 package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.common.utils"
+local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local EventLoop = require "lib.common.event-loop"
@@ -211,18 +212,15 @@ function testStorageService()
 end
 
 function testCrafter()
-    os.sleep(3)
-    local crafter = Rpc.nearest(CrafterService)
-    crafter.craft({
-        item = "minecraft:comparator",
-        count = 1,
-        ingredients = {["minecraft:redstone_torch"] = {2, 4, 6}, ["minecraft:quartz"] = {5}, ["minecraft:stone"] = {7, 8, 9}}
-    }, 13)
-    -- crafter.craft({
-    --     item = "minecraft:redstone_torch",
-    --     count = 1,
-    --     ingredients = {["minecraft:redstone"] = {5}, ["minecraft:stick"] = {8}}
-    -- })
+    local questService = Rpc.nearest(QuestService)
+    print("issuing crafting quest")
+    local quest = questService.issueCraftItemQuest(os.getComputerLabel(), "minecraft:redstone_torch", 32)
+    print("waiting for completion")
+    -- textutils.pagedPrint(textutils.serialiseJSON(quest))
+    local lalala = questService.awaitCraftItemQuestCompletion(quest)
+    -- textutils.pagedPrint(textutils.serialiseJSON(quest))
+    -- Utils.prettyPrint(quest)
+    print("quest completed!", lalala.status)
 end
 
 function testExpandCraftingItems()
@@ -231,24 +229,44 @@ function testExpandCraftingItems()
         local recipes = {
             ["minecraft:redstone_torch"] = {
                 item = "minecraft:redstone_torch",
-                count = 1,
+                quantity = 1,
                 ingredients = {["minecraft:redstone"] = {2}, ["minecraft:stick"] = {5}}
             },
-            ["minecraft:stick"] = {item = "minecraft:stick", count = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}}
+            ["minecraft:stick"] = {item = "minecraft:stick", quantity = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}}
         }
-        return CrafterService.expandItemStock({["minecraft:redstone_torch"] = 4}, {
+
+        ---@type ItemStock
+        local targetStock = {["minecraft:redstone_torch"] = 4}
+        ---@type ItemStock
+        local availableStock = {
             ["minecraft:redstone_torch"] = 1,
             ["minecraft:redstone"] = 3,
             ["minecraft:stick"] = 1,
             ["minecraft:birch_planks"] = 2
-        }, recipes)
+        }
+
+        return CrafterService.getCraftingDetails(targetStock, availableStock, recipes)
     end
 
-    local expanded, unavailable, leftover, recipes = testRedstoneTorch()
-    Utils.prettyPrint(expanded)
-    Utils.prettyPrint(unavailable)
-    Utils.prettyPrint(leftover)
-    Utils.prettyPrint(recipes)
+    local details = testRedstoneTorch()
+
+    print("[available]")
+    Utils.prettyPrint(details.available)
+    Utils.waitForUserToHitEnter()
+
+    print("[unavailable]")
+    Utils.prettyPrint(details.unavailable)
+    Utils.waitForUserToHitEnter()
+
+    print("[leftover]")
+    Utils.prettyPrint(details.leftOver)
+    Utils.waitForUserToHitEnter()
+
+    print("[recipes]")
+    for i = 1, #details.usedRecipes do
+        print(string.format("%dx %s", details.usedRecipes[i].timesUsed, details.usedRecipes[i].item))
+    end
+    Utils.waitForUserToHitEnter()
 end
 
 function testEvents()
@@ -358,9 +376,43 @@ function testSimulateFuel()
     turtle.refuel(1)
     local currentFuel = Squirtle.getNonInfiniteFuelLevel()
 
-    Squirtle.simulate({facing = Cardinal.north, fuel = initialFuel}, {facing = Cardinal.north, fuel = currentFuel})
+    Squirtle.simulate({facing = Cardinal.north, fuel = initialFuel, position = Vector.create(0, 0, 0)},
+                      {facing = Cardinal.north, fuel = currentFuel, position = Vector.create(0, 0, 0)})
 
     Squirtle.move("forward", 4)
 end
 
-testSimulateFuel()
+function testPullInteger()
+    print(EventLoop.pullInteger(0, 22))
+end
+
+function testTryPutAtOneOf()
+    Squirtle.setBreakable(function(block)
+        return block.name == "minecraft:dirt"
+    end)
+    local placedSide = Squirtle.tryPutAtOneOf(nil, "minecraft:dirt")
+    print("[placed]", placedSide)
+end
+
+function testPrintingInWindow()
+    local original = term.current()
+    original.clear()
+    local w, h = original.getSize()
+    original.setCursorPos(1, h - 1)
+    original.write(string.rep("-", w))
+    original.setCursorPos(1, h)
+    original.write("[app x.y.z]")
+
+    -- original.setCursorPos(1, 1)
+    local win = window.create(original, 1, 1, w, h - 2)
+    term.redirect(win)
+
+    for i = 1, 20 do
+        print(i)
+    end
+    term.redirect(original)
+
+    os.sleep(3)
+end
+
+testCrafter()

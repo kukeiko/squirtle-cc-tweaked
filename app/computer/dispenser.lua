@@ -73,7 +73,7 @@ end
 EventLoop.run(function()
     print(string.format("[dispenser %s] connecting to storage service...", version()))
     os.sleep(1)
-    
+
     local storage = Rpc.nearest(StorageService)
 
     while not storage do

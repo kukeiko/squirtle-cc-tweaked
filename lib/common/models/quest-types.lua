@@ -1,10 +1,11 @@
----@alias QuestType "provide-items" | "craft-items" | "transfer-items" | "dance"
+---@alias QuestType "provide-items" | "craft-item" | "transfer-items" | "dance"
 ---
 ---@class Quest
 ---@field id integer
 ---@field issuedBy string
 ---@field acceptedBy? string
 ---@field partOfQuestId? integer
+---@field label? string
 ---@field status "issued" | "accepted" | "finished" | "failed"
 ---@field type QuestType
 ---
@@ -17,17 +18,13 @@
 ---@field to string[]
 ---@field toTag InventorySlotTag
 ---
----my current idea is that CraftItemsQuest will pull ingredients from storage itself.
----if it doesn't manage to pull all required ingredients, it will try to craft the missing ones - doing the whole process recursively.
----this opens up a few issues:
---- - required buffer size might explode
---- - how to keep track of this recursivity
---- - what should happen if some ingredients are missing and need to be gathered? should we just fail?
----@class CraftItemsQuest : Quest
----@field type "craft-items"
+---@class CraftItemQuest : Quest
+---@field type "craft-item"
 ---@field item string
 ---@field quantity integer
----@field recipe CraftingRecipe
+---@field bufferId? integer
+---@field craftingDetails? CraftingDetails
+---@field usedRecipes? UsedCraftingRecipe[]
 ---
 ---@class TransferItemsQuest : Quest
 ---@field type "transfer-items"
