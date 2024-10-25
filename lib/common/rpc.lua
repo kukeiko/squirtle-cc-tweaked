@@ -41,7 +41,7 @@ local channel = 64
 local function nextCallId()
     callId = callId + 1
 
-    return tostring(callId)
+    return tostring(string.format("%s:%d", os.getComputerLabel(), callId))
 end
 
 ---@return table
@@ -196,6 +196,7 @@ function Rpc.client(service, host)
     ---@type RpcClient
     local client = {host = host, distance = nil}
     local modem = getWirelessModem()
+    -- [todo] consider using computer id instead (to prevent inspecting messages of other computers)
     modem.open(channel)
 
     for k, v in pairs(service) do
