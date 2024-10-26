@@ -5,5 +5,5 @@ local readCommon = require "lib.inventory.readers.read-common"
 ---@param nameTagSlot integer
 ---@return Inventory
 return function(name, stacks, nameTagSlot)
-    return readCommon(name, "trash", stacks, nameTagSlot, {input = true, output = true, withdraw = true})
+    return readCommon(name, "trash", stacks, nameTagSlot, {input = true, output = true, withdraw = true}, nil, true)
 end

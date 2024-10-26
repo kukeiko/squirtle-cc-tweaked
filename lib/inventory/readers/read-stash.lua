@@ -7,5 +7,5 @@ local readCommon = require "lib.inventory.readers.read-common"
 ---@return Inventory
 return function(name, stacks, nameTagSlot, label)
     -- [todo] "buffer" tag is to make io-crafter work. revisit
-    return readCommon(name, "stash", stacks, nameTagSlot, {input = true, buffer = true}, label)
+    return readCommon(name, "stash", stacks, nameTagSlot, {input = true, buffer = true}, label, true)
 end

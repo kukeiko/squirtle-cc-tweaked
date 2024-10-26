@@ -6,5 +6,5 @@ local readCommon = require "lib.inventory.readers.read-common"
 ---@param label? string
 ---@return Inventory
 return function(name, stacks, nameTagSlot, label)
-    return readCommon(name, "turtle-buffer", stacks, nameTagSlot, {buffer = true}, label)
+    return readCommon(name, "turtle-buffer", stacks, nameTagSlot, {buffer = true}, label, true)
 end
