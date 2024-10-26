@@ -37,13 +37,11 @@ end
 ---@param item string
 ---@param fromTag InventorySlotTag
 ---@param toTag InventorySlotTag
----@param total? integer
+---@param total integer
 ---@param rate? integer
 ---@return integer transferredTotal
 return function(from, to, item, fromTag, toTag, total, rate)
-    total = total or InventoryCollection.getItemCount({from}, item, fromTag)
-
-    if total == 0 then
+    if total <= 0 then
         return 0
     end
 

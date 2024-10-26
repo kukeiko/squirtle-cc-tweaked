@@ -36,13 +36,7 @@ end
 
 ---@param stashLabel string
 function StorageService.getStashName(stashLabel)
-    local stash = InventoryApi.findByTypeAndLabel("stash", stashLabel)
-
-    if not stash then
-        error(string.format("stash %s doesn't exist", stashLabel))
-    end
-
-    return stash
+    return InventoryApi.getByTypeAndLabel("stash", stashLabel)
 end
 
 ---@param stashLabel string
@@ -65,15 +59,8 @@ end
 
 ---@return ItemStock
 function StorageService.getStock()
-    return InventoryApi.getStockByTag("withdraw")
-end
-
----@param inventory string
----@param tag InventorySlotTag
----@param refresh? boolean
----@return ItemStock
-function StorageService.getInventoryStock(inventory, tag, refresh)
-    return InventoryApi.getInventoryStockByTag(inventory, tag, refresh)
+    local storages = InventoryApi.getByType("storage")
+    return InventoryApi.getStock(storages, "withdraw")
 end
 
 function StorageService.getItemDisplayNames()
@@ -108,7 +95,7 @@ function StorageService.allocateQuestBuffer(quest, slotCount)
     for _, buffer in pairs(buffers) do
         if not alreadyAllocated[buffer] then
             table.insert(newlyAllocated, buffer)
-            openSlots = openSlots - InventoryApi.getSlotCount(buffer, "buffer")
+            openSlots = openSlots - InventoryApi.getSlotCount({buffer}, "buffer")
 
             if openSlots <= 0 then
                 break
@@ -158,7 +145,7 @@ end
 function StorageService.transferInventoryStockToBuffer(bufferId, from, fromTag)
     local databaseService = getDatabaseService()
     local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local itemStock = InventoryApi.getInventoryStockByTag(from, fromTag, true) -- [todo] for testing purposes / re-evaluate
+    local itemStock = InventoryApi.getStock({from}, fromTag)
     InventoryApi.transferItems({from}, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
 
@@ -174,14 +161,8 @@ end
 function StorageService.getBufferStock(bufferId)
     local databaseService = getDatabaseService()
     local buffer = databaseService.getAllocatedBuffer(bufferId)
-    ---@type ItemStock
-    local stock = {}
 
-    for _, inventory in pairs(buffer.inventories) do
-        stock = ItemStock.add(stock, InventoryApi.getInventoryStockByTag(inventory, "buffer"))
-    end
-
-    return stock
+    return InventoryApi.getStock(buffer.inventories, "buffer")
 end
 
 ---@param bufferId integer

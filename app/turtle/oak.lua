@@ -67,7 +67,7 @@ local function refuel(stash)
         print(string.format("refueling %s more fuel", Squirtle.missingFuel(minFuel)))
         Squirtle.selectEmpty(1)
 
-        for slot, stack in pairs(Inventory.getStacks(stash)) do
+        for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
                 Squirtle.suckSlot("bottom", slot)
                 Squirtle.refuel(math.ceil(Squirtle.missingFuel(minFuel) / 80))
@@ -108,7 +108,7 @@ local function doInputOutput(stash, io)
     Squirtle.pullInput(io, stash)
 
     local isOutputFull = function()
-        return Inventory.getItemOpenStockByTag(io, "output", "minecraft:oak_log") == 0
+        return Inventory.getItemOpenCount({io}, "minecraft:oak_log", "output") == 0
     end
 
     if isOutputFull() then
@@ -120,7 +120,7 @@ local function doInputOutput(stash, io)
     end
 
     local needsMoreBoneMeal = function()
-        return Inventory.getItemStockByTag(stash, "buffer", "minecraft:bone_meal") < 32
+        return Inventory.getItemCount({stash}, "minecraft:bone_meal", "buffer") < 32
     end
 
     if needsMoreBoneMeal() then
@@ -133,7 +133,7 @@ local function doInputOutput(stash, io)
     end
 
     local needsMoreSaplings = function()
-        return Inventory.getItemStockByTag(stash, "buffer", "minecraft:oak_sapling") < 1
+        return Inventory.getItemCount({stash}, "minecraft:oak_sapling", "buffer") < 1
     end
 
     if needsMoreSaplings() then
@@ -152,7 +152,7 @@ local function doInputOutput(stash, io)
             return false
         end
 
-        return Inventory.getItemStockByTag(stash, "buffer", "minecraft:charcoal") < math.floor(missingFuel / 80)
+        return Inventory.getItemCount({stash}, "minecraft:charcoal", "buffer") < math.floor(missingFuel / 80)
     end
 
     if needsMoreFuel() then

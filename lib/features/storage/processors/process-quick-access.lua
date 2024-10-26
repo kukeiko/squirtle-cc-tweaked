@@ -2,7 +2,7 @@ local Inventory = require "lib.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function()
-        local quickAccesses = Inventory.getByType("quick-access", true)
+        local quickAccesses = Inventory.getRefreshedByType("quick-access")
         local storages = Inventory.getByType("storage")
         Inventory.transfer(storages, "output", quickAccesses, "input")
     end)

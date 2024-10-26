@@ -23,6 +23,121 @@ function Inventory.create(name, type, stacks, slots, allowAllocate, label, items
     return inventory
 end
 
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getItemCount(inventory, item, tag)
+    local count = 0
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and stack.name == item and slot.tags[tag] then
+            count = count + stack.count
+        end
+    end
+
+    return count
+end
+
+---@param inventory Inventory
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getTotalItemCount(inventory, tag)
+    local count = 0
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            count = count + stack.count
+        end
+    end
+
+    return count
+end
+
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getItemMaxCount(inventory, item, tag)
+    local maxCount = 0
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and stack.name == item and slot.tags[tag] then
+            maxCount = maxCount + stack.maxCount
+        end
+    end
+
+    return maxCount
+end
+
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getItemOpenCount(inventory, item, tag)
+    local count = Inventory.getItemCount(inventory, item, tag)
+    local maxCount = Inventory.getItemMaxCount(inventory, item, tag)
+
+    return maxCount - count
+end
+
+---@param inventory Inventory
+---@param tag InventorySlotTag
+---@return integer
+function Inventory.getSlotCount(inventory, tag)
+    local count = 0
+
+    for _, slot in pairs(inventory.slots) do
+        if slot.tags[tag] == true then
+            count = count + 1
+        end
+    end
+
+    return count
+end
+
+---@param inventory Inventory
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getStock(inventory, tag)
+    ---@type ItemStock
+    local stock = {}
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.count
+        end
+    end
+
+    return stock
+end
+
+---@param inventory Inventory
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getMaxStock(inventory, tag)
+    ---@type ItemStock
+    local stock = {}
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.maxCount
+        end
+    end
+
+    return stock
+end
+
 ---@param slot InventorySlot
 ---@param stack? ItemStack
 ---@param tag InventorySlotTag

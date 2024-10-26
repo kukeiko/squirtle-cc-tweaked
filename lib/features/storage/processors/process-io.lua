@@ -2,7 +2,7 @@ local Inventory = require "lib.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function()
-        local io = Inventory.getByType("io", true)
+        local io = Inventory.getRefreshedByType("io")
         Inventory.transfer(io, "output", io, "input")
         local storages = Inventory.getByType("storage")
         Inventory.transfer(io, "output", storages, "input")

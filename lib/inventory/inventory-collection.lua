@@ -1,5 +1,7 @@
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
+local ItemStock = require "lib.common.models.item-stock"
+local Inventory = require "lib.inventory.inventory"
 local InventoryReader = require "lib.inventory.inventory-reader"
 
 ---@class InventoryCollection
@@ -67,6 +69,14 @@ function InventoryCollection.get(inventory)
     return cache[inventory]
 end
 
+---@param inventories string[]
+---@return Inventory[]
+function InventoryCollection.resolve(inventories)
+    return Utils.map(inventories, function(inventory)
+        return InventoryCollection.get(inventory)
+    end)
+end
+
 ---@return Inventory[]
 function InventoryCollection.getAll()
     return Utils.map(cache, function(inventory)
@@ -75,24 +85,26 @@ function InventoryCollection.getAll()
 end
 
 ---@param type InventoryType
----@return string[]
+---@return Inventory[]
 function InventoryCollection.getByType(type)
     return Utils.filterMapProjectList(cache, function(item)
         return item.type == type
     end, function(item)
-        return item.name
+        return item
     end)
 end
 
 ---@param inventoryType InventoryType
 ---@param label string
----@return Inventory?
-function InventoryCollection.findByTypeAndLabel(inventoryType, label)
+---@return Inventory
+function InventoryCollection.getByTypeAndLabel(inventoryType, label)
     for _, inventory in pairs(cache) do
         if inventory.type == inventoryType and inventory.label == label then
             return inventory
         end
     end
+
+    error(string.format("inventory w/ type %s and label %s doesn't exist", inventoryType, label))
 end
 
 ---@param inventories string[]
@@ -121,7 +133,12 @@ end
 ---@param name string
 ---@return boolean
 function InventoryCollection.isMounted(name)
-    return cache[name] ~= nil
+    if InventoryCollection.useCache then
+        return cache[name] ~= nil
+    else
+        -- [todo] meh
+        return peripheral.isPresent(name)
+    end
 end
 
 ---@param inventories string[]
@@ -175,93 +192,69 @@ end
 ---@param tag InventorySlotTag
 ---@return integer
 function InventoryCollection.getItemCount(inventories, item, tag)
-    local stock = 0
-
-    for _, inventory in pairs(inventories) do
-        local inventory = InventoryCollection.get(inventory)
-
-        for index, slot in pairs(inventory.slots) do
-            local stack = inventory.stacks[index]
-
-            if stack and stack.name == item and slot.tags[tag] then
-                stock = stock + stack.count
-            end
-        end
-    end
-
-    return stock
+    return Utils.sum(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getItemCount(inventory, item, tag)
+    end)
 end
 
----@param name string
+---@param inventories string[]
 ---@param tag InventorySlotTag
 ---@return integer
-function InventoryCollection.getSlotCount(name, tag)
-    local inventory = InventoryCollection.get(name)
-    local count = 0
-
-    for _, slot in pairs(inventory.slots) do
-        if slot.tags[tag] == true then
-            count = count + 1
-        end
-    end
-
-    return count
+function InventoryCollection.getTotalItemCount(inventories, tag)
+    return Utils.sum(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getTotalItemCount(inventory, tag)
+    end)
 end
 
----@param name string
+---@param inventories string[]
+---@param item string
 ---@param tag InventorySlotTag
----@param refresh? boolean
----@return ItemStock
-function InventoryCollection.getInventoryStockByTag(name, tag, refresh)
-    if refresh then
-        InventoryCollection.refresh({name})
-    end
-
-    ---@type ItemStock
-    local stock = {}
-    local inventory = InventoryCollection.get(name)
-
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack and slot.tags[tag] then
-            stock[stack.name] = (stock[stack.name] or 0) + stack.count
-        end
-    end
-
-    return stock
+---@return integer
+function InventoryCollection.getItemMaxCount(inventories, item, tag)
+    return Utils.sum(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getItemMaxCount(inventory, item, tag)
+    end)
 end
 
+---@param inventories string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function InventoryCollection.getItemOpenCount(inventories, item, tag)
+    return Utils.sum(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getItemOpenCount(inventory, item, tag)
+    end)
+end
+
+---@param inventories string[]
+---@param tag InventorySlotTag
+---@return integer
+function InventoryCollection.getSlotCount(inventories, tag)
+    return Utils.sum(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getSlotCount(inventory, tag)
+    end)
+end
+
+---@param inventories string[]
 ---@param tag InventorySlotTag
 ---@return ItemStock
-function InventoryCollection.getStockByTag(tag)
-    ---@type ItemStock
-    local stock = {}
+function InventoryCollection.getStock(inventories, tag)
+    local stocks = Utils.map(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getStock(inventory, tag)
+    end)
 
-    for _, inventory in pairs(cache) do
-        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(inventory.name, tag)) do
-            stock[item] = (stock[item] or 0) + quantity
-        end
-    end
-
-    return stock
+    return ItemStock.merge(stocks)
 end
 
----@param inventoryType InventoryType
----@param slotTag InventorySlotTag
+---@param inventories string[]
+---@param tag InventorySlotTag
 ---@return ItemStock
-function InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
-    local inventories = InventoryCollection.getByType(inventoryType)
-    ---@type ItemStock
-    local stock = {}
+function InventoryCollection.getMaxStock(inventories, tag)
+    local stocks = Utils.map(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getMaxStock(inventory, tag)
+    end)
 
-    for _, name in pairs(inventories) do
-        for item, quantity in pairs(InventoryCollection.getInventoryStockByTag(name, slotTag)) do
-            stock[item] = (stock[item] or 0) + quantity
-        end
-    end
-
-    return stock
+    return ItemStock.merge(stocks)
 end
 
 return InventoryCollection

@@ -159,9 +159,9 @@ end
 ---@param transferredOutput? ItemStock
 ---@return ItemStock transferredTotal, ItemStock open
 function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
-    local fromMaxInputStock = Inventory.getMaxStockByTag(from, "input")
-    local fromMaxOutputStock = Inventory.getMaxStockByTag(from, "output")
-    local toStock = Inventory.getInventoryStockByTag(to, "buffer")
+    local fromMaxInputStock = Inventory.getMaxStock({from}, "input")
+    local fromMaxOutputStock = Inventory.getMaxStock({from}, "output")
+    local toStock = Inventory.getStock({to}, "buffer")
     transferredOutput = transferredOutput or {}
 
     ---@type ItemStock
@@ -177,7 +177,7 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
             inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
         end
 
-        items[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemStockByTag(from, "input", item))
+        items[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemCount({from}, item, "input"))
     end
 
     return Inventory.transfer({from}, "input", {to}, "buffer", items)

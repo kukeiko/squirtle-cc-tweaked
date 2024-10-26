@@ -1,5 +1,6 @@
 local Squirtle = require "lib.squirtle.squirtle-api"
 local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
@@ -9,7 +10,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueling, have", Squirtle.getFuelLevel())
     Squirtle.selectFirstEmpty()
 
-    for slot, stack in pairs(Inventory.getStacks(buffer)) do
+    for slot, stack in pairs(InventoryPeripheral.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
             Squirtle.suckSlot(buffer, slot)
             Squirtle.refuel() -- [todo] should provide count to not consume a whole stack
@@ -36,11 +37,11 @@ end
 
 local function drainDropper()
     repeat
-        local totalItemStock = Inventory.getItemsStock("bottom")
+        local totalItemStock = Inventory.getTotalItemCount({"bottom"}, "buffer")
         redstone.setOutput("bottom", true)
         os.sleep(.25)
         redstone.setOutput("bottom", false)
-    until Inventory.getItemsStock("bottom") == totalItemStock
+    until Inventory.getTotalItemCount({"bottom"}, "buffer") == totalItemStock
 end
 
 local function faceFirstCrop()

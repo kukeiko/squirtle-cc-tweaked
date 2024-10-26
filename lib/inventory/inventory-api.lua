@@ -42,179 +42,79 @@ function InventoryApi.getAll()
 end
 
 ---@param type InventoryType
----@param refresh boolean?
 ---@return string[]
-function InventoryApi.getByType(type, refresh)
+function InventoryApi.getByType(type)
     local inventories = InventoryCollection.getByType(type)
 
-    if refresh then
-        -- print("[refresh]", table.concat(inventories))
-        InventoryCollection.refresh(inventories)
-    end
-
-    return inventories
+    return Utils.map(inventories, function(item)
+        return item.name
+    end)
 end
 
----@param name string
----@param slotTag InventorySlotTag
----@return integer
-function InventoryApi.getSlotCount(name, slotTag)
-    return InventoryCollection.getSlotCount(name, slotTag)
+---@param type InventoryType
+---@return string[]
+function InventoryApi.getRefreshedByType(type)
+    InventoryApi.refresh(type)
+    return InventoryApi.getByType(type)
 end
 
 ---@param inventoryType InventoryType
 ---@param label string
----@return string?
-function InventoryApi.findByTypeAndLabel(inventoryType, label)
-    local inventory = InventoryCollection.findByTypeAndLabel(inventoryType, label)
-
-    if inventory then
-        return inventory.name
-    end
+---@return string
+function InventoryApi.getByTypeAndLabel(inventoryType, label)
+    return InventoryCollection.getByTypeAndLabel(inventoryType, label).name
 end
 
----@param name string
+---@param inventories string[]
+---@param tag InventorySlotTag
 ---@return integer
-function InventoryApi.getItemsStock(name)
-    ---@type integer
-    local stock = 0
-    local inventory = InventoryCollection.get(name)
-
-    for index in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack then
-            stock = stock + stack.count
-        end
-    end
-
-    return stock
+function InventoryApi.getSlotCount(inventories, tag)
+    return InventoryCollection.getSlotCount(inventories, tag)
 end
 
----@param tag InventorySlotTag
----@return ItemStock
-function InventoryApi.getStockByTag(tag)
-    return InventoryCollection.getStockByTag(tag)
-end
-
----@param name string
----@param tag InventorySlotTag
----@param refresh? boolean
----@return ItemStock
-function InventoryApi.getInventoryStockByTag(name, tag, refresh)
-    return InventoryCollection.getInventoryStockByTag(name, tag, refresh)
-end
-
----@param inventoryType InventoryType
----@param slotTag InventorySlotTag
----@return ItemStock
-function InventoryApi.getStockByInventoryTypeAndTag(inventoryType, slotTag)
-    return InventoryCollection.getStockByInventoryTypeAndTag(inventoryType, slotTag)
-end
-
----@param name string
----@param tag InventorySlotTag
----@return ItemStock
-function InventoryApi.getMaxStockByTag(name, tag)
-    ---@type ItemStock
-    local stock = {}
-    local inventory = InventoryCollection.get(name)
-
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack and slot.tags[tag] then
-            stock[stack.name] = (stock[stack.name] or 0) + stack.maxCount
-        end
-    end
-
-    return stock
-end
-
----@param name string
----@param tag InventorySlotTag
+---@param inventories string[]
 ---@param item string
+---@param tag InventorySlotTag
 ---@return integer
-function InventoryApi.getItemStockByTag(name, tag, item)
-    local stock = 0
-    local inventory = InventoryCollection.get(name)
-
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack and stack.name == item and slot.tags[tag] then
-            stock = stock + stack.count
-        end
-    end
-
-    return stock
+function InventoryApi.getItemCount(inventories, item, tag)
+    return InventoryCollection.getItemCount(inventories, item, tag)
 end
 
----@param name string
+---@param inventories string[]
 ---@param tag InventorySlotTag
----@param item string
 ---@return integer
-function InventoryApi.getItemMaxStockByTag(name, tag, item)
-    local maxStock = 0
-    local inventory = InventoryCollection.get(name)
-
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
-
-        if stack and stack.name == item and slot.tags[tag] then
-            maxStock = maxStock + stack.maxCount
-        end
-    end
-
-    return maxStock
+function InventoryApi.getTotalItemCount(inventories, tag)
+    return InventoryCollection.getTotalItemCount(inventories, tag)
 end
 
----@param name string
----@param tag InventorySlotTag
+---@param inventories string[]
 ---@param item string
+---@param tag InventorySlotTag
 ---@return integer
-function InventoryApi.getItemOpenStockByTag(name, tag, item)
-    local stock = InventoryApi.getItemStockByTag(name, tag, item)
-    local maxStock = InventoryApi.getItemMaxStockByTag(name, tag, item)
+function InventoryApi.getItemMaxCount(inventories, item, tag)
+    return InventoryCollection.getItemMaxCount(inventories, item, tag)
+end
 
-    return maxStock - stock
+---@param inventories string[]
+---@param item string
+---@param tag InventorySlotTag
+---@return integer
+function InventoryApi.getItemOpenCount(inventories, item, tag)
+    return InventoryCollection.getItemOpenCount(inventories, item, tag)
 end
 
 ---@param inventories string[]
 ---@param tag InventorySlotTag
 ---@return ItemStock
-function InventoryApi.getStockByTagMultiInventory(inventories, tag)
-    local totalStock = {}
-
-    for _, name in ipairs(inventories) do
-        local stock = InventoryCollection.getInventoryStockByTag(name, tag)
-
-        for item, itemStock in pairs(stock) do
-            totalStock[item] = (totalStock[item] or 0) + itemStock
-        end
-    end
-
-    return totalStock
+function InventoryApi.getStock(inventories, tag)
+    return InventoryCollection.getStock(inventories, tag)
 end
 
----@param name string
----@param slot integer
----@return ItemStack?
-function InventoryApi.getStack(name, slot)
-    return InventoryCollection.get(name).stacks[slot]
-end
-
----@param name string
----@return table<integer, ItemStack>
-function InventoryApi.getStacks(name)
-    return InventoryCollection.get(name).stacks
-end
-
----@param name string
----@param slot integer
----@param stack? ItemStack
-function InventoryApi.setStack(name, slot, stack)
-    InventoryCollection.get(name).stacks[slot] = stack
+---@param inventories string[]
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryApi.getMaxStock(inventories, tag)
+    return InventoryCollection.getMaxStock(inventories, tag)
 end
 
 ---@param from string[]
@@ -228,6 +128,7 @@ end
 function InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, options)
     from = getFromCandidates(from, item, fromTag)
     to = getToCandidates(to, item, toTag)
+
     options = options or {}
     local total = quantity or InventoryCollection.getItemCount(from, item, fromTag)
     local totalTransferred = 0
@@ -313,7 +214,7 @@ end
 function InventoryApi.transfer(from, fromTag, to, toTag, items, options)
     -- [todo] this feels a bit hacky, but is required for performance.
     if not items then
-        local fromStock = InventoryApi.getStockByTagMultiInventory(from, fromTag)
+        local fromStock = InventoryApi.getStock(from, fromTag)
         ---@type ItemStock
         local filteredFromStock = {}
 
@@ -322,7 +223,7 @@ function InventoryApi.transfer(from, fromTag, to, toTag, items, options)
         end) then
             filteredFromStock = fromStock
         else
-            local toStock = InventoryApi.getStockByTagMultiInventory(to, toTag)
+            local toStock = InventoryApi.getStock(to, toTag)
 
             for item, quantity in pairs(fromStock) do
                 if toStock[item] then

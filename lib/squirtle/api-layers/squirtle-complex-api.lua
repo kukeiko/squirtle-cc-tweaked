@@ -6,7 +6,7 @@ local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local Advanced = require "lib.squirtle.api-layers.squirtle-advanced-api"
-local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local requireItems = require "lib.squirtle.require-items"
 local placeShulker = require "lib.squirtle.place-shulker"
 local digShulker = require "lib.squirtle.dig-shulker"
@@ -206,7 +206,7 @@ local function loadFromShulker(shulker, item)
         os.sleep(.1)
     end
 
-    local stacks = Inventory.getStacks(placedSide)
+    local stacks = InventoryPeripheral.getStacks(placedSide)
 
     for stackSlot, stack in pairs(stacks) do
         if stack.name == item then

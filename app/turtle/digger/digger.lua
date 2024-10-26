@@ -8,6 +8,7 @@ local Squirtle = require "lib.squirtle.squirtle-api"
 local AppState = require "lib.common.app-state"
 local boot = require "digger.boot"
 local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 
 ---@class DiggerAppState
 ---@field home Vector
@@ -80,7 +81,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueling, have", Squirtle.getFuelLevel())
     Squirtle.selectFirstEmpty()
 
-    for slot, stack in pairs(Inventory.getStacks(buffer)) do
+    for slot, stack in pairs(InventoryPeripheral.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
             Squirtle.suckSlot(buffer, slot)
             Squirtle.refuel() -- [todo] should provide count to not consume a whole stack

@@ -2,6 +2,7 @@ package.path = package.path .. ";/?.lua"
 package.path = package.path .. ";/app/turtle/?.lua"
 
 local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
@@ -67,7 +68,7 @@ local function refuel(stash)
         print(string.format("refueling %s more fuel", Squirtle.missingFuel(minFuel)))
         Squirtle.selectEmpty(1)
 
-        for slot, stack in pairs(Inventory.getStacks(stash)) do
+        for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
                 Squirtle.suckSlot("bottom", slot)
                 Squirtle.refuel(math.ceil(Squirtle.missingFuel(minFuel) / 80))
@@ -99,7 +100,7 @@ local function doInputOutput(stash, io)
     Squirtle.pullInput(io, stash)
 
     local isCharcoalFull = function()
-        return Inventory.getItemOpenStockByTag(io, "output", "minecraft:charcoal") == 0
+        return Inventory.getItemOpenCount({io}, "minecraft:charcoal", "output") == 0
     end
 
     if isCharcoalFull() then
@@ -113,7 +114,7 @@ local function doInputOutput(stash, io)
     print("[info] output wants more charcoal, want to work now!")
 
     local needsMoreBoneMeal = function()
-        return Inventory.getItemStockByTag(stash, "output", "minecraft:bone_meal") < 64
+        return Inventory.getItemCount({stash}, "minecraft:bone_meal", "output") < 64
     end
 
     if needsMoreBoneMeal() then
@@ -131,11 +132,11 @@ end
 ---@param stash string
 local function drainDropper(stash)
     repeat
-        local totalItemStock = Inventory.getItemsStock(stash)
+        local totalItemStock = Inventory.getTotalItemCount({stash}, "buffer")
         redstone.setOutput("bottom", true)
         os.sleep(.25)
         redstone.setOutput("bottom", false)
-    until Inventory.getItemsStock(stash) == totalItemStock
+    until Inventory.getTotalItemCount({stash}, "buffer") == totalItemStock
 end
 
 ---@param stash string

@@ -28,13 +28,23 @@ local function add(what, with)
 
     for item, quantity in pairs(with) do
         local newQuantity = quantity + (added[item] or 0)
-
-        if newQuantity > 0 then
-            added[item] = newQuantity
-        end
+        added[item] = newQuantity
     end
 
     return added
 end
 
-return {subtract = subtract, add = add}
+---@param stocks ItemStock[]
+---@return ItemStock
+local function merge(stocks)
+    ---@type ItemStock
+    local merged = {}
+
+    for _, stock in pairs(stocks) do
+        merged = add(merged, stock)
+    end
+
+    return merged
+end
+
+return {subtract = subtract, add = add, merge = merge}

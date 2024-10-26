@@ -1,4 +1,5 @@
 local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Furnace = require "lib.inventory.furnace-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
@@ -7,7 +8,7 @@ local Squirtle = require "lib.squirtle.squirtle-api"
 local function topOffFurnaceFuel(furnace, stash)
     local missing = Furnace.getMissingFuelCount(furnace)
 
-    for slot, stack in pairs(Inventory.getStacks(stash)) do
+    for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
         if stack.name == "minecraft:charcoal" then
             missing = missing - Furnace.pullFuel(furnace, stash, slot)
 
@@ -23,7 +24,7 @@ end
 local function topOffFurnaceInput(furnace, stash)
     local missing = Furnace.getMissingInputCount(furnace)
 
-    for slot, stack in pairs(Inventory.getStacks(stash)) do
+    for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
         if stack.name == "minecraft:birch_log" then
             missing = missing - Furnace.pullInput(furnace, stash, slot)
 
@@ -73,7 +74,7 @@ end
 ---@param io string
 return function(furnace, stash, io)
     local function hasStashedBirchLogs()
-        return Inventory.getItemStockByTag(stash, "input", "minecraft:birch_log") > 0
+        return Inventory.getItemCount({stash}, "minecraft:birch_log", "input") > 0
     end
 
     while hasStashedBirchLogs() do
