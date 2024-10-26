@@ -12,7 +12,7 @@ local function fillBuffer(quest, storageService)
     local openStock = ItemStock.subtract(quest.items, bufferStock)
 
     if not Utils.isEmpty(openStock) then
-        print("transfer stock to buffer...")
+        -- print("transfer stock to buffer...")
         storageService.transferStockToBuffer(quest.bufferId, openStock)
     end
 
@@ -34,7 +34,7 @@ end
 ---@param storageService StorageService|RpcClient
 ---@param questService QuestService|RpcClient
 local function emptyBuffer(quest, storageService, questService)
-    print("transfer stock from buffer to target...", quest.to)
+    -- print("transfer stock from buffer to target...")
     ---@type ItemStock
     storageService.transferBufferStock(quest.bufferId, quest.to, quest.toTag)
     updateTransferred(quest, storageService, questService)
@@ -42,7 +42,7 @@ local function emptyBuffer(quest, storageService, questService)
     local bufferStock = storageService.getBufferStock(quest.bufferId)
 
     if not Utils.isEmpty(bufferStock) then
-        print("trying to empty out the buffer...")
+        -- print("trying to empty out the buffer...")
 
         while not Utils.isEmpty(bufferStock) do
             os.sleep(1)
@@ -51,7 +51,7 @@ local function emptyBuffer(quest, storageService, questService)
             bufferStock = storageService.getBufferStock(quest.bufferId)
         end
 
-        print("managed to empty out buffer!")
+        -- print("managed to empty out buffer!")
     end
 end
 
@@ -61,16 +61,15 @@ return function()
     local storageService = Rpc.nearest(StorageService)
 
     while questService and storageService do
-        print("waiting for new quest...")
+        print("[wait] for new quest...")
         local quest = questService.acceptTransferItemsQuest(os.getComputerLabel())
-        print("got quest!")
+        print("[found] new quest!", quest.id)
         -- [todo] hardcoded slotCount
         local bufferId = quest.bufferId or storageService.allocateQuestBuffer(quest)
 
         if not quest.bufferId then
             quest.bufferId = bufferId
             questService.updateQuest(quest)
-            print("allocated new buffer", bufferId)
         end
 
         if not quest.found then
@@ -79,7 +78,7 @@ return function()
         end
 
         emptyBuffer(quest, storageService, questService)
-        print("finishing quest!")
+        print("[finish] quest!", quest.id)
         questService.finishQuest(quest.id)
         storageService.freeBuffer(bufferId)
     end

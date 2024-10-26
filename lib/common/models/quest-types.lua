@@ -6,8 +6,10 @@
 ---@field acceptedBy? string
 ---@field partOfQuestId? integer
 ---@field label? string
----@field status "issued" | "accepted" | "finished" | "failed"
+---@field status QuestStatus
 ---@field type QuestType
+---
+---@alias QuestStatus "issued" | "accepted" | "finished" | "failed"
 ---
 ---@class ProvideItemsQuest : Quest
 ---@field type "provide-items"

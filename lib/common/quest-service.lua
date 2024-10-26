@@ -44,19 +44,33 @@ local function acceptQuest(acceptedBy, questType)
     local acceptedQuest = databaseService.getAcceptedQuest(acceptedBy, questType)
 
     if acceptedQuest then
+        print("[found] accepted immediately", acceptedQuest.id)
         return acceptedQuest
     end
 
     local quest = databaseService.getIssuedQuest(questType)
 
+    if not quest then
+        print("[wait] for issued/accepted quest...")
+    end
+
     while not quest do
         os.sleep(1)
         quest = databaseService.getIssuedQuest(questType)
+
+        if not quest then
+            quest = databaseService.getAcceptedQuest(acceptedBy, questType)
+        end
     end
 
-    quest.acceptedBy = acceptedBy
-    quest.status = "accepted"
-    databaseService.updateQuest(quest)
+    print("[found] issued/accepted quest!", quest.id, quest.status)
+
+    if quest.status == "issued" then
+        quest.acceptedBy = acceptedBy
+        quest.status = "accepted"
+        databaseService.updateQuest(quest)
+        print("[saved] as accepted")
+    end
 
     return quest
 end
