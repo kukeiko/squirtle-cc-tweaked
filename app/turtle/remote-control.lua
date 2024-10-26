@@ -1,4 +1,6 @@
 package.path = package.path .. ";/?.lua"
+local version = require "version"
+print(string.format("[remote-control %s]", version()))
 
 ---@type table<integer, function>
 local tasks = {
@@ -37,32 +39,26 @@ local tasks = {
     end
 }
 
-local function main(args)
-    print("[remote v1.1.0] booting...")
-    local modem = peripheral.find("modem")
+local modem = peripheral.find("modem")
 
-    if not modem then
-        error("no modem")
-    end
-
-    rednet.open(peripheral.getName(modem))
-    rednet.host("remote", os.getComputerLabel())
-    print(string.rep("-", term.getSize()))
-    print(
-        "[note] make sure you run \"remote\" on your PDA while staying close to me (after that, you can move further away)")
-    print(string.rep("-", term.getSize()))
-    print("[ready] to receive commands!")
-    parallel.waitForAny(function()
-        while true do
-            local _, message = rednet.receive("remote")
-            local task = tasks[message]
-
-            if task then
-                task()
-            end
-        end
-    end)
-
+if not modem then
+    error("no modem")
 end
 
-return main(arg)
+rednet.open(peripheral.getName(modem))
+rednet.host("remote-control", os.getComputerLabel())
+print(string.rep("-", term.getSize()))
+print("[note] make sure you run \"remote-control\" on your PDA while staying close to me (after that, you can move further away)")
+print(string.rep("-", term.getSize()))
+print("[ready] to receive commands!")
+
+parallel.waitForAny(function()
+    while true do
+        local _, message = rednet.receive("remote-control")
+        local task = tasks[message]
+
+        if task then
+            task()
+        end
+    end
+end)

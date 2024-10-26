@@ -154,14 +154,14 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/update"
         },
         {
-            "label": "build pocket:remote",
+            "label": "build pocket:remote-control",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote-control.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote-control"
         },
         {
-            "label": "build turtle:remote",
+            "label": "build turtle:remote-control",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/remote"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/remote-control"
         },
         {
             "label": "build turtle:crafter",
