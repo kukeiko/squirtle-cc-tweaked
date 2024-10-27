@@ -1,5 +1,12 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local EventLoop = require "lib.common.event-loop"
 local Squirtle = require "lib.squirtle.squirtle-api"
@@ -118,7 +125,7 @@ end
 
 term.clear()
 term.setCursorPos(1, 1)
-print("[wall v2.1.0-dev] booting...")
+print(string.format("[wall %s] booting...", version()))
 local depth = tonumber(arg[1])
 local height = tonumber(arg[2])
 

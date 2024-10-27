@@ -1,6 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local Vectors = require "lib.common.vector"
 local World = require "lib.common.world"
@@ -116,9 +124,9 @@ end
 -- them into inventory
 local function main(args)
     if args[1] == "io" then
-        print("[digger v1.3.0] booting in I/O mode...")
+        print(string.format("[digger %s] in I/O mode...", version()))
     else
-        print("[digger v1.3.0] booting in simple mode...")
+        print(string.format("[digger %s] in simple mode...", version()))
     end
 
     local state = boot()

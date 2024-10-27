@@ -208,5 +208,15 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/craft"
         },
+        {
+            "label": "build pocket:remote",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote"
+        },
+        {
+            "label": "build pocket:remote:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p ?.lua -o ../23/remote.lua"
+        },
     ]
 }

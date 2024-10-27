@@ -1,5 +1,13 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
 local version = require "version"
+
+if not arg then
+    return version
+end
+
 print(string.format("[remote-control %s]", version()))
 
 if turtle then

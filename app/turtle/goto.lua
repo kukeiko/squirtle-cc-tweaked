@@ -1,4 +1,12 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local World = require "lib.common.world"
 local Squirtle = require "lib.squirtle.squirtle-api"
@@ -9,7 +17,7 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[goto @ 1.0.0]")
+    print(string.format("[goto %s] booting...", version()))
 
     local x = tonumber(args[1])
     local y = tonumber(args[2])

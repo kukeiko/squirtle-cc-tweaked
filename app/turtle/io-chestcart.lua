@@ -1,4 +1,12 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local Utils = require "lib.common.utils"
 local Redstone = require "lib.common.redstone"
@@ -132,7 +140,7 @@ end
 ---@param args table
 ---@return boolean success
 local function main(args)
-    print("[io-chestcart v2.2.0] booting...")
+    print(string.format("[io-chestcart %s] booting...", version()))
 
     if not Squirtle.probe("bottom", "minecraft:barrel") then
         error("no barrel at bottom")

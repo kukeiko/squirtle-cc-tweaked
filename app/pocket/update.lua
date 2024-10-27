@@ -1,20 +1,14 @@
-package.path = package.path .. ";/?.lua"
-local Rpc = require "lib.common.rpc"
-local AppsService = require "lib.features.apps-service"
-local DatabaseService = require "lib.common.database-service"
-
-print("[update v2.0.0] booting...")
-
-local appsClient = Rpc.nearest(AppsService)
-
-if appsClient then
-    AppsService.setPocketApps(appsClient.getPocketApps(true), true)
-    print("[updated] pocket apps")
+if package then
+    package.path = package.path .. ";/?.lua"
 end
 
-local databaseClient = Rpc.nearest(DatabaseService)
+local version = require "version"
 
-if databaseClient then
-    DatabaseService.setSubwayStations(databaseClient.getSubwayStations())
-    print("[updated] database")
+if not arg then
+    return version
 end
+
+local UpdateService = require "lib.common.update-service"
+
+print(string.format("[update %s]", version()))
+UpdateService.update()

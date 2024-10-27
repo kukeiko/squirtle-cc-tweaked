@@ -1,8 +1,17 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
+
 local Rpc = require "lib.common.rpc"
 local OakService = require "lib.features.oak-service"
 
-print("[oak v1.0.0-dev]")
+print(string.format("[oak %s] booting...", version()))
 local on = arg[1] == "on"
 local off = arg[1] == "off"
 local oaks = Rpc.all(OakService)

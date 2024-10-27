@@ -1,12 +1,20 @@
-package.path = package.path .. ";/?.lua"
-local Rpc = require "lib.common.rpc"
-local AppsService = require "lib.features.apps-service"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
-print("[update v2.0.0]")
+local version = require "version"
 
-local appsClient = Rpc.nearest(AppsService)
+if not arg then
+    return version
+end
 
-if appsClient then
-    AppsService.setComputerApps(appsClient.getComputerApps(true), true)
-    print("[updated] computer apps")
+local UpdateService = require "lib.common.update-service"
+
+print(string.format("[update %s]", version()))
+local app = arg[1]
+
+if app then
+    UpdateService.update({app})
+else
+    UpdateService.update()
 end

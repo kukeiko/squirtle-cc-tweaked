@@ -3,17 +3,16 @@ local Pretty = require(ccPretty)
 
 local Utils = {}
 
----@param tbl table
----@param item unknown
----@return integer
-function Utils.indexOf(tbl, item)
-    for i = 1, #tbl do
-        if (tbl[i] == item) then
+---@generic K, V
+---@param list table<K, V>
+---@param item V
+---@return integer?
+function Utils.indexOf(list, item)
+    for i = 1, #list do
+        if (list[i] == item) then
             return i
         end
     end
-
-    return -1
 end
 
 ---@param str string
@@ -215,7 +214,7 @@ end
 ---@return T|nil, integer|nil
 function Utils.find(list, predicate)
     for i = 1, #list do
-        if predicate(list[i], i) then
+        if predicate and predicate(list[i], i) then
             return list[i], i
         end
     end
@@ -353,10 +352,15 @@ function Utils.waitForUserToHitEnter(text)
     end
 end
 
+function Utils.isDev()
+    return fs.exists("package.json")
+end
+
 ---@param ... string
 function Utils.writeStartupFile(...)
-    if fs.exists("package.json") then
+    if Utils.isDev() then
         print("[skip] startup file creation")
+        return
     end
 
     local programs = {...}

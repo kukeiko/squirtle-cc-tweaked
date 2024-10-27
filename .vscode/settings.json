@@ -16,7 +16,8 @@
         "term",
         "rednet",
         "read",
-        "colors"
+        "colors",
+        "pocket"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global",
@@ -24,5 +25,14 @@
         "redefined-local",
     ],
     "vscode-lua-format.configPath": "vscode-lua-format.config",
-    "Lua.completion.autoRequire": false
+    "Lua.completion.autoRequire": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/node_modules": false
+    }
 }

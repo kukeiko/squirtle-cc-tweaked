@@ -1,5 +1,12 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
@@ -277,7 +284,7 @@ end
 local function main(args)
     term.clear()
     term.setCursorPos(1, 1)
-    print("[aqueduct v1.2.0] booting...")
+    print(string.format("[aqueduct %s] booting...", version()))
     os.sleep(1)
 
     local state = boot(args)

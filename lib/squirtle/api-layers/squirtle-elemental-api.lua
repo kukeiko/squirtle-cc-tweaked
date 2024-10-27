@@ -80,7 +80,7 @@ function SquirtleElementalApi.probe(direction, name)
 
     if type(name) == "string" and block.name == name then
         return block
-    elseif type(name) == "table" and Utils.indexOf(name, block.name) > 0 then
+    elseif type(name) == "table" and Utils.indexOf(name, block.name) then
         return block
     end
 end

@@ -1,16 +1,14 @@
-package.path = package.path .. ";/?.lua"
-local Rpc = require "lib.common.rpc"
-local AppsService = require "lib.features.apps-service"
-
-local function main(args)
-    print("[update v1.0.0] booting...")
-
-    local appsClient = Rpc.nearest(AppsService)
-
-    if appsClient then
-        AppsService.setTurleApps(appsClient.getTurtleApps(true), true)
-        print("[updated] turtle apps")
-    end
+if package then
+    package.path = package.path .. ";/?.lua"
 end
 
-main(arg)
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+local UpdateService = require "lib.common.update-service"
+
+print(string.format("[update %s]", version()))
+UpdateService.update()

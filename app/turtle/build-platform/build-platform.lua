@@ -1,6 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local boot = require "build-platform.boot"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
@@ -31,7 +39,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[build-platform v2.0.1] booting...")
+    print(string.format("[build-platform %s] booting...", version()))
     local state = boot(args)
 
     if not state then

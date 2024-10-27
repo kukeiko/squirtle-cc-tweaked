@@ -45,10 +45,14 @@ return function(value, options)
 
         if event == "key" then
             if Utils.contains(options.cancel or {}, key) then
+                term.setCursorPos(x, y)
+                print(value)
                 return value, key
             end
 
             if key == keys.enter then
+                term.setCursorPos(x, y)
+                print(value)
                 return value, key
             elseif key == keys.backspace then
                 value = tonumber(tostring(value):sub(1, #tostring(value) - 1))

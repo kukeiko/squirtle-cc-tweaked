@@ -16,6 +16,7 @@ local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 local CrafterService = require "lib.features.crafter-service"
 local QuestService = require "lib.common.quest-service"
+local AppsService = require "lib.features.apps-service"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -415,4 +416,15 @@ function testPrintingInWindow()
     os.sleep(3)
 end
 
-testCrafter()
+local function testIoStock()
+    local stock = Inventory.getStock({"left"}, "output")
+    Utils.prettyPrint(stock)
+end
+
+local function testReadInteger()
+    local int = readInteger(nil)
+    print("[value]", int)
+end
+
+AppsService.run()
+

@@ -1,6 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Inventory = require "lib.inventory.inventory-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
@@ -236,7 +244,7 @@ local function doWork()
 end
 
 local function main()
-    print("[lumberjack v2.0.1] booting...")
+    print(string.format("[lumberjack %s] booting...", version()))
     Squirtle.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
 
     -- recover from an interrupted state

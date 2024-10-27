@@ -1,5 +1,6 @@
 ---@class Application
 ---@field name string
+---@field version string
 ---@field content? string
 ---
 ---@class CraftingRecipe

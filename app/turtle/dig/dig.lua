@@ -1,6 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local World = require "lib.common.world"
 local nextPoint = require "dig.next-point"
@@ -102,7 +110,7 @@ end
 ---@param args table<string>
 ---@return boolean
 local function main(args)
-    print("[dig v3.2.2-dev] booting...")
+    print(string.format("[dig %s] booting...", version()))
     local state = boot(args)
 
     if not state then

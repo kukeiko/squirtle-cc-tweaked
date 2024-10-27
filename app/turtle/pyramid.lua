@@ -1,8 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local EventLoop = require "lib.common.event-loop"
-local SquirtleState = require "lib.squirtle.state"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local Rpc = require "lib.common.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
@@ -127,7 +133,7 @@ local function finish(state)
     end
 end
 
-print("[pyramid v3.0.0-dev] booting...")
+print(string.format("[pyramid %s] booting...", version()))
 
 EventLoop.run(function()
     EventLoop.runUntil("pyramid:stop", function()

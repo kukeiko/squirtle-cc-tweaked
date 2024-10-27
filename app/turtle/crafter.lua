@@ -1,4 +1,12 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local EventLoop = require "lib.common.event-loop"
 local Peripheral = require "lib.common.peripheral"
@@ -148,7 +156,7 @@ end
 
 ---@param args string[]
 local function main(args)
-    print("[crafter v2.3.0] booting...")
+    print(string.format("[crafter %s] booting...", version()))
     local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]

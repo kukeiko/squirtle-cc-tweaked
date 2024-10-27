@@ -1,7 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
 local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"

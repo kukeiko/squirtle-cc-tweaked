@@ -1,7 +1,15 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local function main(args)
-    print("[aqueduct v1.0.0] booting...")
+    print(string.format("[aqueduct %s] booting...", version()))
     rednet.open("back")
     rednet.broadcast("start", "aqueduct")
 end

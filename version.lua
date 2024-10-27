@@ -1,3 +1,3 @@
 return function ()
-    return "v7.0.0-dev"
+    return "v7.0!"
 end

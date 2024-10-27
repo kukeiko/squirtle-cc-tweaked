@@ -1,6 +1,14 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
@@ -9,7 +17,7 @@ local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local OakService = require "lib.features.oak-service"
 
-print("[oak v1.0.0-dev]")
+print(string.format("[oak %s] booting...", version()))
 
 local minFuel = 80 * 65;
 

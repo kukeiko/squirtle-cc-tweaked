@@ -1,11 +1,19 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
 local version = require "version"
+
+if not arg then
+    return version
+end
+
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
-local StorageService = require "lib.features.storage.storage-service"
+local RemoteService = require "lib.common.remote-service"
 local QuestService = require "lib.common.quest-service"
+local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 
@@ -37,40 +45,17 @@ function getListTitle()
     return titles[math.random(#titles)]
 end
 
----@param rebootAfter integer
----@param userInteractionEvents table<string, true>
----@param preventAutoReboot function
-local function autoReboot(rebootAfter, userInteractionEvents, preventAutoReboot)
-    local timer = os.startTimer(rebootAfter)
-
-    while true do
-        local event, timerId = EventLoop.pull()
-
-        if event == "timer" and timerId == timer then
-            if preventAutoReboot() then
-                os.cancelTimer(timer)
-                timer = os.startTimer(rebootAfter)
-            else
-                os.shutdown()
-            end
-        elseif userInteractionEvents[event] then
-            os.cancelTimer(timer)
-            timer = os.startTimer(rebootAfter)
-        end
-    end
-end
-
----@param searchableList SearchableList
----@param storageService StorageService|RpcClient
----@param refreshInterval number
-local function refreshOptions(searchableList, storageService, refreshInterval)
-    while true do
-        os.sleep(refreshInterval)
-        searchableList:setOptions(getListOptions(storageService))
-    end
+---@param timer unknown
+---@param timeout integer
+---@return unknown
+local function restartTimer(timer, timeout)
+    os.cancelTimer(timer)
+    return os.startTimer(timeout)
 end
 
 EventLoop.run(function()
+    RemoteService.run({"dispenser"})
+end, function()
     print(string.format("[dispenser %s] connecting to storage service...", version()))
     os.sleep(1)
 
@@ -88,29 +73,39 @@ EventLoop.run(function()
     end
 
     local stashName = storage.getStashName(os.getComputerLabel())
-    local autoRebootTimeout = 30
-    local refreshOptionsInterval = 3
+    local idleTimeout = 30
+    local refreshInterval = 3
     local userInteractionEvents = {char = true, key = true}
-
     local options = getListOptions(storage)
     local title = getListTitle()
     local searchableList = SearchableList.new(options, title)
-    local isTransferring = false
-
-    local function preventAutoReboot()
-        return isTransferring
-    end
 
     EventLoop.run(function()
-        autoReboot(autoRebootTimeout, userInteractionEvents, preventAutoReboot)
-    end, function()
-        refreshOptions(searchableList, storage, refreshOptionsInterval)
+        local idleTimer = os.startTimer(idleTimeout)
+        local refreshTimer = os.startTimer(refreshInterval)
+
+        while true do
+            local event, timerId = EventLoop.pull()
+
+            if event == "timer" and timerId == idleTimer then
+                idleTimer = restartTimer(idleTimer, idleTimeout)
+                refreshTimer = os.cancelTimer(refreshTimer)
+            elseif event == "timer" and timerId == refreshTimer then
+                searchableList:setOptions(getListOptions(storage))
+                refreshTimer = restartTimer(refreshTimer, refreshInterval)
+            elseif userInteractionEvents[event] then
+                idleTimer = restartTimer(idleTimer, idleTimeout)
+
+                if not refreshTimer then
+                    refreshTimer = os.startTimer(refreshInterval)
+                end
+            end
+        end
     end, function()
         while true do
             local item = searchableList:run()
 
             if item then
-                isTransferring = true
                 print("How many?")
                 local quantity = readInteger()
 
@@ -125,8 +120,6 @@ EventLoop.run(function()
                     print("Done!")
                     os.sleep(1)
                 end
-
-                isTransferring = false
             end
         end
     end)

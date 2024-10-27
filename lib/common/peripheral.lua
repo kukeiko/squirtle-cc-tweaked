@@ -18,7 +18,7 @@ function Peripheral.findSide(types, sides)
 
         if foundTypes ~= nil then
             for e = 1, #types do
-                if Utils.indexOf(foundTypes, types[e]) > 0 then
+                if Utils.indexOf(foundTypes, types[e]) then
                     return sides[i], types[e]
                 end
             end

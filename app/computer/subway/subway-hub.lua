@@ -1,4 +1,13 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
+
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
@@ -10,7 +19,7 @@ local function printUsage()
 end
 
 local function main(args)
-    print("[subway-hub v3.2.1-dev] booting...")
+    print(string.format("[subway-hub %s] booting...", version()))
 
     SubwayService.lockAnalogSide = args[1]
     SubwayService.signalDuration = tonumber(args[2]) or SubwayService.signalDuration
@@ -25,7 +34,8 @@ local function main(args)
     print("[max-distance]", SubwayService.maxDistance)
 
     if not turtle and not string.find(os.getComputerLabel(), "dev") then
-        Utils.writeStartupFile(string.format("subway-hub %s %d %d", SubwayService.lockAnalogSide, SubwayService.signalDuration, SubwayService.maxDistance))
+        Utils.writeStartupFile(string.format("subway-hub %s %d %d", SubwayService.lockAnalogSide, SubwayService.signalDuration,
+                                             SubwayService.maxDistance))
     else
         print("[debug] skipping creation of startup file")
     end

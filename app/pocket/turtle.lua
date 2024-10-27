@@ -1,10 +1,18 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local Vector = require "lib.common.vector"
 local Rpc = require "lib.common.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 
-print("[turtle v1.0.0] booting...")
+print(string.format("[turtle %s] booting...", version()))
 local squirtles = Rpc.all(SquirtleService)
 
 for _, squirtle in pairs(squirtles) do

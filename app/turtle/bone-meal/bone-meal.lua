@@ -1,12 +1,20 @@
-package.path = package.path .. ";/?.lua"
-package.path = package.path .. ";/app/turtle/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
+local version = require "version"
+
+if not arg then
+    return version
+end
+
+package.path = package.path .. ";/app/turtle/?.lua"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
 local boot = require "bone-meal.boot"
 local sequence = require "bone-meal.sequence"
 
-print("[bone-meal v2.1.0] booting...")
+print(string.format("[bone-meal %s] booting...", version()))
 local state = boot(arg)
 
 if not state then

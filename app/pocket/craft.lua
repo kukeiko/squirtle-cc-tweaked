@@ -1,6 +1,13 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
 
 local version = require "version"
+
+if not arg then
+    return version
+end
+
 local Rpc = require "lib.common.rpc"
 local QuestService = require "lib.common.quest-service"
 print(string.format("[craft %s]", version()))

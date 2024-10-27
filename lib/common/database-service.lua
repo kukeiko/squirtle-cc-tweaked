@@ -5,6 +5,7 @@ local DatabaseService = {name = "database", folder = "data"}
 
 local entityTypes = {
     allocatedBuffers = "allocated-buffers",
+    craftingRecipes = "crafting-recipes",
     subwayStations = "subway-stations",
     squirtleResumables = "squirtle-resumables",
     squirtleDiskState = "squirtle-disk-state"
@@ -80,7 +81,12 @@ end
 
 ---@return CraftingRecipe[]
 function DatabaseService.getCraftingRecipes()
-    return readEntities("crafting-recipes")
+    return readEntities(entityTypes.craftingRecipes)
+end
+
+---@param recipes CraftingRecipe[]
+function DatabaseService.setCraftingRecipes(recipes)
+    writeEntities(entityTypes.craftingRecipes, recipes)
 end
 
 ---@param item string

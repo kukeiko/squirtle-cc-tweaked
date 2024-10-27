@@ -1,4 +1,12 @@
-package.path = package.path .. ";/?.lua"
+if package then
+    package.path = package.path .. ";/?.lua"
+end
+
+local version = require "version"
+
+if not arg then
+    return version
+end
 
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
@@ -153,7 +161,7 @@ local function connectToDatabase(useLocal)
 end
 
 local function main(args)
-    print("[subway v2.3.0] booting...")
+    print(string.format("[subway %s] booting...", version()))
 
     while true do
         local useLocalDatabase = args[1] == "local"
