@@ -19,7 +19,7 @@ Utils.writeStartupFile("bone-meal")
 BoneMealService.off()
 
 EventLoop.run(function()
-    Rpc.server(BoneMealService)
+    Rpc.host(BoneMealService)
 end, function()
     BoneMealService.run()
 end, function()

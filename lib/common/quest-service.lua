@@ -6,7 +6,7 @@ local DatabaseService = require "lib.common.database-service"
 local QuestService = {name = "quest", host = ""}
 
 local function getDatabaseService()
-    local databaseService = Rpc.nearest(DatabaseService)
+    local databaseService = Rpc.tryNearest(DatabaseService)
 
     if not databaseService then
         error("could not connect to DatabaseService")

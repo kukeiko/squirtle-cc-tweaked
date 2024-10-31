@@ -21,19 +21,19 @@ print(string.format("[io-crafter %s] booting...", version()))
 
 ---@return QuestService|RpcClient, DatabaseService|RpcClient, StorageService|RpcClient
 local function connect()
-    local questService = Rpc.nearest(QuestService)
+    local questService = Rpc.tryNearest(QuestService)
 
     if not questService then
         error("could not connect to QuestService")
     end
 
-    local databaseService = Rpc.nearest(DatabaseService)
+    local databaseService = Rpc.tryNearest(DatabaseService)
 
     if not databaseService then
         error("could not connect to DatabaseService")
     end
 
-    local storageService = Rpc.nearest(StorageService)
+    local storageService = Rpc.tryNearest(StorageService)
 
     if not storageService then
         error("could not connect to StorageService")

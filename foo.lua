@@ -160,15 +160,15 @@ function testBoneMealService()
     local host = arg[1] ~= nil
 
     if host then
-        Rpc.server(BoneMealService)
+        Rpc.host(BoneMealService)
     else
-        local client = Rpc.nearest(BoneMealService)
+        local client = Rpc.tryNearest(BoneMealService)
         Utils.prettyPrint({client.getStock()})
     end
 end
 
 function testStorageService()
-    local storage = Rpc.nearest(StorageService)
+    local storage = Rpc.tryNearest(StorageService)
 
     while true do
         local stock = storage.getStock()
@@ -213,7 +213,7 @@ function testStorageService()
 end
 
 function testCrafter()
-    local questService = Rpc.nearest(QuestService)
+    local questService = Rpc.tryNearest(QuestService)
     print("issuing crafting quest")
     local quest = questService.issueCraftItemQuest(os.getComputerLabel(), "minecraft:redstone_torch", 32)
     print("waiting for completion")
@@ -299,7 +299,7 @@ end
 
 function testDanceQuest()
     if arg[1] == "dancer" then
-        local questService = Rpc.nearest(QuestService)
+        local questService = Rpc.tryNearest(QuestService)
         local quest = questService.acceptDanceQuest(os.getComputerLabel())
         turtle.turnLeft()
         turtle.turnRight()
@@ -308,7 +308,7 @@ function testDanceQuest()
         questService.finishQuest(quest.id)
     else
         EventLoop.run(function()
-            Rpc.server(QuestService)
+            Rpc.host(QuestService)
         end, function()
             print("issueing DanceQuest")
             local quest = QuestService.issueDanceQuest(os.getComputerLabel(), 1)
@@ -319,7 +319,7 @@ function testDanceQuest()
 end
 
 function testAllocateQuestBuffer()
-    local storageService = Rpc.nearest(StorageService)
+    local storageService = Rpc.tryNearest(StorageService)
     ---@type DanceQuest
     local quest = {
         id = 100,
@@ -335,7 +335,7 @@ function testAllocateQuestBuffer()
 end
 
 function testTransferItemsQuest()
-    local questService = Rpc.nearest(QuestService)
+    local questService = Rpc.tryNearest(QuestService)
     local quest = questService.issueTransferItemsQuest(os.getComputerLabel(), {"minecraft:chest_10"}, "input", {["minecraft:rail"] = 128})
     quest = questService.awaitTransferItemsQuestCompletion(quest)
     Utils.prettyPrint(quest)
@@ -426,5 +426,21 @@ local function testReadInteger()
     print("[value]", int)
 end
 
-AppsService.run()
+---@param isHost boolean
+local function testRpc(isHost)
+    if isHost then
+        EventLoop.run(function()
+            BoneMealService.maxDistance = 3
+            Rpc.host(BoneMealService)
+        end, function()
+            local selfClient = Rpc.nearest(BoneMealService)
+            print("[distance]", selfClient.distance)
+        end)
+    else
+        local client = Rpc.nearest(BoneMealService, 3)
+        print(client.ping())
+    end
+end
+
+print(os.pullEvent("key"))
 

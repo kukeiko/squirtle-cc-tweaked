@@ -44,9 +44,9 @@ end
 EventLoop.run(function()
     AppsService.run()
 end, function()
-    Rpc.server(DatabaseService)
+    Rpc.host(DatabaseService)
 end, function()
-    Rpc.server(QuestService)
+    Rpc.host(QuestService)
 end, function()
     while true do
         local apps = {

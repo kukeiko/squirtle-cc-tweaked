@@ -117,6 +117,23 @@ function EventLoop.run(...)
     end
 end
 
+---@param ... function
+function EventLoop.waitForAny(...)
+    local anyFinished = false
+    local threads = Utils.map({...}, function(fn)
+        return createThread(function()
+            fn()
+            anyFinished = true
+        end)
+    end)
+
+    threads = runThreads(threads, {})
+
+    while not anyFinished do
+        threads = runThreads(threads, table.pack(os.pullEvent()))
+    end
+end
+
 ---Run functions until a specific event is pulled.
 ---@param event string
 ---@param ... function
@@ -135,21 +152,25 @@ function EventLoop.runUntil(event, ...)
     return hitEvent
 end
 
+---@param timeout? number
 ---@param ... function
-function EventLoop.waitForAny(...)
-    local anyFinished = false
-    local threads = Utils.map({...}, function(fn)
-        return createThread(function()
-            fn()
-            anyFinished = true
+---@return boolean
+function EventLoop.runTimed(timeout, ...)
+    local fns = {...}
+    local timeoutHit = false
+
+    if timeout == nil then
+        EventLoop.run(table.unpack(fns))
+    else
+        EventLoop.waitForAny(function()
+            os.sleep(timeout)
+            timeoutHit = true
+        end, function()
+            EventLoop.run(table.unpack(fns))
         end)
-    end)
-
-    threads = runThreads(threads, {})
-
-    while not anyFinished do
-        threads = runThreads(threads, table.pack(os.pullEvent()))
     end
+
+    return not timeoutHit
 end
 
 ---@param min integer

@@ -195,7 +195,7 @@ end
 Utils.writeStartupFile("oak")
 
 EventLoop.run(function()
-    Rpc.server(OakService)
+    Rpc.host(OakService)
 end, function()
     while true do
         if not Squirtle.dump(stash) then

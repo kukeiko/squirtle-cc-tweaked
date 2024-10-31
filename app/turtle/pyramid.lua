@@ -137,7 +137,7 @@ print(string.format("[pyramid %s] booting...", version()))
 
 EventLoop.run(function()
     EventLoop.runUntil("pyramid:stop", function()
-        Rpc.server(SquirtleService)
+        Rpc.host(SquirtleService)
     end)
 end, function()
     local success, message = Squirtle.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)

@@ -57,8 +57,8 @@ end
 
 -- [todo] if it crashes, any allocated buffers need to be cleaned out
 return function()
-    local questService = Rpc.nearest(QuestService)
-    local storageService = Rpc.nearest(StorageService)
+    local questService = Rpc.tryNearest(QuestService)
+    local storageService = Rpc.tryNearest(StorageService)
 
     while questService and storageService do
         print("[wait] for new quest...")

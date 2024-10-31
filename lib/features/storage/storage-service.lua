@@ -1,6 +1,5 @@
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
-local ItemStock = require "lib.common.models.item-stock"
 local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local DatabaseService = require "lib.common.database-service"
@@ -9,7 +8,7 @@ local DatabaseService = require "lib.common.database-service"
 local StorageService = {name = "storage"}
 
 local function getDatabaseService()
-    local databaseService = Rpc.nearest(DatabaseService)
+    local databaseService = Rpc.tryNearest(DatabaseService)
 
     if not databaseService then
         error("could not connect to DatabaseService")

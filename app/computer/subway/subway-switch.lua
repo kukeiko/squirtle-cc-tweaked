@@ -53,7 +53,7 @@ RemoteService.addIntParameter({
 })
 
 EventLoop.run(function()
-    Rpc.server(SubwayService)
+    Rpc.host(SubwayService)
 end, function()
     RemoteService.run({"subway-switch"})
 end)

@@ -41,7 +41,7 @@ local function main(args)
     end
 
     EventLoop.run(function()
-        Rpc.server(SubwayService)
+        Rpc.host(SubwayService)
     end, function()
         SubwayService.start()
     end)

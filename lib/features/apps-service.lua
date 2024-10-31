@@ -79,7 +79,7 @@ end
 
 function AppsService.run()
     initAppVersions()
-    Rpc.server(AppsService)
+    Rpc.host(AppsService)
 end
 
 ---@param withContent? boolean

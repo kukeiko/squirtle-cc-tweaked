@@ -21,15 +21,7 @@ print(string.format("[remote %s]", version()))
 local function doRebootCommand(remote)
     print("[rebooting] ...")
     remote.reboot()
-    os.sleep(1)
-    local host = remote.host
-    remote = Rpc.client(RemoteService, host)
-
-    while not remote do
-        os.sleep(1)
-        remote = Rpc.client(RemoteService, host)
-    end
-
+    Rpc.connect(RemoteService, remote.host)
     print("[rebooted] done!")
     os.sleep(1)
 end
@@ -89,7 +81,7 @@ end
 ---@param host string
 local function showCommands(host)
     while true do
-        local remote = Rpc.client(RemoteService, host)
+        local remote = Rpc.connect(RemoteService, host)
         ---@type SearchableListOption[]
         local options = {{id = "reboot", name = "Reboot"}, {id = "update", name = "Update"}}
         local commands = remote.getCommands()

@@ -35,7 +35,7 @@ local function main()
     end, function()
         RemoteService.run({"io-network"})
     end, function()
-        Rpc.server(StorageService)
+        Rpc.host(StorageService)
     end, function()
         while true do
             processDumps()

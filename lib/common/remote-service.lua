@@ -13,7 +13,7 @@ function RemoteService.run(updatedApps)
     RemoteService.updatedApps = updatedApps or {}
 
     EventLoop.run(function()
-        Rpc.server(RemoteService)
+        Rpc.host(RemoteService)
     end, function()
         while true do
             local event = EventLoop.pull()
