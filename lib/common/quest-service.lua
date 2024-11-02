@@ -5,16 +5,6 @@ local DatabaseService = require "lib.common.database-service"
 ---@class QuestService : Service
 local QuestService = {name = "quest", host = ""}
 
-local function getDatabaseService()
-    local databaseService = Rpc.tryNearest(DatabaseService)
-
-    if not databaseService then
-        error("could not connect to DatabaseService")
-    end
-
-    return databaseService
-end
-
 ---@param issuedBy string
 ---@param type QuestType
 ---@return Quest
@@ -30,7 +20,7 @@ end
 local function awaitQuestCompletion(quest)
     while quest.status ~= "finished" and quest.status ~= "failed" do
         os.sleep(1)
-        quest = getDatabaseService().getQuest(quest.id)
+        quest = Rpc.nearest(DatabaseService).getQuest(quest.id)
     end
 
     return quest
@@ -40,7 +30,7 @@ end
 ---@param questType QuestType
 ---@return Quest
 local function acceptQuest(acceptedBy, questType)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local acceptedQuest = databaseService.getAcceptedQuest(acceptedBy, questType)
 
     if acceptedQuest then
@@ -79,7 +69,7 @@ end
 ---@param duration integer
 ---@return DanceQuest
 function QuestService.issueDanceQuest(issuedBy, duration)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local quest = constructQuest(issuedBy, "dance") --[[@as DanceQuest]]
     quest.duration = duration
     quest = databaseService.createQuest(quest) --[[@as DanceQuest]]
@@ -95,7 +85,7 @@ end
 ---@param label? string
 ---@return TransferItemsQuest
 function QuestService.issueTransferItemsQuest(issuedBy, to, toTag, targetStock, partOfQuestId, label)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local quest = constructQuest(issuedBy, "transfer-items") --[[@as TransferItemsQuest]]
     quest.to = to
     quest.toTag = toTag
@@ -114,7 +104,7 @@ end
 ---@param quantity integer
 ---@return CraftItemQuest
 function QuestService.issueCraftItemQuest(issuedBy, item, quantity)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local quest = constructQuest(issuedBy, "craft-item") --[[@as CraftItemQuest]]
     quest.item = item
     quest.quantity = quantity
@@ -127,7 +117,7 @@ end
 ---@param label string
 ---@return TransferItemsQuest?
 function QuestService.findTransferItemsQuest(partOfQuestId, label)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
 
     return Utils.find(databaseService.getQuests(), function(quest)
         return quest.type == "transfer-items" and quest.partOfQuestId == partOfQuestId and quest.label == label
@@ -175,13 +165,13 @@ end
 
 ---@param quest Quest
 function QuestService.updateQuest(quest)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     databaseService.updateQuest(quest)
 end
 
 ---@param id integer
 function QuestService.finishQuest(id)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local quest = databaseService.getQuest(id)
     quest.status = "finished"
     databaseService.updateQuest(quest)
@@ -189,7 +179,7 @@ end
 
 ---@param id integer
 function QuestService.failQuest(id)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local quest = databaseService.getQuest(id)
     quest.status = "failed"
     databaseService.updateQuest(quest)

@@ -19,29 +19,6 @@ local QuestService = require "lib.common.quest-service"
 
 print(string.format("[io-crafter %s] booting...", version()))
 
----@return QuestService|RpcClient, DatabaseService|RpcClient, StorageService|RpcClient
-local function connect()
-    local questService = Rpc.tryNearest(QuestService)
-
-    if not questService then
-        error("could not connect to QuestService")
-    end
-
-    local databaseService = Rpc.tryNearest(DatabaseService)
-
-    if not databaseService then
-        error("could not connect to DatabaseService")
-    end
-
-    local storageService = Rpc.tryNearest(StorageService)
-
-    if not storageService then
-        error("could not connect to StorageService")
-    end
-
-    return questService, databaseService, storageService
-end
-
 ---@param quest CraftItemQuest
 ---@param questService QuestService|RpcClient
 ---@param storageService StorageService|RpcClient
@@ -118,7 +95,10 @@ end
 
 EventLoop.run(function()
     while true do
-        local questService, databaseService, storageService = connect()
+        local questService = Rpc.nearest(QuestService)
+        local databaseService = Rpc.nearest(DatabaseService)
+        local storageService = Rpc.nearest(StorageService)
+
         print("[wait] for new quest...")
         local quest = questService.acceptCraftItemQuest(os.getComputerLabel())
         print("[yay] got a quest!")

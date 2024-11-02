@@ -149,7 +149,7 @@ local function connectToDatabase(useLocal)
         return DatabaseService
     end
 
-    local databaseService = Rpc.tryNearest(DatabaseService)
+    local databaseService = Rpc.tryNearest(DatabaseService, .25)
 
     if databaseService then
         DatabaseService.setSubwayStations(databaseService.getSubwayStations())
@@ -204,9 +204,9 @@ local function main(args)
             local previousStationTime = 0
 
             while true do
-                local client = Rpc.tryNearest(SubwayService)
+                local client = Rpc.nearest(SubwayService)
 
-                if client and (previousStation == nil or client.host ~= previousStation) then
+                if previousStation == nil or client.host ~= previousStation then
                     if currentTrack ~= nil then
                         local newDuration = math.floor((os.epoch("utc") - previousStationTime) / 1000)
 

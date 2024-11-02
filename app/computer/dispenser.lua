@@ -59,14 +59,8 @@ end, function()
     print(string.format("[dispenser %s] connecting to storage service...", version()))
     os.sleep(1)
 
-    local storage = Rpc.tryNearest(StorageService)
-
-    while not storage do
-        os.sleep(0.25)
-        storage = Rpc.tryNearest(StorageService)
-    end
-
-    local questService = Rpc.tryNearest(QuestService)
+    local storage = Rpc.nearest(StorageService)
+    local questService = Rpc.nearest(QuestService)
 
     if not questService then
         error("could not connect to quest service")

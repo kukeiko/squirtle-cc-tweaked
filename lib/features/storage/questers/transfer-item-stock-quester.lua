@@ -57,10 +57,10 @@ end
 
 -- [todo] if it crashes, any allocated buffers need to be cleaned out
 return function()
-    local questService = Rpc.tryNearest(QuestService)
-    local storageService = Rpc.tryNearest(StorageService)
+    local questService = Rpc.nearest(QuestService)
+    local storageService = Rpc.nearest(StorageService)
 
-    while questService and storageService do
+    while true do
         print("[wait] for new quest...")
         local quest = questService.acceptTransferItemsQuest(os.getComputerLabel())
         print("[found] new quest!", quest.id)

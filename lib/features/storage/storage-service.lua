@@ -7,19 +7,9 @@ local DatabaseService = require "lib.common.database-service"
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
 
-local function getDatabaseService()
-    local databaseService = Rpc.tryNearest(DatabaseService)
-
-    if not databaseService then
-        error("could not connect to DatabaseService")
-    end
-
-    return databaseService
-end
-
 ---@return table<string, unknown>
 local function getAllocatedInventories()
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     ---@type table<string, unknown>
     local allocatedInventories = {}
     local allocatedBuffers = databaseService.getAllocatedBuffers()
@@ -70,7 +60,7 @@ end
 ---@param slotCount? integer
 ---@return integer
 function StorageService.allocateQuestBuffer(quest, slotCount)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local allocatedBy = quest.acceptedBy
 
     if not allocatedBy then
@@ -113,7 +103,7 @@ end
 
 ---@param bufferId integer
 function StorageService.freeBuffer(bufferId)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     databaseService.deleteAllocatedBuffer(bufferId)
 end
 
@@ -132,7 +122,7 @@ end
 ---@param fromTag? InventorySlotTag
 ---@param itemStock ItemStock
 function StorageService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local storages = InventoryApi.getByType(fromType or "storage")
     InventoryApi.transferItems(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
@@ -142,7 +132,7 @@ end
 ---@param from string
 ---@param fromTag InventorySlotTag
 function StorageService.transferInventoryStockToBuffer(bufferId, from, fromTag)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local itemStock = InventoryApi.getStock({from}, fromTag)
     InventoryApi.transferItems({from}, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
@@ -151,14 +141,14 @@ end
 ---@param bufferId integer
 ---@return string[]
 function StorageService.getBufferNames(bufferId)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     return databaseService.getAllocatedBuffer(bufferId).inventories
 end
 
 ---@param bufferId integer
 ---@return ItemStock
 function StorageService.getBufferStock(bufferId)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
 
     return InventoryApi.getStock(buffer.inventories, "buffer")
@@ -170,7 +160,7 @@ end
 ---@param stock? ItemStock
 ---@return ItemStock, ItemStock open
 function StorageService.transferBufferStock(bufferId, to, toTag, stock)
-    local databaseService = getDatabaseService()
+    local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local bufferStock = stock or StorageService.getBufferStock(bufferId)
     return InventoryApi.transferItems(buffer.inventories, "buffer", to, toTag, bufferStock, {fromSequential = true})

@@ -7,8 +7,8 @@ local UpdateService = {name = "update"}
 
 ---@param apps? string[]
 function UpdateService.update(apps)
-    local appsClient = Rpc.tryNearest(AppsService)
-    local databaseClient = Rpc.tryNearest(DatabaseService)
+    local appsClient = Rpc.nearest(AppsService)
+    local databaseClient = Rpc.nearest(DatabaseService)
 
     if turtle then
         AppsService.setTurleApps(appsClient.getTurtleApps(true, apps), true)
