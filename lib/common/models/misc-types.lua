@@ -1,7 +1,14 @@
 ---@class Application
 ---@field name string
 ---@field version string
+---@field path string
 ---@field content? string
+---
+---@class RunningApplication
+---@field application Application
+---@field window table
+---@field thread? thread
+---@field event? string
 ---
 ---@class CraftingRecipe
 ---@field item string The item that is crafted.

@@ -3,9 +3,13 @@ local Utils = require "lib.common.utils"
 ---@class EventLoopThread
 ---@field coroutine thread
 ---@field event? string
+---@field accept? fun(event: string) : boolean
 ---@field callback? function
+---@field window? table
 
 local EventLoop = {}
+---@type EventLoopThread?
+local currentThread
 
 ---@param fn function
 ---@param event? string
@@ -21,7 +25,20 @@ end
 ---@param event table
 local function runThread(thread, event)
     local start = os.epoch("utc")
+    currentThread = thread
+    local original
+
+    if thread.window then
+        original = term.redirect(thread.window)
+    end
+
     local result = table.pack(coroutine.resume(thread.coroutine, table.unpack(event)))
+
+    if original then
+        term.redirect(original)
+    end
+
+    currentThread = nil
     local duration = os.epoch("utc") - start
 
     if duration >= 250 then
@@ -55,11 +72,12 @@ local function runThreads(threads, event)
     local nextThreads = {}
 
     for _, thread in ipairs(Utils.copy(threads)) do
-        if thread.event == nil or thread.event == event[1] then
+        if (thread.event == nil or thread.event == event[1]) and (thread.accept == nil or thread.accept(event[1])) then
             if runThread(thread, event) then
                 table.insert(nextThreads, thread)
 
                 if thread.callback then
+                    -- [todo] copy over configurable options like "window"
                     table.insert(nextThreads, createThread(thread.callback, thread.event))
                 end
             end
@@ -115,6 +133,16 @@ function EventLoop.run(...)
     while #threads > 0 do
         threads = runThreads(threads, table.pack(os.pullEvent()))
     end
+end
+
+---@param options { accept?: fun(event: string) : boolean; window?:table }
+function EventLoop.configure(options)
+    if currentThread == nil then
+        error("no active thread")
+    end
+
+    currentThread.accept = options.accept or currentThread.accept
+    currentThread.window = options.window or currentThread.window
 end
 
 ---@param ... function

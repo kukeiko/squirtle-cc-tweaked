@@ -22,7 +22,6 @@ Utils.writeStartupFile("update-host")
 ---@param apps Application[]
 ---@param title string
 local function showApps(apps, title)
-
     local options = Utils.map(apps, function(app)
         ---@type SearchableListOption
         local option = {id = app.name, name = app.name, suffix = app.version}

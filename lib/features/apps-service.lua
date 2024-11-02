@@ -1,5 +1,4 @@
 local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
 
 ---@class AppsService : Service
@@ -50,11 +49,12 @@ local function getApps(folder, withContent, filter)
     end
 
     return Utils.map(fileNames, function(fileName)
+        local path = fs.combine(folder, fileName)
         ---@type Application
-        local app = {name = fileName, version = AppsService.versions[fs.combine(folder, fileName)]}
+        local app = {name = fileName, version = AppsService.versions[path], path = path}
 
         if withContent then
-            local file = fs.open(fs.combine(folder, fileName), "r")
+            local file = fs.open(path, "r")
             app.content = file.readAll()
             file.close()
         end

@@ -442,5 +442,17 @@ local function testRpc(isHost)
     end
 end
 
-print(os.pullEvent("key"))
+local function testEventLoopConfigure()
+    EventLoop.run(function()
+        EventLoop.configure({
+            accept = function(event)
+                return event == "char"
+            end,
+            window = window.create(term.current(), 1, 1, term.getSize())
+        })
 
+        print(EventLoop.pull())
+    end)
+end
+
+testEventLoopConfigure()
