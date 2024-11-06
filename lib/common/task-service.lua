@@ -157,7 +157,7 @@ end
 ---@param task CraftItemTask
 ---@return CraftItemTask
 function TaskService.awaitCraftItemTaskCompletion(task)
-    awaitTaskCompletion(task) --[[@as CraftItemTask]]
+    return awaitTaskCompletion(task) --[[@as CraftItemTask]]
 end
 
 ---@param task Task
