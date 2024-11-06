@@ -20,7 +20,7 @@ local processQuickAccess = require "lib.features.storage.processors.process-quic
 local processShulkers = require "lib.features.storage.processors.process-shulkers"
 local processTrash = require "lib.features.storage.processors.process-trash"
 local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
-local transferItemStockQuester = require "lib.features.storage.questers.transfer-item-stock-quester"
+local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
 
 local function main()
     print(string.format("[io-network %s] booting...", version()))
@@ -80,7 +80,7 @@ local function main()
             Inventory.refresh("stash")
         end
     end, function()
-        transferItemStockQuester()
+        transferItemsWorker()
     end, function()
         local _, key = EventLoop.pull("key")
 

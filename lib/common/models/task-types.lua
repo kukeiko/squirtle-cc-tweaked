@@ -1,26 +1,26 @@
----@alias QuestType "provide-items" | "craft-item" | "transfer-items" | "dance"
+---@alias TaskType "provide-items" | "allocate-ingredients" | "craft-item" | "transfer-items" | "dance"
 ---
----@class Quest
+---@class Task
 ---@field id integer
 ---@field issuedBy string
 ---@field acceptedBy? string
----@field partOfQuestId? integer
+---@field partOfTaskId? integer
 ---@field label? string
----@field status QuestStatus
----@field type QuestType
+---@field status TaskStatus
+---@field type TaskType
 ---
----@alias QuestStatus "issued" | "accepted" | "finished" | "failed"
+---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
----@class ProvideItemsQuest : Quest
+---@class ProvideItemsTask : Task
 ---@field type "provide-items"
 ---@field craftMode "missing" | "all" | "none"
 ---@field transferredInitial boolean
----@field craftMissingQuestId? integer
+---@field craftMissingTaskId? integer
 ---@field items ItemStock
 ---@field to string[]
 ---@field toTag InventorySlotTag
 ---
----@class CraftItemQuest : Quest
+---@class CraftItemTask : Task
 ---@field type "craft-item"
 ---@field item string
 ---@field quantity integer
@@ -28,7 +28,7 @@
 ---@field craftingDetails? CraftingDetails
 ---@field usedRecipes? UsedCraftingRecipe[]
 ---
----@class TransferItemsQuest : Quest
+---@class TransferItemsTask : Task
 ---@field type "transfer-items"
 ---@field to string[]
 ---@field toTag InventorySlotTag
@@ -38,6 +38,6 @@
 ---@field transferred ItemStock
 ---@field transferredAll boolean
 ---
----@class DanceQuest : Quest
+---@class DanceTask : Task
 ---@field type "dance"
 ---@field duration integer

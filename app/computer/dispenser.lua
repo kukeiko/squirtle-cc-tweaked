@@ -12,7 +12,7 @@ local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
 local RemoteService = require "lib.common.remote-service"
-local QuestService = require "lib.common.quest-service"
+local TaskService = require "lib.common.task-service"
 local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
@@ -45,14 +45,6 @@ function getListTitle()
     return titles[math.random(#titles)]
 end
 
----@param timer unknown
----@param timeout integer
----@return unknown
-local function restartTimer(timer, timeout)
-    os.cancelTimer(timer)
-    return os.startTimer(timeout)
-end
-
 EventLoop.run(function()
     RemoteService.run({"dispenser"})
 end, function()
@@ -60,12 +52,7 @@ end, function()
     os.sleep(1)
 
     local storage = Rpc.nearest(StorageService)
-    local questService = Rpc.nearest(QuestService)
-
-    if not questService then
-        error("could not connect to quest service")
-    end
-
+    local taskService = Rpc.nearest(TaskService)
     local stashName = storage.getStashName(os.getComputerLabel())
     local idleTimeout = 30
     local refreshInterval = 3
@@ -82,13 +69,13 @@ end, function()
             local event, timerId = EventLoop.pull()
 
             if event == "timer" and timerId == idleTimer then
-                idleTimer = restartTimer(idleTimer, idleTimeout)
+                idleTimer = Utils.restartTimer(idleTimer, idleTimeout)
                 refreshTimer = os.cancelTimer(refreshTimer)
             elseif event == "timer" and timerId == refreshTimer then
                 searchableList:setOptions(getListOptions(storage))
-                refreshTimer = restartTimer(refreshTimer, refreshInterval)
+                refreshTimer = Utils.restartTimer(refreshTimer, refreshInterval)
             elseif userInteractionEvents[event] then
-                idleTimer = restartTimer(idleTimer, idleTimeout)
+                idleTimer = Utils.restartTimer(idleTimer, idleTimeout)
 
                 if not refreshTimer then
                     refreshTimer = os.startTimer(refreshInterval)
@@ -107,10 +94,10 @@ end, function()
                     term.clear()
                     term.setCursorPos(1, 1)
                     print("Transferring...")
-                    local quest = questService.issueTransferItemsQuest(os.getComputerLabel(), {stashName}, "input", {[item.id] = quantity})
-                    print("Issued quest, waiting for completion")
-                    -- [todo] it should be allowed for the quest/storage system to reboot while transferring and everything still works
-                    questService.awaitTransferItemsQuestCompletion(quest)
+                    local task = taskService.issueTransferItemsTask(os.getComputerLabel(), {stashName}, "input", {[item.id] = quantity})
+                    print("Issued task, waiting for completion")
+                    -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
+                    taskService.awaitTransferItemsTaskCompletion(task)
                     print("Done!")
                     os.sleep(1)
                 end

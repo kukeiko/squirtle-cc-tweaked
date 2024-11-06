@@ -56,19 +56,19 @@ function StorageService.getItemDisplayNames()
     return InventoryPeripheral.getItemDisplayNames()
 end
 
----@param quest Quest
+---@param task Task
 ---@param slotCount? integer
 ---@return integer
-function StorageService.allocateQuestBuffer(quest, slotCount)
+function StorageService.allocateTaskBuffer(task, slotCount)
     local databaseService = Rpc.nearest(DatabaseService)
-    local allocatedBy = quest.acceptedBy
+    local allocatedBy = task.acceptedBy
 
     if not allocatedBy then
-        error(string.format("quest #%d has no 'acceptedBy' assigned", quest.id))
+        error(string.format("task #%d has no 'acceptedBy' assigned", task.id))
     end
 
     slotCount = slotCount or 26 -- minus one to account for buffer name tag
-    local allocatedBuffer = databaseService.findAllocatedBuffer(allocatedBy, quest.id)
+    local allocatedBuffer = databaseService.findAllocatedBuffer(allocatedBy, task.id)
 
     if allocatedBuffer then
         -- [todo] check if slotCount can still be fulfilled
@@ -96,7 +96,7 @@ function StorageService.allocateQuestBuffer(quest, slotCount)
         error(string.format("no more buffer available to fulfill %d slots (%d more required)", slotCount, openSlots))
     end
 
-    allocatedBuffer = databaseService.createAllocatedBuffer(allocatedBy, newlyAllocated, quest.id)
+    allocatedBuffer = databaseService.createAllocatedBuffer(allocatedBy, newlyAllocated, task.id)
 
     return allocatedBuffer.id
 end

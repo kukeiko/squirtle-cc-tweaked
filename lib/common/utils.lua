@@ -486,4 +486,12 @@ function Utils.waitForTimeoutOrUntilKeyEvent(timeout)
     end
 end
 
+---@param timer unknown
+---@param timeout integer
+---@return unknown
+function Utils.restartTimer(timer, timeout)
+    os.cancelTimer(timer)
+    return os.startTimer(timeout)
+end
+
 return Utils

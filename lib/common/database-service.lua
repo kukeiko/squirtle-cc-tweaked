@@ -8,7 +8,8 @@ local entityTypes = {
     craftingRecipes = "crafting-recipes",
     subwayStations = "subway-stations",
     squirtleResumables = "squirtle-resumables",
-    squirtleDiskState = "squirtle-disk-state"
+    squirtleDiskState = "squirtle-disk-state",
+    tasks = "tasks"
 }
 
 ---@param entity string
@@ -99,77 +100,77 @@ function DatabaseService.getCraftingRecipe(item)
     return recipe
 end
 
----@param quest Quest
----@return Quest
-function DatabaseService.createQuest(quest)
-    quest.id = nextId("quests")
-    pushEntity("quests", quest)
+---@param task Task
+---@return Task
+function DatabaseService.createTask(task)
+    task.id = nextId(entityTypes.tasks)
+    pushEntity(entityTypes.tasks, task)
 
-    return quest
+    return task
 end
 
----@return Quest[]
-function DatabaseService.getQuests()
-    return readEntities("quests")
+---@return Task[]
+function DatabaseService.getTasks()
+    return readEntities(entityTypes.tasks)
 end
 
 ---@param id integer
----@return Quest
-function DatabaseService.getQuest(id)
-    local quest = Utils.find(DatabaseService.getQuests(), function(quest)
-        return quest.id == id
+---@return Task
+function DatabaseService.getTask(id)
+    local task = Utils.find(DatabaseService.getTasks(), function(task)
+        return task.id == id
     end)
 
-    if not quest then
-        error(string.format("quest %d doesn't exist", id))
+    if not task then
+        error(string.format("task %d doesn't exist", id))
     end
 
-    return quest
+    return task
 end
 
----@param quest Quest
-function DatabaseService.updateQuest(quest)
-    if not quest.id then
-        error("can't update quest: no id assigned")
+---@param task Task
+function DatabaseService.updateTask(task)
+    if not task.id then
+        error("can't update task: no id assigned")
     end
 
-    local quests = DatabaseService.getQuests()
-    local index = Utils.findIndex(quests, function(candidate)
-        return candidate.id == quest.id
+    local tasks = DatabaseService.getTasks()
+    local index = Utils.findIndex(tasks, function(candidate)
+        return candidate.id == task.id
     end)
 
     if not index then
-        error(string.format("can't update quest: quest %d doesn't exist", quest.id))
+        error(string.format("can't update task: task %d doesn't exist", task.id))
     end
 
-    quests[index] = quest
-    writeEntities("quests", quests)
+    tasks[index] = task
+    writeEntities(entityTypes.tasks, tasks)
 end
 
----@param type QuestType
----@return Quest?
-function DatabaseService.getIssuedQuest(type)
-    return Utils.find(DatabaseService.getQuests(), function(quest)
-        return quest.status == "issued" and quest.type == type
+---@param type TaskType
+---@return Task?
+function DatabaseService.getIssuedTask(type)
+    return Utils.find(DatabaseService.getTasks(), function(task)
+        return task.status == "issued" and task.type == type
     end)
 end
 
 ---@param acceptedBy string
----@param questType QuestType
----@return Quest?
-function DatabaseService.getAcceptedQuest(acceptedBy, questType)
-    return Utils.find(DatabaseService.getQuests(), function(quest)
-        return quest.status == "accepted" and quest.type == questType and quest.acceptedBy == acceptedBy
+---@param tasktype TaskType
+---@return Task?
+function DatabaseService.getAcceptedTask(acceptedBy, tasktype)
+    return Utils.find(DatabaseService.getTasks(), function(task)
+        return task.status == "accepted" and task.type == tasktype and task.acceptedBy == acceptedBy
     end)
 end
 
 ---@param allocatedBy string
 ---@param inventories string[]
----@param questId? integer
-function DatabaseService.createAllocatedBuffer(allocatedBy, inventories, questId)
+---@param taskid? integer
+function DatabaseService.createAllocatedBuffer(allocatedBy, inventories, taskid)
     local entityType = entityTypes.allocatedBuffers
     ---@type AllocatedBuffer
-    local allocatedBuffer = {id = nextId(entityType), allocatedBy = allocatedBy, inventories = inventories, questId = questId}
+    local allocatedBuffer = {id = nextId(entityType), allocatedBy = allocatedBy, inventories = inventories, taskId = taskid}
     pushEntity(entityType, allocatedBuffer)
 
     return allocatedBuffer
@@ -195,11 +196,11 @@ function DatabaseService.getAllocatedBuffer(id)
 end
 
 ---@param allocatedBy string
----@param questId? integer
+---@param taskId? integer
 ---@return AllocatedBuffer?
-function DatabaseService.findAllocatedBuffer(allocatedBy, questId)
+function DatabaseService.findAllocatedBuffer(allocatedBy, taskId)
     return Utils.find(DatabaseService.getAllocatedBuffers(), function(candidate)
-        return candidate.allocatedBy == allocatedBy and (questId == nil or candidate.questId == questId)
+        return candidate.allocatedBy == allocatedBy and (taskId == nil or candidate.taskId == taskId)
     end)
 end
 

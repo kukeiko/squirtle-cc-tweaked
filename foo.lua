@@ -15,7 +15,7 @@ local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 local CrafterService = require "lib.features.crafter-service"
-local QuestService = require "lib.common.quest-service"
+local TaskService = require "lib.common.task-service"
 local AppsService = require "lib.features.apps-service"
 
 ---@param width number
@@ -213,15 +213,15 @@ function testStorageService()
 end
 
 function testCrafter()
-    local questService = Rpc.tryNearest(QuestService)
-    print("issuing crafting quest")
-    local quest = questService.issueCraftItemQuest(os.getComputerLabel(), "minecraft:redstone_torch", 32)
+    local taskService = Rpc.tryNearest(TaskService)
+    print("issuing crafting task")
+    local task = taskService.issueCraftItemTask(os.getComputerLabel(), "minecraft:redstone_torch", 32)
     print("waiting for completion")
-    -- textutils.pagedPrint(textutils.serialiseJSON(quest))
-    local lalala = questService.awaitCraftItemQuestCompletion(quest)
-    -- textutils.pagedPrint(textutils.serialiseJSON(quest))
-    -- Utils.prettyPrint(quest)
-    print("quest completed!", lalala.status)
+    -- textutils.pagedPrint(textutils.serialiseJSON(task))
+    local lalala = taskService.awaitCraftItemTaskCompletion(task)
+    -- textutils.pagedPrint(textutils.serialiseJSON(task))
+    -- Utils.prettyPrint(task)
+    print("task completed!", lalala.status)
 end
 
 function testExpandCraftingItems()
@@ -297,48 +297,41 @@ function testEventLoopRunUntil()
     end)
 end
 
-function testDanceQuest()
+function testDanceTask()
     if arg[1] == "dancer" then
-        local questService = Rpc.tryNearest(QuestService)
-        local quest = questService.acceptDanceQuest(os.getComputerLabel())
+        local taskService = Rpc.tryNearest(TaskService)
+        local task = taskService.acceptDanceTask(os.getComputerLabel())
         turtle.turnLeft()
         turtle.turnRight()
         turtle.turnRight()
         turtle.turnLeft()
-        questService.finishQuest(quest.id)
+        taskService.finishTask(task.id)
     else
         EventLoop.run(function()
-            Rpc.host(QuestService)
+            Rpc.host(TaskService)
         end, function()
-            print("issueing DanceQuest")
-            local quest = QuestService.issueDanceQuest(os.getComputerLabel(), 1)
-            quest = QuestService.awaitDanceQuestCompletion(quest)
-            print("DanceQuest complete!", quest.status)
+            print("issueing DanceTask")
+            local task = TaskService.issueDanceTask(os.getComputerLabel(), 1)
+            task = TaskService.awaitDanceTaskCompletion(task)
+            print("DanceTask complete!", task.status)
         end)
     end
 end
 
-function testAllocateQuestBuffer()
+function testAllocateTaskBuffer()
     local storageService = Rpc.tryNearest(StorageService)
-    ---@type DanceQuest
-    local quest = {
-        id = 100,
-        duration = 1,
-        issuedBy = os.getComputerLabel(),
-        status = "accepted",
-        type = "dance",
-        acceptedBy = "hogle-bogle"
-    }
-    -- local bufferId = storageService.allocateQuestBuffer(quest, 27 * 2)
-    local bufferId = storageService.allocateQuestBuffer(quest, 2)
+    ---@type DanceTask
+    local task = {id = 100, duration = 1, issuedBy = os.getComputerLabel(), status = "accepted", type = "dance", acceptedBy = "hogle-bogle"}
+
+    local bufferId = storageService.allocateTaskBuffer(task, 2)
     storageService.transferStockToBuffer(bufferId, {["minecraft:rail"] = 64})
 end
 
-function testTransferItemsQuest()
-    local questService = Rpc.tryNearest(QuestService)
-    local quest = questService.issueTransferItemsQuest(os.getComputerLabel(), {"minecraft:chest_10"}, "input", {["minecraft:rail"] = 128})
-    quest = questService.awaitTransferItemsQuestCompletion(quest)
-    Utils.prettyPrint(quest)
+function testTransferItemsTask()
+    local taskService = Rpc.tryNearest(TaskService)
+    local task = taskService.issueTransferItemsTask(os.getComputerLabel(), {"minecraft:chest_10"}, "input", {["minecraft:rail"] = 128})
+    task = taskService.awaitTransferItemsTaskCompletion(task)
+    Utils.prettyPrint(task)
 end
 
 function testUtilsReverse()

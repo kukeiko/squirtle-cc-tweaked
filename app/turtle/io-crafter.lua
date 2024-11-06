@@ -15,56 +15,56 @@ local Rpc = require "lib.common.rpc"
 local CrafterService = require "lib.features.crafter-service"
 local DatabaseService = require "lib.common.database-service"
 local StorageService = require "lib.features.storage.storage-service"
-local QuestService = require "lib.common.quest-service"
+local TaskService = require "lib.common.task-service"
 
 print(string.format("[io-crafter %s] booting...", version()))
 
----@param quest CraftItemQuest
----@param questService QuestService|RpcClient
+---@param task CraftItemTask
+---@param taskService TaskService|RpcClient
 ---@param storageService StorageService|RpcClient
 ---@param databaseService DatabaseService|RpcClient
 ---@return CraftingDetails
-local function initCraftingDetails(quest, questService, storageService, databaseService)
+local function initCraftingDetails(task, taskService, storageService, databaseService)
     ---@type ItemStock
-    local targetStock = {[quest.item] = quest.quantity}
+    local targetStock = {[task.item] = task.quantity}
     local storageStock = storageService.getStock()
-    storageStock[quest.item] = nil
+    storageStock[task.item] = nil
     local recipes = databaseService.getCraftingRecipes()
-    quest.craftingDetails = CrafterService.getCraftingDetails(targetStock, storageStock, Utils.toMap(recipes, "item"))
-    questService.updateQuest(quest)
+    task.craftingDetails = CrafterService.getCraftingDetails(targetStock, storageStock, Utils.toMap(recipes, "item"))
+    taskService.updateTask(task)
 
-    return quest.craftingDetails
+    return task.craftingDetails
 end
 
----@param quest CraftItemQuest
----@param questService QuestService|RpcClient
+---@param task CraftItemTask
+---@param taskService TaskService|RpcClient
 ---@param storageService StorageService|RpcClient
 ---@return integer
-local function allocateBuffer(quest, questService, storageService)
+local function allocateBuffer(task, taskService, storageService)
     -- [todo] hardcoded slotCount
-    quest.bufferId = storageService.allocateQuestBuffer(quest)
-    questService.updateQuest(quest)
-    print("allocated new buffer", quest.bufferId)
+    task.bufferId = storageService.allocateTaskBuffer(task)
+    taskService.updateTask(task)
+    print("allocated new buffer", task.bufferId)
 
-    return quest.bufferId
+    return task.bufferId
 end
 
----@param quest CraftItemQuest
+---@param task CraftItemTask
 ---@param items ItemStock
 ---@param buffer string[]
----@param questService QuestService|RpcClient
----@return TransferItemsQuest
-local function getOrIssueTransferIngredientsQuest(quest, items, buffer, questService)
+---@param taskService TaskService|RpcClient
+---@return TransferItemsTask
+local function getOrIssueTransferIngredientsTask(task, items, buffer, taskService)
     local label = "transfer-ingredients"
-    -- [todo] what if quest is already finished?
-    local transferQuest = questService.findTransferItemsQuest(quest.id, label)
+    -- [todo] what if task is already finished?
+    local transferTask = taskService.findTransferItemTask(task.id, label)
 
-    if not transferQuest then
-        transferQuest = questService.issueTransferItemsQuest(os.getComputerLabel(), buffer, "buffer", items, quest.id, label)
-        print("issued transfer items quest!")
+    if not transferTask then
+        transferTask = taskService.issueTransferItemsTask(os.getComputerLabel(), buffer, "buffer", items, task.id, label)
+        print("issued transfer items task!")
     end
 
-    return transferQuest
+    return transferTask
 end
 
 ---@param usedRecipe UsedCraftingRecipe
@@ -95,45 +95,45 @@ end
 
 EventLoop.run(function()
     while true do
-        local questService = Rpc.nearest(QuestService)
+        local taskService = Rpc.nearest(TaskService)
         local databaseService = Rpc.nearest(DatabaseService)
         local storageService = Rpc.nearest(StorageService)
 
-        print("[wait] for new quest...")
-        local quest = questService.acceptCraftItemQuest(os.getComputerLabel())
-        print("[yay] got a quest!")
-        local craftingDetails = quest.craftingDetails or initCraftingDetails(quest, questService, storageService, databaseService)
+        print("[wait] for new task...")
+        local task = taskService.acceptCraftItemTask(os.getComputerLabel())
+        print("[yay] got a task!")
+        local craftingDetails = task.craftingDetails or initCraftingDetails(task, taskService, storageService, databaseService)
 
         if not Utils.isEmpty(craftingDetails.unavailable) then
-            questService.failQuest(quest.id)
+            taskService.failTask(task.id)
             -- [todo] should not error out, just break/return/...
             error("missing ingredients in storage")
         end
 
-        local bufferId = quest.bufferId or allocateBuffer(quest, questService, storageService)
+        local bufferId = task.bufferId or allocateBuffer(task, taskService, storageService)
         local buffer = storageService.getBufferNames(bufferId)
-        local transferIngredientsQuest = getOrIssueTransferIngredientsQuest(quest, craftingDetails.available, buffer, questService)
-        transferIngredientsQuest = questService.awaitTransferItemsQuestCompletion(transferIngredientsQuest)
+        local transferIngredientsTask = getOrIssueTransferIngredientsTask(task, craftingDetails.available, buffer, taskService)
+        transferIngredientsTask = taskService.awaitTransferItemsTaskCompletion(transferIngredientsTask)
 
-        if not transferIngredientsQuest.transferredAll then
+        if not transferIngredientsTask.transferredAll then
             -- [todo] flush buffer back to storage
-            questService.failQuest(quest.id)
+            taskService.failTask(task.id)
             -- [todo] should not error out, just break/return/...
             error("did not manage to fetch all ingredients")
         end
 
-        local usedRecipes = quest.usedRecipes or Utils.clone(craftingDetails.usedRecipes)
+        local usedRecipes = task.usedRecipes or Utils.clone(craftingDetails.usedRecipes)
 
         while #usedRecipes > 0 do
             craft(usedRecipes[1], bufferId, storageService)
             table.remove(usedRecipes, 1)
-            quest.usedRecipes = usedRecipes
-            questService.updateQuest(quest)
+            task.usedRecipes = usedRecipes
+            taskService.updateTask(task)
         end
 
         storageService.flushBuffer(bufferId)
         storageService.freeBuffer(bufferId)
-        questService.finishQuest(quest.id)
+        taskService.finishTask(task.id)
     end
 end)
 

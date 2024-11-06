@@ -9,16 +9,16 @@ if not arg then
 end
 
 local Rpc = require "lib.common.rpc"
-local QuestService = require "lib.common.quest-service"
+local TaskService = require "lib.common.task-service"
 print(string.format("[craft %s]", version()))
 
 function testCrafter()
-    local questService = Rpc.nearest(QuestService)
-    print("issuing crafting quest")
-    local quest = questService.issueCraftItemQuest(os.getComputerLabel(), "minecraft:redstone_torch", 1)
+    local taskService = Rpc.nearest(TaskService)
+    print("issuing crafting task")
+    local task = taskService.issueCraftItemTask(os.getComputerLabel(), "minecraft:redstone_torch", 1)
     print("waiting for completion")
-    quest = questService.awaitCraftItemQuestCompletion(quest)
-    print("quest completed!", quest.status)
+    task = taskService.awaitCraftItemTaskCompletion(task)
+    print("task completed!", task.status)
 end
 
 testCrafter()

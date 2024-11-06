@@ -40,7 +40,7 @@
 ---@field id integer
 ---@field allocatedBy string
 ---@field inventories string[]
----@field questId? integer
+---@field taskId? integer
 ---
 ---@alias TransferItemsMode "sequential" | "distribute"
 ---

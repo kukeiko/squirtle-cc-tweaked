@@ -13,7 +13,7 @@ local Rpc = require "lib.common.rpc"
 local EventLoop = require "lib.common.event-loop"
 local AppsService = require "lib.features.apps-service"
 local DatabaseService = require "lib.common.database-service"
-local QuestService = require "lib.common.quest-service"
+local TaskService = require "lib.common.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 print(string.format("[update-host %s] booting...", version()))
@@ -45,7 +45,7 @@ EventLoop.run(function()
 end, function()
     Rpc.host(DatabaseService)
 end, function()
-    Rpc.host(QuestService)
+    Rpc.host(TaskService)
 end, function()
     while true do
         local apps = {
