@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "allocate-ingredients" | "craft-item" | "transfer-items" | "dance"
+---@alias TaskType "provide-items" | "allocate-ingredients" | "gather-items" | "gather-items-via-player" | "craft-items" | "transfer-items" | "dance"
 ---
 ---@class Task
 ---@field id integer
@@ -8,6 +8,8 @@
 ---@field label? string
 ---@field status TaskStatus
 ---@field type TaskType
+---@field prerequisiteIds number[]
+---@field prerequisites Task[]
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
@@ -20,10 +22,33 @@
 ---@field to string[]
 ---@field toTag InventorySlotTag
 ---
----@class CraftItemTask : Task
----@field type "craft-item"
+---@class AllocateIngredientsTask : Task
+---@field type "allocate-ingredients"
+---@field bufferId? integer
+---@field items ItemStock
+---@field craftingDetails? CraftingDetails
+---
+---@class GatherItemsTask : Task
+---@field type "gather-items"
+---@field items ItemStock
+---@field to string[]
+---@field toTag InventorySlotTag
+---@field bufferId? integer
+---
+---@class GatherItemsViaPlayerTask : Task
+---@field type "gather-items-via-player"
+---@field items ItemStock
+---@field open ItemStock
+---@field to string[]
+---@field toTag InventorySlotTag
+---@field bufferId? integer
+---
+---[todo] allow multiple items
+---@class CraftItemsTask : Task
+---@field type "craft-items"
 ---@field item string
 ---@field quantity integer
+---@field allocateIngredientsTaskId integer
 ---@field bufferId? integer
 ---@field craftingDetails? CraftingDetails
 ---@field usedRecipes? UsedCraftingRecipe[]

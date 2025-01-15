@@ -18,6 +18,7 @@ function testCrafter()
     local task = taskService.issueCraftItemTask(os.getComputerLabel(), "minecraft:redstone_torch", 1)
     print("waiting for completion")
     task = taskService.awaitCraftItemTaskCompletion(task)
+    taskService.signOffTask(task.id)
     print("task completed!", task.status)
 end
 

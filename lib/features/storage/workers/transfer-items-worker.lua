@@ -1,29 +1,29 @@
 local Utils = require "lib.common.utils"
 local ItemStock = require "lib.common.models.item-stock"
 local Rpc = require "lib.common.rpc"
-local StorageService = require "lib.features.storage.storage-service"
 local TaskService = require "lib.common.task-service"
+local TaskBufferService = require "lib.common.task-buffer-service"
 
 ---@param task TransferItemsTask
----@param storageService StorageService|RpcClient
+---@param taskBufferService TaskBufferService|RpcClient
 ---@return ItemStock
-local function fillBuffer(task, storageService)
-    local bufferStock = storageService.getBufferStock(task.bufferId)
+local function fillBuffer(task, taskBufferService)
+    local bufferStock = taskBufferService.getBufferStock(task.bufferId)
     local openStock = ItemStock.subtract(task.items, bufferStock)
 
     if not Utils.isEmpty(openStock) then
         -- print("transfer stock to buffer...")
-        storageService.transferStockToBuffer(task.bufferId, openStock)
+        taskBufferService.transferStockToBuffer(task.bufferId, openStock)
     end
 
-    return storageService.getBufferStock(task.bufferId)
+    return taskBufferService.getBufferStock(task.bufferId)
 end
 
 ---@param task TransferItemsTask
----@param storageService StorageService|RpcClient
+---@param taskBufferService TaskBufferService|RpcClient
 ---@param taskService TaskService|RpcClient
-local function updateTransferred(task, storageService, taskService)
-    local bufferStock = storageService.getBufferStock(task.bufferId)
+local function updateTransferred(task, taskBufferService, taskService)
+    local bufferStock = taskBufferService.getBufferStock(task.bufferId)
     local transferred = ItemStock.subtract(task.found, bufferStock)
     task.transferred = transferred
     task.transferredAll = Utils.isEmpty(ItemStock.subtract(task.items, transferred))
@@ -31,24 +31,24 @@ local function updateTransferred(task, storageService, taskService)
 end
 
 ---@param task TransferItemsTask
----@param storageService StorageService|RpcClient
+---@param taskBufferService TaskBufferService|RpcClient
 ---@param taskService TaskService|RpcClient
-local function emptyBuffer(task, storageService, taskService)
+local function emptyBuffer(task, taskBufferService, taskService)
     -- print("transfer stock from buffer to target...")
     ---@type ItemStock
-    storageService.transferBufferStock(task.bufferId, task.to, task.toTag)
-    updateTransferred(task, storageService, taskService)
+    taskBufferService.transferBufferStock(task.bufferId, task.to, task.toTag)
+    updateTransferred(task, taskBufferService, taskService)
 
-    local bufferStock = storageService.getBufferStock(task.bufferId)
+    local bufferStock = taskBufferService.getBufferStock(task.bufferId)
 
     if not Utils.isEmpty(bufferStock) then
         -- print("trying to empty out the buffer...")
 
         while not Utils.isEmpty(bufferStock) do
             os.sleep(1)
-            storageService.transferBufferStock(task.bufferId, task.to, task.toTag)
-            updateTransferred(task, storageService, taskService)
-            bufferStock = storageService.getBufferStock(task.bufferId)
+            taskBufferService.transferBufferStock(task.bufferId, task.to, task.toTag)
+            updateTransferred(task, taskBufferService, taskService)
+            bufferStock = taskBufferService.getBufferStock(task.bufferId)
         end
 
         -- print("managed to empty out buffer!")
@@ -58,14 +58,14 @@ end
 -- [todo] if it crashes, any allocated buffers need to be cleaned out
 return function()
     local taskService = Rpc.nearest(TaskService)
-    local storageService = Rpc.nearest(StorageService)
+    local taskBufferService = Rpc.nearest(TaskBufferService)
 
     while true do
         print("[wait] for new task...")
         local task = taskService.acceptTransferItemsTask(os.getComputerLabel())
         print("[found] new task!", task.id)
         -- [todo] hardcoded slotCount
-        local bufferId = task.bufferId or storageService.allocateTaskBuffer(task)
+        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
 
         if not task.bufferId then
             task.bufferId = bufferId
@@ -73,13 +73,13 @@ return function()
         end
 
         if not task.found then
-            task.found = fillBuffer(task, storageService)
+            task.found = fillBuffer(task, taskBufferService)
             taskService.updateTask(task)
         end
 
-        emptyBuffer(task, storageService, taskService)
+        emptyBuffer(task, taskBufferService, taskService)
         print("[finish] task!", task.id)
         taskService.finishTask(task.id)
-        storageService.freeBuffer(bufferId)
+        taskBufferService.freeBuffer(bufferId)
     end
 end

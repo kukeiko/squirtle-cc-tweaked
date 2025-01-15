@@ -1,4 +1,5 @@
 local Utils = require "lib.common.utils"
+local TaskRepository = require "lib.common.database.task-repository"
 
 ---@class DatabaseService : Service
 local DatabaseService = {name = "database", folder = "data"}
@@ -25,13 +26,7 @@ end
 ---@param entity string
 ---@return table
 local function readEntities(entity)
-    local data = Utils.readJson(getPath(entity)) or {}
-
-    if data == textutils.empty_json_array then
-        return {}
-    end
-
-    return data
+    return Utils.readJson(getPath(entity)) or {}
 end
 
 ---@param entity string
@@ -103,74 +98,60 @@ end
 ---@param task Task
 ---@return Task
 function DatabaseService.createTask(task)
-    task.id = nextId(entityTypes.tasks)
-    pushEntity(entityTypes.tasks, task)
-
-    return task
+    return TaskRepository.createTask(task)
 end
 
 ---@return Task[]
 function DatabaseService.getTasks()
-    return readEntities(entityTypes.tasks)
+    return TaskRepository.getHydratedTasks()
 end
 
 ---@param id integer
 ---@return Task
 function DatabaseService.getTask(id)
-    local task = Utils.find(DatabaseService.getTasks(), function(task)
-        return task.id == id
-    end)
-
-    if not task then
-        error(string.format("task %d doesn't exist", id))
-    end
-
-    return task
+    return TaskRepository.getHydratedTask(id)
 end
 
 ---@param task Task
 function DatabaseService.updateTask(task)
-    if not task.id then
-        error("can't update task: no id assigned")
-    end
+    TaskRepository.updateTask(task)
+end
 
-    local tasks = DatabaseService.getTasks()
-    local index = Utils.findIndex(tasks, function(candidate)
-        return candidate.id == task.id
-    end)
-
-    if not index then
-        error(string.format("can't update task: task %d doesn't exist", task.id))
-    end
-
-    tasks[index] = task
-    writeEntities(entityTypes.tasks, tasks)
+---@param id integer
+function DatabaseService.deleteTask(id)
+    TaskRepository.deleteTask(id)
 end
 
 ---@param type TaskType
 ---@return Task?
-function DatabaseService.getIssuedTask(type)
+function DatabaseService.getIssuedPreparedTask(type)
+    ---@param task Task
+    local function arePrerequisitesFinished(task)
+        return Utils.every(task.prerequisites, function(prerequisite)
+            return prerequisite.status == "finished" and arePrerequisitesFinished(prerequisite)
+        end)
+    end
+
     return Utils.find(DatabaseService.getTasks(), function(task)
-        return task.status == "issued" and task.type == type
+        return task.type == type and task.status == "issued" and arePrerequisitesFinished(task)
     end)
 end
 
 ---@param acceptedBy string
----@param tasktype TaskType
+---@param type TaskType
 ---@return Task?
-function DatabaseService.getAcceptedTask(acceptedBy, tasktype)
+function DatabaseService.getAcceptedTask(acceptedBy, type)
     return Utils.find(DatabaseService.getTasks(), function(task)
-        return task.status == "accepted" and task.type == tasktype and task.acceptedBy == acceptedBy
+        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy
     end)
 end
 
----@param allocatedBy string
+---@param taskId integer
 ---@param inventories string[]
----@param taskid? integer
-function DatabaseService.createAllocatedBuffer(allocatedBy, inventories, taskid)
+function DatabaseService.createAllocatedBuffer(inventories, taskId)
     local entityType = entityTypes.allocatedBuffers
     ---@type AllocatedBuffer
-    local allocatedBuffer = {id = nextId(entityType), allocatedBy = allocatedBy, inventories = inventories, taskId = taskid}
+    local allocatedBuffer = {id = nextId(entityType), inventories = inventories, taskId = taskId}
     pushEntity(entityType, allocatedBuffer)
 
     return allocatedBuffer
@@ -195,12 +176,11 @@ function DatabaseService.getAllocatedBuffer(id)
     return buffer
 end
 
----@param allocatedBy string
----@param taskId? integer
+---@param taskId integer
 ---@return AllocatedBuffer?
-function DatabaseService.findAllocatedBuffer(allocatedBy, taskId)
+function DatabaseService.findAllocatedBuffer(taskId)
     return Utils.find(DatabaseService.getAllocatedBuffers(), function(candidate)
-        return candidate.allocatedBy == allocatedBy and (taskId == nil or candidate.taskId == taskId)
+        return candidate.taskId == taskId
     end)
 end
 

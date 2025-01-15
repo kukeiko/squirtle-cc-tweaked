@@ -10,6 +10,7 @@ end
 
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
+local TaskBufferService = require "lib.common.task-buffer-service"
 local Inventory = require "lib.inventory.inventory-api"
 local StorageService = require "lib.features.storage.storage-service"
 local RemoteService = require "lib.common.remote-service"
@@ -21,6 +22,9 @@ local processShulkers = require "lib.features.storage.processors.process-shulker
 local processTrash = require "lib.features.storage.processors.process-trash"
 local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
 local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
+local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"
+local gatherItemsWorker = require "lib.features.storage.workers.gather-items-worker"
+local gatherItemsViaPlayerWorker = require "lib.features.storage.workers.gather-items-via-player-worker"
 
 local function main()
     print(string.format("[io-network %s] booting...", version()))
@@ -36,6 +40,8 @@ local function main()
         RemoteService.run({"io-network"})
     end, function()
         Rpc.host(StorageService)
+    end, function()
+        Rpc.host(TaskBufferService)
     end, function()
         while true do
             processDumps()
@@ -81,6 +87,12 @@ local function main()
         end
     end, function()
         transferItemsWorker()
+    end, function()
+        allocateIngredientsWorker()
+    end, function()
+        gatherItemsWorker()
+    end, function()
+        gatherItemsViaPlayerWorker()
     end, function()
         local _, key = EventLoop.pull("key")
 

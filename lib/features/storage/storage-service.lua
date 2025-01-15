@@ -1,27 +1,9 @@
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
 local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local DatabaseService = require "lib.common.database-service"
+local TaskBufferService = require "lib.common.task-buffer-service"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
-
----@return table<string, unknown>
-local function getAllocatedInventories()
-    local databaseService = Rpc.nearest(DatabaseService)
-    ---@type table<string, unknown>
-    local allocatedInventories = {}
-    local allocatedBuffers = databaseService.getAllocatedBuffers()
-
-    for _, allocatedBuffer in pairs(allocatedBuffers) do
-        for _, name in pairs(allocatedBuffer.inventories) do
-            allocatedInventories[name] = true
-        end
-    end
-
-    return allocatedInventories
-end
 
 ---@param stashLabel string
 function StorageService.getStashName(stashLabel)
@@ -56,65 +38,22 @@ function StorageService.getItemDisplayNames()
     return InventoryPeripheral.getItemDisplayNames()
 end
 
+-- [todo] all buffer related methods have been copied to TaskBufferService
 ---@param task Task
 ---@param slotCount? integer
 ---@return integer
 function StorageService.allocateTaskBuffer(task, slotCount)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local allocatedBy = task.acceptedBy
-
-    if not allocatedBy then
-        error(string.format("task #%d has no 'acceptedBy' assigned", task.id))
-    end
-
-    slotCount = slotCount or 26 -- minus one to account for buffer name tag
-    local allocatedBuffer = databaseService.findAllocatedBuffer(allocatedBy, task.id)
-
-    if allocatedBuffer then
-        -- [todo] check if slotCount can still be fulfilled
-        return allocatedBuffer.id
-    end
-
-    local buffers = InventoryApi.getByType("buffer")
-    local alreadyAllocated = getAllocatedInventories()
-    ---@type string[]
-    local newlyAllocated = {}
-    local openSlots = slotCount
-
-    for _, buffer in pairs(buffers) do
-        if not alreadyAllocated[buffer] then
-            table.insert(newlyAllocated, buffer)
-            openSlots = openSlots - InventoryApi.getSlotCount({buffer}, "buffer")
-
-            if openSlots <= 0 then
-                break
-            end
-        end
-    end
-
-    if openSlots > 0 then
-        error(string.format("no more buffer available to fulfill %d slots (%d more required)", slotCount, openSlots))
-    end
-
-    allocatedBuffer = databaseService.createAllocatedBuffer(allocatedBy, newlyAllocated, task.id)
-
-    return allocatedBuffer.id
+    return TaskBufferService.allocateTaskBuffer(task.id, slotCount)
 end
 
 ---@param bufferId integer
 function StorageService.freeBuffer(bufferId)
-    local databaseService = Rpc.nearest(DatabaseService)
-    databaseService.deleteAllocatedBuffer(bufferId)
+    TaskBufferService.freeBuffer(bufferId)
 end
 
 ---@param bufferId integer
 function StorageService.flushBuffer(bufferId)
-    local storages = InventoryApi.getByType("storage")
-
-    while not Utils.isEmpty(StorageService.getBufferStock(bufferId)) do
-        StorageService.transferBufferStock(bufferId, storages, "input")
-        os.sleep(1)
-    end
+    TaskBufferService.flushBuffer(bufferId)
 end
 
 ---@param bufferId integer
@@ -122,36 +61,26 @@ end
 ---@param fromTag? InventorySlotTag
 ---@param itemStock ItemStock
 function StorageService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local storages = InventoryApi.getByType(fromType or "storage")
-    InventoryApi.transferItems(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
+    TaskBufferService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
 end
 
 ---@param bufferId integer
 ---@param from string
 ---@param fromTag InventorySlotTag
 function StorageService.transferInventoryStockToBuffer(bufferId, from, fromTag)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local itemStock = InventoryApi.getStock({from}, fromTag)
-    InventoryApi.transferItems({from}, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
+    TaskBufferService.transferInventoryStockToBuffer(bufferId, from, fromTag)
 end
 
 ---@param bufferId integer
 ---@return string[]
 function StorageService.getBufferNames(bufferId)
-    local databaseService = Rpc.nearest(DatabaseService)
-    return databaseService.getAllocatedBuffer(bufferId).inventories
+    return TaskBufferService.getBufferNames(bufferId)
 end
 
 ---@param bufferId integer
 ---@return ItemStock
 function StorageService.getBufferStock(bufferId)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-
-    return InventoryApi.getStock(buffer.inventories, "buffer")
+    return TaskBufferService.getBufferStock(bufferId)
 end
 
 ---@param bufferId integer
@@ -160,10 +89,7 @@ end
 ---@param stock? ItemStock
 ---@return ItemStock, ItemStock open
 function StorageService.transferBufferStock(bufferId, to, toTag, stock)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local bufferStock = stock or StorageService.getBufferStock(bufferId)
-    return InventoryApi.transferItems(buffer.inventories, "buffer", to, toTag, bufferStock, {fromSequential = true})
+    return TaskBufferService.transferBufferStock(bufferId, to, toTag, stock)
 end
 
 return StorageService

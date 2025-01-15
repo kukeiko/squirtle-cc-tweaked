@@ -87,18 +87,24 @@ end, function()
             local item = searchableList:run()
 
             if item then
-                print("How many?")
+                print(string.format("How many %s?", item.name))
                 local quantity = readInteger()
 
                 if quantity and quantity > 0 then
                     term.clear()
                     term.setCursorPos(1, 1)
-                    print("Transferring...")
-                    local task = taskService.issueTransferItemsTask(os.getComputerLabel(), {stashName}, "input", {[item.id] = quantity})
-                    print("Issued task, waiting for completion")
+                    print("[wait] transferring...")
+                    -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
+                    local task = taskService.transferItems({
+                        issuedBy = os.getComputerLabel(),
+                        targetStock = {[item.id] = quantity},
+                        to = {stashName},
+                        toTag = "input"
+                    })
+
                     -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
                     taskService.awaitTransferItemsTaskCompletion(task)
-                    print("Done!")
+                    print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
                     os.sleep(1)
                 end
             end

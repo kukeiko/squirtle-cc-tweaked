@@ -139,21 +139,15 @@ function Utils.sum(list, mapper)
     return sum
 end
 
----@generic T
----@param list T[]
----@param property string
----@return table<string, T>
-function Utils.toMap(list, property)
+---@generic K, V
+---@param list V[]
+---@param selector fun(item: V) : K
+---@return table<K, V>
+function Utils.toMap(list, selector)
     local map = {}
 
     for _, element in pairs(list) do
-        local id = element[property]
-
-        if type(id) ~= "string" then
-            error("id must be of type string")
-        end
-
-        map[id] = element
+        map[selector(element)] = element
     end
 
     return map
@@ -214,7 +208,7 @@ end
 ---@return T|nil, integer|nil
 function Utils.find(list, predicate)
     for i = 1, #list do
-        if predicate and predicate(list[i], i) then
+        if predicate(list[i], i) then
             return list[i], i
         end
     end
@@ -225,11 +219,23 @@ end
 ---@param predicate fun(item: T, index: number): boolean
 ---@return integer?
 function Utils.findIndex(list, predicate)
+    local _, index = Utils.find(list, predicate)
+
+    return index
+end
+
+---@generic T
+---@param list T[]
+---@param predicate fun(item: T, index: number): boolean
+---@return boolean
+function Utils.every(list, predicate)
     for i = 1, #list do
-        if predicate(list[i], i) then
-            return i
+        if not predicate(list[i], i) then
+            return false
         end
     end
+
+    return true
 end
 
 ---@generic T
@@ -400,7 +406,7 @@ end
 ---@param data table
 function Utils.writeJson(path, data)
     local file = fs.open(path, "w")
-    file.write(textutils.serialiseJSON(data))
+    file.write(textutils.serialiseJSON(data, {allow_repetitions = true}))
     file.close()
 end
 

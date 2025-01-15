@@ -47,4 +47,16 @@ local function merge(stocks)
     return merged
 end
 
-return {subtract = subtract, add = add, merge = merge}
+---@param stock ItemStock
+---@return boolean
+local function isEmpty(stock)
+    for _, quantity in pairs(stock) do
+        if quantity > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty}

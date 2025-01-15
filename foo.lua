@@ -17,6 +17,7 @@ local readInteger = require "lib.ui.read-integer"
 local CrafterService = require "lib.features.crafter-service"
 local TaskService = require "lib.common.task-service"
 local AppsService = require "lib.features.apps-service"
+local TaskBufferService = require "lib.common.task-buffer-service"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -319,18 +320,22 @@ function testDanceTask()
 end
 
 function testAllocateTaskBuffer()
-    local storageService = Rpc.tryNearest(StorageService)
+    local taskBufferService = Rpc.nearest(TaskBufferService)
     ---@type DanceTask
     local task = {id = 100, duration = 1, issuedBy = os.getComputerLabel(), status = "accepted", type = "dance", acceptedBy = "hogle-bogle"}
-
-    local bufferId = storageService.allocateTaskBuffer(task, 2)
-    storageService.transferStockToBuffer(bufferId, {["minecraft:rail"] = 64})
+    local bufferId = taskBufferService.allocateTaskBuffer(task.id, 2)
+    taskBufferService.transferStockToBuffer(bufferId, {["minecraft:rail"] = 64})
 end
 
 function testTransferItemsTask()
     local taskService = Rpc.tryNearest(TaskService)
-    local task = taskService.issueTransferItemsTask(os.getComputerLabel(), {"minecraft:chest_10"}, "input", {["minecraft:rail"] = 128})
-    task = taskService.awaitTransferItemsTaskCompletion(task)
+    local task = taskService.transferItems({
+        issuedBy = os.getComputerLabel(),
+        targetStock = {["minecraft:rail"] = 128},
+        to = {"minecraft:chest_10"},
+        toTag = "input"
+    })
+
     Utils.prettyPrint(task)
 end
 

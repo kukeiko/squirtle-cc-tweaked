@@ -38,9 +38,8 @@
 ---
 ---@class AllocatedBuffer
 ---@field id integer
----@field allocatedBy string
+---@field taskId integer
 ---@field inventories string[]
----@field taskId? integer
 ---
 ---@alias TransferItemsMode "sequential" | "distribute"
 ---
