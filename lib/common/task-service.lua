@@ -1,18 +1,27 @@
 local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
 local DatabaseService = require "lib.common.database-service"
-local TaskBufferService = require "lib.common.task-buffer-service"
 
 ---@class TaskService : Service
 local TaskService = {name = "task", host = ""}
 
 ---@param issuedBy string
 ---@param type TaskType
+---@param partOfTaskId? integer
+---@param label? string
 ---@return Task
-local function constructTask(issuedBy, type)
+local function constructTask(issuedBy, type, partOfTaskId, label)
     ---@type Task
-    local task = {id = 0, issuedBy = issuedBy, status = "issued", type = type, prerequisiteIds = {}, prerequisites = {}}
+    local task = {
+        id = 0,
+        issuedBy = issuedBy,
+        status = "issued",
+        type = type,
+        prerequisiteIds = {},
+        prerequisites = {},
+        partOfTaskId = partOfTaskId,
+        label = label
+    }
 
     return task
 end
@@ -74,7 +83,7 @@ function TaskService.getTask(id)
 end
 
 ---@param id integer
-function TaskService.signOffTask(id)
+function TaskService.deleteTask(id)
     Rpc.nearest(DatabaseService).deleteTask(id)
 end
 
@@ -124,6 +133,71 @@ function TaskService.transferItems(options)
     end
 
     return TaskService.awaitTransferItemsTaskCompletion(task)
+end
+
+---@class CraftItemsTaskOptions
+---@field issuedBy string
+---@field partOfTaskId? integer
+---@field label? string
+---@field item string
+---@field quantity integer
+---@param options CraftItemsTaskOptions
+---@return CraftItemsTask
+function TaskService.craftItems(options)
+    local task = TaskService.findTask("craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
+
+    if not task then
+        local databaseService = Rpc.nearest(DatabaseService)
+        task = constructTask(options.issuedBy, "craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
+        task.item = options.item
+        task.quantity = options.quantity
+        task = databaseService.createTask(task) --[[@as CraftItemsTask]]
+    end
+
+    return awaitTaskCompletion(task) --[[@as CraftItemsTask]]
+end
+
+---@class AllocateIngredientsTaskOptions
+---@field issuedBy string
+---@field item string
+---@field quantity integer
+---@field partOfTaskId integer
+---@field label string
+---@param options AllocateIngredientsTaskOptions
+---@return AllocateIngredientsTask
+function TaskService.allocateIngredients(options)
+    local task = TaskService.findAllocateIngredientsTask(options.partOfTaskId, options.label)
+
+    if not task then
+        local databaseService = Rpc.nearest(DatabaseService)
+        task = constructTask(options.issuedBy, "allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask]]
+        task.items = {[options.item] = options.quantity}
+        task = databaseService.createTask(task) --[[@as AllocateIngredientsTask]]
+    end
+
+    return awaitTaskCompletion(task) --[[@as AllocateIngredientsTask]]
+end
+
+---@class CraftFromIngredientsTaskOptions
+---@field issuedBy string
+---@field partOfTaskId integer
+---@field label string
+---@field craftingDetails CraftingDetails
+---@field bufferId integer
+---@param options CraftFromIngredientsTaskOptions
+---@return CraftFromIngredientsTask
+function TaskService.craftFromIngredients(options)
+    local task = TaskService.findTask("craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask]]
+
+    if not task then
+        local databaseService = Rpc.nearest(DatabaseService)
+        task = constructTask(options.issuedBy, "craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask]]
+        task.craftingDetails = options.craftingDetails
+        task.bufferId = options.bufferId
+        task = databaseService.createTask(task) --[[@as CraftFromIngredientsTask]]
+    end
+
+    return awaitTaskCompletion(task) --[[@as CraftFromIngredientsTask]]
 end
 
 ---@class GatherItemsTaskOptions
@@ -194,8 +268,8 @@ end
 ---@param issuedBy string
 ---@param item string
 ---@param quantity integer
----@return CraftItemsTask
-function TaskService.issueCraftItemTask(issuedBy, item, quantity)
+---@return CraftFromIngredientsTask
+function TaskService.issueCraftFromIngredientsTask(issuedBy, item, quantity)
     local databaseService = Rpc.nearest(DatabaseService)
     local allocateIngredientsTask = constructTask(issuedBy, "allocate-ingredients") --[[@as AllocateIngredientsTask]]
     allocateIngredientsTask.items = {[item] = quantity}
@@ -204,12 +278,12 @@ function TaskService.issueCraftItemTask(issuedBy, item, quantity)
     -- [todo] might unload here, causing CraftItemsTask to never be created.
     -- proposal as a solution: just create AllocateIngredientsTask, and the worker, upon completion of that,
     -- will create the CraftItemsTask
-    local task = constructTask(issuedBy, "craft-items") --[[@as CraftItemsTask]]
+    local task = constructTask(issuedBy, "craft-from-ingredients") --[[@as CraftFromIngredientsTask]]
     task.item = item
     task.quantity = quantity
     task.allocateIngredientsTaskId = allocateIngredientsTask.id
     task.prerequisiteIds = {allocateIngredientsTask.id}
-    task = databaseService.createTask(task) --[[@as CraftItemsTask]]
+    task = databaseService.createTask(task) --[[@as CraftFromIngredientsTask]]
 
     return task
 end
@@ -235,6 +309,17 @@ function TaskService.findTransferItemTask(partOfTaskId, label)
     return Utils.find(databaseService.getTasks(), function(task)
         return task.type == "transfer-items" and task.partOfTaskId == partOfTaskId and task.label == label
     end) --[[@as TransferItemsTask?]]
+end
+
+---@param partOfTaskId integer
+---@param label string
+---@return AllocateIngredientsTask?
+function TaskService.findAllocateIngredientsTask(partOfTaskId, label)
+    local databaseService = Rpc.nearest(DatabaseService)
+
+    return Utils.find(databaseService.getTasks(), function(task)
+        return task.type == "allocate-ingredients" and task.partOfTaskId == partOfTaskId and task.label == label
+    end) --[[@as AllocateIngredientsTask?]]
 end
 
 ---@param acceptedBy string
@@ -269,8 +354,14 @@ end
 
 ---@param acceptedBy string
 ---@return CraftItemsTask
-function TaskService.acceptCraftItemTask(acceptedBy)
+function TaskService.acceptCraftItemsTask(acceptedBy)
     return acceptTask(acceptedBy, "craft-items") --[[@as CraftItemsTask]]
+end
+
+---@param acceptedBy string
+---@return CraftFromIngredientsTask
+function TaskService.acceptCraftFromIngredientsTask(acceptedBy)
+    return acceptTask(acceptedBy, "craft-from-ingredients") --[[@as CraftFromIngredientsTask]]
 end
 
 ---@param task DanceTask
@@ -285,10 +376,10 @@ function TaskService.awaitTransferItemsTaskCompletion(task)
     return awaitTaskCompletion(task) --[[@as TransferItemsTask]]
 end
 
----@param task CraftItemsTask
----@return CraftItemsTask
-function TaskService.awaitCraftItemTaskCompletion(task)
-    return awaitTaskCompletion(task) --[[@as CraftItemsTask]]
+---@param task CraftFromIngredientsTask
+---@return CraftFromIngredientsTask
+function TaskService.awaitCraftFromIngredientsTaskCompletion(task)
+    return awaitTaskCompletion(task) --[[@as CraftFromIngredientsTask]]
 end
 
 ---@param task Task
@@ -299,17 +390,13 @@ end
 ---@param id integer
 function TaskService.finishTask(id)
     local databaseService = Rpc.nearest(DatabaseService)
-    local task = databaseService.getTask(id)
-    task.status = "finished"
-    databaseService.updateTask(task)
+    databaseService.completeTask(id, "finished")
 end
 
 ---@param id integer
 function TaskService.failTask(id)
     local databaseService = Rpc.nearest(DatabaseService)
-    local task = databaseService.getTask(id)
-    task.status = "failed"
-    databaseService.updateTask(task)
+    databaseService.completeTask(id, "failed")
 end
 
 return TaskService

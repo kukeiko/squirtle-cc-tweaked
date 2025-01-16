@@ -112,6 +112,12 @@ function DatabaseService.getTask(id)
     return TaskRepository.getHydratedTask(id)
 end
 
+---@param id integer
+---@param status TaskStatus
+function DatabaseService.completeTask(id, status)
+    TaskRepository.completeTask(id, status)
+end
+
 ---@param task Task
 function DatabaseService.updateTask(task)
     TaskRepository.updateTask(task)

@@ -22,6 +22,7 @@ local processShulkers = require "lib.features.storage.processors.process-shulker
 local processTrash = require "lib.features.storage.processors.process-trash"
 local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
 local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
+local craftItemsWorker = require "lib.features.storage.workers.craft-items-worker"
 local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"
 local gatherItemsWorker = require "lib.features.storage.workers.gather-items-worker"
 local gatherItemsViaPlayerWorker = require "lib.features.storage.workers.gather-items-via-player-worker"
@@ -93,6 +94,8 @@ local function main()
         gatherItemsWorker()
     end, function()
         gatherItemsViaPlayerWorker()
+    end, function()
+        craftItemsWorker()
     end, function()
         local _, key = EventLoop.pull("key")
 

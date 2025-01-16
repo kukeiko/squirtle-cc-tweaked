@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "allocate-ingredients" | "gather-items" | "gather-items-via-player" | "craft-items" | "transfer-items" | "dance"
+---@alias TaskType "provide-items" | "allocate-ingredients" | "gather-items" | "gather-items-via-player" | "craft-items" | "craft-from-ingredients" | "transfer-items" | "dance"
 ---
 ---@class Task
 ---@field id integer
@@ -13,6 +13,7 @@
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
+---[todo] unused
 ---@class ProvideItemsTask : Task
 ---@field type "provide-items"
 ---@field craftMode "missing" | "all" | "none"
@@ -43,14 +44,23 @@
 ---@field toTag InventorySlotTag
 ---@field bufferId? integer
 ---
----[todo] allow multiple items
+------[todo] allow multiple items
 ---@class CraftItemsTask : Task
 ---@field type "craft-items"
 ---@field item string
 ---@field quantity integer
+---
+---[todo] allow multiple items
+---@class CraftFromIngredientsTask : Task
+---@field type "craft-from-ingredients"
+---[todo] obsolete
+---@field item string
+---[todo] obsolete
+---@field quantity integer
+---[todo] obsolete
 ---@field allocateIngredientsTaskId integer
----@field bufferId? integer
----@field craftingDetails? CraftingDetails
+---@field bufferId integer
+---@field craftingDetails CraftingDetails
 ---@field usedRecipes? UsedCraftingRecipe[]
 ---
 ---@class TransferItemsTask : Task

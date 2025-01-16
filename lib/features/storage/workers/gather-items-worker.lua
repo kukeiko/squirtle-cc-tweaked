@@ -49,7 +49,7 @@ return function()
         print("[finish] task, transferred all!")
         -- [todo] if this task is interrupted after signing off gatherViaPlayerTask() and before finishTask(),
         -- it will, on resume, issue another GatherItemsViaPlayerTask.
-        taskService.signOffTask(gatherViaPlayerTask.id)
+        taskService.deleteTask(gatherViaPlayerTask.id)
         taskService.finishTask(task.id)
         taskBufferService.freeBuffer(bufferId)
     end

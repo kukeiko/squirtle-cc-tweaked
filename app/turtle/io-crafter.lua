@@ -53,32 +53,22 @@ EventLoop.run(function()
         local storageService = Rpc.nearest(StorageService)
 
         print("[wait] for new task...")
-        local task = taskService.acceptCraftItemTask(os.getComputerLabel())
+        local task = taskService.acceptCraftFromIngredientsTask(os.getComputerLabel())
         print("[yay] got a task!")
-        local allocateIngredientsTask = taskService.getTask(task.allocateIngredientsTaskId) --[[@as AllocateIngredientsTask]]
-        local craftingDetails = allocateIngredientsTask.craftingDetails
-
-        -- [todo] hardcoded slotCount, should be based on craftingDetails
-        local bufferId = allocateIngredientsTask.bufferId
-
-        if not craftingDetails or not bufferId then
-            error("allocate-ingredients task has no craftingDetails and/or bufferId")
-        end
-
-        local usedRecipes = task.usedRecipes or Utils.clone(craftingDetails.usedRecipes)
+        local usedRecipes = task.usedRecipes or Utils.clone(task.craftingDetails.usedRecipes)
 
         print("[craft] items...")
 
         while #usedRecipes > 0 do
-            craft(usedRecipes[1], bufferId, taskBufferService, storageService)
+            craft(usedRecipes[1], task.bufferId, taskBufferService, storageService)
             table.remove(usedRecipes, 1)
             task.usedRecipes = usedRecipes
             taskService.updateTask(task)
         end
 
         print("[craft] done! flushing buffer...")
-        taskBufferService.flushBuffer(bufferId)
-        taskBufferService.freeBuffer(bufferId)
+        taskBufferService.flushBuffer(task.bufferId)
+        taskBufferService.freeBuffer(task.bufferId)
         -- taskService.signOffTask(task.allocateIngredientsTaskId)
         taskService.finishTask(task.id)
         print("[done] buffer empty!")

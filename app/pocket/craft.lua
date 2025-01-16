@@ -14,11 +14,10 @@ print(string.format("[craft %s]", version()))
 
 function testCrafter()
     local taskService = Rpc.nearest(TaskService)
-    print("issuing crafting task")
-    local task = taskService.issueCraftItemTask(os.getComputerLabel(), "minecraft:redstone_torch", 1)
-    print("waiting for completion")
-    task = taskService.awaitCraftItemTaskCompletion(task)
-    taskService.signOffTask(task.id)
+    print("[wait] for crafting to be complete...")
+    local task = taskService.craftItems({issuedBy = os.getComputerLabel(), item = "minecraft:redstone_torch", quantity = 1})
+    print("[done] items crafted!")
+    taskService.deleteTask(task.id)
     print("task completed!", task.status)
 end
 

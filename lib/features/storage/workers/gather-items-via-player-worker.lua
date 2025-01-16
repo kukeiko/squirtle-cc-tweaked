@@ -40,7 +40,9 @@ return function()
                 partOfTaskId = task.id
             })
 
-            taskService.signOffTask(transferTask.id)
+            -- [todo] deleting here is unsafe in case unload happens, as we're using "task.open" to figure out whats missing.
+            -- maybe it is better to not rely on "task.open" at all, and instead read buffer stock all the time?
+            taskService.deleteTask(transferTask.id)
 
             if not ItemStock.isEmpty(transferTask.transferred) then
                 print("[found] items, updating remaining items")

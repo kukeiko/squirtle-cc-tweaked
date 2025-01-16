@@ -79,6 +79,26 @@ function TaskRepository.createTask(task)
     return task
 end
 
+---@param id integer
+---@param status TaskStatus
+function TaskRepository.completeTask(id, status)
+    local tasks = TaskRepository.getTasks()
+    local task = Utils.find(tasks, function(item)
+        return item.id == id
+    end)
+
+    if not task then
+        error(string.format("task %d doesn't exist", id))
+    end
+
+    task.status = status
+    tasks = Utils.filter(tasks, function(item)
+        return item.partOfTaskId ~= task.id
+    end)
+
+    writeTasks(tasks)
+end
+
 ---@param task Task
 function TaskRepository.updateTask(task)
     if not task.id then

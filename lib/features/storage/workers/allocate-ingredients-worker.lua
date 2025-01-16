@@ -82,7 +82,7 @@ return function()
             error("failed to gather ingredients")
         else
             if gatherItemsTask then
-                taskService.signOffTask(gatherItemsTask.id)
+                taskService.deleteTask(gatherItemsTask.id)
             end
 
             -- [todo] alo sign off the transfer items task
