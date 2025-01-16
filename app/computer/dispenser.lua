@@ -54,7 +54,7 @@ end, function()
     local storage = Rpc.nearest(StorageService)
     local taskService = Rpc.nearest(TaskService)
     local stashName = storage.getStashName(os.getComputerLabel())
-    local idleTimeout = 30
+    local idleTimeout = 5
     local refreshInterval = 3
     local userInteractionEvents = {char = true, key = true}
     local options = getListOptions(storage)
@@ -69,13 +69,17 @@ end, function()
             local event, timerId = EventLoop.pull()
 
             if event == "timer" and timerId == idleTimer then
-                idleTimer = Utils.restartTimer(idleTimer, idleTimeout)
+                idleTimer = os.cancelTimer(idleTimer)
                 refreshTimer = os.cancelTimer(refreshTimer)
             elseif event == "timer" and timerId == refreshTimer then
                 searchableList:setOptions(getListOptions(storage))
                 refreshTimer = Utils.restartTimer(refreshTimer, refreshInterval)
             elseif userInteractionEvents[event] then
-                idleTimer = Utils.restartTimer(idleTimer, idleTimeout)
+                if idleTimer then
+                    idleTimer = os.cancelTimer(idleTimer)
+                end
+
+                idleTimer = os.startTimer(idleTimeout)
 
                 if not refreshTimer then
                     refreshTimer = os.startTimer(refreshInterval)
