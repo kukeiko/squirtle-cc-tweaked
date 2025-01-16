@@ -107,7 +107,6 @@ end, function()
                     })
 
                     -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
-                    taskService.awaitTransferItemsTaskCompletion(task)
                     print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
                     os.sleep(1)
                 end

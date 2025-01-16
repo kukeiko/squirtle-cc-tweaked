@@ -6,7 +6,7 @@ local function work()
     local taskService = Rpc.nearest(TaskService)
 
     print("[wait] for craft-items task...")
-    local task = taskService.acceptCraftItemsTask(name)
+    local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
     print(string.format("[accept] craft-items task, id #%d", task.id))
 
     print("[busy] allocating ingredients...")

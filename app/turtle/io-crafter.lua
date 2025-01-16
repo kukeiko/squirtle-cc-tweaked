@@ -53,7 +53,7 @@ EventLoop.run(function()
         local storageService = Rpc.nearest(StorageService)
 
         print("[wait] for new task...")
-        local task = taskService.acceptCraftFromIngredientsTask(os.getComputerLabel())
+        local task = taskService.acceptTask(os.getComputerLabel(), "craft-from-ingredients") --[[@as CraftFromIngredientsTask]]
         print("[yay] got a task!")
         local usedRecipes = task.usedRecipes or Utils.clone(task.craftingDetails.usedRecipes)
 

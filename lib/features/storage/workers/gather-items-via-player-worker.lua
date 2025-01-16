@@ -10,7 +10,7 @@ return function()
 
     while true do
         print("[wait] for new task...")
-        local task = taskService.acceptGatherItemsViaPlayerTask(os.getComputerLabel())
+        local task = taskService.acceptTask(os.getComputerLabel(), "gather-items-via-player") --[[@as GatherItemsViaPlayerTask]]
         print("[found] new task!", task.id)
 
         -- [todo] hardcoded slotCount, should be based on task-items

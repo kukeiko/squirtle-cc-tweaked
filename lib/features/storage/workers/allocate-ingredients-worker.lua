@@ -15,7 +15,7 @@ return function()
 
     while true do
         print("[wait] for new task...")
-        local task = taskService.acceptAllocateIngredientsTask(os.getComputerLabel())
+        local task = taskService.acceptTask(os.getComputerLabel(), "allocate-ingredients") --[[@as AllocateIngredientsTask]]
         print("[found] new task!", task.id)
 
         if not task.craftingDetails then

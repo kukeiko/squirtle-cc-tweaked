@@ -62,7 +62,7 @@ return function()
 
     while true do
         print("[wait] for new task...")
-        local task = taskService.acceptTransferItemsTask(os.getComputerLabel())
+        local task = taskService.acceptTask(os.getComputerLabel(), "transfer-items") --[[@as TransferItemsTask]]
         print("[found] new task!", task.id)
         -- [todo] hardcoded slotCount
         local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
