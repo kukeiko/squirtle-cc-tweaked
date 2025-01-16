@@ -17,8 +17,6 @@ local function constructTask(issuedBy, type, partOfTaskId, label)
         issuedBy = issuedBy,
         status = "issued",
         type = type,
-        prerequisiteIds = {},
-        prerequisites = {},
         partOfTaskId = partOfTaskId,
         label = label
     }
@@ -89,7 +87,7 @@ function TaskService.acceptTask(acceptedBy, taskType)
         return acceptedTask
     end
 
-    local task = databaseService.getIssuedPreparedTask(taskType)
+    local task = databaseService.getIssuedTask(taskType)
 
     if not task then
         print(string.format("[wait] for issued/accepted %s task...", taskType))
@@ -97,7 +95,7 @@ function TaskService.acceptTask(acceptedBy, taskType)
 
     while not task do
         os.sleep(1)
-        task = databaseService.getIssuedPreparedTask(taskType)
+        task = databaseService.getIssuedTask(taskType)
 
         if not task then
             task = databaseService.getAcceptedTask(acceptedBy, taskType)

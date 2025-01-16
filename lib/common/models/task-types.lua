@@ -8,8 +8,6 @@
 ---@field label? string
 ---@field status TaskStatus
 ---@field type TaskType
----@field prerequisiteIds number[]
----@field prerequisites Task[]
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---

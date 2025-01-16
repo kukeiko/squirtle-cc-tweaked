@@ -103,13 +103,13 @@ end
 
 ---@return Task[]
 function DatabaseService.getTasks()
-    return TaskRepository.getHydratedTasks()
+    return TaskRepository.getTasks()
 end
 
 ---@param id integer
 ---@return Task
 function DatabaseService.getTask(id)
-    return TaskRepository.getHydratedTask(id)
+    return TaskRepository.getTask(id)
 end
 
 ---@param id integer
@@ -130,16 +130,9 @@ end
 
 ---@param type TaskType
 ---@return Task?
-function DatabaseService.getIssuedPreparedTask(type)
-    ---@param task Task
-    local function arePrerequisitesFinished(task)
-        return Utils.every(task.prerequisites, function(prerequisite)
-            return prerequisite.status == "finished" and arePrerequisitesFinished(prerequisite)
-        end)
-    end
-
+function DatabaseService.getIssuedTask(type)
     return Utils.find(DatabaseService.getTasks(), function(task)
-        return task.type == type and task.status == "issued" and arePrerequisitesFinished(task)
+        return task.type == type and task.status == "issued"
     end)
 end
 
