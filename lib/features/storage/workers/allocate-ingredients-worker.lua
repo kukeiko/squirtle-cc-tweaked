@@ -16,10 +16,10 @@ return function()
     while true do
         print("[wait] for new task...")
         local task = taskService.acceptTask(os.getComputerLabel(), "allocate-ingredients") --[[@as AllocateIngredientsTask]]
-        print("[found] new task!", task.id)
+        print(string.format("[accepted] %s #%d", task.type, task.id))
 
         if not task.craftingDetails then
-            print("[recipe] set crafting details")
+            print("[recipe] initialize crafting details")
             local recipes = databaseService.getCraftingRecipes()
             local recipesMap = Utils.toMap(recipes, function(item)
                 return item.item
@@ -54,6 +54,12 @@ return function()
             label = "transfer-ingredients"
         })
 
+        if transferTask.status == "failed" then
+            taskService.failTask(task.id)
+            -- [todo] this worker should not error out
+            error("transfer-items task failed")
+        end
+
         if not transferTask.transferredAll then
             taskService.failTask(task.id)
             -- [todo] implement the magic solution to adapt to new stock
@@ -64,8 +70,6 @@ return function()
         local gatherItemsTask
 
         if not ItemStock.isEmpty(task.craftingDetails.unavailable) then
-            -- [todo] provide target inventory
-            -- [update] what?
             gatherItemsTask = taskService.gatherItems({
                 issuedBy = os.getComputerLabel(),
                 items = task.craftingDetails.unavailable,
@@ -74,21 +78,14 @@ return function()
                 label = "gather-ingredients",
                 partOfTaskId = task.id
             })
-        end
 
-        -- [todo] checking statuses is done sparingly throughout task code - should fix that up properly
-        if gatherItemsTask and gatherItemsTask.status == "failed" then
-            taskService.failTask(task.id)
-            error("failed to gather ingredients")
-        else
-            if gatherItemsTask then
-                taskService.deleteTask(gatherItemsTask.id)
+            if gatherItemsTask.status == "failed" then
+                taskService.failTask(task.id)
+                error("failed to gather ingredients")
             end
-
-            -- [todo] alo sign off the transfer items task
-
-            -- no need to free/flush the buffer as it will be reused by craft-items
-            taskService.finishTask(task.id)
         end
+
+        -- no need to free/flush the buffer as it will be reused by craft-items
+        taskService.finishTask(task.id)
     end
 end

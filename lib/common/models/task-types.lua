@@ -11,7 +11,7 @@
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
----[todo] unused
+---[todo] not yet implemented. purpose: get items from storage and craft those that are missing.
 ---@class ProvideItemsTask : Task
 ---@field type "provide-items"
 ---@field craftMode "missing" | "all" | "none"
@@ -42,7 +42,7 @@
 ---@field toTag InventorySlotTag
 ---@field bufferId? integer
 ---
-------[todo] allow multiple items
+----[todo] allow multiple items
 ---@class CraftItemsTask : Task
 ---@field type "craft-items"
 ---@field item string
@@ -51,12 +51,6 @@
 ---[todo] allow multiple items
 ---@class CraftFromIngredientsTask : Task
 ---@field type "craft-from-ingredients"
----[todo] obsolete
----@field item string
----[todo] obsolete
----@field quantity integer
----[todo] obsolete
----@field allocateIngredientsTaskId integer
 ---@field bufferId integer
 ---@field craftingDetails CraftingDetails
 ---@field usedRecipes? UsedCraftingRecipe[]

@@ -54,9 +54,9 @@ EventLoop.run(function()
 
         print("[wait] for new task...")
         local task = taskService.acceptTask(os.getComputerLabel(), "craft-from-ingredients") --[[@as CraftFromIngredientsTask]]
-        print("[yay] got a task!")
+        print(string.format("[accepted] task #%d", task.id))
+        -- [todo] we don't need the "craftingDetails" property at all - remove it and just use "usedRecipes"
         local usedRecipes = task.usedRecipes or Utils.clone(task.craftingDetails.usedRecipes)
-
         print("[craft] items...")
 
         while #usedRecipes > 0 do
@@ -69,7 +69,6 @@ EventLoop.run(function()
         print("[craft] done! flushing buffer...")
         taskBufferService.flushBuffer(task.bufferId)
         taskBufferService.freeBuffer(task.bufferId)
-        -- taskService.signOffTask(task.allocateIngredientsTaskId)
         taskService.finishTask(task.id)
         print("[done] buffer empty!")
     end

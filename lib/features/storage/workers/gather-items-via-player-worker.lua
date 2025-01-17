@@ -27,7 +27,7 @@ return function()
         end
 
         while not ItemStock.isEmpty(task.open) do
-            -- [todo] here it is possible that we're reusing an existing transfer task that differs in "targetStock".
+            -- [todo] here it is possible that we're reusing an existing transfer-items task that differs in "targetStock".
             -- that can happen when this worker reboots while the transfer task is moving the items from its own buffer to this tasks' buffer.
             -- mentioning this because within the transferItems() method I do have another todo note questioning what to do in that case
             Utils.prettyPrint(task.open)

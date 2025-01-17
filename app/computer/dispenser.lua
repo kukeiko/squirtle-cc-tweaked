@@ -106,6 +106,7 @@ end, function()
                         toTag = "input"
                     })
 
+                    taskService.deleteTask(task.id)
                     -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
                     print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
                     os.sleep(1)
