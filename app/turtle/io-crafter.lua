@@ -12,10 +12,11 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
-local CrafterService = require "lib.features.crafter-service"
 local StorageService = require "lib.features.storage.storage-service"
 local TaskService = require "lib.common.task-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Squirtle = require "lib.squirtle.squirtle-api"
 
 print(string.format("[io-crafter %s] booting...", version()))
 
@@ -31,6 +32,35 @@ local function usedRecipeToItemStock(usedRecipe)
     return stock
 end
 
+-- [todo] check that sufficient crafting materials are provided
+---@param recipe CraftingRecipe
+---@param quantity integer
+local function craftFromBottomInventory(recipe, quantity)
+    local inventory = "bottom"
+    local workbench = peripheral.find("workbench")
+
+    if not workbench then
+        error("no crafting table equipped :(")
+    end
+
+    for item, slots in pairs(recipe.ingredients) do
+        for _, recipeSlot in pairs(slots) do
+            local inventorySlot = InventoryPeripheral.findItem(inventory, item)
+
+            if not inventorySlot then
+                error(string.format("item %s missing in chest", item))
+            end
+
+            local turtleSlot = recipeSlot + math.ceil(recipeSlot / 3) - 1
+            Squirtle.select(turtleSlot)
+            Squirtle.suckSlot(inventory, inventorySlot, quantity)
+        end
+    end
+
+    workbench.craft()
+    Squirtle.dump(inventory)
+end
+
 ---@param recipe UsedCraftingRecipe
 ---@param bufferId integer
 ---@param taskBufferService TaskBufferService|RpcClient
@@ -40,8 +70,7 @@ local function craft(recipe, bufferId, taskBufferService, storageService)
     local ingredients = usedRecipeToItemStock(recipe)
     -- [todo] assert that everything got transferred
     taskBufferService.transferBufferStock(bufferId, {stash}, "buffer", ingredients)
-    -- [todo] move craft() into this file
-    CrafterService.craft(recipe, recipe.timesUsed)
+    craftFromBottomInventory(recipe, recipe.timesUsed)
     -- [todo] assert that everything got transferred
     taskBufferService.transferInventoryStockToBuffer(bufferId, stash, "buffer")
 end

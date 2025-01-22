@@ -68,6 +68,17 @@ function InventoryPeripheral.getStacks(name, detailed)
     end
 end
 
+---@param inventory string
+---@param item string
+---@return integer?
+function InventoryPeripheral.findItem(inventory, item)
+    for slot, stack in pairs(InventoryPeripheral.getStacks(inventory)) do
+        if stack.name == item then
+            return slot
+        end
+    end
+end
+
 ---@param from string
 ---@param to string
 ---@param fromSlot integer

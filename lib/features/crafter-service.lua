@@ -1,49 +1,7 @@
 local Utils = require "lib.common.utils"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local Squirtle = require "lib.squirtle.squirtle-api"
 
 ---@class CrafterService : Service
 local CrafterService = {name = "crafter"}
-
----@param inventory string
----@param item string
----@return integer?
-local function findItem(inventory, item)
-    for slot, stack in pairs(InventoryPeripheral.getStacks(inventory)) do
-        if stack.name == item then
-            return slot
-        end
-    end
-end
-
--- [todo] check that sufficient crafting materials are provided
----@param recipe CraftingRecipe
----@param quantity integer
-function CrafterService.craft(recipe, quantity)
-    local inventory = "bottom"
-    local workbench = peripheral.find("workbench")
-
-    if not workbench then
-        error("no crafting table equipped :(")
-    end
-
-    for item, slots in pairs(recipe.ingredients) do
-        for _, recipeSlot in pairs(slots) do
-            local inventorySlot = findItem(inventory, item)
-
-            if not inventorySlot then
-                error(string.format("item %s missing in chest", item))
-            end
-
-            local turtleSlot = recipeSlot + math.ceil(recipeSlot / 3) - 1
-            Squirtle.select(turtleSlot)
-            Squirtle.suckSlot(inventory, inventorySlot, quantity)
-        end
-    end
-
-    workbench.craft()
-    Squirtle.dump(inventory)
-end
 
 ---[todo] "recipes" argument should instead just be CraftingRecipe[]
 ---[todo] throw error if targetStock contains items for which there are no recipes
