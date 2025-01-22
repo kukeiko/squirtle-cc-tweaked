@@ -1,7 +1,22 @@
 local Utils = require "lib.common.utils"
 
----@class CrafterService : Service
-local CrafterService = {name = "crafter"}
+---@class CraftingApi
+local CraftingApi = {}
+
+---@param item string
+---@param stock ItemStock
+---@param recipes table<string, CraftingRecipe>
+---@return integer
+function CraftingApi.getCraftableCount(item, stock, recipes)
+    local recipe = recipes[item]
+
+    if not recipe then
+        error(string.format("no recipe for %s", item))
+    end
+
+    -- [todo] implement
+    return 0
+end
 
 ---[todo] "recipes" argument should instead just be CraftingRecipe[]
 ---[todo] throw error if targetStock contains items for which there are no recipes
@@ -9,7 +24,7 @@ local CrafterService = {name = "crafter"}
 ---@param currentStock ItemStock
 ---@param recipes table<string, CraftingRecipe>
 ---@return CraftingDetails
-function CrafterService.getCraftingDetails(targetStock, currentStock, recipes)
+function CraftingApi.getCraftingDetails(targetStock, currentStock, recipes)
     ---@type ItemStock
     local expandedStock = {}
     ---@type ItemStock
@@ -102,4 +117,4 @@ function CrafterService.getCraftingDetails(targetStock, currentStock, recipes)
     return craftingDetails
 end
 
-return CrafterService
+return CraftingApi

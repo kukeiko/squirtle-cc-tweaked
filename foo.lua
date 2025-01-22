@@ -14,7 +14,7 @@ local BoneMealService = require "lib.features.bone-meal-service"
 local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local CrafterService = require "lib.features.crafter-service"
+local CraftingApi = require "lib.common.crafting-api"
 local TaskService = require "lib.common.task-service"
 local AppsService = require "lib.features.apps-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
@@ -213,18 +213,6 @@ function testStorageService()
     end
 end
 
-function testCrafter()
-    local taskService = Rpc.tryNearest(TaskService)
-    print("issuing crafting task")
-    local task = taskService.issueCraftItemTask(os.getComputerLabel(), "minecraft:redstone_torch", 32)
-    print("waiting for completion")
-    -- textutils.pagedPrint(textutils.serialiseJSON(task))
-    local lalala = taskService.awaitCraftItemTaskCompletion(task)
-    -- textutils.pagedPrint(textutils.serialiseJSON(task))
-    -- Utils.prettyPrint(task)
-    print("task completed!", lalala.status)
-end
-
 function testExpandCraftingItems()
     function testRedstoneTorch()
         ---@type table<string, CraftingRecipe>
@@ -247,7 +235,7 @@ function testExpandCraftingItems()
             ["minecraft:birch_planks"] = 2
         }
 
-        return CrafterService.getCraftingDetails(targetStock, availableStock, recipes)
+        return CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
     end
 
     local details = testRedstoneTorch()
@@ -301,7 +289,7 @@ end
 function testDanceTask()
     if arg[1] == "dancer" then
         local taskService = Rpc.tryNearest(TaskService)
-        local task = taskService.acceptDanceTask(os.getComputerLabel())
+        local task = taskService.acceptTask(os.getComputerLabel(), "dance") --[[@as DanceTask]]
         turtle.turnLeft()
         turtle.turnRight()
         turtle.turnRight()
@@ -312,19 +300,11 @@ function testDanceTask()
             Rpc.host(TaskService)
         end, function()
             print("issueing DanceTask")
-            local task = TaskService.issueDanceTask(os.getComputerLabel(), 1)
-            task = TaskService.awaitDanceTaskCompletion(task)
+            local task = TaskService.dance(os.getComputerLabel(), 1)
+            TaskService.deleteTask(task.id)
             print("DanceTask complete!", task.status)
         end)
     end
-end
-
-function testAllocateTaskBuffer()
-    local taskBufferService = Rpc.nearest(TaskBufferService)
-    ---@type DanceTask
-    local task = {id = 100, duration = 1, issuedBy = os.getComputerLabel(), status = "accepted", type = "dance", acceptedBy = "hogle-bogle"}
-    local bufferId = taskBufferService.allocateTaskBuffer(task.id, 2)
-    taskBufferService.transferStockToBuffer(bufferId, {["minecraft:rail"] = 64})
 end
 
 function testTransferItemsTask()

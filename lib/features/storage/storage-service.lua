@@ -1,3 +1,7 @@
+local Utils = require "lib.common.utils"
+local Rpc = require "lib.common.rpc"
+local DatabaseService = require "lib.common.database-service"
+local CraftingApi = require "lib.common.crafting-api"
 local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local TaskBufferService = require "lib.common.task-buffer-service"
@@ -32,6 +36,23 @@ end
 function StorageService.getStock()
     local storages = InventoryApi.getByType("storage")
     return InventoryApi.getStock(storages, "withdraw")
+end
+
+---@return ItemStock
+function StorageService.getCraftableStock()
+    local recipes = Rpc.nearest(DatabaseService).getCraftingRecipes()
+    local recipesMap = Utils.toMap(recipes, function(item)
+        return item.item
+    end)
+
+    local storedStock = StorageService.getStock()
+    local craftableStock = {}
+
+    for item in pairs(recipesMap) do
+        craftableStock[item] = CraftingApi.getCraftableCount(item, storedStock, recipesMap)
+    end
+
+    return craftableStock
 end
 
 function StorageService.getItemDisplayNames()

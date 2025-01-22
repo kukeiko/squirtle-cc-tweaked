@@ -5,7 +5,7 @@ local TaskService = require "lib.common.task-service"
 local DatabaseService = require "lib.common.database-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
 local StorageService = require "lib.features.storage.storage-service"
-local CrafterService = require "lib.features.crafter-service"
+local CraftingApi = require "lib.common.crafting-api"
 
 return function()
     local databaseService = Rpc.nearest(DatabaseService)
@@ -31,7 +31,7 @@ return function()
                 storageStock[item] = nil
             end
 
-            task.craftingDetails = CrafterService.getCraftingDetails(task.items, storageStock, recipesMap)
+            task.craftingDetails = CraftingApi.getCraftingDetails(task.items, storageStock, recipesMap)
             taskService.updateTask(task)
         end
 
