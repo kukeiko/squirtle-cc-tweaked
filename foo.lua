@@ -213,52 +213,6 @@ function testStorageService()
     end
 end
 
-function testExpandCraftingItems()
-    function testRedstoneTorch()
-        ---@type table<string, CraftingRecipe>
-        local recipes = {
-            ["minecraft:redstone_torch"] = {
-                item = "minecraft:redstone_torch",
-                quantity = 1,
-                ingredients = {["minecraft:redstone"] = {2}, ["minecraft:stick"] = {5}}
-            },
-            ["minecraft:stick"] = {item = "minecraft:stick", quantity = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}}
-        }
-
-        ---@type ItemStock
-        local targetStock = {["minecraft:redstone_torch"] = 4}
-        ---@type ItemStock
-        local availableStock = {
-            ["minecraft:redstone_torch"] = 1,
-            ["minecraft:redstone"] = 3,
-            ["minecraft:stick"] = 1,
-            ["minecraft:birch_planks"] = 2
-        }
-
-        return CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
-    end
-
-    local details = testRedstoneTorch()
-
-    print("[available]")
-    Utils.prettyPrint(details.available)
-    Utils.waitForUserToHitEnter()
-
-    print("[unavailable]")
-    Utils.prettyPrint(details.unavailable)
-    Utils.waitForUserToHitEnter()
-
-    print("[leftover]")
-    Utils.prettyPrint(details.leftOver)
-    Utils.waitForUserToHitEnter()
-
-    print("[recipes]")
-    for i = 1, #details.usedRecipes do
-        print(string.format("%dx %s", details.usedRecipes[i].timesUsed, details.usedRecipes[i].item))
-    end
-    Utils.waitForUserToHitEnter()
-end
-
 function testEvents()
     while true do
         print(os.pullEvent())
@@ -433,4 +387,121 @@ local function testEventLoopConfigure()
     end)
 end
 
-testEventLoopConfigure()
+---@type table<string, CraftingRecipe>
+local recipes = {
+    ["computercraft:pocket_computer_normal"] = {
+        item = "computercraft:pocket_computer_normal",
+        quantity = 1,
+        ingredients = {["minecraft:stone"] = {1, 2, 3, 4, 6, 7, 9}, ["minecraft:golden_apple"] = {5}, ["minecraft:glass_pane"] = {8}}
+    },
+    ["minecraft:golden_apple"] = {
+        item = "minecraft:golden_apple",
+        quantity = 1,
+        ingredients = {["minecraft:gold_ingot"] = {1, 2, 3, 4, 6, 7, 8, 9}, ["minecraft:apple"] = {5}}
+    },
+    ["minecraft:gold_ingot"] = {item = "minecraft:gold_ingot", quantity = 9, ingredients = {["minecraft:gold_block"] = {5}}},
+    ["minecraft:gold_block"] = {
+        item = "minecraft:gold_block",
+        quantity = 1,
+        ingredients = {["minecraft:gold_ingot"] = {1, 2, 3, 4, 5, 6, 7, 8, 9}}
+    },
+    ["minecraft:anvil"] = {
+        item = "minecraft:anvil",
+        quantity = 1,
+        ingredients = {["minecraft:iron_block"] = {1, 2, 3}, ["minecraft:iron_ingot"] = {5, 7, 8, 9}}
+    },
+    ["minecraft:iron_ingot"] = {item = "minecraft:iron_ingot", quantity = 9, ingredients = {["minecraft:iron_block"] = {5}}},
+    ["minecraft:iron_block"] = {
+        item = "minecraft:iron_block",
+        quantity = 1,
+        ingredients = {["minecraft:iron_ingot"] = {1, 2, 3, 4, 5, 6, 7, 8, 9}}
+    },
+    ["minecraft:redstone_torch"] = {
+        item = "minecraft:redstone_torch",
+        quantity = 1,
+        ingredients = {["minecraft:redstone"] = {2}, ["minecraft:stick"] = {5}}
+    },
+    ["minecraft:stick"] = {item = "minecraft:stick", quantity = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}}
+}
+
+function testGetCraftingDetails()
+    function testRedstoneTorch()
+        ---@type ItemStock
+        local targetStock = {["minecraft:redstone_torch"] = 4}
+        ---@type ItemStock
+        local availableStock = {
+            ["minecraft:redstone_torch"] = 1,
+            ["minecraft:redstone"] = 3,
+            ["minecraft:stick"] = 1,
+            ["minecraft:birch_planks"] = 2
+        }
+
+        return CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
+    end
+
+    local function testAnvil()
+        ---@type ItemStock
+        local targetStock = {["minecraft:anvil"] = 2}
+        ---@type ItemStock
+        local availableStock = {["minecraft:iron_ingot"] = 31, ["minecraft:iron_block"] = 3}
+
+        return CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
+    end
+
+    local details = testAnvil()
+
+    print("[available]")
+    Utils.prettyPrint(details.available)
+    Utils.waitForUserToHitEnter()
+
+    print("[unavailable]")
+    Utils.prettyPrint(details.unavailable)
+    Utils.waitForUserToHitEnter()
+
+    print("[leftover]")
+    Utils.prettyPrint(details.leftOver)
+    Utils.waitForUserToHitEnter()
+
+    print("[recipes]")
+    for i = 1, #details.usedRecipes do
+        print(string.format("%dx %s", details.usedRecipes[i].timesUsed, details.usedRecipes[i].item))
+    end
+    Utils.waitForUserToHitEnter()
+end
+
+local function testGetCraftableCount()
+    local function testRedstoneTorch()
+        ---@type ItemStock
+        local availableStock = {
+            ["minecraft:redstone_torch"] = 1,
+            ["minecraft:redstone"] = 3,
+            ["minecraft:stick"] = 1,
+            ["minecraft:birch_planks"] = 200
+        }
+
+        return CraftingApi.getCraftableCount("minecraft:redstone_torch", availableStock, recipes)
+    end
+
+    local function testAnvil()
+        ---@type ItemStock
+        local availableStock = {["minecraft:iron_ingot"] = 35, ["minecraft:iron_block"] = 3}
+
+        return CraftingApi.getCraftableCount("minecraft:anvil", availableStock, recipes)
+    end
+
+    print("[craftable]", testRedstoneTorch())
+end
+
+local function testGetCraftableStock()
+    local storageService = Rpc.nearest(StorageService)
+    local craftableStock = storageService.getCraftableStock()
+    Utils.prettyPrint(craftableStock)
+end
+
+local now = os.epoch("utc")
+
+for i = 1, 1 do
+    testGetCraftingDetails()
+end
+
+print("[time]", (os.epoch("utc") - now) / 1000, "ms")

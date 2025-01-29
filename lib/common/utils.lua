@@ -153,6 +153,19 @@ function Utils.toMap(list, selector)
     return map
 end
 
+---@generic K, V
+---@param map V[]
+---@return V[]
+function Utils.toList(map)
+    local list = {}
+
+    for _, value in pairs(map) do
+        table.insert(list, value)
+    end
+
+    return list
+end
+
 ---@generic T
 ---@param list T[]
 ---@param predicate fun(item: T, index: number): boolean
@@ -224,13 +237,13 @@ function Utils.findIndex(list, predicate)
     return index
 end
 
----@generic T
----@param list T[]
----@param predicate fun(item: T, index: number): boolean
+---@generic K, V
+---@param list table<K, V>
+---@param predicate fun(item: V, index: K): boolean
 ---@return boolean
 function Utils.every(list, predicate)
-    for i = 1, #list do
-        if not predicate(list[i], i) then
+    for key, value in pairs(list) do
+        if not predicate(value, key) then
             return false
         end
     end
