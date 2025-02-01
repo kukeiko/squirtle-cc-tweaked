@@ -26,10 +26,10 @@ local function main()
 
     print(string.format("[storage-workers %s] booting...", version()))
 
-    EventLoop.runUntil("io-network:stop", function()
+    EventLoop.run(function()
         transferItemsWorker()
     end, function()
-        RemoteService.run({"io-network"})
+        RemoteService.run({"storage-workers"})
     end, function()
         allocateIngredientsWorker()
     end, function()
