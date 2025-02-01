@@ -56,37 +56,13 @@ end, function()
     local stashName = storage.getStashName(os.getComputerLabel())
     local idleTimeout = 5
     local refreshInterval = 3
-    local userInteractionEvents = {char = true, key = true}
     local options = getListOptions(storage)
     local title = getListTitle()
-    local searchableList = SearchableList.new(options, title)
+    local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
+        return getListOptions(storage)
+    end)
 
     EventLoop.run(function()
-        local idleTimer = os.startTimer(idleTimeout)
-        local refreshTimer = os.startTimer(refreshInterval)
-
-        while true do
-            local event, timerId = EventLoop.pull()
-
-            if event == "timer" and timerId == idleTimer then
-                idleTimer = os.cancelTimer(idleTimer)
-                refreshTimer = os.cancelTimer(refreshTimer)
-            elseif event == "timer" and timerId == refreshTimer then
-                searchableList:setOptions(getListOptions(storage))
-                refreshTimer = Utils.restartTimer(refreshTimer, refreshInterval)
-            elseif userInteractionEvents[event] then
-                if idleTimer then
-                    idleTimer = os.cancelTimer(idleTimer)
-                end
-
-                idleTimer = os.startTimer(idleTimeout)
-
-                if not refreshTimer then
-                    refreshTimer = os.startTimer(refreshInterval)
-                end
-            end
-        end
-    end, function()
         while true do
             local item = searchableList:run()
 

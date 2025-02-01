@@ -509,7 +509,10 @@ end
 ---@param timeout integer
 ---@return unknown
 function Utils.restartTimer(timer, timeout)
-    os.cancelTimer(timer)
+    if timer then
+        os.cancelTimer(timer)
+    end
+
     return os.startTimer(timeout)
 end
 

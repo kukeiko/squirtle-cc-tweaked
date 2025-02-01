@@ -9,6 +9,9 @@ local Utils = require "lib.common.utils"
 ---@field index integer
 ---@field window table
 ---@field isRunning boolean
+---@field idleTimeout? integer
+---@field refreshInterval? integer
+---@field refresher? fun() : SearchableListOption[]
 local SearchableList = {}
 
 ---@class SearchableListOption
@@ -18,11 +21,14 @@ local SearchableList = {}
 
 ---@param options SearchableListOption[]
 ---@param title? string
+---@param idleTimeout? integer
+---@param refreshInterval? integer
+---@param refresher? fun() : SearchableListOption[]
 ---@return SearchableList
-function SearchableList.new(options, title)
+function SearchableList.new(options, title, idleTimeout, refreshInterval, refresher)
     local w, h = term.getSize()
 
-    ---@type SearchableList
+    ---@type SearchableList | {}
     local instance = {
         options = options,
         list = options,
@@ -30,7 +36,10 @@ function SearchableList.new(options, title)
         index = 1,
         window = window.create(term.current(), 1, 1, w, h),
         title = title,
-        isRunning = false
+        isRunning = false,
+        idleTimeout = idleTimeout,
+        refreshInterval = refreshInterval,
+        refresher = refresher
     }
 
     setmetatable(instance, {__index = SearchableList})
@@ -61,6 +70,32 @@ function SearchableList:setOptions(options)
     end
 end
 
+---@param searchableList SearchableList
+---@return fun() : nil
+local function refresh(searchableList)
+    if not searchableList.idleTimeout or not searchableList.refreshInterval or not searchableList.refresher then
+        return function()
+        end
+    end
+
+    local idleTimer = os.startTimer(searchableList.idleTimeout)
+    local refreshTimer = os.startTimer(searchableList.refreshInterval)
+
+    return function()
+        if idleTimer then
+            os.cancelTimer(idleTimer)
+        end
+
+        if refreshTimer then
+            os.cancelTimer(refreshTimer)
+        end
+    end
+end
+
+---@param searchableList SearchableList
+local function draw(searchableList)
+end
+
 ---@return SearchableListOption?
 function SearchableList:run()
     ---@type SearchableListOption?
@@ -70,13 +105,29 @@ function SearchableList:run()
     self.searchText = ""
     self:filter()
 
+    local idleTimer, refreshTimer
+
+    if self.idleTimeout and self.refreshInterval and self.refresher then
+        idleTimer = os.startTimer(self.idleTimeout)
+        refreshTimer = os.startTimer(self.refreshInterval)
+    end
+
     while (true) do
         self:draw()
 
         local event, value = EventLoop.pull()
         local filterDirty = false
+        local userInteracted = false
 
-        if event == "key" then
+        if event == "timer" and value == idleTimer then
+            -- user did not interact for a while => cancel refreshing list options
+            idleTimer = os.cancelTimer(idleTimer)
+            refreshTimer = os.cancelTimer(refreshTimer)
+        elseif event == "timer" and value == refreshTimer then
+            -- refresh list options
+            self:setOptions(self.refresher())
+            refreshTimer = Utils.restartTimer(refreshTimer, self.refreshInterval)
+        elseif event == "key" then
             if (value == keys.f4) then
                 break
             elseif (value == keys.enter) then
@@ -105,13 +156,26 @@ function SearchableList:run()
                     self.index = 1
                 end
             end
+
+            -- set flag to reset idle and start refresh if necessary
+            userInteracted = true
         elseif event == "char" then
             self.searchText = self.searchText .. value
             filterDirty = true
             self.index = 1
+            -- set flag to reset idle and start refresh if necessary
+            userInteracted = true
         elseif event == "terminate" then
             -- [todo] need to properly understand terminate event so that I don't have to check for it here
             break
+        end
+
+        if userInteracted and self.idleTimeout and self.refreshInterval and self.refresher then
+            idleTimer = Utils.restartTimer(idleTimer, self.idleTimeout)
+
+            if not refreshTimer then
+                refreshTimer = os.startTimer(self.refreshInterval)
+            end
         end
 
         if (filterDirty) then
