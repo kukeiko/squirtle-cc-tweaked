@@ -5,11 +5,11 @@ local function work()
     local name = os.getComputerLabel()
     local taskService = Rpc.nearest(TaskService)
 
-    print("[wait] for craft-items task...")
+    print(string.format("[wait] %s...", "craft-items"))
     local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
-    print(string.format("[accept] craft-items task, id #%d", task.id))
+    print(string.format("[found] %s #%d", task.type, task.id))
 
-    print("[busy] allocating ingredients...")
+    -- print("[busy] allocating ingredients...")
     local allocateIngredientsTask = taskService.allocateIngredients({
         issuedBy = name,
         item = task.item,
@@ -23,7 +23,7 @@ local function work()
         return taskService.failTask(task.id)
     end
 
-    print("[busy] crafting from ingredients...")
+    -- print("[busy] crafting from ingredients...")
     local craftFromIngredientsTask = taskService.craftFromIngredients({
         issuedBy = name,
         partOfTaskId = task.id,
@@ -39,7 +39,7 @@ local function work()
 
     -- [todo] currently, io-crafter is the one flushing crafted items back into the storage,
     -- but I would like this worker to do it.
-    print("[done] items crafted & put into storage!")
+    print(string.format("[finish] %s %d", task.type, task.id))
     taskService.finishTask(task.id)
 end
 

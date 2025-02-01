@@ -29,6 +29,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network.lua -p app/computer/?.lua -p ?.lua -o dist/computer/io-network"
         },
         {
+            "label": "build computer:storage-workers",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage-workers.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage-workers"
+        },
+        {
             "label": "build computer:dispenser",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p ?.lua -o dist/computer/dispenser"

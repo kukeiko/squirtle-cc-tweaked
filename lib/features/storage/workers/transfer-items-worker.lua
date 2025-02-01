@@ -61,9 +61,9 @@ return function()
     local taskBufferService = Rpc.nearest(TaskBufferService)
 
     while true do
-        print("[wait] for new task...")
+        print(string.format("[wait] %s...", "transfer-items"))
         local task = taskService.acceptTask(os.getComputerLabel(), "transfer-items") --[[@as TransferItemsTask]]
-        print("[found] new task!", task.id)
+        print(string.format("[accepted] %s #%d", task.type, task.id))
         -- [todo] hardcoded slotCount
         local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
 
@@ -78,7 +78,7 @@ return function()
         end
 
         emptyBuffer(task, taskBufferService, taskService)
-        print("[finish] task!", task.id)
+        print(string.format("[finish] %s %d", task.type, task.id))
         taskService.finishTask(task.id)
         taskBufferService.freeBuffer(bufferId)
     end

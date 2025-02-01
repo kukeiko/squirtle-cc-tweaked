@@ -40,6 +40,13 @@ local function showApps(apps, title)
     end
 end
 
+local monitor = peripheral.find("monitor")
+
+if monitor then
+    monitor.setTextScale(1.0)
+    term.redirect(monitor)
+end
+
 EventLoop.run(function()
     AppsService.run()
 end, function()
@@ -47,31 +54,32 @@ end, function()
 end, function()
     Rpc.host(TaskService)
 end, function()
-    while true do
-        local apps = {
-            ["computer"] = AppsService.getComputerApps(),
-            ["pocket"] = AppsService.getPocketApps(),
-            ["turtle"] = AppsService.getTurtleApps()
-        }
+    -- [todo] commented out to see task output
+    -- while true do
+    --     local apps = {
+    --         ["computer"] = AppsService.getComputerApps(),
+    --         ["pocket"] = AppsService.getPocketApps(),
+    --         ["turtle"] = AppsService.getTurtleApps()
+    --     }
 
-        ---@type SearchableListOption[]
-        local options = {
-            {id = "computer", name = "Computer", suffix = tostring(#apps["computer"])},
-            {id = "pocket", name = "Pocket", suffix = tostring(#apps["pocket"])},
-            {id = "turtle", name = "Turtle", suffix = tostring(#apps["turtle"])}
-        }
+    --     ---@type SearchableListOption[]
+    --     local options = {
+    --         {id = "computer", name = "Computer", suffix = tostring(#apps["computer"])},
+    --         {id = "pocket", name = "Pocket", suffix = tostring(#apps["pocket"])},
+    --         {id = "turtle", name = "Turtle", suffix = tostring(#apps["turtle"])}
+    --     }
 
-        local list = SearchableList.new(options, "Platform")
-        local selected = list:run()
+    --     local list = SearchableList.new(options, "Platform")
+    --     local selected = list:run()
 
-        if selected then
-            if selected.id == "computer" then
-                showApps(apps["computer"], "Computer")
-            elseif selected.id == "pocket" then
-                showApps(apps["pocket"], "Pocket")
-            elseif selected.id == "turtle" then
-                showApps(apps["turtle"], "Turtle")
-            end
-        end
-    end
+    --     if selected then
+    --         if selected.id == "computer" then
+    --             showApps(apps["computer"], "Computer")
+    --         elseif selected.id == "pocket" then
+    --             showApps(apps["pocket"], "Pocket")
+    --         elseif selected.id == "turtle" then
+    --             showApps(apps["turtle"], "Turtle")
+    --         end
+    --     end
+    -- end
 end)

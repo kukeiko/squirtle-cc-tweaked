@@ -8,15 +8,14 @@ return function()
     local taskBufferService = Rpc.nearest(TaskBufferService)
 
     while true do
-        print("[wait] for new task...")
+        print(string.format("[wait] %s...", "gather-items"))
         local task = taskService.acceptTask(os.getComputerLabel(), "gather-items") --[[@as GatherItemsTask]]
-        print("[found] new task!", task.id)
+        print(string.format("[found] %s #%d", task.type, task.id))
 
         -- [todo] hardcoded slotCount, should be based on task-items
         local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
 
         if not task.bufferId then
-            print("[allocate] buffer")
             task.bufferId = bufferId
             taskService.updateTask(task)
         end
@@ -39,14 +38,14 @@ return function()
         end
 
         -- [todo] move to target inventory
-        print("[found] all items! transferring to target...")
+        -- print("[found] all items! transferring to target...")
         local _, open = taskBufferService.transferBufferStock(bufferId, task.to, task.toTag)
 
         while not Utils.isEmpty(open) do
             _, open = taskBufferService.transferBufferStock(bufferId, task.to, task.toTag)
         end
 
-        print("[finish] task, transferred all!")
+        print(string.format("[finish] %s %d", task.type, task.id))
         -- [todo] if this task is interrupted after signing off gatherViaPlayerTask() and before finishTask(),
         -- it will, on resume, issue another GatherItemsViaPlayerTask.
         taskService.deleteTask(gatherViaPlayerTask.id)

@@ -21,13 +21,15 @@ local processQuickAccess = require "lib.features.storage.processors.process-quic
 local processShulkers = require "lib.features.storage.processors.process-shulkers"
 local processTrash = require "lib.features.storage.processors.process-trash"
 local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
-local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
-local craftItemsWorker = require "lib.features.storage.workers.craft-items-worker"
-local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"
-local gatherItemsWorker = require "lib.features.storage.workers.gather-items-worker"
-local gatherItemsViaPlayerWorker = require "lib.features.storage.workers.gather-items-via-player-worker"
 
 local function main()
+    local monitor = peripheral.find("monitor")
+
+    if monitor then
+        monitor.setTextScale(1.0)
+        term.redirect(monitor)
+    end
+
     print(string.format("[io-network %s] booting...", version()))
     Inventory.useCache(true)
     Inventory.discover()
@@ -86,16 +88,6 @@ local function main()
             Inventory.refresh("silo:input")
             Inventory.refresh("stash")
         end
-    end, function()
-        transferItemsWorker()
-    end, function()
-        allocateIngredientsWorker()
-    end, function()
-        gatherItemsWorker()
-    end, function()
-        gatherItemsViaPlayerWorker()
-    end, function()
-        craftItemsWorker()
     end, function()
         local _, key = EventLoop.pull("key")
 

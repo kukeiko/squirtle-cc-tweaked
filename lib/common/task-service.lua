@@ -12,14 +12,7 @@ local TaskService = {name = "task", host = ""}
 ---@return Task
 local function constructTask(issuedBy, type, partOfTaskId, label)
     ---@type Task
-    local task = {
-        id = 0,
-        issuedBy = issuedBy,
-        status = "issued",
-        type = type,
-        partOfTaskId = partOfTaskId,
-        label = label
-    }
+    local task = {id = 0, issuedBy = issuedBy, status = "issued", type = type, partOfTaskId = partOfTaskId, label = label}
 
     return task
 end
@@ -83,14 +76,14 @@ function TaskService.acceptTask(acceptedBy, taskType)
     local acceptedTask = databaseService.getAcceptedTask(acceptedBy, taskType)
 
     if acceptedTask then
-        print("[found] accepted immediately", acceptedTask.id)
+        print(string.format("[found] %s #%d", taskType, acceptedTask.id))
         return acceptedTask
     end
 
     local task = databaseService.getIssuedTask(taskType)
 
     if not task then
-        print(string.format("[wait] for issued/accepted %s task...", taskType))
+        print(string.format("[wait] for %s...", taskType))
     end
 
     while not task do
@@ -102,13 +95,12 @@ function TaskService.acceptTask(acceptedBy, taskType)
         end
     end
 
-    print("[found] issued/accepted task!", task.id, task.status)
+    print(string.format("[found] %s #%d", taskType, task.id))
 
     if task.status == "issued" then
         task.acceptedBy = acceptedBy
         task.status = "accepted"
         databaseService.updateTask(task)
-        print("[saved] as accepted")
     end
 
     return task
