@@ -14,6 +14,12 @@ function StorageService.getStashName(stashLabel)
     return InventoryApi.getByTypeAndLabel("stash", stashLabel)
 end
 
+-- [todo] a hack I had to introduce so the crafter turtle could tell storage that its stash changed
+---@param inventories string[]
+function StorageService.refreshInventories(inventories)
+    InventoryApi.refreshInventories(inventories)
+end
+
 ---@param stashLabel string
 ---@param itemStock ItemStock
 ---@return ItemStock, ItemStock open

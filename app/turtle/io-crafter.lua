@@ -69,9 +69,13 @@ local function craft(recipe, bufferId, taskBufferService, storageService)
     local stash = storageService.getStashName(os.getComputerLabel())
     local ingredients = usedRecipeToItemStock(recipe)
     -- [todo] assert that everything got transferred
+    -- [todo] should instead be "transfer until target stock is reached", to make it crash safe
     taskBufferService.transferBufferStock(bufferId, {stash}, "buffer", ingredients)
     craftFromBottomInventory(recipe, recipe.timesUsed)
+    -- [todo] hack
+    storageService.refreshInventories({stash})
     -- [todo] assert that everything got transferred
+    -- [todo] turtle doesn't reliably move items to buffer. probably caching issue in the storage.
     taskBufferService.transferInventoryStockToBuffer(bufferId, stash, "buffer")
 end
 
@@ -89,6 +93,9 @@ EventLoop.run(function()
         print("[craft] items...")
 
         while #usedRecipes > 0 do
+            -- [todo] not crash safe: if turtle crafted items and crashes during it, "usedRecipes" is not updated and it will
+            -- try to craft the same recipe again on reboot. there are also others cases where it is not crash safe, so...
+            -- needs a complete overhaul probably. for now its fine because I don't expect to reboot crafting turtles.
             craft(usedRecipes[1], task.bufferId, taskBufferService, storageService)
             table.remove(usedRecipes, 1)
             task.usedRecipes = usedRecipes

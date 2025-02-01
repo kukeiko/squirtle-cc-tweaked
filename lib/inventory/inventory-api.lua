@@ -34,6 +34,11 @@ function InventoryApi.refresh(type)
     InventoryCollection.refresh(inventories)
 end
 
+---@param inventories string[]
+function InventoryApi.refreshInventories(inventories)
+    InventoryCollection.refresh(inventories)
+end
+
 ---@return string[]
 function InventoryApi.getAll()
     return Utils.map(InventoryCollection.getAll(), function(item)

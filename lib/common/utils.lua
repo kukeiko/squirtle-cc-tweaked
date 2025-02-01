@@ -412,7 +412,7 @@ function Utils.readJson(path)
     local content = file.readAll()
     file.close()
 
-    return textutils.unserializeJSON(content)
+    return textutils.unserialiseJSON(content, {parse_empty_array = false})
 end
 
 ---@param path string
