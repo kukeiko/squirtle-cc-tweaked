@@ -7,20 +7,32 @@ local itemMaxCounts = {}
 ---@type table<string, string>
 local itemDisplayNames = {}
 
--- [todo] not the best place, but works for now
+---@type table<string, ItemDetail>
+local itemDetails = {}
+
 function InventoryPeripheral.getItemDisplayNames()
     return itemDisplayNames
+end
+
+function InventoryPeripheral.getItemMaxCounts()
+    return itemMaxCounts
+end
+
+---@return table<string, ItemDetail>
+function InventoryPeripheral.getItemDetails()
+    return itemDetails
 end
 
 ---@param item string
 ---@param chest string
 ---@param slot integer
 local function getItemMaxCount(item, chest, slot)
-    if not itemMaxCounts[item] then
+    if not itemDetails[item] then
         ---@type ItemStack|nil
         local detailedStack = InventoryPeripheral.getStack(chest, slot)
 
         if detailedStack then
+            itemDetails[item] = {name = item, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount}
             itemMaxCounts[item] = detailedStack.maxCount
             itemDisplayNames[item] = detailedStack.displayName
         end

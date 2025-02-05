@@ -61,6 +61,10 @@ function StorageService.getCraftableStock()
     return craftableStock
 end
 
+function StorageService.getItemDetails()
+    return InventoryPeripheral.getItemDetails()
+end
+
 function StorageService.getItemDisplayNames()
     return InventoryPeripheral.getItemDisplayNames()
 end

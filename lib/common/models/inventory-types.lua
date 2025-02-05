@@ -1,3 +1,8 @@
+---@class ItemDetail
+---@field name string
+---@field maxCount integer
+---@field displayName string
+---
 ---@class ItemStack
 ---@field name string
 ---@field count integer
