@@ -1,7 +1,15 @@
 local Utils = require "lib.common.utils"
+local CraftingRecipe = require "lib.common.models.crafting-recipe"
 
 ---@class CraftingApi
 local CraftingApi = {}
+
+---@param recipe CraftingRecipe
+---@param recipes CraftingRecipes
+---@return string[]
+function CraftingApi.getIngredients(recipe, recipes)
+    return CraftingRecipe.getIngredients(recipe, recipes)
+end
 
 ---Given an item, returns the maximum number of times it could be crafted based on what is available in storedStock,
 ---ignoring that ingredients might be used by multiple items within the recipe tree of the item (hence "optimistic").

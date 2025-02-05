@@ -44,18 +44,32 @@ function StorageService.getStock()
     return InventoryApi.getStock(storages, "withdraw")
 end
 
+---Returns all items that could be crafted and how many of those we could craft.
+---Recipes for which the ItemDetails are not known (either of the crafted item or any of its ingredients) are omitted.
 ---@return ItemStock
 function StorageService.getCraftableStock()
     local recipes = Rpc.nearest(DatabaseService).getCraftingRecipes()
-    local recipesMap = Utils.toMap(recipes, function(item)
-        return item.item
+    local storedStock = StorageService.getStock()
+
+    -- only keep recipes where the item itself or all of its ingredients are known to the storage service,
+    -- otherwise we don't have the maxCount of the item(s) required for allocating buffers (or any other
+    -- logic requiring calculating required slot count based on ingredients)
+    recipes = Utils.filterMap(recipes, function(recipe)
+        if not storedStock[recipe.item] then
+            return false
+        end
+
+        local ingredients = CraftingApi.getIngredients(recipe, recipes)
+
+        return Utils.every(ingredients, function(ingredient)
+            return storedStock[ingredient] ~= nil
+        end)
     end)
 
-    local storedStock = StorageService.getStock()
     local craftableStock = {}
 
-    for item in pairs(recipesMap) do
-        craftableStock[item] = CraftingApi.getCraftableCount(item, storedStock, recipesMap)
+    for item in pairs(recipes) do
+        craftableStock[item] = CraftingApi.getCraftableCount(item, storedStock, recipes)
     end
 
     return craftableStock

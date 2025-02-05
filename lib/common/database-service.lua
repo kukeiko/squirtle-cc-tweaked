@@ -75,14 +75,19 @@ function DatabaseService.setSubwayStations(stations)
     writeEntities(entityTypes.subwayStations, stations)
 end
 
----@return CraftingRecipe[]
+---@return CraftingRecipes
 function DatabaseService.getCraftingRecipes()
-    return readEntities(entityTypes.craftingRecipes)
+    ---@type CraftingRecipe[]
+    local recipes = readEntities(entityTypes.craftingRecipes)
+
+    return Utils.toMap(recipes, function(item)
+        return item.item
+    end)
 end
 
----@param recipes CraftingRecipe[]
+---@param recipes CraftingRecipes
 function DatabaseService.setCraftingRecipes(recipes)
-    writeEntities(entityTypes.craftingRecipes, recipes)
+    writeEntities(entityTypes.craftingRecipes, Utils.toList(recipes))
 end
 
 ---@param item string
