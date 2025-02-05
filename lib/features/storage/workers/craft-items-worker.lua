@@ -5,9 +5,9 @@ local function work()
     local name = os.getComputerLabel()
     local taskService = Rpc.nearest(TaskService)
 
-    print(string.format("[wait] %s...", "craft-items"))
+    print(string.format("[awaiting] next %s...", "craft-items"))
     local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
-    print(string.format("[found] %s #%d", task.type, task.id))
+    print(string.format("[accepted] %s #%d", task.type, task.id))
 
     -- print("[busy] allocating ingredients...")
     local allocateIngredientsTask = taskService.allocateIngredients({

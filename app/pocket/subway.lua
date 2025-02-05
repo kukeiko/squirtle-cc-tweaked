@@ -152,8 +152,10 @@ local function connectToDatabase(useLocal)
     local databaseService = Rpc.tryNearest(DatabaseService, .25)
 
     if databaseService then
+        -- update local stations from server
         DatabaseService.setSubwayStations(databaseService.getSubwayStations())
     else
+        -- if no database service is reachable, just use local stations
         databaseService = DatabaseService
     end
 

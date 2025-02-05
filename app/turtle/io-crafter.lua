@@ -70,6 +70,7 @@ local function craft(recipe, bufferId, taskBufferService, storageService)
     local ingredients = usedRecipeToItemStock(recipe)
     -- [todo] assert that everything got transferred
     -- [todo] should instead be "transfer until target stock is reached", to make it crash safe
+    -- [todo] ingredients might exceed available stash size
     taskBufferService.transferBufferStock(bufferId, {stash}, "buffer", ingredients)
     craftFromBottomInventory(recipe, recipe.timesUsed)
     -- [todo] hack

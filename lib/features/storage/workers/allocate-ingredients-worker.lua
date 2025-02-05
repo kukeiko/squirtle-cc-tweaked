@@ -14,9 +14,9 @@ return function()
     local storageService = Rpc.nearest(StorageService)
 
     while true do
-        print(string.format("[wait] %s...", "allocate-ingredients"))
+        print(string.format("[awaiting] next %s...", "allocate-ingredients"))
         local task = taskService.acceptTask(os.getComputerLabel(), "allocate-ingredients") --[[@as AllocateIngredientsTask]]
-        print(string.format("[found] %s #%d", task.type, task.id))
+        print(string.format("[accepted] %s #%d", task.type, task.id))
 
         if not task.craftingDetails then
             local recipes = databaseService.getCraftingRecipes()
