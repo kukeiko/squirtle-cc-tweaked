@@ -21,14 +21,14 @@ local readInteger = require "lib.ui.read-integer"
 ---@return SearchableListOption[]
 function getListOptions(storage)
     local stock = storage.getStock()
-    local itemDisplayNames = storage.getItemDisplayNames()
+    local itemDetails = storage.getItemDetails()
     local nonEmptyStock = Utils.filterMap(stock, function(quantity)
         return quantity > 0
     end)
 
     local options = Utils.map(nonEmptyStock, function(quantity, item)
         ---@type SearchableListOption
-        return {id = item, name = itemDisplayNames[item] or item, suffix = tostring(quantity)}
+        return {id = item, name = itemDetails[item].displayName, suffix = tostring(quantity)}
     end)
 
     table.sort(options, function(a, b)

@@ -3,6 +3,7 @@ local ItemStock = require "lib.common.models.item-stock"
 local Rpc = require "lib.common.rpc"
 local TaskService = require "lib.common.task-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
+local StorageService = require "lib.features.storage.storage-service"
 
 ---@param task TransferItemsTask
 ---@param taskBufferService TaskBufferService|RpcClient
@@ -59,13 +60,14 @@ end
 return function()
     local taskService = Rpc.nearest(TaskService)
     local taskBufferService = Rpc.nearest(TaskBufferService)
+    local storageService = Rpc.nearest(StorageService)
 
     while true do
-        print(string.format("[wait] %s...", "transfer-items"))
+        print(string.format("[awaiting] next %s...", "transfer-items"))
         local task = taskService.acceptTask(os.getComputerLabel(), "transfer-items") --[[@as TransferItemsTask]]
         print(string.format("[accepted] %s #%d", task.type, task.id))
-        -- [todo] hardcoded slotCount
-        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
+        local requiredSlotCount = storageService.getRequiredSlotCount(task.items)
+        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id, requiredSlotCount)
 
         if not task.bufferId then
             task.bufferId = bufferId

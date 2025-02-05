@@ -20,23 +20,19 @@ return function()
 
         if not task.craftingDetails then
             local recipes = databaseService.getCraftingRecipes()
-            local recipesMap = Utils.toMap(recipes, function(item)
-                return item.item
-            end)
-
             local storageStock = storageService.getStock()
 
             for item in pairs(task.items) do
                 storageStock[item] = nil
             end
 
-            task.craftingDetails = CraftingApi.getCraftingDetails(task.items, storageStock, recipesMap)
+            task.craftingDetails = CraftingApi.getCraftingDetails(task.items, storageStock, recipes)
             taskService.updateTask(task)
         end
 
         local totalStock = ItemStock.merge({task.craftingDetails.available, task.craftingDetails.unavailable})
-        -- [todo] hardcoded slotCount, should be based on totalStock
-        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
+        local requiredSlotCount = storageService.getRequiredSlotCount(totalStock)
+        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id, requiredSlotCount)
 
         if not task.bufferId then
             task.bufferId = bufferId
@@ -55,12 +51,14 @@ return function()
         if transferTask.status == "failed" then
             taskService.failTask(task.id)
             -- [todo] this worker should not error out
+            -- [todo] flush & free buffer
             error("transfer-items task failed")
         end
 
         if not transferTask.transferredAll then
             taskService.failTask(task.id)
             -- [todo] implement the magic solution to adapt to new stock
+            -- [todo] flush & free buffer
             error("recovery not yet implemented: ingredients got lost during transfer")
         end
 

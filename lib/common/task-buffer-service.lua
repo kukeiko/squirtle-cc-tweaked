@@ -3,6 +3,9 @@ local Rpc = require "lib.common.rpc"
 local InventoryApi = require "lib.inventory.inventory-api" -- [todo] don't like that "common" imports from outside of itself
 local DatabaseService = require "lib.common.database-service"
 
+-- [todo] consider consolidating into StorageService, as this service always has to run on the storage server anyway.
+-- [update] i probably separated it into TaskBufferService because this one here lives in "common", and StorageServices
+-- lives in "features".
 ---@class TaskBufferService : Service
 local TaskBufferService = {name = "task-buffer"}
 
@@ -23,12 +26,10 @@ local function getAllocatedInventories()
 end
 
 ---@param taskId integer
----@param slotCount? integer
+---@param slotCount integer
 ---@return integer
 function TaskBufferService.allocateTaskBuffer(taskId, slotCount)
     local databaseService = Rpc.nearest(DatabaseService)
-    -- [todo] calculation doesn't take into account multiple inventories
-    slotCount = slotCount or 26 -- minus one to account for buffer name tag
     local allocatedBuffer = databaseService.findAllocatedBuffer(taskId)
 
     if allocatedBuffer then

@@ -25,7 +25,7 @@ function getListOptions(storage)
 
     local options = Utils.map(stock, function(quantity, item)
         ---@type SearchableListOption
-        return {id = item, name = (itemDetails[item] or {}).displayName or item, suffix = tostring(quantity)}
+        return {id = item, name = itemDetails[item].displayName or item, suffix = tostring(quantity)}
     end)
 
     table.sort(options, function(a, b)
@@ -36,8 +36,8 @@ function getListOptions(storage)
 end
 
 function getListTitle()
-    local commonTitle = "What item would you like transferred?"
-    local titles = {"What item ya be needin'?", "I've got the goods!", commonTitle, commonTitle, commonTitle}
+    local commonTitle = "What item would you like crafted?"
+    local titles = {"What we craftin' today, lad?", "Me craft gud yes?", commonTitle, commonTitle, commonTitle}
 
     return titles[math.random(#titles)]
 end

@@ -16,13 +16,13 @@ end
 ---Used to determine the upper bound for the binary search in getCraftableCount() as an optimization step.
 ---@param item string
 ---@param storedStock ItemStock
----@param recipesMap table<string, CraftingRecipe>
+---@param recipes CraftingRecipes
 ---@param blacklist? string[]
 ---@return integer
-local function getOptimisticCraftableCount(item, storedStock, recipesMap, blacklist)
+local function getOptimisticCraftableCount(item, storedStock, recipes, blacklist)
     blacklist = Utils.copy(blacklist or {})
     table.insert(blacklist, item)
-    local recipe = recipesMap[item]
+    local recipe = recipes[item]
     local stored = storedStock[item] or 0
 
     if not recipe then
@@ -34,7 +34,7 @@ local function getOptimisticCraftableCount(item, storedStock, recipesMap, blackl
 
     for ingredient, ingredientSlots in pairs(recipe.ingredients) do
         if not Utils.indexOf(blacklist, ingredient) then
-            local crafted = math.floor(getOptimisticCraftableCount(ingredient, storedStock, recipesMap, blacklist) / #ingredientSlots)
+            local crafted = math.floor(getOptimisticCraftableCount(ingredient, storedStock, recipes, blacklist) / #ingredientSlots)
             local available = stored + (crafted * recipe.quantity)
 
             if lowest == nil or available < lowest then
@@ -48,16 +48,16 @@ end
 
 ---@param item string
 ---@param storedStock ItemStock
----@param recipesMap table<string, CraftingRecipe>
+---@param recipes CraftingRecipes
 ---@param blacklist? string[]
 ---@return integer
-function CraftingApi.getCraftableCount(item, storedStock, recipesMap, blacklist)
-    local low, high = 0, getOptimisticCraftableCount(item, storedStock, recipesMap, blacklist)
+function CraftingApi.getCraftableCount(item, storedStock, recipes, blacklist)
+    local low, high = 0, getOptimisticCraftableCount(item, storedStock, recipes, blacklist)
     high = high - (storedStock[item] or 0)
 
     while low < high do
         local mid = math.floor((low + high + 1) / 2)
-        local craftingDetails = CraftingApi.getCraftingDetails({[item] = mid}, storedStock, recipesMap)
+        local craftingDetails = CraftingApi.getCraftingDetails({[item] = mid}, storedStock, recipes)
 
         if Utils.isEmpty(craftingDetails.unavailable) then
             low = mid

@@ -2,18 +2,19 @@ local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
 local TaskService = require "lib.common.task-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
+local StorageService = require "lib.features.storage.storage-service"
 
 return function()
     local taskService = Rpc.nearest(TaskService)
     local taskBufferService = Rpc.nearest(TaskBufferService)
+    local storageService = Rpc.nearest(StorageService)
 
     while true do
-        print(string.format("[wait] %s...", "gather-items"))
+        print(string.format("[awaiting] next %s...", "gather-items"))
         local task = taskService.acceptTask(os.getComputerLabel(), "gather-items") --[[@as GatherItemsTask]]
-        print(string.format("[found] %s #%d", task.type, task.id))
-
-        -- [todo] hardcoded slotCount, should be based on task-items
-        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id)
+        print(string.format("[accepted] %s #%d", task.type, task.id))
+        local requiredSlotCount = storageService.getRequiredSlotCount(task.items)
+        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id, requiredSlotCount)
 
         if not task.bufferId then
             task.bufferId = bufferId

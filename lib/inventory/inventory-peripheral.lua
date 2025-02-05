@@ -1,44 +1,38 @@
 ---@class InventoryPeripheral
 local InventoryPeripheral = {}
 
----@type table<string, integer>
-local itemMaxCounts = {}
-
----@type table<string, string>
-local itemDisplayNames = {}
-
 ---@type table<string, ItemDetail>
 local itemDetails = {}
-
-function InventoryPeripheral.getItemDisplayNames()
-    return itemDisplayNames
-end
-
-function InventoryPeripheral.getItemMaxCounts()
-    return itemMaxCounts
-end
-
----@return table<string, ItemDetail>
-function InventoryPeripheral.getItemDetails()
-    return itemDetails
-end
 
 ---@param item string
 ---@param chest string
 ---@param slot integer
-local function getItemMaxCount(item, chest, slot)
+local function readItemMaxCount(item, chest, slot)
     if not itemDetails[item] then
         ---@type ItemStack|nil
         local detailedStack = InventoryPeripheral.getStack(chest, slot)
 
         if detailedStack then
             itemDetails[item] = {name = item, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount}
-            itemMaxCounts[item] = detailedStack.maxCount
-            itemDisplayNames[item] = detailedStack.displayName
         end
     end
 
-    return itemMaxCounts[item]
+    return itemDetails[item].maxCount
+end
+
+---@param item string
+---@return integer
+function InventoryPeripheral.getItemMaxCount(item)
+    if not itemDetails[item] then
+        error(string.format("no max count available for item %s", item))
+    end
+
+    return itemDetails[item].maxCount
+end
+
+---@return table<string, ItemDetail>
+function InventoryPeripheral.getItemDetails()
+    return itemDetails
 end
 
 ---@param inventory string
@@ -63,7 +57,7 @@ function InventoryPeripheral.getStacks(name, detailed)
         local stacks = peripheral.call(name, "list")
 
         for slot, stack in pairs(stacks) do
-            stack.maxCount = getItemMaxCount(stack.name, name, slot)
+            stack.maxCount = readItemMaxCount(stack.name, name, slot)
         end
 
         return stacks

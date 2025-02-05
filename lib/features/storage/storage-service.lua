@@ -79,13 +79,21 @@ function StorageService.getItemDetails()
     return InventoryPeripheral.getItemDetails()
 end
 
-function StorageService.getItemDisplayNames()
-    return InventoryPeripheral.getItemDisplayNames()
+---@param stock ItemStock
+---@return integer
+function StorageService.getRequiredSlotCount(stock)
+    local slotCount = 0
+
+    for item, quantity in pairs(stock) do
+        slotCount = slotCount + math.ceil(quantity / InventoryPeripheral.getItemMaxCount(item))
+    end
+
+    return slotCount
 end
 
 -- [todo] all buffer related methods have been copied to TaskBufferService
 ---@param task Task
----@param slotCount? integer
+---@param slotCount integer
 ---@return integer
 function StorageService.allocateTaskBuffer(task, slotCount)
     return TaskBufferService.allocateTaskBuffer(task.id, slotCount)

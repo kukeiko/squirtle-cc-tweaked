@@ -5,6 +5,7 @@ local placeShulker = require "lib.squirtle.place-shulker"
 local digShulker = require "lib.squirtle.dig-shulker"
 
 -- [todo] add remaining
+-- [todo] or, alternatively: make connection to StorageService mandatory and use its StorageService.getRequiredSlotCount()
 local itemMaxCounts = {["minecraft:lava_bucket"] = 1, ["minecraft:water_bucket"] = 1, ["minecraft:bucket"] = 16}
 
 ---@param item string
