@@ -188,6 +188,21 @@ function DatabaseService.findAllocatedBuffer(taskId)
     end)
 end
 
+---@param buffer AllocatedBuffer
+function DatabaseService.updateAllocatedBuffer(buffer)
+    local buffers = DatabaseService.getAllocatedBuffers()
+    local index = Utils.findIndex(buffers, function(candidate)
+        return candidate.id == buffer.id
+    end)
+
+    if not index then
+        error(string.format("can't update buffer: buffer %d doesn't exist", buffer.id))
+    end
+
+    buffers[index] = buffer
+    writeEntities(entityTypes.allocatedBuffers, buffers)
+end
+
 ---@param bufferId integer
 function DatabaseService.deleteAllocatedBuffer(bufferId)
     local buffers = Utils.filter(DatabaseService.getAllocatedBuffers(), function(item)

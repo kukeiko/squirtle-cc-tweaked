@@ -9,6 +9,12 @@ local TaskBufferService = require "lib.common.task-buffer-service"
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
 
+---@param type InventoryType
+---@return string[]
+function StorageService.getByType(type)
+    return InventoryApi.getByType(type)
+end
+
 ---@param stashLabel string
 function StorageService.getStashName(stashLabel)
     return InventoryApi.getByTypeAndLabel("stash", stashLabel)
@@ -18,6 +24,17 @@ end
 ---@param inventories string[]
 function StorageService.refreshInventories(inventories)
     InventoryApi.refreshInventories(inventories)
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param items? ItemStock
+---@param options? TransferOptions
+---@return ItemStock transferredTotal, ItemStock open
+function StorageService.transfer(from, fromTag, to, toTag, items, options)
+    return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
 end
 
 ---@param stashLabel string

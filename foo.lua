@@ -498,10 +498,59 @@ local function testGetCraftableStock()
     Utils.prettyPrint(craftableStock)
 end
 
+local function testGetRequiredSlotCount()
+    local storageService = Rpc.nearest(StorageService)
+
+    print(storageService.getRequiredSlotCount({["minecraft:stick2"] = 129}))
+end
+
+local function testCompactBuffer()
+    local storageService = Rpc.nearest(StorageService)
+    local taskBufferService = Rpc.nearest(TaskBufferService)
+    local bufferId = taskBufferService.allocateTaskBuffer(0, 26 * 3)
+    local buffer = taskBufferService.getBufferNames(bufferId)
+    local storages = storageService.getByType("storage")
+    storageService.transfer(storages, "withdraw", buffer, "buffer", {["minecraft:smooth_stone"] = 36})
+    Utils.waitForUserToHitEnter("[break] before compact")
+    taskBufferService.compact(bufferId)
+    Utils.waitForUserToHitEnter("[break] after compact")
+    print("[busy] flushing & freeing the buffer")
+    taskBufferService.flushBuffer(bufferId)
+    taskBufferService.freeBuffer(bufferId)
+    print("[done] flushed and freed up the buffer")
+end
+
+local function testResizeBufferSmaller()
+    local storageService = Rpc.nearest(StorageService)
+    local taskBufferService = Rpc.nearest(TaskBufferService)
+    local bufferId = taskBufferService.allocateTaskBuffer(0, 26 * 3)
+    local buffer = taskBufferService.getBufferNames(bufferId)
+    local storages = storageService.getByType("storage")
+    storageService.transfer(storages, "withdraw", buffer, "buffer", {["minecraft:smooth_stone"] = 36})
+    Utils.waitForUserToHitEnter("[break] before resize to 26")
+    taskBufferService.resize(bufferId, 26)
+    Utils.waitForUserToHitEnter("[break] after resize to 26")
+    print("[busy] flushing & freeing the buffer")
+    taskBufferService.flushBuffer(bufferId)
+    taskBufferService.freeBuffer(bufferId)
+    print("[done] flushed and freed up the buffer")
+end
+
+local function testResizeBufferBigger()
+    local taskBufferService = Rpc.nearest(TaskBufferService)
+    local bufferId = taskBufferService.allocateTaskBuffer(0, 26 * 1)
+    Utils.waitForUserToHitEnter("[break] before resize to 26 * 3")
+    taskBufferService.resize(bufferId, 26 * 3)
+    Utils.waitForUserToHitEnter("[break] after resize to 26 * 3")
+    print("[busy] freeing the buffer")
+    taskBufferService.freeBuffer(bufferId)
+    print("[done] flushed and freed up the buffer")
+end
+
 local now = os.epoch("utc")
 
-for i = 1, 1 do
-    testGetCraftingDetails()
+for _ = 1, 1 do
+    testResizeBufferBigger()
 end
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

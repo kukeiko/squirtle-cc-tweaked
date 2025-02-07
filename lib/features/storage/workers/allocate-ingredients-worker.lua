@@ -17,67 +17,58 @@ return function()
         print(string.format("[awaiting] next %s...", "allocate-ingredients"))
         local task = taskService.acceptTask(os.getComputerLabel(), "allocate-ingredients") --[[@as AllocateIngredientsTask]]
         print(string.format("[accepted] %s #%d", task.type, task.id))
+        local recipes = databaseService.getCraftingRecipes()
 
-        if not task.craftingDetails then
-            local recipes = databaseService.getCraftingRecipes()
+        if not task.bufferId then
+            task.bufferId = taskBufferService.allocateTaskBuffer(task.id)
+            taskService.updateTask(task)
+        end
+
+        while true do
+            local bufferStock = taskBufferService.getBufferStock(task.bufferId)
             local storageStock = storageService.getStock()
 
+            -- [todo] if we want to craft repeaters and redstone torches, we might unnecessarily craft redstone torches
+            -- for the repeaters, just because we also want to craft redstone torches.
             for item in pairs(task.items) do
                 storageStock[item] = nil
             end
 
-            task.craftingDetails = CraftingApi.getCraftingDetails(task.items, storageStock, recipes)
-            taskService.updateTask(task)
-        end
+            local currentStock = ItemStock.merge({bufferStock, storageStock})
+            local craftingDetails = CraftingApi.getCraftingDetails(task.items, currentStock, recipes)
+            local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})
+            -- the obsoleteStock remains in buffer until "craft-from-ingredients" task flushed the buffer (which is reused across the tasks)
+            local obsoleteStock = ItemStock.subtract(bufferStock, targetStock)
+            local requiredSlotCount = storageService.getRequiredSlotCount(ItemStock.merge({targetStock, obsoleteStock}))
+            taskBufferService.resize(task.bufferId, requiredSlotCount)
+            -- [todo] update in a service the wanted items of this task
+            local open = ItemStock.subtract(targetStock, bufferStock)
 
-        local totalStock = ItemStock.merge({task.craftingDetails.available, task.craftingDetails.unavailable})
-        local requiredSlotCount = storageService.getRequiredSlotCount(totalStock)
-        local bufferId = task.bufferId or taskBufferService.allocateTaskBuffer(task.id, requiredSlotCount)
+            if Utils.isEmpty(open) then
+                task.craftingDetails = craftingDetails
+                taskService.updateTask(task)
+                break
+            end
 
-        if not task.bufferId then
-            task.bufferId = bufferId
-            taskService.updateTask(task)
-        end
-
-        local transferTask = taskService.transferItems({
-            issuedBy = os.getComputerLabel(),
-            to = taskBufferService.getBufferNames(bufferId),
-            toTag = "buffer",
-            targetStock = task.craftingDetails.available,
-            partOfTaskId = task.id,
-            label = "transfer-ingredients"
-        })
-
-        if transferTask.status == "failed" then
-            taskService.failTask(task.id)
-            -- [todo] this worker should not error out
-            -- [todo] flush & free buffer
-            error("transfer-items task failed")
-        end
-
-        if not transferTask.transferredAll then
-            taskService.failTask(task.id)
-            -- [todo] implement the magic solution to adapt to new stock
-            -- [todo] flush & free buffer
-            error("recovery not yet implemented: ingredients got lost during transfer")
-        end
-
-        ---@type GatherItemsTask?
-        local gatherItemsTask
-
-        if not ItemStock.isEmpty(task.craftingDetails.unavailable) then
-            gatherItemsTask = taskService.gatherItems({
+            local transferTask = taskService.transferItems({
                 issuedBy = os.getComputerLabel(),
-                items = task.craftingDetails.unavailable,
-                to = taskBufferService.getBufferNames(bufferId),
+                to = taskBufferService.getBufferNames(task.bufferId),
                 toTag = "buffer",
-                label = "gather-ingredients",
-                partOfTaskId = task.id
+                targetStock = open,
+                partOfTaskId = task.id,
+                label = "transfer-ingredients"
             })
 
-            if gatherItemsTask.status == "failed" then
+            if transferTask.status == "failed" then
                 taskService.failTask(task.id)
-                error("failed to gather ingredients")
+                -- [todo] this worker should not error out
+                -- [todo] flush & free buffer
+                error("transfer-items task failed")
+            end
+
+            if not transferTask.transferredAll then
+                taskService.deleteTask(transferTask.id)
+                os.sleep(5)
             end
         end
 
