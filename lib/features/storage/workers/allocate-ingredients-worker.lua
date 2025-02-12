@@ -37,15 +37,6 @@ return function()
             local currentStock = ItemStock.merge({bufferStock, storageStock})
             local craftingDetails = CraftingApi.getCraftingDetails(task.items, currentStock, recipes)
             local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})
-            -- the obsoleteStock remains in buffer until "craft-from-ingredients" task flushed the buffer (which is reused across the tasks)
-            local obsoleteStock = ItemStock.subtract(bufferStock, targetStock)
-            -- local requiredSlotCount = storageService.getRequiredSlotCount(ItemStock.merge({targetStock, obsoleteStock}))
-            -- [todo] it is possbile that the requiredSlotCount for crafted items is higher than that of the ingredients,
-            -- example: 1x stack of glass crafted to 2.5x stacks of glass panes.
-            -- in addition, intermediate crafts might also need more slots. if we were to allocate summed slots for all intermediate crafts,
-            -- the buffer size will explode. it is a fringe edge case but should be considered nonetheless.
-            -- [idea] maybe instead of pre-allocation and then transferring, we just let the transfer-items task handle allocation as needed.
-            -- taskBufferService.resize(task.bufferId, requiredSlotCount)
             -- [todo] update in a service the wanted items of this task (crafting.unavailable)
             local open = ItemStock.subtract(targetStock, bufferStock)
 

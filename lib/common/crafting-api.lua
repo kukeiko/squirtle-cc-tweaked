@@ -178,4 +178,51 @@ function CraftingApi.getCraftingDetails(targetStock, currentStock, recipes)
     return craftingDetails
 end
 
+---@param usedRecipes UsedCraftingRecipe[]
+---@param maxSlotCount integer
+---@param itemDetails ItemDetails
+---@return UsedCraftingRecipe[]
+function CraftingApi.chunkifyUsedRecipes(usedRecipes, maxSlotCount, itemDetails)
+    ---@type UsedCraftingRecipe[]
+    local chunked = {}
+
+    for _, usedRecipe in pairs(usedRecipes) do
+        if not itemDetails[usedRecipe.item] then
+            error(string.format("ItemDetail for crafted item %s is missing", usedRecipe.item))
+        end
+
+        -- how often we can craft given the slot restriction
+        local craftedBoundary = math.floor((maxSlotCount * itemDetails[usedRecipe.item].maxCount) / usedRecipe.quantity)
+
+        if craftedBoundary == 0 then
+            error(string.format("%dx slots are not enough to store even 1x craft of %s", maxSlotCount, usedRecipe.item))
+        end
+
+        -- how often we can craft given the max count restriction of an ingredient
+        local ingredientBoundary = math.huge
+
+        for ingredient in pairs(usedRecipe.ingredients) do
+            if not itemDetails[ingredient] then
+                error(string.format("ItemDetail for ingredient %s is missing", ingredient))
+            end
+
+            if itemDetails[ingredient].maxCount < ingredientBoundary then
+                ingredientBoundary = itemDetails[ingredient].maxCount
+            end
+        end
+
+        local boundary = math.min(craftedBoundary, ingredientBoundary)
+        local open = usedRecipe.timesUsed
+
+        while open > 0 do
+            local chunkedUsedRecipe = Utils.clone(usedRecipe)
+            chunkedUsedRecipe.timesUsed = math.min(boundary, open)
+            table.insert(chunked, chunkedUsedRecipe)
+            open = open - boundary
+        end
+    end
+
+    return chunked
+end
+
 return CraftingApi

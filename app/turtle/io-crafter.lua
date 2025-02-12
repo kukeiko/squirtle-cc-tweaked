@@ -12,6 +12,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
+local CraftingApi = require "lib.common.crafting-api"
 local StorageService = require "lib.features.storage.storage-service"
 local TaskService = require "lib.common.task-service"
 local TaskBufferService = require "lib.common.task-buffer-service"
@@ -86,28 +87,33 @@ EventLoop.run(function()
         local taskBufferService = Rpc.nearest(TaskBufferService)
         local storageService = Rpc.nearest(StorageService)
 
-        print("[wait] for new task...")
+        print(string.format("[awaiting] next %s...", "craft-from-ingredients"))
         local task = taskService.acceptTask(os.getComputerLabel(), "craft-from-ingredients") --[[@as CraftFromIngredientsTask]]
-        print(string.format("[accepted] task #%d", task.id))
-        -- [todo] we don't need the "craftingDetails" property at all - remove it and just use "usedRecipes"
-        local usedRecipes = task.usedRecipes or Utils.clone(task.craftingDetails.usedRecipes)
-        print("[craft] items...")
+        print(string.format("[accepted] %s #%d", task.type, task.id))
 
-        while #usedRecipes > 0 do
-            -- [todo] not crash safe: if turtle crafted items and crashes during it, "usedRecipes" is not updated and it will
-            -- try to craft the same recipe again on reboot. there are also others cases where it is not crash safe, so...
-            -- needs a complete overhaul probably. for now its fine because I don't expect to reboot crafting turtles.
-            craft(usedRecipes[1], task.bufferId, taskBufferService, storageService)
-            table.remove(usedRecipes, 1)
-            task.usedRecipes = usedRecipes
+        if not task.usedRecipes then
+            local itemDetails = storageService.getItemDetails()
+            task.usedRecipes = CraftingApi.chunkifyUsedRecipes(task.craftingDetails.usedRecipes, Squirtle.size(), itemDetails)
             taskService.updateTask(task)
         end
 
-        print("[craft] done! flushing buffer...")
+        print("[craft] items...")
+
+        while #task.usedRecipes > 0 do
+            -- [todo] not crash safe: if turtle crafted items and crashes during it, "usedRecipes" is not updated and it will
+            -- try to craft the same recipe again on reboot. there are also others cases where it is not crash safe, so...
+            -- needs a complete overhaul probably. for now its fine because I don't expect to reboot crafting turtles.
+            craft(task.usedRecipes[1], task.bufferId, taskBufferService, storageService)
+            table.remove(task.usedRecipes, 1)
+            taskService.updateTask(task)
+        end
+
+        print("[busy] craft done! flushing buffer...")
         taskBufferService.flushBuffer(task.bufferId)
         taskBufferService.freeBuffer(task.bufferId)
         taskService.finishTask(task.id)
         print("[done] buffer empty!")
+        print(string.format("[finish] %s %d", task.type, task.id))
     end
 end)
 

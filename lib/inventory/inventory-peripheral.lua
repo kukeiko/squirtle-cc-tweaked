@@ -1,7 +1,7 @@
 ---@class InventoryPeripheral
 local InventoryPeripheral = {}
 
----@type table<string, ItemDetail>
+---@type ItemDetails
 local itemDetails = {}
 
 ---@param item string
@@ -30,7 +30,7 @@ function InventoryPeripheral.getItemMaxCount(item)
     return itemDetails[item].maxCount
 end
 
----@return table<string, ItemDetail>
+---@return ItemDetails
 function InventoryPeripheral.getItemDetails()
     return itemDetails
 end

@@ -3,6 +3,8 @@
 ---@field maxCount integer
 ---@field displayName string
 ---
+---@alias ItemDetails table<string, ItemDetail>
+---
 ---@class ItemStack
 ---@field name string
 ---@field count integer
