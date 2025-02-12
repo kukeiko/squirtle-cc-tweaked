@@ -35,6 +35,18 @@ function InventoryPeripheral.getItemDetails()
     return itemDetails
 end
 
+---@param stock ItemStock
+---@return integer
+function InventoryPeripheral.getRequiredSlotCount(stock)
+    local slotCount = 0
+
+    for item, quantity in pairs(stock) do
+        slotCount = slotCount + math.ceil(quantity / InventoryPeripheral.getItemMaxCount(item))
+    end
+
+    return slotCount
+end
+
 ---@param inventory string
 ---@return integer
 function InventoryPeripheral.getSize(inventory)

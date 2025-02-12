@@ -57,8 +57,9 @@
 ---
 ---@class TransferItemsTask : Task
 ---@field type "transfer-items"
----@field to string[]
----@field toTag InventorySlotTag
+---@field toBufferId? integer
+---@field to? string[]
+---@field toTag? InventorySlotTag
 ---@field items ItemStock
 ---@field bufferId? integer
 ---@field found? ItemStock 

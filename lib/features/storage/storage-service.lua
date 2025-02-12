@@ -99,13 +99,7 @@ end
 ---@param stock ItemStock
 ---@return integer
 function StorageService.getRequiredSlotCount(stock)
-    local slotCount = 0
-
-    for item, quantity in pairs(stock) do
-        slotCount = slotCount + math.ceil(quantity / InventoryPeripheral.getItemMaxCount(item))
-    end
-
-    return slotCount
+    return InventoryPeripheral.getRequiredSlotCount(stock)
 end
 
 -- [todo] all buffer related methods have been copied to TaskBufferService

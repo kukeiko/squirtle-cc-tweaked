@@ -34,10 +34,20 @@ end
 ---@param task TransferItemsTask
 ---@param taskBufferService TaskBufferService|RpcClient
 ---@param taskService TaskService|RpcClient
-local function emptyBuffer(task, taskBufferService, taskService)
+local function transferBuffer(task, taskBufferService, taskService)
+    local to, toTag = task.to, task.toTag
+
+    if task.toBufferId then
+        toTag = "buffer"
+        taskBufferService.resizeByStock(task.toBufferId, task.items)
+        to = taskBufferService.getBufferNames(task.toBufferId)
+    elseif not to or not toTag then
+        error("to and/or toTag not set")
+    end
+
     -- print("transfer stock from buffer to target...")
     ---@type ItemStock
-    taskBufferService.transferBufferStock(task.bufferId, task.to, task.toTag)
+    taskBufferService.transferBufferStock(task.bufferId, to, toTag)
     updateTransferred(task, taskBufferService, taskService)
 
     local bufferStock = taskBufferService.getBufferStock(task.bufferId)
@@ -47,7 +57,7 @@ local function emptyBuffer(task, taskBufferService, taskService)
 
         while not Utils.isEmpty(bufferStock) do
             os.sleep(1)
-            taskBufferService.transferBufferStock(task.bufferId, task.to, task.toTag)
+            taskBufferService.transferBufferStock(task.bufferId, to, toTag)
             updateTransferred(task, taskBufferService, taskService)
             bufferStock = taskBufferService.getBufferStock(task.bufferId)
         end
@@ -79,7 +89,7 @@ return function()
             taskService.updateTask(task)
         end
 
-        emptyBuffer(task, taskBufferService, taskService)
+        transferBuffer(task, taskBufferService, taskService)
         print(string.format("[finish] %s %d", task.type, task.id))
         taskService.finishTask(task.id)
         taskBufferService.freeBuffer(bufferId)

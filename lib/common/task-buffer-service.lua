@@ -1,5 +1,7 @@
 local Utils = require "lib.common.utils"
 local Rpc = require "lib.common.rpc"
+local ItemStock = require "lib.common.models.item-stock"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral" -- [todo] don't like that "common" imports from outside of itself
 local InventoryApi = require "lib.inventory.inventory-api" -- [todo] don't like that "common" imports from outside of itself
 local DatabaseService = require "lib.common.database-service"
 
@@ -8,6 +10,23 @@ local DatabaseService = require "lib.common.database-service"
 -- lives in "features".
 ---@class TaskBufferService : Service
 local TaskBufferService = {name = "task-buffer"}
+
+---@type table<string, true>
+local locks = {}
+
+---@param bufferId integer
+---@return fun() : nil
+local function lock(bufferId)
+    while locks[bufferId] do
+        os.sleep(1)
+    end
+
+    locks[bufferId] = true
+
+    return function()
+        locks[bufferId] = nil
+    end
+end
 
 ---@return table<string, unknown>
 local function getAllocatedInventories()
@@ -72,7 +91,7 @@ end
 
 ---@param bufferId integer
 ---@param targetSlotCount integer
-function TaskBufferService.resize(bufferId, targetSlotCount)
+local function resize(bufferId, targetSlotCount)
     local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local currentSlotCount = InventoryApi.getSlotCount(buffer.inventories, "buffer")
@@ -104,6 +123,25 @@ function TaskBufferService.resize(bufferId, targetSlotCount)
     end
 
     databaseService.updateAllocatedBuffer(buffer)
+end
+
+---@param bufferId integer
+---@param targetSlotCount integer
+function TaskBufferService.resize(bufferId, targetSlotCount)
+    local unlock = lock(bufferId)
+    resize(bufferId, targetSlotCount)
+    unlock()
+end
+
+---@param bufferId integer
+---@param additionalStock ItemStock
+function TaskBufferService.resizeByStock(bufferId, additionalStock)
+    local unlock = lock(bufferId)
+    local bufferStock = TaskBufferService.getBufferStock(bufferId)
+    local totalStock = ItemStock.merge({bufferStock, additionalStock})
+    local requiredSlots = InventoryPeripheral.getRequiredSlotCount(totalStock)
+    resize(bufferId, requiredSlots)
+    unlock()
 end
 
 ---@param bufferId integer

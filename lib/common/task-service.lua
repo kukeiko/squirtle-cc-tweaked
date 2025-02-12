@@ -121,8 +121,9 @@ end
 ---[todo] I feel like it should be "WithdrawItems" instead of "TransferItems"?
 ---@class TransferItemsTaskOptions
 ---@field issuedBy string
----@field to string[]
----@field toTag InventorySlotTag
+---@field toBufferId? integer
+---@field to? string[]
+---@field toTag? InventorySlotTag
 ---@field targetStock ItemStock
 ---@field partOfTaskId? integer
 ---@field label? string
@@ -136,6 +137,7 @@ function TaskService.transferItems(options)
     if not task then
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "transfer-items", options.partOfTaskId, options.label) --[[@as TransferItemsTask]]
+        task.toBufferId = options.toBufferId
         task.to = options.to
         task.toTag = options.toTag
         task.items = options.targetStock

@@ -13,8 +13,6 @@ local RemoteService = require "lib.common.remote-service"
 local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
 local craftItemsWorker = require "lib.features.storage.workers.craft-items-worker"
 local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"
-local gatherItemsWorker = require "lib.features.storage.workers.gather-items-worker"
-local gatherItemsViaPlayerWorker = require "lib.features.storage.workers.gather-items-via-player-worker"
 
 local function main()
     local monitor = peripheral.find("monitor")
@@ -27,15 +25,11 @@ local function main()
     print(string.format("[storage-workers %s] booting...", version()))
 
     EventLoop.run(function()
-        transferItemsWorker()
-    end, function()
         RemoteService.run({"storage-workers"})
     end, function()
+        transferItemsWorker()
+    end, function()
         allocateIngredientsWorker()
-    end, function()
-        gatherItemsWorker()
-    end, function()
-        gatherItemsViaPlayerWorker()
     end, function()
         craftItemsWorker()
     end)
