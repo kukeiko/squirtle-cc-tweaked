@@ -182,7 +182,7 @@ end
 ---@param maxSlotCount integer
 ---@param itemDetails ItemDetails
 ---@return UsedCraftingRecipe[]
-function CraftingApi.chunkifyUsedRecipes(usedRecipes, maxSlotCount, itemDetails)
+function CraftingApi.chunkUsedRecipes(usedRecipes, maxSlotCount, itemDetails)
     ---@type UsedCraftingRecipe[]
     local chunked = {}
 
@@ -200,15 +200,20 @@ function CraftingApi.chunkifyUsedRecipes(usedRecipes, maxSlotCount, itemDetails)
 
         -- how often we can craft given the max count restriction of an ingredient
         local ingredientBoundary = math.huge
+        local ingredientSlotCount = 0
 
-        for ingredient in pairs(usedRecipe.ingredients) do
+        for ingredient, ingredientSlots in pairs(usedRecipe.ingredients) do
             if not itemDetails[ingredient] then
                 error(string.format("ItemDetail for ingredient %s is missing", ingredient))
             end
 
-            if itemDetails[ingredient].maxCount < ingredientBoundary then
-                ingredientBoundary = itemDetails[ingredient].maxCount
+            ingredientSlotCount = ingredientSlotCount + #ingredientSlots
+
+            if ingredientSlotCount > maxSlotCount then
+                error(string.format("%dx slots are not enough to craft %s", maxSlotCount, usedRecipe.item))
             end
+
+            ingredientBoundary = math.min(itemDetails[ingredient].maxCount, ingredientBoundary)
         end
 
         local boundary = math.min(craftedBoundary, ingredientBoundary)

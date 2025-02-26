@@ -77,7 +77,7 @@ end, function()
                     -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
                     local task = taskService.transferItems({
                         issuedBy = os.getComputerLabel(),
-                        targetStock = {[item.id] = quantity},
+                        items = {[item.id] = quantity},
                         to = {stashName},
                         toTag = "input"
                     })

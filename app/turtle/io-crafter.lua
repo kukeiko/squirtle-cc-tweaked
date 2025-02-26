@@ -9,9 +9,9 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
 local Rpc = require "lib.common.rpc"
+local Utils = require "lib.common.utils"
 local CraftingApi = require "lib.common.crafting-api"
 local StorageService = require "lib.features.storage.storage-service"
 local TaskService = require "lib.common.task-service"
@@ -33,7 +33,6 @@ local function usedRecipeToItemStock(usedRecipe)
     return stock
 end
 
--- [todo] check that sufficient crafting materials are provided
 ---@param recipe CraftingRecipe
 ---@param quantity integer
 local function craftFromBottomInventory(recipe, quantity)
@@ -62,23 +61,41 @@ local function craftFromBottomInventory(recipe, quantity)
     Squirtle.dump(inventory)
 end
 
----@param recipe UsedCraftingRecipe
----@param bufferId integer
----@param taskBufferService TaskBufferService|RpcClient
+---@param task CraftFromIngredientsTask
 ---@param storageService StorageService|RpcClient
-local function craft(recipe, bufferId, taskBufferService, storageService)
-    local stash = storageService.getStashName(os.getComputerLabel())
-    local ingredients = usedRecipeToItemStock(recipe)
-    -- [todo] assert that everything got transferred
-    -- [todo] should instead be "transfer until target stock is reached", to make it crash safe
-    -- [todo] ingredients might exceed available stash size
-    taskBufferService.transferBufferStock(bufferId, {stash}, "buffer", ingredients)
-    craftFromBottomInventory(recipe, recipe.timesUsed)
-    -- [todo] hack
-    storageService.refreshInventories({stash})
-    -- [todo] assert that everything got transferred
-    -- [todo] turtle doesn't reliably move items to buffer. probably caching issue in the storage.
-    taskBufferService.transferInventoryStockToBuffer(bufferId, stash, "buffer")
+---@param taskBufferService TaskBufferService|RpcClient
+---@param taskService TaskService|RpcClient
+local function recover(task, storageService, taskBufferService, taskService)
+    if #task.usedRecipes == 0 then
+        return
+    end
+
+    local usedRecipe = task.usedRecipes[1]
+
+    -- if crafted item is in turtle inventory, dump turtle inventory to stash
+    local turtleStock = Squirtle.getStock()
+
+    if turtleStock[usedRecipe.item] then
+        Squirtle.dump("bottom")
+    end
+
+    local stashStock = InventoryPeripheral.getStock("bottom")
+
+    if stashStock[usedRecipe.item] then
+        -- if crafted item is in stash, transfer to buffer
+        local stash = storageService.getStashName(os.getComputerLabel())
+        -- [todo] hack
+        storageService.refreshInventories({stash})
+        -- [todo] use transfer task instead, so it resizes buffer if required
+        taskBufferService.dumpToBuffer(task.bufferId, stash, "buffer")
+        -- => after, update task and return
+        table.remove(task.usedRecipes, 1)
+        taskService.updateTask(task)
+        return
+    end
+
+    -- if not, we must have ingredients in either the turtle inventory or buffer, so we just dump and return
+    Squirtle.dump("bottom")
 end
 
 EventLoop.run(function()
@@ -93,17 +110,37 @@ EventLoop.run(function()
 
         if not task.usedRecipes then
             local itemDetails = storageService.getItemDetails()
-            task.usedRecipes = CraftingApi.chunkifyUsedRecipes(task.craftingDetails.usedRecipes, Squirtle.size(), itemDetails)
+            task.usedRecipes = CraftingApi.chunkUsedRecipes(task.craftingDetails.usedRecipes, Squirtle.size(), itemDetails)
             taskService.updateTask(task)
         end
 
+        recover(task, storageService, taskBufferService, taskService)
         print("[craft] items...")
+        local buffer = taskBufferService.getBufferNames(task.bufferId)
+        local stash = storageService.getStashName(os.getComputerLabel())
 
         while #task.usedRecipes > 0 do
-            -- [todo] not crash safe: if turtle crafted items and crashes during it, "usedRecipes" is not updated and it will
-            -- try to craft the same recipe again on reboot. there are also others cases where it is not crash safe, so...
-            -- needs a complete overhaul probably. for now its fine because I don't expect to reboot crafting turtles.
-            craft(task.usedRecipes[1], task.bufferId, taskBufferService, storageService)
+            local recipe = task.usedRecipes[1]
+            -- move ingredients from buffer to stash
+            storageService.fulfill(buffer, "buffer", {stash}, "buffer", usedRecipeToItemStock(recipe))
+            -- craft items
+            craftFromBottomInventory(recipe, recipe.timesUsed)
+            -- manual refresh required due to turtle manipulating the stash
+            storageService.refreshInventories({stash})
+            -- move crafted items from stash to buffer
+            -- [todo] assert that everything got transferred
+            -- [todo] turtle doesn't reliably move items to buffer. probably caching issue in the storage.
+            taskBufferService.dumpToBuffer(task.bufferId, stash, "buffer")
+            -- [todo] use this instead once it accepts a "from" arguments
+            -- taskService.transferItems({
+            --     issuedBy = os.getComputerLabel(),
+            --     items = storageService.getStockByName(stash, "buffer"),
+            --     label = "dump-crafted-to-buffer",
+            --     partOfTaskId = task.id,
+            --     toBufferId = task.bufferId
+
+            -- })
+            -- mark crafting step as finished
             table.remove(task.usedRecipes, 1)
             taskService.updateTask(task)
         end

@@ -55,10 +55,26 @@ function StorageService.transferItemToStash(stashLabel, item, total)
     return transferred[item] or 0
 end
 
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param stock ItemStock
+---@param options? TransferOptions
+function StorageService.fulfill(from, fromTag, to, toTag, stock, options)
+    InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
+end
+
 ---@return ItemStock
 function StorageService.getStock()
     local storages = InventoryApi.getByType("storage")
     return InventoryApi.getStock(storages, "withdraw")
+end
+
+---@param name string
+---@param tag InventorySlotTag
+function StorageService.getStockByName(name, tag)
+    return InventoryApi.getStock({name}, tag)
 end
 
 ---Returns all items that could be crafted and how many of those we could craft.
@@ -131,8 +147,8 @@ end
 ---@param bufferId integer
 ---@param from string
 ---@param fromTag InventorySlotTag
-function StorageService.transferInventoryStockToBuffer(bufferId, from, fromTag)
-    TaskBufferService.transferInventoryStockToBuffer(bufferId, from, fromTag)
+function StorageService.dumpToBuffer(bufferId, from, fromTag)
+    TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
 end
 
 ---@param bufferId integer

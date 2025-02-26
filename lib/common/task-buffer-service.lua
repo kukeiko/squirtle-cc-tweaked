@@ -199,7 +199,7 @@ end
 ---@param bufferId integer
 ---@param from string
 ---@param fromTag InventorySlotTag
-function TaskBufferService.transferInventoryStockToBuffer(bufferId, from, fromTag)
+function TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
     local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local itemStock = InventoryApi.getStock({from}, fromTag)

@@ -265,7 +265,7 @@ function testTransferItemsTask()
     local taskService = Rpc.tryNearest(TaskService)
     local task = taskService.transferItems({
         issuedBy = os.getComputerLabel(),
-        targetStock = {["minecraft:rail"] = 128},
+        items = {["minecraft:rail"] = 128},
         to = {"minecraft:chest_10"},
         toTag = "input"
     })
@@ -547,10 +547,25 @@ local function testResizeBufferBigger()
     print("[done] flushed and freed up the buffer")
 end
 
+local function testChunkifyUsedRecipes()
+    ---@type ItemDetails
+    local itemDetails = {
+        ["minecraft:stick"] = {displayName = "Stick", maxCount = 4, name = "minecraft:stick"},
+        ["minecraft:birch_planks"] = {displayName = "Birch Planks", maxCount = 64, name = "minecraft:birch_planks"}
+    }
+    ---@type ItemStock
+    local availableStock = {["minecraft:birch_planks"] = 64}
+    ---@type ItemStock
+    local targetStock = {["minecraft:stick"] = 9}
+    local craftingDetails = CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
+    local chunkedUsedRecipes = CraftingApi.chunkUsedRecipes(craftingDetails.usedRecipes, 2, itemDetails)
+    print(string.format("recipe chunked from %d to %d", #craftingDetails.usedRecipes, #chunkedUsedRecipes))
+end
+
 local now = os.epoch("utc")
 
 for _ = 1, 1 do
-    testResizeBufferBigger()
+    testChunkifyUsedRecipes()
 end
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

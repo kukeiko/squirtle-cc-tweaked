@@ -1,5 +1,6 @@
 local Utils = require "lib.common.utils"
 local EventLoop = require "lib.common.event-loop"
+local ItemStock = require "lib.common.models.item-stock"
 local Inventory = require "lib.inventory.inventory"
 local InventoryReader = require "lib.inventory.inventory-reader"
 local InventoryCollection = require "lib.inventory.inventory-collection"
@@ -241,6 +242,25 @@ function InventoryApi.transfer(from, fromTag, to, toTag, items, options)
     end
 
     return InventoryApi.transferItems(from, fromTag, to, toTag, items, options)
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param stock ItemStock
+---@param options? TransferOptions
+function InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
+    local open = ItemStock.subtract(stock, InventoryApi.getStock(to, toTag))
+
+    while not Utils.isEmpty(open) do
+        InventoryApi.transferItems(from, fromTag, to, toTag, open, options)
+        open = ItemStock.subtract(stock, InventoryApi.getStock(to, toTag))
+
+        if not Utils.isEmpty(open) then
+            os.sleep(3)
+        end
+    end
 end
 
 local function onPeripheralEventMountInventory()

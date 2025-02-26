@@ -1,3 +1,4 @@
+local ItemStock = require "lib.common.models.item-stock"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Inventory = require "lib.inventory.inventory"
 local Utils = require "lib.common.utils"
@@ -13,8 +14,9 @@ local Utils = require "lib.common.utils"
 return function(name, type, stacks, nameTagSlot, slotTags, label, allowAllocate)
     ---@type table<integer, InventorySlot>
     local slots = {}
+    local size = InventoryPeripheral.getSize(name)
 
-    for slot = 1, InventoryPeripheral.getSize(name) do
+    for slot = 1, size do
         if slot == nameTagSlot then
             slots[slot] = {index = slot, tags = {nameTag = true}}
         else
@@ -24,14 +26,7 @@ return function(name, type, stacks, nameTagSlot, slotTags, label, allowAllocate)
         end
     end
 
-    ---@type ItemStock
-    local items = {}
-
-    for slot, stack in pairs(stacks) do
-        if slot ~= nameTagSlot then
-            items[stack.name] = (items[stack.name] or 0) + stack.count
-        end
-    end
+    local items = ItemStock.fromStacks(stacks, {nameTagSlot})
 
     return Inventory.create(name, type, stacks, slots, allowAllocate, label, items)
 end

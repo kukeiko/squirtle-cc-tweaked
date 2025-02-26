@@ -33,7 +33,7 @@ return function()
             Utils.prettyPrint(task.open)
             local transferTask = taskService.transferItems({
                 issuedBy = os.getComputerLabel(),
-                targetStock = task.open,
+                items = task.open,
                 to = taskBufferService.getBufferNames(bufferId),
                 toTag = "buffer",
                 label = "transfer-player-gathered-items",

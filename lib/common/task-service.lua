@@ -124,7 +124,7 @@ end
 ---@field toBufferId? integer
 ---@field to? string[]
 ---@field toTag? InventorySlotTag
----@field targetStock ItemStock
+---@field items ItemStock
 ---@field partOfTaskId? integer
 ---@field label? string
 ---@param options TransferItemsTaskOptions
@@ -140,7 +140,7 @@ function TaskService.transferItems(options)
         task.toBufferId = options.toBufferId
         task.to = options.to
         task.toTag = options.toTag
-        task.items = options.targetStock
+        task.items = options.items
         task.transferred = {}
         task.transferredAll = false
         task = databaseService.createTask(task) --[[@as TransferItemsTask]]

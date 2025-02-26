@@ -1,3 +1,5 @@
+local ItemStock = require "lib.common.models.item-stock"
+
 ---@class InventoryPeripheral
 local InventoryPeripheral = {}
 
@@ -84,6 +86,13 @@ function InventoryPeripheral.getStacks(name, detailed)
 
         return detailedStacks
     end
+end
+
+---@param name string
+---@return ItemStock
+function InventoryPeripheral.getStock(name)
+    local stacks = InventoryPeripheral.getStacks(name)
+    return ItemStock.fromStacks(stacks)
 end
 
 ---@param inventory string

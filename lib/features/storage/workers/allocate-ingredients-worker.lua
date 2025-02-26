@@ -49,7 +49,7 @@ return function()
             local transferTask = taskService.transferItems({
                 issuedBy = os.getComputerLabel(),
                 toBufferId = task.bufferId,
-                targetStock = open,
+                items = open,
                 partOfTaskId = task.id,
                 label = "transfer-ingredients"
             })

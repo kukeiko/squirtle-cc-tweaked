@@ -59,4 +59,20 @@ local function isEmpty(stock)
     return true
 end
 
-return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty}
+---@param stacks ItemStacks
+---@param ignoredSlots? integer[]
+---@return ItemStock
+local function fromStacks(stacks, ignoredSlots)
+    ---@type ItemStock
+    local stock = {}
+
+    for slot, stack in pairs(stacks) do
+        if not ignoredSlots or not Utils.indexOf(ignoredSlots, slot) then
+            stock[stack.name] = (stock[stack.name] or 0) + stack.count
+        end
+    end
+
+    return stock
+end
+
+return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty, fromStacks = fromStacks}

@@ -13,7 +13,6 @@ local function fillBuffer(task, taskBufferService)
     local openStock = ItemStock.subtract(task.items, bufferStock)
 
     if not Utils.isEmpty(openStock) then
-        -- print("transfer stock to buffer...")
         taskBufferService.transferStockToBuffer(task.bufferId, openStock)
     end
 
@@ -34,7 +33,7 @@ end
 ---@param task TransferItemsTask
 ---@param taskBufferService TaskBufferService|RpcClient
 ---@param taskService TaskService|RpcClient
-local function transferBuffer(task, taskBufferService, taskService)
+local function emptyBuffer(task, taskBufferService, taskService)
     local to, toTag = task.to, task.toTag
 
     if task.toBufferId then
@@ -89,7 +88,7 @@ return function()
             taskService.updateTask(task)
         end
 
-        transferBuffer(task, taskBufferService, taskService)
+        emptyBuffer(task, taskBufferService, taskService)
         print(string.format("[finish] %s %d", task.type, task.id))
         taskService.finishTask(task.id)
         taskBufferService.freeBuffer(bufferId)
