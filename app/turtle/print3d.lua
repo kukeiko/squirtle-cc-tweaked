@@ -8,11 +8,11 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
-local Vector = require "lib.common.vector"
-local Cardinal = require "lib.common.cardinal"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
+local Vector = require "lib.models.vector"
+local Cardinal = require "lib.models.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local Print3dService = require "lib.features.print3d-service"
 local SquirtleService = require "lib.squirtle.squirtle-service"

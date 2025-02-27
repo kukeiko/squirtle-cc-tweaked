@@ -8,10 +8,10 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
-local DatabaseService = require "lib.common.database-service"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
+local DatabaseService = require "lib.services.database-service"
 local SubwayService = require "lib.features.subway-service"
 local SearchableList = require "lib.ui.searchable-list"
 

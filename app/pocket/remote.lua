@@ -8,11 +8,11 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local SearchableList = require "lib.ui.searchable-list"
-local RemoteService = require "lib.common.remote-service"
+local RemoteService = require "lib.services.remote-service"
 local readInteger = require "lib.ui.read-integer"
 
 print(string.format("[remote %s]", version()))

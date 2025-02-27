@@ -1,6 +1,6 @@
 local Squirtle = require "lib.squirtle.squirtle-api"
-local Inventory = require "lib.inventory.inventory-api"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Inventory = require "lib.apis.inventory-api"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 

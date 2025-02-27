@@ -8,8 +8,8 @@ if not arg then
     return version
 end
 
-local Vector = require "lib.common.vector"
-local Rpc = require "lib.common.rpc"
+local Vector = require "lib.models.vector"
+local Rpc = require "lib.tools.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 
 print(string.format("[turtle %s] booting...", version()))

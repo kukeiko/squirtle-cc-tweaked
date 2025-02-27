@@ -1,4 +1,4 @@
-local Side = require "lib.common.side"
+local Side = require "lib.apis.side"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
 

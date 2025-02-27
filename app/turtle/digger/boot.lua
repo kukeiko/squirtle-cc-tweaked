@@ -1,4 +1,4 @@
-local AppState = require "lib.common.app-state"
+local AppState = require "lib.apis.app-state"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local setup = require "digger.setup"
 

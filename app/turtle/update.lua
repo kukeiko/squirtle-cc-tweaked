@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local UpdateService = require "lib.common.update-service"
+local UpdateService = require "lib.services.update-service"
 
 print(string.format("[update %s]", version()))
 UpdateService.update()

@@ -8,10 +8,10 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local Redstone = require "lib.common.redstone"
+local Utils = require "lib.tools.utils"
+local Redstone = require "lib.apis.redstone"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local Inventory = require "lib.inventory.inventory-api"
+local Inventory = require "lib.apis.inventory-api"
 
 local function dumpChestcartToBarrel()
     while Squirtle.suck() do

@@ -8,8 +8,8 @@ if not arg then
     return version
 end
 
-local EventLoop = require "lib.common.event-loop"
-local RemoteService = require "lib.common.remote-service"
+local EventLoop = require "lib.tools.event-loop"
+local RemoteService = require "lib.services.remote-service"
 local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
 local craftItemsWorker = require "lib.features.storage.workers.craft-items-worker"
 local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"

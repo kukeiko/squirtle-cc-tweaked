@@ -1,4 +1,4 @@
-local EventLoop = require "lib.common.event-loop"
+local EventLoop = require "lib.tools.event-loop"
 
 ---@class BoneMealService : Service
 local BoneMealService = {name = "bone-meal"}

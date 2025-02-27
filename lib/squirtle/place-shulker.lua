@@ -1,4 +1,4 @@
-local DatabaseService = require "lib.common.database-service"
+local DatabaseService = require "lib.services.database-service"
 local SquirtleState = require "lib.squirtle.state"
 local SquirtleBasicApi = require "lib.squirtle.api-layers.squirtle-basic-api"
 

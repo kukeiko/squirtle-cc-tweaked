@@ -9,14 +9,14 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
-local Utils = require "lib.common.utils"
-local CraftingApi = require "lib.common.crafting-api"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
+local Utils = require "lib.tools.utils"
+local CraftingApi = require "lib.apis.crafting-api"
 local StorageService = require "lib.features.storage.storage-service"
-local TaskService = require "lib.common.task-service"
-local TaskBufferService = require "lib.common.task-buffer-service"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local TaskService = require "lib.services.task-service"
+local TaskBufferService = require "lib.services.task-buffer-service"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
 print(string.format("[io-crafter %s] booting...", version()))

@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local EventLoop = require "lib.common.event-loop"
+local EventLoop = require "lib.tools.event-loop"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local SquirtleState = require "lib.squirtle.state"
 

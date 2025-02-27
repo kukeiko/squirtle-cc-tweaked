@@ -1,5 +1,5 @@
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
 
 ---@class AppsService : Service
 ---@field versions table<string, string>

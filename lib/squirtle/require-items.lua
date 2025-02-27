@@ -1,4 +1,4 @@
-local Utils = require "lib.common.utils"
+local Utils = require "lib.tools.utils"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
 local placeShulker = require "lib.squirtle.place-shulker"

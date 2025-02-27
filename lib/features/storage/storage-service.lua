@@ -1,10 +1,10 @@
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
-local DatabaseService = require "lib.common.database-service"
-local CraftingApi = require "lib.common.crafting-api"
-local InventoryApi = require "lib.inventory.inventory-api"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
-local TaskBufferService = require "lib.common.task-buffer-service"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
+local DatabaseService = require "lib.services.database-service"
+local CraftingApi = require "lib.apis.crafting-api"
+local InventoryApi = require "lib.apis.inventory-api"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
+local TaskBufferService = require "lib.services.task-buffer-service"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}

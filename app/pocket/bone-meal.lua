@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local Rpc = require "lib.common.rpc"
+local Rpc = require "lib.tools.rpc"
 local BoneMealService = require "lib.features.bone-meal-service"
 
 print(string.format("[bone-meal %s] booting...", version()))

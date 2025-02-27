@@ -9,8 +9,8 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Utils = require "lib.common.utils"
-local World = require "lib.common.world"
+local Utils = require "lib.tools.utils"
+local World = require "lib.models.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
 local Squirtle = require "lib.squirtle.squirtle-api"

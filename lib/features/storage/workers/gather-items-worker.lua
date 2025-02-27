@@ -1,7 +1,7 @@
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
-local TaskService = require "lib.common.task-service"
-local TaskBufferService = require "lib.common.task-buffer-service"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
+local TaskService = require "lib.services.task-service"
+local TaskBufferService = require "lib.services.task-buffer-service"
 local StorageService = require "lib.features.storage.storage-service"
 
 return function()

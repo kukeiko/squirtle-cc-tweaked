@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local Rpc = require "lib.common.rpc"
+local Rpc = require "lib.tools.rpc"
 local Print3dService = require "lib.features.print3d-service"
 
 print(string.format("[print3d %s]", version()))

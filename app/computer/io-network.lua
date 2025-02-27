@@ -8,12 +8,12 @@ if not arg then
     return version
 end
 
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
-local TaskBufferService = require "lib.common.task-buffer-service"
-local Inventory = require "lib.inventory.inventory-api"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
+local TaskBufferService = require "lib.services.task-buffer-service"
+local Inventory = require "lib.apis.inventory-api"
 local StorageService = require "lib.features.storage.storage-service"
-local RemoteService = require "lib.common.remote-service"
+local RemoteService = require "lib.services.remote-service"
 local processDumps = require "lib.features.storage.processors.process-dumps"
 local processFurnaces = require "lib.features.storage.processors.process-furnaces"
 local processIo = require "lib.features.storage.processors.process-io"

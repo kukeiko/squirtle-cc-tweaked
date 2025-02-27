@@ -9,11 +9,11 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
-local Inventory = require "lib.inventory.inventory-api"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
+local Inventory = require "lib.apis.inventory-api"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local OakService = require "lib.features.oak-service"
 

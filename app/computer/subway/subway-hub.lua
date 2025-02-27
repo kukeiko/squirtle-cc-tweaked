@@ -8,9 +8,9 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
-local EventLoop = require "lib.common.event-loop"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
+local EventLoop = require "lib.tools.event-loop"
 local SubwayService = require "lib.features.subway-service"
 
 local function printUsage()

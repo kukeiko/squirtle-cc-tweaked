@@ -1,6 +1,6 @@
-local Utils = require "lib.common.utils"
-local Vector = require "lib.common.vector"
-local Cardinal = require "lib.common.cardinal"
+local Utils = require "lib.tools.utils"
+local Vector = require "lib.models.vector"
+local Cardinal = require "lib.models.cardinal"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 

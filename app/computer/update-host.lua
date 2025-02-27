@@ -8,12 +8,12 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
-local EventLoop = require "lib.common.event-loop"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
+local EventLoop = require "lib.tools.event-loop"
 local AppsService = require "lib.features.apps-service"
-local DatabaseService = require "lib.common.database-service"
-local TaskService = require "lib.common.task-service"
+local DatabaseService = require "lib.services.database-service"
+local TaskService = require "lib.services.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 print(string.format("[update-host %s] booting...", version()))

@@ -8,8 +8,8 @@ if not arg then
     return version
 end
 
-local EventLoop = require "lib.common.event-loop"
-local Peripheral = require "lib.common.peripheral"
+local EventLoop = require "lib.tools.event-loop"
+local Peripheral = require "lib.apis.peripheral"
 
 local function printUsage()
     print("Usage: crafter <source> <target> [trash]")

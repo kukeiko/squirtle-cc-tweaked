@@ -2,22 +2,22 @@ local ccPretty = "cc.pretty"
 local Pretty = require(ccPretty)
 package.path = package.path .. ";/?.lua"
 
-local Utils = require "lib.common.utils"
-local Vector = require "lib.common.vector"
-local Cardinal = require "lib.common.cardinal"
+local Utils = require "lib.tools.utils"
+local Vector = require "lib.models.vector"
+local Cardinal = require "lib.models.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local EventLoop = require "lib.common.event-loop"
-local Inventory = require "lib.inventory.inventory-api"
-local Rpc = require "lib.common.rpc";
+local EventLoop = require "lib.tools.event-loop"
+local Inventory = require "lib.apis.inventory-api"
+local Rpc = require "lib.tools.rpc";
 local SquirtleService = require "lib.squirtle.squirtle-service"
 local BoneMealService = require "lib.features.bone-meal-service"
 local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local CraftingApi = require "lib.common.crafting-api"
-local TaskService = require "lib.common.task-service"
+local CraftingApi = require "lib.apis.crafting-api"
+local TaskService = require "lib.services.task-service"
 local AppsService = require "lib.features.apps-service"
-local TaskBufferService = require "lib.common.task-buffer-service"
+local TaskBufferService = require "lib.services.task-buffer-service"
 
 ---@param width number
 local function countLineBlocks(width)

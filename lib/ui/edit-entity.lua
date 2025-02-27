@@ -1,5 +1,5 @@
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
 local readString = require "lib.ui.read-string"
 
 ---@class EditEntity

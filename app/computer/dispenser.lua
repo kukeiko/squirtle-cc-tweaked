@@ -8,11 +8,11 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local Rpc = require "lib.common.rpc"
-local EventLoop = require "lib.common.event-loop"
-local RemoteService = require "lib.common.remote-service"
-local TaskService = require "lib.common.task-service"
+local Utils = require "lib.tools.utils"
+local Rpc = require "lib.tools.rpc"
+local EventLoop = require "lib.tools.event-loop"
+local RemoteService = require "lib.services.remote-service"
+local TaskService = require "lib.services.task-service"
 local StorageService = require "lib.features.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"

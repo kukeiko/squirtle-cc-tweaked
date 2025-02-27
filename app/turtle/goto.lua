@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local World = require "lib.common.world"
+local World = require "lib.models.world"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
 local function printUsage()

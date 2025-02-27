@@ -8,8 +8,8 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
 local AppsService = require "lib.features.apps-service"
 local SearchableList = require "lib.ui.searchable-list"
 

@@ -1,8 +1,8 @@
-local Utils = require "lib.common.utils"
-local ItemStock = require "lib.common.models.item-stock"
-local Rpc = require "lib.common.rpc"
-local TaskService = require "lib.common.task-service"
-local TaskBufferService = require "lib.common.task-buffer-service"
+local Utils = require "lib.tools.utils"
+local ItemStock = require "lib.models.item-stock"
+local Rpc = require "lib.tools.rpc"
+local TaskService = require "lib.services.task-service"
+local TaskBufferService = require "lib.services.task-buffer-service"
 local StorageService = require "lib.features.storage.storage-service"
 
 ---@param task TransferItemsTask

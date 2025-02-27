@@ -8,11 +8,11 @@ if not arg then
     return version
 end
 
-local Utils = require "lib.common.utils"
-local EventLoop = require "lib.common.event-loop"
-local Rpc = require "lib.common.rpc"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local SubwayService = require "lib.features.subway-service"
-local RemoteService = require "lib.common.remote-service"
+local RemoteService = require "lib.services.remote-service"
 
 print(string.format("[subway-switch %s] booting...", version()))
 

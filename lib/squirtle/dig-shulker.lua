@@ -1,4 +1,4 @@
-local DatabaseService = require "lib.common.database-service"
+local DatabaseService = require "lib.services.database-service"
 local SquirtleBasicApi = require "lib.squirtle.api-layers.squirtle-basic-api"
 
 ---@param side string

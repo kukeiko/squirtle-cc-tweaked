@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local Rpc = require "lib.common.rpc"
+local Rpc = require "lib.tools.rpc"
 local OakService = require "lib.features.oak-service"
 
 print(string.format("[oak %s] booting...", version()))

@@ -9,14 +9,14 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Utils = require "lib.common.utils"
-local Vectors = require "lib.common.vector"
-local World = require "lib.common.world"
+local Utils = require "lib.tools.utils"
+local Vectors = require "lib.models.vector"
+local World = require "lib.models.world"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local AppState = require "lib.common.app-state"
+local AppState = require "lib.apis.app-state"
 local boot = require "digger.boot"
-local Inventory = require "lib.inventory.inventory-api"
-local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Inventory = require "lib.apis.inventory-api"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 ---@class DiggerAppState
 ---@field home Vector
