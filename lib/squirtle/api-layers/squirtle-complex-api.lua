@@ -1,6 +1,6 @@
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
-local DatabaseService = require "lib.services.database-service"
+local DatabaseApi = require "lib.apis.database-api"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
@@ -452,9 +452,9 @@ local function orientateUsingDiskDrive(directions)
 
     directions = directions or {"top", "bottom"}
 
-    local diskState = DatabaseService.getSquirtleDiskState()
+    local diskState = DatabaseApi.getSquirtleDiskState()
     diskState.diskDriveSides = directions
-    DatabaseService.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveSquirtleDiskState(diskState)
     local placedSide = SquirtleComplexApi.tryPutAtOneOf(directions, "computercraft:disk_drive")
 
     if not placedSide then
@@ -462,7 +462,7 @@ local function orientateUsingDiskDrive(directions)
     else
         diskState.diskDriveSides = {}
         diskState.cleanupSides[placedSide] = "computercraft:disk_drive"
-        DatabaseService.saveSquirtleDiskState(diskState)
+        DatabaseApi.saveSquirtleDiskState(diskState)
     end
 
     -- while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
@@ -514,13 +514,13 @@ local function orientateUsingDiskDrive(directions)
     Basic.dig(placedSide)
 
     diskState.diskDriveSides[placedSide] = nil
-    DatabaseService.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveSquirtleDiskState(diskState)
 
     return facing
 end
 
 function SquirtleComplexApi.cleanup()
-    local diskState = DatabaseService.getSquirtleDiskState()
+    local diskState = DatabaseApi.getSquirtleDiskState()
 
     for side, block in pairs(diskState.cleanupSides) do
         if SquirtleComplexApi.probe(side, block) then
@@ -552,7 +552,7 @@ function SquirtleComplexApi.cleanup()
     diskState.cleanupSides = {}
     diskState.diskDriveSides = {}
     diskState.shulkerSides = {}
-    DatabaseService.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveSquirtleDiskState(diskState)
 end
 
 ---@param method? OrientationMethod

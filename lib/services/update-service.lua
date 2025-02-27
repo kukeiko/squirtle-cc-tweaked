@@ -1,4 +1,5 @@
 local Rpc = require "lib.tools.rpc"
+local DatabaseApi = require "lib.apis.database-api"
 local DatabaseService = require "lib.services.database-service"
 local AppsService = require "lib.features.apps-service"
 
@@ -16,12 +17,12 @@ function UpdateService.update(apps)
     elseif pocket then
         AppsService.setPocketApps(appsClient.getPocketApps(true, apps), true)
         print("[updated] pocket apps")
-        DatabaseService.setSubwayStations(databaseClient.getSubwayStations())
+        DatabaseApi.setSubwayStations(databaseClient.getSubwayStations())
         print("[updated] subway stations")
     else
         AppsService.setComputerApps(appsClient.getComputerApps(true, apps), true)
         print("[updated] computer apps")
-        DatabaseService.setCraftingRecipes(databaseClient.getCraftingRecipes())
+        DatabaseApi.setCraftingRecipes(databaseClient.getCraftingRecipes())
         print("[updated] crafting recipes")
     end
 end

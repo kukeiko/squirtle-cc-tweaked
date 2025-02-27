@@ -9,6 +9,7 @@ local Squirtle = require "lib.squirtle.squirtle-api"
 local EventLoop = require "lib.tools.event-loop"
 local Inventory = require "lib.apis.inventory-api"
 local Rpc = require "lib.tools.rpc";
+local DatabaseService = require "lib.services.database-service"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 local BoneMealService = require "lib.features.bone-meal-service"
 local StorageService = require "lib.features.storage.storage-service"
@@ -562,10 +563,15 @@ local function testChunkifyUsedRecipes()
     print(string.format("recipe chunked from %d to %d", #craftingDetails.usedRecipes, #chunkedUsedRecipes))
 end
 
+local function testDatabaseService()
+    local database = Rpc.nearest(DatabaseService)
+    Utils.prettyPrint(database)
+end
+
 local now = os.epoch("utc")
 
 for _ = 1, 1 do
-    testChunkifyUsedRecipes()
+    testDatabaseService()
 end
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

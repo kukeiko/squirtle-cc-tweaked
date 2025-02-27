@@ -141,11 +141,9 @@ local function createClient(service, host, distance)
         end)
     end
 
-    for k, v in pairs(service) do
-        if type(v) == "function" then
-            -- [todo] periodically send ping messages that, if fail, cause the rpc call to error out
-            -- [todo] i would love that a request works even if the host rebooted
-            client[k] = function(...)
+    setmetatable(client, {
+        __index = function(_, k)
+            return function(...)
                 local callId = nextCallId()
 
                 ---@type RpcRequestPacket
@@ -169,7 +167,7 @@ local function createClient(service, host, distance)
                 end
             end
         end
-    end
+    })
 
     return client
 end

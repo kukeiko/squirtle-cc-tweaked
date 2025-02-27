@@ -11,6 +11,7 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local DatabaseApi = require "lib.apis.database-api"
 local DatabaseService = require "lib.services.database-service"
 local SubwayService = require "lib.features.subway-service"
 local SearchableList = require "lib.ui.searchable-list"
@@ -100,7 +101,7 @@ local function findPath(stations, start, goal)
     end
 end
 
----@param databaseService DatabaseService|RpcClient
+---@param databaseService DatabaseApi|RpcClient
 ---@param allStations? boolean
 ---@return string?
 local function promptUserToPickGoal(databaseService, allStations)
@@ -143,7 +144,7 @@ local function promptUserToPickGoal(databaseService, allStations)
 end
 
 ---@param useLocal boolean
----@return DatabaseService|RpcClient
+---@return DatabaseApi|RpcClient
 local function connectToDatabase(useLocal)
     if useLocal then
         return DatabaseService
@@ -153,10 +154,10 @@ local function connectToDatabase(useLocal)
 
     if databaseService then
         -- update local stations from server
-        DatabaseService.setSubwayStations(databaseService.getSubwayStations())
+        DatabaseApi.setSubwayStations(databaseService.getSubwayStations())
     else
         -- if no database service is reachable, just use local stations
-        databaseService = DatabaseService
+        databaseService = DatabaseApi
     end
 
     return databaseService
@@ -215,7 +216,7 @@ local function main(args)
                         if currentTrack.duration == nil or math.abs(newDuration - currentTrack.duration) > 1 then
                             print(string.format("[duration] updated to %ds", newDuration))
                             currentTrack.duration = newDuration
-                            DatabaseService.setSubwayStations(stations)
+                            DatabaseApi.setSubwayStations(stations)
                         end
                     end
 

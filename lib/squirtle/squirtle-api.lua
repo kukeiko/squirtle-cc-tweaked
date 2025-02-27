@@ -2,7 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local World = require "lib.models.world"
 local ItemStock = require "lib.models.item-stock"
-local DatabaseService = require "lib.services.database-service"
+local DatabaseApi = require "lib.apis.database-api"
 local findPath = require "lib.squirtle.find-path"
 local Inventory = require "lib.apis.inventory-api"
 local Cardinal = require "lib.models.cardinal"
@@ -243,7 +243,7 @@ end
 ---@param additionalRequiredItems? ItemStock
 function SquirtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems)
     local success, message = pcall(function(...)
-        local resumable = DatabaseService.findSquirtleResumable(name)
+        local resumable = DatabaseApi.findSquirtleResumable(name)
 
         if not resumable then
             local state = start(args)
@@ -278,7 +278,7 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
 
             SquirtleApi.requireItems(required, true)
             local home = SquirtleElementalApi.getPosition()
-            DatabaseService.createSquirtleResumable({
+            DatabaseApi.createSquirtleResumable({
                 name = name,
                 initialState = initialState,
                 randomSeed = randomSeed,
@@ -306,7 +306,7 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
             print("[simulate] done!")
         end
 
-        resumable = DatabaseService.getSquirtleResumable(name)
+        resumable = DatabaseApi.getSquirtleResumable(name)
 
         local aborted = EventLoop.runUntil(string.format("%s:abort", name), function()
             main(resumable.state)
@@ -318,7 +318,7 @@ function SquirtleApi.runResumable(name, args, start, main, resume, finish, addit
         end
 
         finish(resumable.state)
-        DatabaseService.deleteSquirtleResumable(name)
+        DatabaseApi.deleteSquirtleResumable(name)
         Utils.deleteStartupFile()
     end)
 
