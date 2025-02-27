@@ -2,7 +2,7 @@ local version = require "version"
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local UpdateService = require "lib.services.update-service"
+local UpdateService = require "lib.systems.runtime.update-service"
 
 ---@class RemoteService : Service
 ---@field commands RemoteCommand[]

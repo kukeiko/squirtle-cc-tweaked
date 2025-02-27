@@ -1,4 +1,4 @@
-local DatabaseApi = require "lib.apis.database-api"
+local DatabaseApi = require "lib.apis.database.database-api"
 
 ---@class DatabaseService : Service, DatabaseApi
 local DatabaseService = {name = "database"}

@@ -12,10 +12,10 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local Inventory = require "lib.apis.inventory-api"
+local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local OakService = require "lib.features.oak-service"
+local OakService = require "lib.systems.farms.oak-service"
 
 print(string.format("[oak %s] booting...", version()))
 

@@ -11,8 +11,8 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local SubwayService = require "lib.features.subway-service"
-local RemoteService = require "lib.services.remote-service"
+local SubwayService = require "lib.systems.subway.subway-service"
+local RemoteService = require "lib.systems.runtime.remote-service"
 
 print(string.format("[subway-switch %s] booting...", version()))
 

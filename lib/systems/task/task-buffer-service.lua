@@ -2,8 +2,8 @@ local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local ItemStock = require "lib.models.item-stock"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local InventoryApi = require "lib.apis.inventory-api"
-local DatabaseService = require "lib.services.database-service"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
+local DatabaseService = require "lib.systems.database.database-service"
 
 -- [todo] consider consolidating into StorageService, as this service always has to run on the storage server anyway.
 -- [update] i probably separated it into TaskBufferService because this one here lives in "common", and StorageServices

@@ -10,17 +10,17 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local TaskBufferService = require "lib.services.task-buffer-service"
-local Inventory = require "lib.apis.inventory-api"
-local StorageService = require "lib.features.storage.storage-service"
-local RemoteService = require "lib.services.remote-service"
-local processDumps = require "lib.features.storage.processors.process-dumps"
-local processFurnaces = require "lib.features.storage.processors.process-furnaces"
-local processIo = require "lib.features.storage.processors.process-io"
-local processQuickAccess = require "lib.features.storage.processors.process-quick-access"
-local processShulkers = require "lib.features.storage.processors.process-shulkers"
-local processTrash = require "lib.features.storage.processors.process-trash"
-local processSiloOutputs = require "lib.features.storage.processors.process-silo-outputs"
+local TaskBufferService = require "lib.systems.task.task-buffer-service"
+local Inventory = require "lib.apis.inventory.inventory-api"
+local StorageService = require "lib.systems.storage.storage-service"
+local RemoteService = require "lib.systems.runtime.remote-service"
+local processDumps = require "lib.systems.storage.processors.process-dumps"
+local processFurnaces = require "lib.systems.storage.processors.process-furnaces"
+local processIo = require "lib.systems.storage.processors.process-io"
+local processQuickAccess = require "lib.systems.storage.processors.process-quick-access"
+local processShulkers = require "lib.systems.storage.processors.process-shulkers"
+local processTrash = require "lib.systems.storage.processors.process-trash"
+local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
 
 local function main()
     local monitor = peripheral.find("monitor")

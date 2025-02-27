@@ -1,5 +1,5 @@
 local Utils = require "lib.tools.utils"
-local Inventory = require "lib.apis.inventory-api"
+local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 local fuelItems = {"minecraft:lava_bucket", "minecraft:charcoal", "minecraft:coal", "minecraft:coal_block"}

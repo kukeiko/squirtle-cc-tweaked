@@ -9,7 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Inventory = require "lib.apis.inventory-api"
+local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local harvestTree = require "lumberjack.harvest-tree"

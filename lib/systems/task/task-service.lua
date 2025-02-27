@@ -1,6 +1,6 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local DatabaseService = require "lib.services.database-service"
+local DatabaseService = require "lib.systems.database.database-service"
 
 ---@class TaskService : Service
 local TaskService = {name = "task", host = ""}

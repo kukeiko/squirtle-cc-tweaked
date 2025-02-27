@@ -11,8 +11,8 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local BoneMealService = require "lib.features.bone-meal-service"
-local RemoteService = require "lib.services.remote-service"
+local BoneMealService = require "lib.systems.farms.bone-meal-service"
+local RemoteService = require "lib.systems.runtime.remote-service"
 
 print(string.format("[bone-meal %s] booting...", version()))
 Utils.writeStartupFile("bone-meal")

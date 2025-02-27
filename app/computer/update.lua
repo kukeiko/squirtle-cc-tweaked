@@ -8,7 +8,7 @@ if not arg then
     return version
 end
 
-local UpdateService = require "lib.services.update-service"
+local UpdateService = require "lib.systems.runtime.update-service"
 
 print(string.format("[update %s]", version()))
 local app = arg[1]

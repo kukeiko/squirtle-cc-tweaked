@@ -9,10 +9,10 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local RemoteService = require "lib.services.remote-service"
-local transferItemsWorker = require "lib.features.storage.workers.transfer-items-worker"
-local craftItemsWorker = require "lib.features.storage.workers.craft-items-worker"
-local allocateIngredientsWorker = require "lib.features.storage.workers.allocate-ingredients-worker"
+local RemoteService = require "lib.systems.runtime.remote-service"
+local transferItemsWorker = require "lib.systems.task.workers.transfer-items-worker"
+local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
+local allocateIngredientsWorker = require "lib.systems.task.workers.allocate-ingredients-worker"
 
 local function main()
     local monitor = peripheral.find("monitor")

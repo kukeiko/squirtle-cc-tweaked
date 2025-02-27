@@ -9,7 +9,7 @@ if not arg then
 end
 
 local Rpc = require "lib.tools.rpc"
-local BoneMealService = require "lib.features.bone-meal-service"
+local BoneMealService = require "lib.systems.farms.bone-meal-service"
 
 print(string.format("[bone-meal %s] booting...", version()))
 local on = arg[1] == "on"

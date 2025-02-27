@@ -11,9 +11,9 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local AppsService = require "lib.features.apps-service"
-local DatabaseService = require "lib.services.database-service"
-local TaskService = require "lib.services.task-service"
+local AppsService = require "lib.systems.runtime.apps-service"
+local DatabaseService = require "lib.systems.database.database-service"
+local TaskService = require "lib.systems.task.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 print(string.format("[update-host %s] booting...", version()))

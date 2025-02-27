@@ -14,7 +14,7 @@ local Rpc = require "lib.tools.rpc"
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local Print3dService = require "lib.features.print3d-service"
+local Print3dService = require "lib.systems.builders.print3d-service"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 
 ---@class ColoredPoint

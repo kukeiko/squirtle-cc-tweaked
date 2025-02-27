@@ -15,7 +15,7 @@ local World = require "lib.models.world"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local AppState = require "lib.apis.app-state"
 local boot = require "digger.boot"
-local Inventory = require "lib.apis.inventory-api"
+local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 ---@class DiggerAppState

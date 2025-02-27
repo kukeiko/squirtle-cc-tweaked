@@ -1,6 +1,6 @@
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
-local DatabaseApi = require "lib.apis.database-api"
+local DatabaseApi = require "lib.apis.database.database-api"
 local State = require "lib.squirtle.state"
 local getNative = require "lib.squirtle.get-native"
 local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"

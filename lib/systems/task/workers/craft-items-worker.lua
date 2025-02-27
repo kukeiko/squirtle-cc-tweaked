@@ -1,5 +1,5 @@
 local Rpc = require "lib.tools.rpc"
-local TaskService = require "lib.services.task-service"
+local TaskService = require "lib.systems.task.task-service"
 
 local function work()
     local name = os.getComputerLabel()

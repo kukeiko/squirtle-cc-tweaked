@@ -2,7 +2,7 @@ local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
 local Cardinal = require "lib.models.cardinal"
 local Squirtle = require "lib.squirtle.squirtle-api"
-local Inventory = require "lib.apis.inventory-api"
+local Inventory = require "lib.apis.inventory.inventory-api"
 
 local function getDirection()
     while true do

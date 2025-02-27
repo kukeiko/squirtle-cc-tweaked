@@ -1,7 +1,7 @@
 local Rpc = require "lib.tools.rpc"
 local DatabaseApi = require "lib.apis.database-api"
-local DatabaseService = require "lib.services.database-service"
-local AppsService = require "lib.features.apps-service"
+local DatabaseService = require "lib.systems.database.database-service"
+local AppsService = require "lib.systems.runtime.apps-service"
 
 ---@class UpdateService : Service
 local UpdateService = {name = "update"}
