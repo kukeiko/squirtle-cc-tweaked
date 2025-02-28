@@ -197,13 +197,13 @@ function TaskBufferService.transferStockToBuffer(bufferId, itemStock, fromType, 
 end
 
 ---@param bufferId integer
----@param from string
+---@param from string[]
 ---@param fromTag InventorySlotTag
 function TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
     local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local itemStock = InventoryApi.getStock({from}, fromTag)
-    InventoryApi.transferItems({from}, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
+    local itemStock = InventoryApi.getStock(from, fromTag)
+    InventoryApi.transferItems(from, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
 
 ---@param bufferId integer

@@ -16,13 +16,19 @@ function StorageService.getByType(type)
 end
 
 ---@param stashLabel string
-function StorageService.getStashName(stashLabel)
-    return InventoryApi.getByTypeAndLabel("stash", stashLabel)
+---@return string[]
+function StorageService.resolveStash(stashLabel)
+    return {InventoryApi.getByTypeAndLabel("stash", stashLabel)}
 end
 
--- [todo] a hack I had to introduce so the crafter turtle could tell storage that its stash changed
+---@param bufferId integer
+---@return string[]
+function StorageService.resolveBuffer(bufferId)
+    return TaskBufferService.getBufferNames(bufferId)
+end
+
 ---@param inventories string[]
-function StorageService.refreshInventories(inventories)
+function StorageService.refresh(inventories)
     InventoryApi.refreshInventories(inventories)
 end
 
@@ -35,24 +41,6 @@ end
 ---@return ItemStock transferredTotal, ItemStock open
 function StorageService.transfer(from, fromTag, to, toTag, items, options)
     return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
-end
-
----@param stashLabel string
----@param itemStock ItemStock
----@return ItemStock, ItemStock open
-function StorageService.transferStockToStash(stashLabel, itemStock)
-    local stash = StorageService.getStashName(stashLabel)
-    return InventoryApi.transferItems(InventoryApi.getAll(), "withdraw", {stash}, "input", itemStock)
-end
-
----@param stashLabel string
----@param item string
----@param total integer
----@return integer
-function StorageService.transferItemToStash(stashLabel, item, total)
-    local transferred = StorageService.transferStockToStash(stashLabel, {[item] = total})
-
-    return transferred[item] or 0
 end
 
 ---@param from string[]
@@ -142,19 +130,6 @@ end
 ---@param itemStock ItemStock
 function StorageService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
     TaskBufferService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
-end
-
----@param bufferId integer
----@param from string
----@param fromTag InventorySlotTag
-function StorageService.dumpToBuffer(bufferId, from, fromTag)
-    TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
-end
-
----@param bufferId integer
----@return string[]
-function StorageService.getBufferNames(bufferId)
-    return TaskBufferService.getBufferNames(bufferId)
 end
 
 ---@param bufferId integer

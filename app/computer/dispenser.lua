@@ -53,7 +53,7 @@ end, function()
 
     local storage = Rpc.nearest(StorageService)
     local taskService = Rpc.nearest(TaskService)
-    local stashName = storage.getStashName(os.getComputerLabel())
+    local stash = storage.resolveStash(os.getComputerLabel())
     local idleTimeout = 5
     local refreshInterval = 3
     local options = getListOptions(storage)
@@ -78,7 +78,7 @@ end, function()
                     local task = taskService.transferItems({
                         issuedBy = os.getComputerLabel(),
                         items = {[item.id] = quantity},
-                        to = {stashName},
+                        to = stash,
                         toTag = "input"
                     })
 

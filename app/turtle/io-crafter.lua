@@ -83,9 +83,8 @@ local function recover(task, storageService, taskBufferService, taskService)
 
     if stashStock[usedRecipe.item] then
         -- if crafted item is in stash, transfer to buffer
-        local stash = storageService.getStashName(os.getComputerLabel())
-        -- [todo] hack
-        storageService.refreshInventories({stash})
+        local stash = storageService.resolveStash(os.getComputerLabel())
+        storageService.refresh(stash)
         -- [todo] use transfer task instead, so it resizes buffer if required
         taskBufferService.dumpToBuffer(task.bufferId, stash, "buffer")
         -- => after, update task and return
@@ -117,16 +116,16 @@ EventLoop.run(function()
         recover(task, storageService, taskBufferService, taskService)
         print("[craft] items...")
         local buffer = taskBufferService.getBufferNames(task.bufferId)
-        local stash = storageService.getStashName(os.getComputerLabel())
+        local stash = storageService.resolveStash(os.getComputerLabel())
 
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]
             -- move ingredients from buffer to stash
-            storageService.fulfill(buffer, "buffer", {stash}, "buffer", usedRecipeToItemStock(recipe))
+            storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe))
             -- craft items
             craftFromBottomInventory(recipe, recipe.timesUsed)
             -- manual refresh required due to turtle manipulating the stash
-            storageService.refreshInventories({stash})
+            storageService.refresh(stash)
             -- move crafted items from stash to buffer
             -- [todo] assert that everything got transferred
             -- [todo] turtle doesn't reliably move items to buffer. probably caching issue in the storage.

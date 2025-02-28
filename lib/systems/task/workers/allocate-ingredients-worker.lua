@@ -1,11 +1,11 @@
 local Utils = require "lib.tools.utils"
-local ItemStock = require "lib.models.item-stock"
 local Rpc = require "lib.tools.rpc"
+local ItemStock = require "lib.models.item-stock"
+local CraftingApi = require "lib.apis.crafting-api"
 local TaskService = require "lib.systems.task.task-service"
 local DatabaseService = require "lib.systems.database.database-service"
 local TaskBufferService = require "lib.systems.task.task-buffer-service"
 local StorageService = require "lib.systems.storage.storage-service"
-local CraftingApi = require "lib.apis.crafting-api"
 
 return function()
     local databaseService = Rpc.nearest(DatabaseService)
