@@ -1,5 +1,5 @@
 local Utils = require "lib.tools.utils"
-local Inventory = require "lib.apis.inventory.inventory-api"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 local fuelItems = {"minecraft:lava_bucket", "minecraft:charcoal", "minecraft:coal", "minecraft:coal_block"}
@@ -29,34 +29,36 @@ end
 
 return function()
     local success, e = pcall(function()
-        local outputs = Inventory.getRefreshedByType("furnace-output")
-        local furnaces = Inventory.getRefreshedByType("furnace")
-        local storages = Inventory.getByType("storage")
-        local siloInputs = Inventory.getByType("silo:input")
-        Inventory.transfer(furnaces, "output", storages, "input")
-        Inventory.transfer(furnaces, "output", outputs, "input")
-        Inventory.transfer(furnaces, "output", siloInputs, "input")
-        Inventory.transfer(outputs, "output", storages, "input")
-        Inventory.transfer(outputs, "output", siloInputs, "input")
-        Inventory.transferItem(furnaces, "fuel", storages, "input", "minecraft:bucket")
+        local outputs = InventoryApi.getRefreshedByType("furnace-output")
+        local furnaces = InventoryApi.getRefreshedByType("furnace")
+        local storages = InventoryApi.getByType("storage")
+        local siloInputs = InventoryApi.getByType("silo:input")
+        -- [todo] I'm pretty sure we can combine the next 3x .empty() calls by using the "toSequential = true" option,
+        -- and also the same with the 2x .empty() calls after
+        InventoryApi.empty(furnaces, "output", storages, "input")
+        InventoryApi.empty(furnaces, "output", outputs, "input")
+        InventoryApi.empty(furnaces, "output", siloInputs, "input")
+        InventoryApi.empty(outputs, "output", storages, "input")
+        InventoryApi.empty(outputs, "output", siloInputs, "input")
+        InventoryApi.transferItem(furnaces, "fuel", storages, "input", "minecraft:bucket")
 
         print("[move] fuel from input")
-        local inputs = Inventory.getRefreshedByType("furnace-input")
+        local inputs = InventoryApi.getRefreshedByType("furnace-input")
 
         for _, fuelItem in ipairs(fuelItems) do
-            Inventory.transferItem(inputs, "output", furnaces, "fuel", fuelItem)
+            InventoryApi.transferItem(inputs, "output", furnaces, "fuel", fuelItem)
         end
 
-        local configurations = Inventory.getRefreshedByType("furnace-config")
+        local configurations = InventoryApi.getRefreshedByType("furnace-config")
 
         if #configurations > 0 then
-            local config = Inventory.getStock(configurations, "configuration")
+            local config = InventoryApi.getStock(configurations, "configuration")
 
             print("[move] smelted to output")
             for smeltableItem, maxFurnaces in pairs(config) do
                 local targetFurnaces = getFurnacesForSmelting(furnaces, smeltableItem, maxFurnaces)
                 print(string.format("[config] %dx %s, %dx available", maxFurnaces, smeltableItem, #targetFurnaces))
-                Inventory.transferItem(inputs, "output", targetFurnaces, "input", smeltableItem)
+                InventoryApi.transferItem(inputs, "output", targetFurnaces, "input", smeltableItem)
             end
         else
             print("[info] no furnace configuration found")

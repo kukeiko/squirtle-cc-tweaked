@@ -138,6 +138,24 @@ function Inventory.getMaxStock(inventory, tag)
     return stock
 end
 
+---@param inventory Inventory
+---@param tag InventorySlotTag
+---@return ItemStock
+function Inventory.getOpenStock(inventory, tag)
+    ---@type ItemStock
+    local stock = {}
+
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if stack and slot.tags[tag] then
+            stock[stack.name] = (stock[stack.name] or 0) + (stack.maxCount - stack.count)
+        end
+    end
+
+    return stock
+end
+
 ---@param slot InventorySlot
 ---@param stack? ItemStack
 ---@param tag InventorySlotTag

@@ -161,9 +161,7 @@ function TaskBufferService.compact(bufferId)
             table.insert(to, buffer.inventories[j])
         end
 
-        local _, open = InventoryApi.transfer({from}, "buffer", to, "buffer", nil, {toSequential = true})
-
-        if not Utils.isEmpty(open) then
+        if not InventoryApi.empty({from}, "buffer", to, "buffer", {toSequential = true}) then
             return
         end
     end
@@ -193,7 +191,7 @@ function TaskBufferService.transferStockToBuffer(bufferId, itemStock, fromType, 
     local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local storages = InventoryApi.getByType(fromType or "storage")
-    InventoryApi.transferItems(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
+    InventoryApi.transfer(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
 
 ---@param bufferId integer
@@ -203,7 +201,7 @@ function TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
     local databaseService = Rpc.nearest(DatabaseService)
     local buffer = databaseService.getAllocatedBuffer(bufferId)
     local itemStock = InventoryApi.getStock(from, fromTag)
-    InventoryApi.transferItems(from, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
+    InventoryApi.transfer(from, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
 end
 
 ---@param bufferId integer
@@ -233,7 +231,10 @@ function TaskBufferService.transferBufferStock(bufferId, to, toTag, stock)
     local bufferStock = stock or TaskBufferService.getBufferStock(bufferId)
     -- [todo] setting "toSequential" to true as i expect to transfer between buffers most of the time.
     -- maybe it makes sense to have a dedicated "transferBufferStock" method for that instead?
-    return InventoryApi.transferItems(buffer.inventories, "buffer", to, toTag, bufferStock, {fromSequential = true, toSequential = true})
+    local _, transferred, open = InventoryApi.transfer(buffer.inventories, "buffer", to, toTag, bufferStock,
+                                                            {fromSequential = true, toSequential = true})
+
+    return transferred, open
 end
 
 return TaskBufferService

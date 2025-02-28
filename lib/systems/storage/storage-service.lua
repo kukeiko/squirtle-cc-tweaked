@@ -36,9 +36,9 @@ end
 ---@param fromTag InventorySlotTag
 ---@param to string[]
 ---@param toTag InventorySlotTag
----@param items? ItemStock
+---@param items ItemStock
 ---@param options? TransferOptions
----@return ItemStock transferredTotal, ItemStock open
+---@return boolean success, ItemStock transferred, ItemStock open
 function StorageService.transfer(from, fromTag, to, toTag, items, options)
     return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
 end
@@ -47,10 +47,31 @@ end
 ---@param fromTag InventorySlotTag
 ---@param to string[]
 ---@param toTag InventorySlotTag
+---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
+function StorageService.restock(from, fromTag, to, toTag, options)
+    return InventoryApi.restock(from, fromTag, to, toTag, options)
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
+function StorageService.empty(from, fromTag, to, toTag, options)
+    return InventoryApi.empty(from, fromTag, to, toTag, options)
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
 ---@param stock ItemStock
 ---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
 function StorageService.fulfill(from, fromTag, to, toTag, stock, options)
-    InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
+    return InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
 end
 
 ---@return ItemStock

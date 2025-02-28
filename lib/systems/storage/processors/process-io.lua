@@ -1,11 +1,11 @@
-local Inventory = require "lib.apis.inventory.inventory-api"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
 
 return function()
     local success, e = pcall(function()
-        local io = Inventory.getRefreshedByType("io")
-        Inventory.transfer(io, "output", io, "input")
-        local storages = Inventory.getByType("storage")
-        Inventory.transfer(io, "output", storages, "input")
+        local io = InventoryApi.getRefreshedByType("io")
+        InventoryApi.restock(io, "output", io, "input")
+        local storages = InventoryApi.getByType("storage")
+        InventoryApi.restock(io, "output", storages, "input")
     end)
 
     if not success then

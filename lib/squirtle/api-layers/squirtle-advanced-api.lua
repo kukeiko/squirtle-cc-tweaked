@@ -1,6 +1,6 @@
 local Utils = require "lib.tools.utils"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Inventory = require "lib.apis.inventory.inventory-api"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
 local SquirtleElementalApi = require "lib.squirtle.api-layers.squirtle-elemental-api"
 local SquirtleBasicApi = require "lib.squirtle.api-layers.squirtle-basic-api"
 
@@ -134,34 +134,34 @@ end
 
 ---@param from string
 ---@param to string
----@return ItemStock transferredTotal, ItemStock open
+---@return boolean success, ItemStock transferred, ItemStock open
 function SquirtleAdvancedApi.pushOutput(from, to)
-    return Inventory.transfer({from}, "buffer", {to}, "output")
+    return InventoryApi.empty({from}, "buffer", {to}, "output")
 end
 
 ---@param from string
 ---@param to string
 function SquirtleAdvancedApi.pushAllOutput(from, to)
-    local _, open = SquirtleAdvancedApi.pushOutput(from, to)
+    local logged = false
 
-    if Utils.count(open) > 0 then
-        print("output full, waiting...")
-    end
+    while not SquirtleAdvancedApi.pushOutput(from, to) do
+        if not logged then
+            print("[busy] output full, waiting...")
+            logged = true
+        end
 
-    while Utils.count(open) > 0 do
         os.sleep(7)
-        _, open = SquirtleAdvancedApi.pushOutput(from, to)
     end
 end
 
 ---@param from string
 ---@param to string
 ---@param transferredOutput? ItemStock
----@return ItemStock transferredTotal, ItemStock open
+---@return boolean success, ItemStock transferred, ItemStock open
 function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
-    local fromMaxInputStock = Inventory.getMaxStock({from}, "input")
-    local fromMaxOutputStock = Inventory.getMaxStock({from}, "output")
-    local toStock = Inventory.getStock({to}, "buffer")
+    local fromMaxInputStock = InventoryApi.getMaxStock({from}, "input")
+    local fromMaxOutputStock = InventoryApi.getMaxStock({from}, "output")
+    local toStock = InventoryApi.getStock({to}, "buffer")
     transferredOutput = transferredOutput or {}
 
     ---@type ItemStock
@@ -177,10 +177,10 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
             inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
         end
 
-        items[item] = math.min(maxInputStock - inputInToStock, Inventory.getItemCount({from}, item, "input"))
+        items[item] = math.min(maxInputStock - inputInToStock, InventoryApi.getItemCount({from}, item, "input"))
     end
 
-    return Inventory.transfer({from}, "input", {to}, "buffer", items)
+    return InventoryApi.transfer({from}, "input", {to}, "buffer", items)
 end
 
 return SquirtleAdvancedApi

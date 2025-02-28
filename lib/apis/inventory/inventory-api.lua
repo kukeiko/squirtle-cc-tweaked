@@ -123,6 +123,13 @@ function InventoryApi.getMaxStock(inventories, tag)
     return InventoryCollection.getMaxStock(inventories, tag)
 end
 
+---@param inventories string[]
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryApi.getOpenStock(inventories, tag)
+    return InventoryCollection.getOpenStock(inventories, tag)
+end
+
 ---@param from string[]
 ---@param fromTag InventorySlotTag
 ---@param to string[]
@@ -186,8 +193,8 @@ end
 ---@param toTag InventorySlotTag
 ---@param items ItemStock
 ---@param options? TransferOptions
----@return ItemStock transferredTotal, ItemStock open
-function InventoryApi.transferItems(from, fromTag, to, toTag, items, options)
+---@return boolean success, ItemStock transferred, ItemStock open
+function InventoryApi.transfer(from, fromTag, to, toTag, items, options)
     ---@type ItemStock
     local transferredTotal = {}
     ---@type ItemStock
@@ -207,41 +214,54 @@ function InventoryApi.transferItems(from, fromTag, to, toTag, items, options)
         end
     end
 
-    return transferredTotal, open
+    return Utils.isEmpty(open), transferredTotal, open
 end
 
 ---@param from string[]
 ---@param fromTag InventorySlotTag
 ---@param to string[]
 ---@param toTag InventorySlotTag
----@param items? ItemStock
 ---@param options? TransferOptions
----@return ItemStock transferredTotal, ItemStock open
-function InventoryApi.transfer(from, fromTag, to, toTag, items, options)
-    -- [todo] this feels a bit hacky, but is required for performance.
-    if not items then
-        local fromStock = InventoryApi.getStock(from, fromTag)
-        ---@type ItemStock
-        local filteredFromStock = {}
+---@return boolean success, ItemStock transferred, ItemStock open
+function InventoryApi.restock(from, fromTag, to, toTag, options)
+    local fromStock = InventoryApi.getStock(from, fromTag)
+    local openStock = InventoryApi.getOpenStock(to, toTag)
+    ---@type ItemStock
+    local filteredOpenStock = {}
 
-        if Utils.find(to, function(name)
-            return InventoryCollection.get(name).allowAllocate
-        end) then
-            filteredFromStock = fromStock
-        else
-            local toStock = InventoryApi.getStock(to, toTag)
-
-            for item, quantity in pairs(fromStock) do
-                if toStock[item] then
-                    filteredFromStock[item] = quantity
-                end
-            end
-        end
-
-        items = filteredFromStock
+    for item in pairs(fromStock) do
+        filteredOpenStock[item] = openStock[item]
     end
 
-    return InventoryApi.transferItems(from, fromTag, to, toTag, items, options)
+    return InventoryApi.transfer(from, fromTag, to, toTag, filteredOpenStock, options)
+end
+
+---@param from string[]
+---@param fromTag InventorySlotTag
+---@param to string[]
+---@param toTag InventorySlotTag
+---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
+function InventoryApi.empty(from, fromTag, to, toTag, options)
+    local fromStock = InventoryApi.getStock(from, fromTag)
+    ---@type ItemStock
+    local items = {}
+
+    if Utils.find(to, function(name)
+        return InventoryCollection.get(name).allowAllocate
+    end) then
+        items = fromStock
+    else
+        local toStock = InventoryApi.getStock(to, toTag)
+
+        for item, quantity in pairs(fromStock) do
+            if toStock[item] then
+                items[item] = quantity
+            end
+        end
+    end
+
+    return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
 end
 
 ---@param from string[]
@@ -250,17 +270,10 @@ end
 ---@param toTag InventorySlotTag
 ---@param stock ItemStock
 ---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
     local open = ItemStock.subtract(stock, InventoryApi.getStock(to, toTag))
-
-    while not Utils.isEmpty(open) do
-        InventoryApi.transferItems(from, fromTag, to, toTag, open, options)
-        open = ItemStock.subtract(stock, InventoryApi.getStock(to, toTag))
-
-        if not Utils.isEmpty(open) then
-            os.sleep(3)
-        end
-    end
+    return InventoryApi.transfer(from, fromTag, to, toTag, open, options)
 end
 
 local function onPeripheralEventMountInventory()

@@ -1,5 +1,5 @@
 local Rpc = require "lib.tools.rpc"
-local DatabaseApi = require "lib.apis.database-api"
+local DatabaseApi = require "lib.apis.database.database-api"
 local DatabaseService = require "lib.systems.database.database-service"
 local AppsService = require "lib.systems.runtime.apps-service"
 

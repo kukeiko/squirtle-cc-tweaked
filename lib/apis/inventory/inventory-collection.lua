@@ -257,4 +257,15 @@ function InventoryCollection.getMaxStock(inventories, tag)
     return ItemStock.merge(stocks)
 end
 
+---@param inventories string[]
+---@param tag InventorySlotTag
+---@return ItemStock
+function InventoryCollection.getOpenStock(inventories, tag)
+    local stocks = Utils.map(InventoryCollection.resolve(inventories), function(inventory)
+        return Inventory.getOpenStock(inventory, tag)
+    end)
+
+    return ItemStock.merge(stocks)
+end
+
 return InventoryCollection

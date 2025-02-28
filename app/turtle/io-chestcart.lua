@@ -126,10 +126,10 @@ local function doIO()
     end
 
     print("transferring items...")
-    local transferredOutput = Squirtle.pushOutput("bottom", io)
-    local transferredInput = Squirtle.pullInput(io, "bottom", transferredOutput)
+    local _, transferredOutput = Squirtle.pushOutput("bottom", io)
+    local _, transferredInput = Squirtle.pullInput(io, "bottom", transferredOutput)
 
-    if Utils.count(transferredInput) == 0 and Utils.count(transferredOutput) == 0 then
+    if Utils.isEmpty(transferredInput) and Utils.isEmpty(transferredOutput) then
         print("nothing transferred, sleeping 7s...")
         os.sleep(7)
     end

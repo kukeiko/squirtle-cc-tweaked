@@ -569,6 +569,28 @@ local function testDatabaseService()
     Utils.prettyPrint(database)
 end
 
+---@class A
+---@field buffer integer
+---@class B
+---@field stash string
+---
+---
+---
+---
+
+---
+---@param options A|B|string[]
+local function testArgs(options)
+    if options.buffer then
+
+    end
+end
+
+---@type A
+local a = {buffer = 3}
+
+testArgs({"a"})
+
 local now = os.epoch("utc")
 
 for _ = 1, 1 do

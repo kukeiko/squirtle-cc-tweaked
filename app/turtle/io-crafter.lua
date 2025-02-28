@@ -121,7 +121,9 @@ EventLoop.run(function()
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]
             -- move ingredients from buffer to stash
-            storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe))
+            if not storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe)) then
+                error("ingredients in buffer went missing")
+            end
             -- craft items
             craftFromBottomInventory(recipe, recipe.timesUsed)
             -- manual refresh required due to turtle manipulating the stash
