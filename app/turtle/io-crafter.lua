@@ -121,7 +121,7 @@ EventLoop.run(function()
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]
             -- move ingredients from buffer to stash
-            if not storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe)) then
+            if not storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe), {fromSequential = true}) then
                 error("ingredients in buffer went missing")
             end
             -- craft items
