@@ -81,14 +81,8 @@ return function(from, to, item, fromTag, toTag, total, rate)
                 toInventory.stacks[toSlot.index] = InventoryPeripheral.getStack(to, toSlot.index)
             end
 
-            if fromInventory.items then
-                fromInventory.items[item] = fromInventory.items[item] - transferred
-            end
-
-            if toInventory.items then
-                toInventory.items[item] = (toInventory.items[item] or 0) + transferred
-            end
-
+            fromInventory.items[item] = fromInventory.items[item] - transferred
+            toInventory.items[item] = (toInventory.items[item] or 0) + transferred
             fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
             toSlot = Inventory.nextToSlot(toInventory, item, toTag)
         end

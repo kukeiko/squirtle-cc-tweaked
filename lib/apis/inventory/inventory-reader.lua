@@ -58,7 +58,7 @@ end
 ---@param name string
 ---@return Inventory
 local function readIgnore(name)
-    return Inventory.create(name, "ignore", {}, {})
+    return Inventory.create(name, "ignore", {}, {}, false, nil, {})
 end
 
 ---@param name string

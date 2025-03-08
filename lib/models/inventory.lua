@@ -17,7 +17,7 @@ function Inventory.create(name, type, stacks, slots, allowAllocate, label, items
         allowAllocate = allowAllocate or false,
         slots = slots,
         label = label,
-        items = items
+        items = items or {}
     }
 
     return inventory
@@ -180,7 +180,7 @@ end
 ---@param tag InventorySlotTag
 ---@return boolean
 function Inventory.canProvideItem(inventory, item, tag)
-    if inventory.items and not inventory.items[item] then
+    if not inventory.items[item] then
         return false
     end
 
@@ -200,7 +200,7 @@ end
 ---@param tag InventorySlotTag
 ---@return boolean
 function Inventory.canTakeItem(inventory, item, tag)
-    if not inventory.allowAllocate and inventory.items and not inventory.items[item] then
+    if not inventory.allowAllocate and not inventory.items[item] then
         return false
     end
 
