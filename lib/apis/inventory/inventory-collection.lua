@@ -3,6 +3,7 @@ local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
+local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 
 ---@class InventoryCollection
 ---@field useCache boolean
@@ -10,51 +11,9 @@ local InventoryCollection = {useCache = false}
 
 ---@type table<string, Inventory>
 local cache = {}
----@type table<string, string>
-local locks = {}
-
----@param ... Inventory
----@return Inventory, integer
-local function awaitUnlockAny(...)
-    local inventories = {...}
-
-    while true do
-        for index, inventory in pairs(inventories) do
-            if not InventoryCollection.isLocked(inventory.name) then
-                return inventory, index
-            end
-        end
-
-        os.sleep(3)
-    end
-end
-
----@param ... string
-local function awaitUnlockAll(...)
-    local inventories = {...}
-
-    while true do
-        local anyLocked = false
-
-        for _, inventory in pairs(inventories) do
-            if InventoryCollection.isLocked(inventory) then
-                anyLocked = true
-                break
-            end
-        end
-
-        if not anyLocked then
-            return nil
-        end
-
-        print("[locked]", table.concat({...}, ", "))
-        os.sleep(3)
-    end
-end
 
 function InventoryCollection.clear()
     cache = {}
-    locks = {}
 end
 
 ---@param inventory string
@@ -119,14 +78,6 @@ end
 function InventoryCollection.unmount(inventories)
     for _, inventory in pairs(inventories) do
         cache[inventory] = nil
-        locks[inventory] = nil
-
-        for locked, lockedBy in pairs(Utils.copy(locks)) do
-            if lockedBy == inventory then
-                print("[unlock]", locked)
-                locks[locked] = nil
-            end
-        end
     end
 end
 
@@ -145,7 +96,12 @@ end
 function InventoryCollection.refresh(inventories)
     local fns = Utils.map(inventories, function(inventory)
         return function()
-            local unlock = InventoryCollection.lock(inventory, {inventory})
+            local lockSuccess, unlock = InventoryLocks.lock({inventory})
+
+            if not lockSuccess then
+                return
+            end
+
             pcall(function()
                 cache[inventory] = InventoryReader.read(inventory)
             end)
@@ -162,29 +118,6 @@ function InventoryCollection.refresh(inventories)
             os.sleep(1)
         end
     end
-end
-
----@param lockedBy string
----@param inventories string[]
----@return fun() : nil
-function InventoryCollection.lock(lockedBy, inventories)
-    awaitUnlockAll(table.unpack(inventories))
-
-    for _, inventory in pairs(inventories) do
-        locks[inventory] = lockedBy
-    end
-
-    return function()
-        for _, inventory in pairs(inventories) do
-            locks[inventory] = nil
-        end
-    end
-end
-
----@param name string
----@return boolean
-function InventoryCollection.isLocked(name)
-    return locks[name] ~= nil
 end
 
 ---@param inventories string[]

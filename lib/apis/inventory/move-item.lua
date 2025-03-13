@@ -1,5 +1,6 @@
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
+local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local Inventory = require "lib.models.inventory"
 
 local function getDefaultRate()
@@ -39,13 +40,19 @@ end
 ---@param toTag InventorySlotTag
 ---@param total integer
 ---@param rate? integer
+---@param lockId? integer
 ---@return integer transferredTotal
-return function(from, to, item, fromTag, toTag, total, rate)
+return function(from, to, item, fromTag, toTag, total, rate, lockId)
     if total <= 0 then
         return 0
     end
 
-    local unlock = InventoryCollection.lock(from, {from, to})
+    local lockSuccess, unlock = InventoryLocks.lock({from, to}, lockId)
+
+    if not lockSuccess then
+        return 0
+    end
+
     local transferredTotal = 0
     rate = rate or getDefaultRate()
 

@@ -4,6 +4,7 @@ local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
+local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local moveItem = require "lib.apis.inventory.move-item"
 
 ---@class InventoryApi
@@ -243,25 +244,28 @@ end
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.empty(from, fromTag, to, toTag, options)
-    local fromStock = InventoryApi.getStock(from, fromTag)
     ---@type ItemStock
-    local items = {}
+    local emptyableStock = {}
+    local fromStock = InventoryApi.getStock(from, fromTag)
 
-    if Utils.find(to, function(name)
-        return InventoryCollection.get(name).allowAllocate
-    end) then
-        items = fromStock
-    else
-        local toStock = InventoryApi.getStock(to, toTag)
+    to = Utils.filter(to, function(to)
+        if not InventoryCollection.isMounted(to) then
+            return false
+        end
+
+        local inventory = InventoryCollection.get(to)
 
         for item, quantity in pairs(fromStock) do
-            if toStock[item] then
-                items[item] = quantity
+            if Inventory.canTakeItem(inventory, item, toTag) then
+                emptyableStock[item] = quantity
+                return true
             end
         end
-    end
 
-    return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
+        return false
+    end)
+
+    return InventoryApi.transfer(from, fromTag, to, toTag, emptyableStock, options)
 end
 
 ---@param from string[]
@@ -272,8 +276,17 @@ end
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
+    local lockSuccess, unlock = InventoryLocks.lock(to)
+
+    if not lockSuccess then
+        return false, {}, {}
+    end
+
     local open = ItemStock.subtract(stock, InventoryApi.getStock(to, toTag))
-    return InventoryApi.transfer(from, fromTag, to, toTag, open, options)
+    local transferSuccess, transferred, open = InventoryApi.transfer(from, fromTag, to, toTag, open, options)
+    unlock()
+
+    return transferSuccess, transferred, open
 end
 
 local function onPeripheralEventMountInventory()
@@ -333,6 +346,7 @@ end
 
 function InventoryApi.stop()
     InventoryCollection.clear()
+    InventoryLocks.clear()
     EventLoop.queue("inventory:stop")
 end
 

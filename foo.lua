@@ -19,6 +19,7 @@ local CraftingApi = require "lib.apis.crafting-api"
 local TaskService = require "lib.systems.task.task-service"
 local AppsService = require "lib.systems.runtime.apps-service"
 local TaskBufferService = require "lib.systems.task.task-buffer-service"
+local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -569,32 +570,29 @@ local function testDatabaseService()
     Utils.prettyPrint(database)
 end
 
----@class A
----@field buffer integer
----@class B
----@field stash string
----
----
----
----
+local function testInventoryLocks()
+    local _, releaseABC, lockId = InventoryLocks.lock({"a", "b", "c"})
+    print("[locked] A, B, C")
 
----
----@param options A|B|string[]
-local function testArgs(options)
-    if options.buffer then
-
-    end
+    EventLoop.run(function()
+        local _, releaseB = InventoryLocks.lock({"b"}, lockId)
+        print("[locked] B")
+        os.sleep(1)
+        releaseB()
+    end, function()
+        os.sleep(1)
+        print("[releasing] A, B, C")
+        releaseABC()
+        local _, releaseB = InventoryLocks.lock({"b"})
+        print("[locked] B")
+        releaseB();
+    end)
 end
-
----@type A
-local a = {buffer = 3}
-
-testArgs({"a"})
 
 local now = os.epoch("utc")
 
 for _ = 1, 1 do
-    testDatabaseService()
+    testInventoryLocks()
 end
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")
