@@ -43,6 +43,8 @@
 ---@field withdraw? true
 ---@field buffer? true
 ---
+---@alias InventoryHandle integer | string | string[]
+---
 ---@class AllocatedBuffer
 ---@field id integer
 ---@field taskId integer

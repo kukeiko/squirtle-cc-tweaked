@@ -11,11 +11,9 @@ end
 package.path = package.path .. ";/app/turtle/?.lua"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local Utils = require "lib.tools.utils"
 local CraftingApi = require "lib.apis.crafting-api"
 local StorageService = require "lib.systems.storage.storage-service"
 local TaskService = require "lib.systems.task.task-service"
-local TaskBufferService = require "lib.systems.task.task-buffer-service"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 
@@ -63,15 +61,13 @@ end
 
 ---@param task CraftFromIngredientsTask
 ---@param storageService StorageService|RpcClient
----@param taskBufferService TaskBufferService|RpcClient
 ---@param taskService TaskService|RpcClient
-local function recover(task, storageService, taskBufferService, taskService)
+local function recover(task, storageService, taskService)
     if #task.usedRecipes == 0 then
         return
     end
 
     local usedRecipe = task.usedRecipes[1]
-
     -- if crafted item is in turtle inventory, dump turtle inventory to stash
     local turtleStock = Squirtle.getStock()
 
@@ -83,11 +79,14 @@ local function recover(task, storageService, taskBufferService, taskService)
 
     if stashStock[usedRecipe.item] then
         -- if crafted item is in stash, transfer to buffer
-        local stash = storageService.resolveStash(os.getComputerLabel())
+        local stash = os.getComputerLabel()
         storageService.refresh(stash)
-        -- [todo] use transfer task instead, so it resizes buffer if required
-        taskBufferService.dumpToBuffer(task.bufferId, stash, "buffer")
-        -- => after, update task and return
+
+        if not storageService.empty(stash, task.bufferId) then
+            error("failed to empty out the stash to the buffer")
+        end
+
+        -- after, update task and return
         table.remove(task.usedRecipes, 1)
         taskService.updateTask(task)
         return
@@ -100,7 +99,6 @@ end
 EventLoop.run(function()
     while true do
         local taskService = Rpc.nearest(TaskService)
-        local taskBufferService = Rpc.nearest(TaskBufferService)
         local storageService = Rpc.nearest(StorageService)
 
         print(string.format("[awaiting] next %s...", "craft-from-ingredients"))
@@ -113,42 +111,34 @@ EventLoop.run(function()
             taskService.updateTask(task)
         end
 
-        recover(task, storageService, taskBufferService, taskService)
+        recover(task, storageService, taskService)
         print("[craft] items...")
-        local buffer = taskBufferService.getBufferNames(task.bufferId)
-        local stash = storageService.resolveStash(os.getComputerLabel())
+        local stash = os.getComputerLabel()
 
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]
             -- move ingredients from buffer to stash
-            if not storageService.fulfill(buffer, "buffer", stash, "buffer", usedRecipeToItemStock(recipe), {fromSequential = true}) then
-                error("ingredients in buffer went missing")
+            if not storageService.fulfill(task.bufferId, stash, usedRecipeToItemStock(recipe)) then
+                error("ingredients in buffer went missing or buffer got detached")
             end
+
             -- craft items
             craftFromBottomInventory(recipe, recipe.timesUsed)
             -- manual refresh required due to turtle manipulating the stash
             storageService.refresh(stash)
-            -- move crafted items from stash to buffer
-            -- [todo] assert that everything got transferred
-            -- [todo] turtle doesn't reliably move items to buffer. probably caching issue in the storage.
-            taskBufferService.dumpToBuffer(task.bufferId, stash, "buffer")
-            -- [todo] use this instead once it accepts a "from" arguments
-            -- taskService.transferItems({
-            --     issuedBy = os.getComputerLabel(),
-            --     items = storageService.getStockByName(stash, "buffer"),
-            --     label = "dump-crafted-to-buffer",
-            --     partOfTaskId = task.id,
-            --     toBufferId = task.bufferId
 
-            -- })
+            -- move crafted items from stash to buffer
+            if not storageService.empty(stash, task.bufferId) then
+                error("failed to empty out the stash to the buffer")
+            end
+
             -- mark crafting step as finished
             table.remove(task.usedRecipes, 1)
             taskService.updateTask(task)
         end
 
         print("[busy] craft done! flushing buffer...")
-        taskBufferService.flushBuffer(task.bufferId)
-        taskBufferService.freeBuffer(task.bufferId)
+        storageService.flushAndFreeBuffer(task.bufferId)
         taskService.finishTask(task.id)
         print("[done] buffer empty!")
         print(string.format("[finish] %s %d", task.type, task.id))

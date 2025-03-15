@@ -15,6 +15,102 @@ function StorageService.getByType(type)
     return InventoryApi.getByType(type)
 end
 
+---@param handle InventoryHandle
+---@return boolean
+local function isBufferHandle(handle)
+    return type(handle) == "number"
+end
+
+---@param handle InventoryHandle
+---@return InventoryType?
+local function getTypeByHandle(handle)
+    if type(handle) == "number" then
+        return "buffer"
+    elseif type(handle) == "string" then
+        return "stash"
+    end
+
+    return nil
+end
+
+---@param handle InventoryHandle
+---@return string[]
+local function resolveHandle(handle)
+    if type(handle) == "number" then
+        return StorageService.resolveBuffer(handle)
+    elseif type(handle) == "string" then
+        return StorageService.resolveStash(handle)
+    else
+        return handle --[[@as table<string>]]
+    end
+end
+
+---@param type InventoryType?
+---@return InventorySlotTag
+local function getDefaultFromSlotTag(type)
+    if type == "buffer" or type == "stash" then
+        return "buffer"
+    end
+
+    return "output"
+end
+
+---@param type InventoryType?
+---@return InventorySlotTag
+local function getDefaultToSlotTag(type)
+    if type == "buffer" or type == "stash" then
+        return "buffer"
+    end
+
+    return "input"
+end
+
+---@param type InventoryType?
+---@param options TransferOptions
+---@return TransferOptions
+local function getDefaultFromOptions(type, options)
+    if type == "buffer" and options.fromSequential == nil then
+        options.fromSequential = true
+    end
+
+    return options
+end
+
+---@param type InventoryType?
+---@param options TransferOptions
+---@return TransferOptions
+local function getDefaultToOptions(type, options)
+    if type == "buffer" and options.toSequential == nil then
+        options.toSequential = true
+    end
+
+    return options
+end
+
+---@param handle InventoryHandle
+---@param options? TransferOptions
+---@return string[] inventories, InventorySlotTag tag, TransferOptions options
+local function getFromHandleTransferArguments(handle, options)
+    local type = getTypeByHandle(handle)
+    local inventories = resolveHandle(handle)
+    local tag = getDefaultFromSlotTag(type)
+    local options = getDefaultFromOptions(type, options or {})
+
+    return inventories, tag, options
+end
+
+---@param handle InventoryHandle
+---@---@param options? TransferOptions
+---@return string[] inventories, InventorySlotTag tag, TransferOptions options
+local function getToHandleTransferArguments(handle, options)
+    local type = getTypeByHandle(handle)
+    local inventories = resolveHandle(handle)
+    local tag = getDefaultToSlotTag(type)
+    local options = getDefaultToOptions(type, options or {})
+
+    return inventories, tag, options
+end
+
 ---@param stashLabel string
 ---@return string[]
 function StorageService.resolveStash(stashLabel)
@@ -27,9 +123,9 @@ function StorageService.resolveBuffer(bufferId)
     return TaskBufferService.getBufferNames(bufferId)
 end
 
----@param inventories string[]
-function StorageService.refresh(inventories)
-    InventoryApi.refreshInventories(inventories)
+---@param handle InventoryHandle
+function StorageService.refresh(handle)
+    InventoryApi.refreshInventories(resolveHandle(handle))
 end
 
 ---@param from string[]
@@ -53,25 +149,39 @@ function StorageService.restock(from, fromTag, to, toTag, options)
     return InventoryApi.restock(from, fromTag, to, toTag, options)
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
----@param options? TransferOptions
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@return boolean success, ItemStock transferred, ItemStock open
-function StorageService.empty(from, fromTag, to, toTag, options)
-    return InventoryApi.empty(from, fromTag, to, toTag, options)
+function StorageService.empty(from, to)
+    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
+    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
+
+    if isBufferHandle(to) then
+        -- [todo] duplicate logic, InventoryApi is also reading the stock like this.
+        local fromStock = InventoryApi.getStock(fromInventories, fromTag)
+        local taskBufferService = Rpc.nearest(TaskBufferService)
+        local bufferId = to --[[@as integer]]
+        taskBufferService.resizeByStock(bufferId, fromStock)
+    end
+
+    return InventoryApi.empty(fromInventories, fromTag, toInventories, toTag, options)
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param stock ItemStock
----@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
-function StorageService.fulfill(from, fromTag, to, toTag, stock, options)
-    return InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
+function StorageService.fulfill(from, to, stock)
+    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
+    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
+
+    if isBufferHandle(to) then
+        local taskBufferService = Rpc.nearest(TaskBufferService)
+        local bufferId = to --[[@as integer]]
+        taskBufferService.resizeByStock(bufferId, stock)
+    end
+
+    return InventoryApi.fulfill(fromInventories, fromTag, toInventories, toTag, stock, options)
 end
 
 ---@return ItemStock
@@ -125,6 +235,13 @@ end
 ---@return integer
 function StorageService.getRequiredSlotCount(stock)
     return InventoryPeripheral.getRequiredSlotCount(stock)
+end
+
+---@param bufferId integer
+function StorageService.flushAndFreeBuffer(bufferId)
+    local taskBufferService = Rpc.nearest(TaskBufferService)
+    taskBufferService.flushBuffer(bufferId)
+    taskBufferService.freeBuffer(bufferId)
 end
 
 return StorageService
