@@ -166,12 +166,11 @@ function InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, opt
 
         --- [todo] in regards to locking/unlocking:
         --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
-        --- we really should have that functionality again to make sure the system is not super slow in some cases.
-        --- I'm thinking of doing that logic exactly here, as I assume all future distribute() methods will make use of distributeItem().
+        --- we really should have that functionality again to make sure the system is not super slow in some cases
         for _, fromName in ipairs(from) do
             for _, toName in ipairs(to) do
                 if fromName ~= toName then
-                    local transferred = moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate)
+                    local transferred = moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate, options.lockId)
                     totalTransferred = totalTransferred + transferred
 
                     if totalTransferred == total then
@@ -276,7 +275,9 @@ end
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.fulfill(from, fromTag, to, toTag, stock, options)
-    local lockSuccess, unlock = InventoryLocks.lock(to)
+    options = options or {}
+    local lockSuccess, unlock, lockId = InventoryLocks.lock(to, options.lockId)
+    options.lockId = lockId
 
     if not lockSuccess then
         return false, {}, {}

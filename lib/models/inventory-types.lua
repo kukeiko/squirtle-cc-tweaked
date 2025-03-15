@@ -54,4 +54,5 @@
 ---@field fromSequential? boolean
 ---@field toSequential? boolean
 ---@field rate? integer
+---@field lockId? integer
 ---
