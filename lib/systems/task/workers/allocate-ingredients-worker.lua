@@ -37,6 +37,7 @@ return function()
             local currentStock = ItemStock.merge({bufferStock, storageStock})
             local craftingDetails = CraftingApi.getCraftingDetails(task.items, currentStock, recipes)
             local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})
+
             -- [todo] update in a service the wanted items of this task (crafting.unavailable)
             local open = ItemStock.subtract(targetStock, bufferStock)
 
@@ -46,23 +47,9 @@ return function()
                 break
             end
 
-            local transferTask = taskService.transferItems({
-                issuedBy = os.getComputerLabel(),
-                toBufferId = task.bufferId,
-                items = open,
-                partOfTaskId = task.id,
-                label = "transfer-ingredients"
-            })
+            local from = storageService.getByType("storage")
 
-            if transferTask.status == "failed" then
-                taskService.failTask(task.id)
-                -- [todo] this worker should not error out
-                -- [todo] flush & free buffer
-                error("transfer-items task failed")
-            end
-
-            if not transferTask.transferredAll then
-                taskService.deleteTask(transferTask.id)
+            if not storageService.fulfill(from, task.bufferId, targetStock) then
                 os.sleep(5)
             end
         end

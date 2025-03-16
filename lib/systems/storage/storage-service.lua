@@ -158,6 +158,7 @@ function StorageService.empty(from, to)
 
     if isBufferHandle(to) then
         -- [todo] duplicate logic, InventoryApi is also reading the stock like this.
+        -- maybe a sign that we should move this logic to InventoryApi.
         local fromStock = InventoryApi.getStock(fromInventories, fromTag)
         local taskBufferService = Rpc.nearest(TaskBufferService)
         local bufferId = to --[[@as integer]]
