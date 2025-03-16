@@ -4,7 +4,7 @@ local DatabaseService = require "lib.systems.database.database-service"
 local CraftingApi = require "lib.apis.crafting-api"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local TaskBufferService = require "lib.systems.task.task-buffer-service"
+local TaskBufferApi = require "lib.apis.inventory.task-buffer-api"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
@@ -37,9 +37,9 @@ end
 ---@return string[]
 local function resolveHandle(handle)
     if type(handle) == "number" then
-        return StorageService.resolveBuffer(handle)
+        return TaskBufferApi.resolveBuffer(handle)
     elseif type(handle) == "string" then
-        return StorageService.resolveStash(handle)
+        return {InventoryApi.getByTypeAndLabel("stash", handle)}
     else
         return handle --[[@as table<string>]]
     end
@@ -111,18 +111,6 @@ local function getToHandleTransferArguments(handle, options)
     return inventories, tag, options
 end
 
----@param stashLabel string
----@return string[]
-function StorageService.resolveStash(stashLabel)
-    return {InventoryApi.getByTypeAndLabel("stash", stashLabel)}
-end
-
----@param bufferId integer
----@return string[]
-function StorageService.resolveBuffer(bufferId)
-    return TaskBufferService.getBufferNames(bufferId)
-end
-
 ---@param handle InventoryHandle
 function StorageService.refresh(handle)
     InventoryApi.refreshInventories(resolveHandle(handle))
@@ -137,9 +125,8 @@ function StorageService.transfer(from, to, stock)
     local toInventories, toTag, options = getToHandleTransferArguments(to, options)
 
     if isBufferHandle(to) then
-        local taskBufferService = Rpc.nearest(TaskBufferService)
         local bufferId = to --[[@as integer]]
-        taskBufferService.resizeByStock(bufferId, stock)
+        TaskBufferApi.resizeByStock(bufferId, stock)
     end
 
     return InventoryApi.transfer(fromInventories, fromTag, toInventories, toTag, stock, options)
@@ -166,9 +153,8 @@ function StorageService.empty(from, to)
         -- [todo] duplicate logic, InventoryApi is also reading the stock like this.
         -- maybe a sign that we should move this logic to InventoryApi.
         local fromStock = InventoryApi.getStock(fromInventories, fromTag)
-        local taskBufferService = Rpc.nearest(TaskBufferService)
         local bufferId = to --[[@as integer]]
-        taskBufferService.resizeByStock(bufferId, fromStock)
+        TaskBufferApi.resizeByStock(bufferId, fromStock)
     end
 
     return InventoryApi.empty(fromInventories, fromTag, toInventories, toTag, options)
@@ -183,9 +169,8 @@ function StorageService.fulfill(from, to, stock)
     local toInventories, toTag, options = getToHandleTransferArguments(to, options)
 
     if isBufferHandle(to) then
-        local taskBufferService = Rpc.nearest(TaskBufferService)
         local bufferId = to --[[@as integer]]
-        taskBufferService.resizeByStock(bufferId, stock)
+        TaskBufferApi.resizeByStock(bufferId, stock)
     end
 
     return InventoryApi.fulfill(fromInventories, fromTag, toInventories, toTag, stock, options)
@@ -244,11 +229,23 @@ function StorageService.getRequiredSlotCount(stock)
     return InventoryPeripheral.getRequiredSlotCount(stock)
 end
 
+---@param taskId integer
+---@param slotCount? integer
+---@return integer
+function StorageService.allocateTaskBuffer(taskId, slotCount)
+    return TaskBufferApi.allocateTaskBuffer(taskId, slotCount)
+end
+
+---@param bufferId integer
+---@return ItemStock
+function StorageService.getBufferStock(bufferId)
+    return TaskBufferApi.getBufferStock(bufferId)
+end
+
 ---@param bufferId integer
 function StorageService.flushAndFreeBuffer(bufferId)
-    local taskBufferService = Rpc.nearest(TaskBufferService)
-    taskBufferService.flushBuffer(bufferId)
-    taskBufferService.freeBuffer(bufferId)
+    TaskBufferApi.flushBuffer(bufferId)
+    TaskBufferApi.freeBuffer(bufferId)
 end
 
 return StorageService

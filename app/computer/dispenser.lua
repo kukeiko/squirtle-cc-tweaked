@@ -51,7 +51,7 @@ end, function()
     os.sleep(1)
 
     local storage = Rpc.nearest(StorageService)
-    local stash = storage.resolveStash(os.getComputerLabel())
+    local stash = os.getComputerLabel()
     local idleTimeout = 5
     local refreshInterval = 3
     local options = getListOptions(storage)

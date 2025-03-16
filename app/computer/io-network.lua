@@ -10,7 +10,6 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local TaskBufferService = require "lib.systems.task.task-buffer-service"
 local Inventory = require "lib.apis.inventory.inventory-api"
 local StorageService = require "lib.systems.storage.storage-service"
 local RemoteService = require "lib.systems.runtime.remote-service"
@@ -43,8 +42,6 @@ local function main()
         RemoteService.run({"io-network"})
     end, function()
         Rpc.host(StorageService)
-    end, function()
-        Rpc.host(TaskBufferService)
     end, function()
         while true do
             processDumps()

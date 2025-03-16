@@ -4,13 +4,11 @@ local ItemStock = require "lib.models.item-stock"
 local CraftingApi = require "lib.apis.crafting-api"
 local TaskService = require "lib.systems.task.task-service"
 local DatabaseService = require "lib.systems.database.database-service"
-local TaskBufferService = require "lib.systems.task.task-buffer-service"
 local StorageService = require "lib.systems.storage.storage-service"
 
 return function()
     local databaseService = Rpc.nearest(DatabaseService)
     local taskService = Rpc.nearest(TaskService)
-    local taskBufferService = Rpc.nearest(TaskBufferService)
     local storageService = Rpc.nearest(StorageService)
 
     while true do
@@ -20,12 +18,12 @@ return function()
         local recipes = databaseService.getCraftingRecipes()
 
         if not task.bufferId then
-            task.bufferId = taskBufferService.allocateTaskBuffer(task.id)
+            task.bufferId = storageService.allocateTaskBuffer(task.id)
             taskService.updateTask(task)
         end
 
         while true do
-            local bufferStock = taskBufferService.getBufferStock(task.bufferId)
+            local bufferStock = storageService.getBufferStock(task.bufferId)
             local storageStock = storageService.getStock()
 
             -- [todo] if we want to craft repeaters and redstone torches, we might unnecessarily craft redstone torches
