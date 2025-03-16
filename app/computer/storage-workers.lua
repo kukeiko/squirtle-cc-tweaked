@@ -8,6 +8,7 @@ if not arg then
     return version
 end
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
@@ -22,6 +23,7 @@ local function main()
     end
 
     print(string.format("[storage-workers %s] booting...", version()))
+    Utils.writeStartupFile("storage-workers")
 
     EventLoop.run(function()
         RemoteService.run({"storage-workers"})
