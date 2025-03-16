@@ -243,8 +243,6 @@ end
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.empty(from, fromTag, to, toTag, options)
-    ---@type ItemStock
-    local emptyableStock = {}
     local fromStock = InventoryApi.getStock(from, fromTag)
 
     to = Utils.filter(to, function(to)
@@ -254,9 +252,8 @@ function InventoryApi.empty(from, fromTag, to, toTag, options)
 
         local inventory = InventoryCollection.get(to)
 
-        for item, quantity in pairs(fromStock) do
+        for item in pairs(fromStock) do
             if Inventory.canTakeItem(inventory, item, toTag) then
-                emptyableStock[item] = quantity
                 return true
             end
         end
@@ -264,7 +261,7 @@ function InventoryApi.empty(from, fromTag, to, toTag, options)
         return false
     end)
 
-    return InventoryApi.transfer(from, fromTag, to, toTag, emptyableStock, options)
+    return InventoryApi.transfer(from, fromTag, to, toTag, fromStock, options)
 end
 
 ---@param from string[]

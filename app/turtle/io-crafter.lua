@@ -34,9 +34,8 @@ local function usedRecipeToItemStock(usedRecipe)
     return stock
 end
 
----@param recipe CraftingRecipe
----@param quantity integer
-local function craftFromBottomInventory(recipe, quantity)
+---@param recipe UsedCraftingRecipe
+local function craftFromBottomInventory(recipe)
     local inventory = "bottom"
     local workbench = peripheral.find("workbench")
 
@@ -46,15 +45,12 @@ local function craftFromBottomInventory(recipe, quantity)
 
     for item, slots in pairs(recipe.ingredients) do
         for _, recipeSlot in pairs(slots) do
-            local inventorySlot = InventoryPeripheral.findItem(inventory, item)
-
-            if not inventorySlot then
-                error(string.format("item %s missing in chest", item))
-            end
-
             local turtleSlot = recipeSlot + math.ceil(recipeSlot / 3) - 1
             Squirtle.select(turtleSlot)
-            Squirtle.suckSlot(inventory, inventorySlot, quantity)
+
+            if not Squirtle.suckItem(inventory, item, recipe.timesUsed) then
+                error(string.format("item %s missing in chest", item))
+            end
         end
     end
 
@@ -128,7 +124,7 @@ end, function()
             end
 
             -- craft items
-            craftFromBottomInventory(recipe, recipe.timesUsed)
+            craftFromBottomInventory(recipe)
             -- manual refresh required due to turtle manipulating the stash
             storageService.refresh(stash)
 

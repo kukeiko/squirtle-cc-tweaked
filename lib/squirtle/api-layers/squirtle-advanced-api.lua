@@ -94,42 +94,80 @@ end
 ---@param quantity? integer
 ---@return boolean, string?
 function SquirtleAdvancedApi.suckSlot(inventory, slot, quantity)
-    if slot == 1 then
+    local stacks = InventoryPeripheral.getStacks(inventory)
+    local stack = stacks[slot]
+
+    if not stack then
+        return false
+    end
+
+    quantity = math.min(quantity or stack.count, stack.count)
+
+    if InventoryPeripheral.getFirstOccupiedSlot(inventory) == slot then
         return SquirtleElementalApi.suck(inventory, quantity)
     end
 
-    local items = InventoryPeripheral.getStacks(inventory)
-
-    if items[1] == nil then
-        InventoryPeripheral.move(inventory, slot, 1, quantity)
-        local success, message = SquirtleElementalApi.suck(inventory, quantity)
-        InventoryPeripheral.move(inventory, 1, slot)
-
-        return success, message
+    if stacks[1] == nil then
+        InventoryPeripheral.move(inventory, slot, 1)
+        os.sleep(.25) -- [todo] move to suck()
+        return SquirtleElementalApi.suck(inventory, quantity)
     end
 
-    local firstEmptySlot = Utils.firstEmptySlot(items, InventoryPeripheral.getSize(inventory))
+    local firstEmptySlot = Utils.firstEmptySlot(stacks, InventoryPeripheral.getSize(inventory))
 
-    if not firstEmptySlot and SquirtleBasicApi.isFull() then
-        error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
-    elseif firstEmptySlot then
+    if firstEmptySlot then
         InventoryPeripheral.move(inventory, 1, firstEmptySlot)
-        InventoryPeripheral.move(inventory, slot, 1, quantity)
-        local success, message = SquirtleElementalApi.suck(inventory, quantity)
-        InventoryPeripheral.move(inventory, 1, slot)
-
-        return success, message
+        InventoryPeripheral.move(inventory, slot, 1)
+        os.sleep(.25) -- [todo] move to suck()
+        return SquirtleElementalApi.suck(inventory, quantity)
+    elseif SquirtleBasicApi.isFull() then
+        error(string.format("inventory %s is full. i'm also full, so no temporary unloading possible.", inventory))
     else
         local initialSlot = SquirtleElementalApi.getSelectedSlot()
         SquirtleBasicApi.selectFirstEmpty()
         SquirtleElementalApi.suck(inventory)
         InventoryPeripheral.move(inventory, slot, 1)
         SquirtleElementalApi.drop(inventory)
-        local success, message = SquirtleElementalApi.suck(inventory, quantity)
+        os.sleep(.25) -- [todo] move to suck()
         SquirtleElementalApi.select(initialSlot)
 
-        return success, message
+        return SquirtleElementalApi.suck(inventory, quantity)
     end
+end
+
+---@param inventory string
+---@param item string
+---@param quantity integer
+---@return boolean success
+function SquirtleAdvancedApi.suckItem(inventory, item, quantity)
+    local open = quantity
+
+    while open > 0 do
+        -- we want to get refreshed stacks every iteration as suckSlot() manipulates the inventory state
+        local stacks = InventoryPeripheral.getStacks(inventory)
+        local found = false
+
+        for slot, stack in pairs(stacks) do
+            if stack.name == item then
+                if not SquirtleAdvancedApi.suckSlot(inventory, slot, math.min(open, stack.count)) then
+                    return false
+                end
+
+                found = true
+                open = open - stack.count
+
+                if open <= 0 then
+                    break
+                end
+            end
+        end
+
+        if not found then
+            return false
+        end
+    end
+
+    return true
 end
 
 ---@param from string

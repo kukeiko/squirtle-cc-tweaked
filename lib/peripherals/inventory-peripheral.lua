@@ -50,6 +50,18 @@ function InventoryPeripheral.getRequiredSlotCount(stock)
 end
 
 ---@param inventory string
+---@return integer?
+function InventoryPeripheral.getFirstOccupiedSlot(inventory)
+    local stacks = InventoryPeripheral.getStacks(inventory)
+
+    for slot = 1, InventoryPeripheral.getSize(inventory) do
+        if stacks[slot] then
+            return slot
+        end
+    end
+end
+
+---@param inventory string
 ---@return integer
 function InventoryPeripheral.getSize(inventory)
     return peripheral.call(inventory, "size")
@@ -123,7 +135,7 @@ end
 ---@param quantity? integer
 ---@return integer
 function InventoryPeripheral.move(inventory, fromSlot, toSlot, quantity)
-    os.sleep(.5) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
+    os.sleep(.25) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
     return InventoryPeripheral.pushItems(inventory, inventory, fromSlot, quantity, toSlot)
 end
 
