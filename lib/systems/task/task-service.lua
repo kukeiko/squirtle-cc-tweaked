@@ -106,49 +106,6 @@ function TaskService.acceptTask(acceptedBy, taskType)
     return task
 end
 
----@param issuedBy string
----@param duration integer
----@return DanceTask
-function TaskService.dance(issuedBy, duration)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local task = constructTask(issuedBy, "dance") --[[@as DanceTask]]
-    task.duration = duration
-    task = databaseService.createTask(task) --[[@as DanceTask]]
-
-    return awaitTaskCompletion(task) --[[@as DanceTask]]
-end
-
----[todo] I feel like it should be "WithdrawItems" instead of "TransferItems"?
----@class TransferItemsTaskOptions
----@field issuedBy string
----@field toBufferId? integer
----@field to? string[]
----@field toTag? InventorySlotTag
----@field items ItemStock
----@field partOfTaskId? integer
----@field label? string
----@param options TransferItemsTaskOptions
----@return TransferItemsTask
-function TaskService.transferItems(options)
-    -- [todo] what if properties like "to", "toTag", "targetStock" no longer match existing one?
-    -- -> GatherItemsViaPlayerWorker actually relies on it being allowed to be different. wrote a todo note there.
-    local task = TaskService.findTask("transfer-items", options.partOfTaskId, options.label) --[[@as TransferItemsTask?]]
-
-    if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
-        task = constructTask(options.issuedBy, "transfer-items", options.partOfTaskId, options.label) --[[@as TransferItemsTask]]
-        task.toBufferId = options.toBufferId
-        task.to = options.to
-        task.toTag = options.toTag
-        task.items = options.items
-        task.transferred = {}
-        task.transferredAll = false
-        task = databaseService.createTask(task) --[[@as TransferItemsTask]]
-    end
-
-    return awaitTaskCompletion(task) --[[@as TransferItemsTask]]
-end
-
 ---@class CraftItemsTaskOptions
 ---@field issuedBy string
 ---@field partOfTaskId? integer
@@ -212,57 +169,6 @@ function TaskService.craftFromIngredients(options)
     end
 
     return awaitTaskCompletion(task) --[[@as CraftFromIngredientsTask]]
-end
-
----@class GatherItemsTaskOptions
----@field issuedBy string
----@field items ItemStock
----@field to string[]
----@field toTag InventorySlotTag
----@field partOfTaskId? integer
----@field label? string
----@param options GatherItemsTaskOptions
----@return GatherItemsTask
-function TaskService.gatherItems(options)
-    -- [todo] what if properties like "items" no longer match existing one?
-    local task = TaskService.findTask("gather-items", options.partOfTaskId, options.label) --[[@as GatherItemsTask?]]
-
-    if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
-        task = constructTask(options.issuedBy, "gather-items", options.partOfTaskId, options.label) --[[@as GatherItemsTask]]
-        task.items = options.items
-        task.to = options.to
-        task.toTag = options.toTag
-        task = databaseService.createTask(task) --[[@as GatherItemsTask]]
-    end
-
-    return awaitTaskCompletion(task) --[[@as GatherItemsTask]]
-end
-
----@class GatherItemsViaPlayerTaskOptions
----@field issuedBy string
----@field items ItemStock
----@field to string[]
----@field toTag InventorySlotTag
----@field partOfTaskId? integer
----@field label? string
----@param options GatherItemsViaPlayerTaskOptions
----@return GatherItemsViaPlayerTask
-function TaskService.gatherItemsViaPlayer(options)
-    -- [todo] what if properties like "items" no longer match existing one?
-    local task = TaskService.findTask("gather-items-via-player", options.partOfTaskId, options.label) --[[@as GatherItemsViaPlayerTask?]]
-
-    if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
-        task = constructTask(options.issuedBy, "gather-items-via-player", options.partOfTaskId, options.label) --[[@as GatherItemsViaPlayerTask]]
-        task.items = options.items
-        task.open = options.items
-        task.to = options.to
-        task.toTag = options.toTag
-        task = databaseService.createTask(task) --[[@as GatherItemsViaPlayerTask]]
-    end
-
-    return awaitTaskCompletion(task) --[[@as GatherItemsViaPlayerTask]]
 end
 
 return TaskService

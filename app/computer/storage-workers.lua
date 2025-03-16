@@ -10,7 +10,6 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
-local transferItemsWorker = require "lib.systems.task.workers.transfer-items-worker"
 local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
 local allocateIngredientsWorker = require "lib.systems.task.workers.allocate-ingredients-worker"
 
@@ -26,8 +25,6 @@ local function main()
 
     EventLoop.run(function()
         RemoteService.run({"storage-workers"})
-    end, function()
-        transferItemsWorker()
     end, function()
         allocateIngredientsWorker()
     end, function()
