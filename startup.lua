@@ -1,7 +1,7 @@
 local label = os.getComputerLabel()
 local programs = {
     ["Database"] = "app/computer/update-host.lua",
-    ["Storage"] = "app/computer/io-network.lua",
+    ["Storage"] = "app/computer/storage.lua",
     ["Storage Workers"] = "app/computer/storage-workers.lua",
     ["Home"] = "app/computer/dispenser.lua",
     ["Crafty"] = "app/turtle/io-crafter.lua"

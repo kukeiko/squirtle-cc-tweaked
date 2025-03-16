@@ -24,9 +24,9 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-chestcart",
         },
         {
-            "label": "build computer:io-network",
+            "label": "build computer:storage",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/io-network.lua -p app/computer/?.lua -p ?.lua -o dist/computer/io-network"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage"
         },
         {
             "label": "build computer:storage-workers",

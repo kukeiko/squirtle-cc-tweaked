@@ -8,6 +8,7 @@ if not arg then
     return version
 end
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Inventory = require "lib.apis.inventory.inventory-api"
@@ -29,17 +30,16 @@ local function main()
         term.redirect(monitor)
     end
 
-    print(string.format("[io-network %s] booting...", version()))
+    print(string.format("[storage %s] booting...", version()))
     Inventory.useCache(true)
     Inventory.discover()
-    print("[io-network] ready!")
-    -- [todo] storage on kunterbunt redirects to a monitor on startup, so we can't use this yet
-    -- Utils.writeStartupFile("io-network")
+    print("[storage] ready!")
+    Utils.writeStartupFile("storage")
 
-    EventLoop.runUntil("io-network:stop", function()
+    EventLoop.runUntil("storage:stop", function()
         Inventory.start()
     end, function()
-        RemoteService.run({"io-network"})
+        RemoteService.run({"storage"})
     end, function()
         Rpc.host(StorageService)
     end, function()
@@ -89,9 +89,9 @@ local function main()
         local _, key = EventLoop.pull("key")
 
         if key == keys.f4 then
-            print("[stop] io-network")
+            print("[stop] storage")
             Inventory.stop()
-            EventLoop.queue("io-network:stop")
+            EventLoop.queue("storage:stop")
         end
     end)
 end
