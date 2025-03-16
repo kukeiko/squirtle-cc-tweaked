@@ -184,27 +184,6 @@ function TaskBufferService.flushBuffer(bufferId)
 end
 
 ---@param bufferId integer
----@param fromType? InventoryType
----@param fromTag? InventorySlotTag
----@param itemStock ItemStock
-function TaskBufferService.transferStockToBuffer(bufferId, itemStock, fromType, fromTag)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local storages = InventoryApi.getByType(fromType or "storage")
-    InventoryApi.transfer(storages, fromTag or "withdraw", buffer.inventories, "buffer", itemStock, {toSequential = true})
-end
-
----@param bufferId integer
----@param from string[]
----@param fromTag InventorySlotTag
-function TaskBufferService.dumpToBuffer(bufferId, from, fromTag)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local buffer = databaseService.getAllocatedBuffer(bufferId)
-    local itemStock = InventoryApi.getStock(from, fromTag)
-    InventoryApi.transfer(from, fromTag, buffer.inventories, "buffer", itemStock, {toSequential = true})
-end
-
----@param bufferId integer
 ---@return string[]
 function TaskBufferService.getBufferNames(bufferId)
     local databaseService = Rpc.nearest(DatabaseService)
@@ -232,7 +211,7 @@ function TaskBufferService.transferBufferStock(bufferId, to, toTag, stock)
     -- [todo] setting "toSequential" to true as i expect to transfer between buffers most of the time.
     -- maybe it makes sense to have a dedicated "transferBufferStock" method for that instead?
     local _, transferred, open = InventoryApi.transfer(buffer.inventories, "buffer", to, toTag, bufferStock,
-                                                            {fromSequential = true, toSequential = true})
+                                                       {fromSequential = true, toSequential = true})
 
     return transferred, open
 end
