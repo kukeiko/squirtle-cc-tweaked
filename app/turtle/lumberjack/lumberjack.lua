@@ -9,9 +9,12 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
+local RemoteService = require "lib.systems.runtime.remote-service"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
 
@@ -315,4 +318,10 @@ local function main()
     end
 end
 
-return main()
+EventLoop.run(function()
+    RemoteService.run({"lumberjack"})
+end, function()
+    Utils.writeStartupFile("lumberjack")
+    main()
+end)
+
