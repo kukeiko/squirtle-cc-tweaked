@@ -144,9 +144,9 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p ?.lua -o ../21/subway-switch"
         },
         {
-            "label": "build computer:update-host",
+            "label": "build computer:database",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update-host.lua -p app/computer/?.lua -p ?.lua -o dist/computer/update-host"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/database.lua -p app/computer/?.lua -p ?.lua -o dist/computer/database"
         },
         {
             "label": "build computer:update",

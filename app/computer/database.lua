@@ -16,8 +16,8 @@ local DatabaseService = require "lib.systems.database.database-service"
 local TaskService = require "lib.systems.task.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
-print(string.format("[update-host %s] booting...", version()))
-Utils.writeStartupFile("update-host")
+print(string.format("[database %s] booting...", version()))
+Utils.writeStartupFile("database")
 
 ---@param apps Application[]
 ---@param title string
