@@ -17,7 +17,8 @@ local doFurnaceWork = require "lumberjack.do-furnace-work"
 
 local maxLogs = 64
 local minBoneMealForPlanting = 1
-local mindBoneMealForWork = 64
+local minBoneMealForWork = 64
+local maxPulledBoneMeal = 64 * 3
 local charcoalForRefuel = 64
 local minSaplings = 32
 
@@ -112,9 +113,9 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("[push] output...")
-    Squirtle.pushOutput(stash, io)
+    Squirtle.pushOutput(stash, io, {["minecraft:birch_sapling"] = minSaplings})
     print("[pull] input...")
-    Squirtle.pullInput(io, stash)
+    Squirtle.pullInput(io, stash, nil, {["minecraft:bone_meal"] = maxPulledBoneMeal})
 
     local isCharcoalFull = function()
         return InventoryApi.getItemOpenCount({io}, "minecraft:charcoal", "output") == 0
@@ -135,7 +136,7 @@ local function doInputOutput(stash, io)
     print("[info] output wants more, want to work now!")
 
     local needsMoreBoneMeal = function()
-        return InventoryPeripheral.getItemCount(stash, "minecraft:bone_meal") < mindBoneMealForWork
+        return InventoryPeripheral.getItemCount(stash, "minecraft:bone_meal") < minBoneMealForWork
     end
 
     if needsMoreBoneMeal() then
@@ -173,7 +174,6 @@ local function doHomework(stash, io, furnace)
     doFurnaceWork(furnace, stash, io, charcoalForRefuel)
     refuel(stash, io)
     drainDropper(stash)
-    Squirtle.suckItem(stash, "minecraft:birch_sapling", minSaplings)
     doInputOutput(stash, io)
 
     while Squirtle.suck(stash) do

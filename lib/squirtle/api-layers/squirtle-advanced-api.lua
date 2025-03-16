@@ -172,9 +172,22 @@ end
 
 ---@param from string
 ---@param to string
+---@param keep? ItemStock
 ---@return boolean success, ItemStock transferred, ItemStock open
-function SquirtleAdvancedApi.pushOutput(from, to)
-    return InventoryApi.empty({from}, "buffer", {to}, "output")
+function SquirtleAdvancedApi.pushOutput(from, to, keep)
+    keep = keep or {}
+    local bufferStock = InventoryApi.getStock({from}, "buffer")
+    local outputStock = InventoryApi.getStock({to}, "output")
+    ---@type ItemStock
+    local stock = {}
+
+    for item in pairs(outputStock) do
+        if bufferStock[item] then
+            stock[item] = math.max(0, bufferStock[item] - (keep[item] or 0))
+        end
+    end
+
+    return InventoryApi.transfer({from}, "buffer", {to}, "output", stock)
 end
 
 ---@param from string
@@ -195,24 +208,30 @@ end
 ---@param from string
 ---@param to string
 ---@param transferredOutput? ItemStock
+---@param max? ItemStock
 ---@return boolean success, ItemStock transferred, ItemStock open
-function SquirtleAdvancedApi.pullInput(from, to, transferredOutput)
+function SquirtleAdvancedApi.pullInput(from, to, transferredOutput, max)
     local fromMaxInputStock = InventoryApi.getMaxStock({from}, "input")
     local fromMaxOutputStock = InventoryApi.getMaxStock({from}, "output")
     local toStock = InventoryApi.getStock({to}, "buffer")
     transferredOutput = transferredOutput or {}
+    max = max or {}
 
     ---@type ItemStock
     local items = {}
 
-    -- in case the chest we're pulling from has the same item in input as it does in output,
-    -- we need to make sure to not pull more input than is allowed by checking what parts of
-    -- the "to" chest are output stock.
     for item, maxInputStock in pairs(fromMaxInputStock) do
+        if max[item] then
+            maxInputStock = math.min(maxInputStock, max[item])
+        end
+
         local inputInToStock = toStock[item] or 0
 
         if fromMaxOutputStock[item] and toStock[item] then
-            inputInToStock = (toStock[item] + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
+            -- in case the chest we're pulling from has the same item in input as it does in output,
+            -- we need to make sure to not pull more input than is allowed by checking what parts of
+            -- the "to" chest are output stock.
+            inputInToStock = (inputInToStock + (transferredOutput[item] or 0)) - fromMaxOutputStock[item]
         end
 
         items[item] = math.min(maxInputStock - inputInToStock, InventoryApi.getItemCount({from}, item, "input"))
