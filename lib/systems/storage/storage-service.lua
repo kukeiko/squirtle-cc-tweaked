@@ -128,15 +128,21 @@ function StorageService.refresh(handle)
     InventoryApi.refreshInventories(resolveHandle(handle))
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
----@param items ItemStock
----@param options? TransferOptions
+---@param from InventoryHandle
+---@param to InventoryHandle
+---@param stock ItemStock
 ---@return boolean success, ItemStock transferred, ItemStock open
-function StorageService.transfer(from, fromTag, to, toTag, items, options)
-    return InventoryApi.transfer(from, fromTag, to, toTag, items, options)
+function StorageService.transfer(from, to, stock)
+    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
+    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
+
+    if isBufferHandle(to) then
+        local taskBufferService = Rpc.nearest(TaskBufferService)
+        local bufferId = to --[[@as integer]]
+        taskBufferService.resizeByStock(bufferId, stock)
+    end
+
+    return InventoryApi.transfer(fromInventories, fromTag, toInventories, toTag, stock, options)
 end
 
 ---@param from string[]

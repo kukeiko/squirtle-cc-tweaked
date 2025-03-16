@@ -12,7 +12,6 @@ local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
-local TaskService = require "lib.systems.task.task-service"
 local StorageService = require "lib.systems.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
@@ -52,7 +51,6 @@ end, function()
     os.sleep(1)
 
     local storage = Rpc.nearest(StorageService)
-    local taskService = Rpc.nearest(TaskService)
     local stash = storage.resolveStash(os.getComputerLabel())
     local idleTimeout = 5
     local refreshInterval = 3
@@ -74,16 +72,9 @@ end, function()
                     term.clear()
                     term.setCursorPos(1, 1)
                     print("[wait] transferring...")
+                    local storages = storage.getByType("storage")
                     -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
-                    local task = taskService.transferItems({
-                        issuedBy = os.getComputerLabel(),
-                        items = {[item.id] = quantity},
-                        to = stash,
-                        toTag = "input"
-                    })
-
-                    taskService.deleteTask(task.id)
-                    -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
+                    storage.transfer(storages, stash, {[item.id] = quantity})
                     print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
                     os.sleep(1)
                 end
