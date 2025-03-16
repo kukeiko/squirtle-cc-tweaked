@@ -1,16 +1,16 @@
-local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Furnace = require "lib.peripherals.furnace-peripheral"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local FurnacePeripheral = require "lib.peripherals.furnace-peripheral"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
 
 ---@param furnace string
 ---@param stash string
 local function topOffFurnaceFuel(furnace, stash)
-    local missing = Furnace.getMissingFuelCount(furnace)
+    print("[furnace] topping off fuel")
+    local missing = FurnacePeripheral.getMissingFuelCount(furnace)
 
     for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
         if stack.name == "minecraft:charcoal" then
-            missing = missing - Furnace.pullFuel(furnace, stash, slot)
+            missing = missing - FurnacePeripheral.pullFuel(furnace, stash, slot)
 
             if missing <= 0 then
                 break
@@ -22,11 +22,12 @@ end
 ---@param furnace string
 ---@param stash string
 local function topOffFurnaceInput(furnace, stash)
-    local missing = Furnace.getMissingInputCount(furnace)
+    print("[furnace] topping off input")
+    local missing = FurnacePeripheral.getMissingInputCount(furnace)
 
     for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
         if stack.name == "minecraft:birch_log" then
-            missing = missing - Furnace.pullInput(furnace, stash, slot)
+            missing = missing - FurnacePeripheral.pullInput(furnace, stash, slot)
 
             if missing <= 0 then
                 break
@@ -38,66 +39,71 @@ end
 ---@param furnace string
 ---@param count integer
 local function kickstartFurnaceFuel(furnace, count)
-    local fuelStack = Furnace.getFuelStack(furnace)
+    local fuelStack = FurnacePeripheral.getFuelStack(furnace)
 
     if not fuelStack then
-        print("furnace has no fuel, pushing 1x log from input to fuel")
-        Furnace.pullFuelFromInput(furnace, 1)
-        print("waiting for log to be turned into charcoal")
+        print("[furnace] has no fuel, pushing 1x log from input to fuel")
+        FurnacePeripheral.pullFuelFromInput(furnace, 1)
+        print("[waiting] for log to be turned into charcoal")
 
-        while not Furnace.getOutputStack(furnace) do
+        while not FurnacePeripheral.getOutputStack(furnace) do
             os.sleep(1)
         end
 
-        print("output ready! pushing to fuel...")
-        Furnace.pullFuelFromOutput(furnace, 1)
+        print("[ready] birch log burned! pushing to fuel...")
+        FurnacePeripheral.pullFuelFromOutput(furnace, 1)
     end
 
-    while Furnace.getFuelCount(furnace) < count and Furnace.getInputStack(furnace) do
-        print("trying to get", count - Furnace.getFuelCount(furnace), "more coal into fuel slot...")
+    while FurnacePeripheral.getFuelCount(furnace) < count and FurnacePeripheral.getInputStack(furnace) do
+        print("[trying] to get", count - FurnacePeripheral.getFuelCount(furnace), "more coal into fuel slot...")
 
-        while not Furnace.getOutputStack(furnace) do
-            if not Furnace.getInputStack(furnace) then
-                print("no input to burn, exiting")
+        while not FurnacePeripheral.getOutputStack(furnace) do
+            if not FurnacePeripheral.getInputStack(furnace) then
+                print("[done] no input to burn, exiting")
                 break
             end
 
             os.sleep(1)
         end
 
-        Furnace.pullFuelFromOutput(furnace)
+        FurnacePeripheral.pullFuelFromOutput(furnace)
     end
+end
+
+---@param stash string
+---@return boolean
+local function hasStashedBirchLogs(stash)
+    return InventoryPeripheral.getItemCount(stash, "minecraft:birch_log") > 0
 end
 
 ---@param furnace string
 ---@param stash string
 ---@param io string
-return function(furnace, stash, io)
-    local function hasStashedBirchLogs()
-        return Inventory.getItemCount({stash}, "minecraft:birch_log", "input") > 0
-    end
+---@param charcoalForRefuel integer
+---@return boolean
+local function shouldProduceMoreCharcoal(furnace, stash, io, charcoalForRefuel)
+    local charcoalInFurnace = FurnacePeripheral.getOutputCount(furnace)
+    local charcoalInStash = InventoryPeripheral.getItemCount(stash, "minecraft:charcoal")
+    local missingCharcoalInIO = InventoryApi.getItemOpenCount({io}, "minecraft:charcoal", "output")
 
-    while hasStashedBirchLogs() do
-        print("[furnace] topping off input")
+    return hasStashedBirchLogs(stash) and (charcoalInFurnace + charcoalInStash) < (missingCharcoalInIO + charcoalForRefuel)
+end
+
+---@param furnace string
+---@param stash string
+---@param io string
+---@param charcoalForRefuel integer
+return function(furnace, stash, io, charcoalForRefuel)
+    while shouldProduceMoreCharcoal(furnace, stash, io, charcoalForRefuel) do
         topOffFurnaceInput(furnace, stash)
-
         print("[furnace] push output into stash")
-        Furnace.pushOutput(furnace, stash)
-
-        print("[furnace] topping off fuel")
+        FurnacePeripheral.pushOutput(furnace, stash)
         topOffFurnaceFuel(furnace, stash)
-
-        print("[furnace] warming up")
         kickstartFurnaceFuel(furnace, 8)
 
-        if hasStashedBirchLogs() then
-            -- [todo] keep 32 birch saplings
-            Squirtle.pushOutput(stash, io)
-
-            if hasStashedBirchLogs() then
-                print("[waiting] logs leftover, pausing for 30s")
-                os.sleep(30)
-            end
+        if shouldProduceMoreCharcoal(furnace, stash, io, charcoalForRefuel) then
+            print("[waiting] need more charcoal, pausing for 30s")
+            os.sleep(30)
         end
     end
 end

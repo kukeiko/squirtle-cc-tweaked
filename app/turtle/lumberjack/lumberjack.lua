@@ -9,14 +9,17 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Inventory = require "lib.apis.inventory.inventory-api"
+local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Squirtle = require "lib.squirtle.squirtle-api"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
 
 local maxLogs = 64
-local minBonemeal = 1
+local minBoneMealForPlanting = 1
+local mindBoneMealForWork = 64
+local charcoalForRefuel = 64
+local minSaplings = 32
 
 ---@param type string
 ---@return string
@@ -46,6 +49,10 @@ local function isHome()
     return Squirtle.probe("bottom", "minecraft:barrel") ~= nil
 end
 
+local function isParked()
+    return isHome() and Squirtle.probe("front", "minecraft:chest") ~= nil
+end
+
 local function isAtWork()
     return Squirtle.probe("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
@@ -67,34 +74,37 @@ local function faceHomeExit()
 end
 
 ---@param stash string
-local function refuel(stash)
-    local minFuel = 80 * 65;
+---@param io string
+local function refuel(stash, io)
+    local minFuel = charcoalForRefuel * 80;
+    local saplingsInStash = InventoryPeripheral.getItemCount(stash, "minecraft:birch_sapling")
+    local missingSaplingsInIO = InventoryApi.getItemOpenCount({io}, "minecraft:birch_sapling", "output")
+    local saplingsForRefuel = math.max(0, saplingsInStash - (missingSaplingsInIO + minSaplings))
 
-    -- [todo] turtle does not make sure to reach min fuel, it happened to me on MP server that
-    -- a turtle ran out of fuel while working
+    if saplingsForRefuel > 0 then
+        Squirtle.suckItem(stash, "minecraft:birch_sapling", saplingsForRefuel)
+        -- [todo] this is only refueling from currently selected slot, but what if we have more than one stack of saplings to refuel from?
+        Squirtle.refuel()
+    end
+
     if not Squirtle.hasFuel(minFuel) then
-        print(string.format("refueling %s more fuel", Squirtle.missingFuel(minFuel)))
+        print(string.format("[refuel] need %s more fuel", Squirtle.missingFuel(minFuel)))
         Squirtle.selectEmpty(1)
+        Squirtle.suckItem(stash, "minecraft:charcoal", charcoalForRefuel)
+        Squirtle.refuel()
+        print("[refueled] to", turtle.getFuelLevel())
 
-        for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
-            if stack.name == "minecraft:charcoal" then
-                Squirtle.suckSlot("bottom", slot)
-                Squirtle.refuel(math.ceil(Squirtle.missingFuel(minFuel) / 80))
-            end
-
-            if Squirtle.hasFuel(minFuel) then
-                break
-            end
+        if not Squirtle.hasFuel(minFuel) then
+            -- get player to help with refueling
+            Squirtle.refuelTo(minFuel)
         end
-
-        print("refueled to", turtle.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
         if not Squirtle.dump(stash) then
             error("stash full")
         end
     else
-        print("have enough fuel:", turtle.getFuelLevel())
+        print("[ready] have enough fuel:", turtle.getFuelLevel())
     end
 end
 
@@ -102,27 +112,30 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("[push] output...")
-    -- [todo] keep 32 birch saplings
     Squirtle.pushOutput(stash, io)
     print("[pull] input...")
     Squirtle.pullInput(io, stash)
 
     local isCharcoalFull = function()
-        return Inventory.getItemOpenCount({io}, "minecraft:charcoal", "output") == 0
+        return InventoryApi.getItemOpenCount({io}, "minecraft:charcoal", "output") == 0
     end
 
-    if isCharcoalFull() then
-        print("[waiting] for charcoal to drain")
+    local isBirchLogsFull = function()
+        return InventoryApi.getItemOpenCount({io}, "minecraft:birch_log", "output") == 0
+    end
 
-        while isCharcoalFull() do
+    if isCharcoalFull() and isBirchLogsFull() then
+        print("[waiting] for output to drain...")
+
+        while isCharcoalFull() and isBirchLogsFull() do
             os.sleep(3)
         end
     end
 
-    print("[info] output wants more charcoal, want to work now!")
+    print("[info] output wants more, want to work now!")
 
     local needsMoreBoneMeal = function()
-        return Inventory.getItemCount({stash}, "minecraft:bone_meal", "output") < 64
+        return InventoryPeripheral.getItemCount(stash, "minecraft:bone_meal") < mindBoneMealForWork
     end
 
     if needsMoreBoneMeal() then
@@ -140,26 +153,27 @@ end
 ---@param stash string
 local function drainDropper(stash)
     repeat
-        local totalItemStock = Inventory.getTotalItemCount({stash}, "buffer")
+        local totalItemStock = InventoryApi.getTotalItemCount({stash}, "buffer")
         redstone.setOutput("bottom", true)
         os.sleep(.25)
         redstone.setOutput("bottom", false)
-    until Inventory.getTotalItemCount({stash}, "buffer") == totalItemStock
+    until InventoryApi.getTotalItemCount({stash}, "buffer") == totalItemStock
 end
 
 ---@param stash string
 ---@param io string
 ---@param furnace string
 local function doHomework(stash, io, furnace)
-    print("i am home! dumping inventory to stash...")
+    print("[reached] home! dumping to stash...")
 
     if not Squirtle.dump(stash) then
         error("stash is full :(")
     end
 
-    doFurnaceWork(furnace, stash, io)
-    refuel(stash)
+    doFurnaceWork(furnace, stash, io, charcoalForRefuel)
+    refuel(stash, io)
     drainDropper(stash)
+    Squirtle.suckItem(stash, "minecraft:birch_sapling", minSaplings)
     doInputOutput(stash, io)
 
     while Squirtle.suck(stash) do
@@ -191,7 +205,7 @@ end
 local function shouldPlantTree()
     local stock = Squirtle.getStock()
     local needsMoreLogs = (stock["minecraft:birch_log"] or 0) < maxLogs
-    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) >= minBonemeal
+    local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) >= minBoneMealForPlanting
     local hasSaplings = (stock["minecraft:birch_sapling"] or 0) > 0
 
     return hasSaplings and needsMoreLogs and hasBoneMeal
@@ -203,14 +217,14 @@ local function refuelFromBackpack()
         Squirtle.refuel()
     end
 
-    local saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
+    -- local saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
 
-    print("refueling from saplings...")
-    while Squirtle.missingFuel() > 0 and saplingStock > 64 do
-        Squirtle.selectItem("minecraft:birch_sapling")
-        Squirtle.refuel(saplingStock - 64)
-        saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
-    end
+    -- print("refueling from saplings...")
+    -- while Squirtle.missingFuel() > 0 and saplingStock > 64 do
+    --     Squirtle.selectItem("minecraft:birch_sapling")
+    --     Squirtle.refuel(saplingStock - 64)
+    --     saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
+    -- end
 
     print("condensing backpack...")
     Squirtle.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
@@ -270,7 +284,7 @@ local function main()
     end
 
     while true do
-        if isHome() then
+        if isParked() then
             local stash = requirePeripheral("minecraft:barrel")
             local io = requirePeripheral("minecraft:chest")
             local furnace = requirePeripheral("minecraft:furnace")

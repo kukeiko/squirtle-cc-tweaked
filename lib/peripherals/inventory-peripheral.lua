@@ -107,6 +107,21 @@ function InventoryPeripheral.getStock(name)
     return ItemStock.fromStacks(stacks)
 end
 
+---@param name string
+---@param item string
+---@return integer
+function InventoryPeripheral.getItemCount(name, item)
+    local count = 0
+
+    for _, stack in pairs(InventoryPeripheral.getStacks(name)) do
+        if stack.name == item then
+            count = count + stack.count
+        end
+    end
+
+    return count
+end
+
 ---@param inventory string
 ---@param item string
 ---@return integer?

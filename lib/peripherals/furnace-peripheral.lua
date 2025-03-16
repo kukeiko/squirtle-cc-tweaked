@@ -46,6 +46,18 @@ function FurnacePeripheral.getOutputStack(furnace)
 end
 
 ---@param furnace string
+---@return integer
+function FurnacePeripheral.getOutputCount(furnace)
+    local fuelStack = FurnacePeripheral.getOutputStack(furnace)
+
+    if not fuelStack then
+        return 0
+    end
+
+    return fuelStack.count
+end
+
+---@param furnace string
 ---@param to string
 ---@param limit? integer
 ---@param slot? integer
@@ -63,8 +75,10 @@ function FurnacePeripheral.pullFuel(furnace, from, slot, limit)
     return peripheral.call(furnace, "pullItems", from, slot, limit, fuelSlot)
 end
 
-function FurnacePeripheral.getFuelCount(side)
-    local fuelStack = FurnacePeripheral.getFuelStack(side)
+---@param furnace string
+---@return integer
+function FurnacePeripheral.getFuelCount(furnace)
+    local fuelStack = FurnacePeripheral.getFuelStack(furnace)
 
     if not fuelStack then
         return 0
