@@ -36,8 +36,8 @@ function getListOptions(storage)
 end
 
 function getListTitle()
-    local commonTitle = "What item would you like crafted?"
-    local titles = {"What we craftin' today, lad?", "Me craft gud yes?", commonTitle, commonTitle, commonTitle}
+    local commonTitle = "What to craft?"
+    local titles = {"What we craftin' lad?", "Me craft gud yes?", commonTitle, commonTitle, commonTitle}
 
     return titles[math.random(#titles)]
 end
@@ -63,7 +63,10 @@ end, function()
             local item = searchableList:run()
 
             if item then
+                local openStock = storage.getOpenStock()
                 print(string.format("How many %s?", item.name))
+                print(string.format(" - craftable: %s", item.suffix))
+                print(string.format(" - space: %s", openStock[item.id]))
                 local quantity = readInteger()
 
                 if quantity and quantity > 0 then

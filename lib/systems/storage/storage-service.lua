@@ -182,6 +182,12 @@ function StorageService.getStock()
     return InventoryApi.getStock(storages, "withdraw")
 end
 
+---@return ItemStock
+function StorageService.getOpenStock()
+    local storages = InventoryApi.getByType("storage")
+    return InventoryApi.getOpenStock(storages, "withdraw")
+end
+
 ---@param name string
 ---@param tag InventorySlotTag
 function StorageService.getStockByName(name, tag)
