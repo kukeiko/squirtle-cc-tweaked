@@ -68,6 +68,10 @@ end
 ---@param event table
 ---@return EventLoopThread[]
 local function runThreads(threads, event)
+    if event[1] == "terminate" then
+        return {}
+    end
+
     ---@type EventLoopThread[]
     local nextThreads = {}
 
@@ -131,7 +135,7 @@ function EventLoop.run(...)
     threads = runThreads(threads, {})
 
     while #threads > 0 do
-        threads = runThreads(threads, table.pack(os.pullEvent()))
+        threads = runThreads(threads, table.pack(EventLoop.pull()))
     end
 end
 
@@ -158,7 +162,7 @@ function EventLoop.waitForAny(...)
     threads = runThreads(threads, {})
 
     while not anyFinished do
-        threads = runThreads(threads, table.pack(os.pullEvent()))
+        threads = runThreads(threads, table.pack(EventLoop.pull()))
     end
 end
 
@@ -218,12 +222,7 @@ function EventLoop.pullInteger(min, max)
     end
 
     while true do
-        local event, key = EventLoop.pull("char")
-
-        if event == "terminate" then
-            error("terminated")
-        end
-
+        local _, key = EventLoop.pull("char")
         local int = tonumber(key)
 
         if int ~= nil and int >= min and int <= max then
