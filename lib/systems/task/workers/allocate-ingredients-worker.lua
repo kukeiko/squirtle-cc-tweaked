@@ -18,20 +18,14 @@ return function()
         local recipes = databaseService.getCraftingRecipes()
 
         if not task.bufferId then
-            task.bufferId = storageService.allocateTaskBuffer(task.id)
+            -- [todo] buffer leak if turtle crashes before updateTask()
+            task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
             taskService.updateTask(task)
         end
 
         while true do
             local bufferStock = storageService.getBufferStock(task.bufferId)
             local storageStock = storageService.getStock()
-
-            -- [todo] if we want to craft repeaters and redstone torches, we might unnecessarily craft redstone torches
-            -- for the repeaters, just because we also want to craft redstone torches.
-            for item in pairs(task.items) do
-                storageStock[item] = nil
-            end
-
             local currentStock = ItemStock.merge({bufferStock, storageStock})
             local craftingDetails = CraftingApi.getCraftingDetails(task.items, currentStock, recipes)
             local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})

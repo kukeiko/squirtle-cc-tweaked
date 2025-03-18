@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "allocate-ingredients" | "gather-items" | "gather-items-via-player" | "craft-items" | "craft-from-ingredients" | "transfer-items" | "dance"
+---@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients"
 ---
 ---@class Task
 ---@field id integer
@@ -14,12 +14,11 @@
 ---[todo] not yet implemented. purpose: get items from storage and craft those that are missing.
 ---@class ProvideItemsTask : Task
 ---@field type "provide-items"
----@field craftMode "missing" | "all" | "none"
+---@field bufferId? integer
 ---@field transferredInitial boolean
----@field craftMissingTaskId? integer
+---@field craftMissing boolean
 ---@field items ItemStock
----@field to string[]
----@field toTag InventorySlotTag
+---@field to InventoryHandle
 ---
 ---@class AllocateIngredientsTask : Task
 ---@field type "allocate-ingredients"
@@ -30,10 +29,9 @@
 ----[todo] allow multiple items
 ---@class CraftItemsTask : Task
 ---@field type "craft-items"
----@field item string
+---@field items ItemStock
 ---@field quantity integer
 ---
----[todo] allow multiple items
 ---@class CraftFromIngredientsTask : Task
 ---@field type "craft-from-ingredients"
 ---@field bufferId integer

@@ -71,11 +71,11 @@ end
 
 ---[todo] "recipes" argument should instead just be CraftingRecipe[]
 ---[todo] throw error if targetStock contains items for which there are no recipes
----@param targetStock ItemStock
----@param currentStock ItemStock
+---@param items ItemStock
+---@param storage ItemStock
 ---@param recipes table<string, CraftingRecipe>
 ---@return CraftingDetails
-function CraftingApi.getCraftingDetails(targetStock, currentStock, recipes)
+function CraftingApi.getCraftingDetails(items, storage, recipes)
     ---@type ItemStock
     local expandedStock = {}
     ---@type ItemStock
@@ -84,71 +84,74 @@ function CraftingApi.getCraftingDetails(targetStock, currentStock, recipes)
     local craftedLeftoverStock = {}
     ---@type UsedCraftingRecipe[]
     local usedRecipes = {}
-    currentStock = Utils.clone(currentStock)
-
-    for item, quantity in pairs(targetStock) do
-        if currentStock[item] then
-            currentStock[item] = math.max(0, currentStock[item] - quantity)
-        end
-    end
+    ---@type ItemStock
+    local mutatedStorage = {}
 
     ---@param item string
     ---@param openQuantity integer
-    ---@param blacklist? string[]
-    local function recurse(item, openQuantity, blacklist)
+    ---@param blacklist string[]
+    ---@param takeFromStorage boolean
+    local function recurse(item, openQuantity, blacklist, takeFromStorage)
         blacklist = Utils.copy(blacklist or {})
         table.insert(blacklist, item)
 
         if craftedLeftoverStock[item] then
+            -- reuse items from a previous craft that resulted in more items than needed (e.g. wanted 3x sticks, but recipe creates 4x => 1x leftover) 
             local availableLeftOver = craftedLeftoverStock[item]
             craftedLeftoverStock[item] = math.max(0, availableLeftOver - openQuantity)
             openQuantity = math.max(0, openQuantity - availableLeftOver)
         end
 
-        local available = math.min(currentStock[item] or 0, openQuantity)
+        local available = 0
 
-        if available > 0 then
-            currentStock[item] = currentStock[item] - available
-            expandedStock[item] = (expandedStock[item] or 0) + available
+        if takeFromStorage then
+            -- reuse items from storage if we're allowed to and they exist.
+            -- keep track of taken items in the expandedStock, and only change mutatedStorage to take from instead of affecting the original storage.
+            available = math.min(mutatedStorage[item] or storage[item] or 0, openQuantity)
+
+            if available > 0 then
+                mutatedStorage[item] = (mutatedStorage[item] or storage[item]) - available
+                expandedStock[item] = (expandedStock[item] or 0) + available
+            end
         end
 
-        if available < openQuantity then
-            local open = openQuantity - available
-            local recipe = recipes[item]
+        if available >= openQuantity then
+            -- if there's enough in the storage, we don't have to craft anything
+            return
+        end
 
-            if recipe and Utils.every(recipe.ingredients, function(_, ingredient)
-                return not Utils.indexOf(blacklist, ingredient)
-            end) then
-                local timesCrafted = math.ceil(open / recipe.quantity)
-                local craftedQuantity = timesCrafted * recipe.quantity
-                ---@type UsedCraftingRecipe
-                local usedRecipe = {
-                    ingredients = recipe.ingredients,
-                    item = recipe.item,
-                    quantity = recipe.quantity,
-                    timesUsed = timesCrafted
-                }
-                table.insert(usedRecipes, usedRecipe)
+        local open = openQuantity - available
+        local recipe = recipes[item]
 
-                if craftedQuantity > open then
-                    craftedLeftoverStock[item] = (craftedLeftoverStock[item] or 0) + (craftedQuantity - open)
-                end
+        -- only if there is a crafting recipe for the item and all its ingredients are not on the blacklist may we craft it.
+        -- the blacklist serves to prevent endless recursion in cases like Iron Block > Iron Ingot > Iron Block > Iron Ingot etc.
+        if recipe and Utils.every(recipe.ingredients, function(_, ingredient)
+            return not Utils.indexOf(blacklist, ingredient)
+        end) then
+            local timesCrafted = math.ceil(open / recipe.quantity)
+            local craftedQuantity = timesCrafted * recipe.quantity
+            ---@type UsedCraftingRecipe
+            local usedRecipe = {ingredients = recipe.ingredients, item = recipe.item, quantity = recipe.quantity, timesUsed = timesCrafted}
+            table.insert(usedRecipes, usedRecipe)
 
-                for ingredient, ingredientSlots in pairs(recipe.ingredients) do
-                    recurse(ingredient, #ingredientSlots * timesCrafted, blacklist)
-                end
-            else
-                unavailableStock[item] = (unavailableStock[item] or 0) + open
+            if craftedQuantity > open then
+                craftedLeftoverStock[item] = (craftedLeftoverStock[item] or 0) + (craftedQuantity - open)
             end
+
+            for ingredient, ingredientSlots in pairs(recipe.ingredients) do
+                recurse(ingredient, #ingredientSlots * timesCrafted, blacklist, true)
+            end
+        else
+            unavailableStock[item] = (unavailableStock[item] or 0) + open
         end
     end
 
-    for item, quantity in pairs(targetStock) do
-        recurse(item, quantity)
+    for item, quantity in pairs(items) do
+        recurse(item, quantity, {}, false)
     end
 
     -- remove or reduce from expandedStock the items that were crafted during fulfillment of the targetStock.
-    -- [example] craft 2x redstone torch, have: 2x redstone, 1x stick, 2x planks.
+    -- [example]: craft 2x redstone torch, have in storage: 2x redstone, 1x stick, 2x planks.
     -- because 1x more stick is needed, 4x sticks need to be crafted from the planks. since we now have plenty
     -- of sticks, we don't need to pull any from the storage.
     for item, quantity in pairs(craftedLeftoverStock) do

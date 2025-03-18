@@ -58,30 +58,30 @@ end, function()
         return getListOptions(storage)
     end)
 
-    EventLoop.run(function()
-        while true do
-            local item = searchableList:run()
+    while true do
+        local item = searchableList:run()
 
-            if item then
-                local openStock = storage.getOpenStock()
-                print(string.format("How many %s?", item.name))
-                print(string.format(" - craftable: %s", item.suffix))
-                print(string.format(" - space: %s", openStock[item.id]))
-                local quantity = readInteger()
+        if item then
+            local openStock = storage.getOpenStock()
+            print(string.format("How many %s?", item.name))
+            print(string.format(" - craftable: %s", item.suffix))
+            print(string.format(" - space: %s", openStock[item.id]))
+            local quantity = readInteger()
 
-                if quantity and quantity > 0 then
-                    term.clear()
-                    term.setCursorPos(1, 1)
-                    print("[wait] crafting...")
-                    -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
-                    local task = taskService.craftItems({issuedBy = os.getComputerLabel(), item = item.id, quantity = quantity})
-
-                    taskService.deleteTask(task.id)
-                    -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
-                    print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
-                    os.sleep(1)
-                end
+            if quantity and quantity > 0 then
+                term.clear()
+                term.setCursorPos(1, 1)
+                print("[wait] crafting...")
+                -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
+                local task = taskService.craftItems({issuedBy = os.getComputerLabel(), items = {[item.id] = quantity}})
+                taskService.deleteTask(task.id)
+                -- [todo] it should be allowed for the task/storage system to reboot while transferring and everything still works
+                print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
+                os.sleep(1)
             end
         end
-    end)
+    end
 end)
+
+term.clear()
+term.setCursorPos(1, 1)

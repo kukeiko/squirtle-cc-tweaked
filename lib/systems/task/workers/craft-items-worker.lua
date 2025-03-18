@@ -12,8 +12,7 @@ local function work()
     -- print("[busy] allocating ingredients...")
     local allocateIngredientsTask = taskService.allocateIngredients({
         issuedBy = name,
-        item = task.item,
-        quantity = task.quantity,
+        items = task.items,
         partOfTaskId = task.id,
         label = "allocate-ingredients"
     })

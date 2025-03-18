@@ -110,8 +110,7 @@ end
 ---@field issuedBy string
 ---@field partOfTaskId? integer
 ---@field label? string
----@field item string
----@field quantity integer
+---@field items ItemStock
 ---@param options CraftItemsTaskOptions
 ---@return CraftItemsTask
 function TaskService.craftItems(options)
@@ -120,8 +119,7 @@ function TaskService.craftItems(options)
     if not task then
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
-        task.item = options.item
-        task.quantity = options.quantity
+        task.items = options.items
         task = databaseService.createTask(task) --[[@as CraftItemsTask]]
     end
 
@@ -130,8 +128,7 @@ end
 
 ---@class AllocateIngredientsTaskOptions
 ---@field issuedBy string
----@field item string
----@field quantity integer
+---@field items ItemStock
 ---@field partOfTaskId integer
 ---@field label string
 ---@param options AllocateIngredientsTaskOptions
@@ -142,7 +139,7 @@ function TaskService.allocateIngredients(options)
     if not task then
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask]]
-        task.items = {[options.item] = options.quantity}
+        task.items = options.items
         task = databaseService.createTask(task) --[[@as AllocateIngredientsTask]]
     end
 
