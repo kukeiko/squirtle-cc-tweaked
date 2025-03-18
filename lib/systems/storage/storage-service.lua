@@ -9,12 +9,6 @@ local TaskBufferApi = require "lib.apis.inventory.task-buffer-api"
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
 
----@param type InventoryType
----@return string[]
-function StorageService.getByType(type)
-    return InventoryApi.getByType(type)
-end
-
 ---@param handle InventoryHandle
 ---@return boolean
 local function isBufferHandle(handle)
@@ -100,7 +94,7 @@ local function getFromHandleTransferArguments(handle, options)
 end
 
 ---@param handle InventoryHandle
----@---@param options? TransferOptions
+---@param options? TransferOptions
 ---@return string[] inventories, InventorySlotTag tag, TransferOptions options
 local function getToHandleTransferArguments(handle, options)
     local type = getTypeByHandle(handle)
@@ -109,6 +103,35 @@ local function getToHandleTransferArguments(handle, options)
     local options = getDefaultToOptions(type, options or {})
 
     return inventories, tag, options
+end
+
+---@param storedStock ItemStock
+---@return CraftingRecipes
+local function getCraftingRecipes(storedStock)
+    local recipes = Rpc.nearest(DatabaseService).getCraftingRecipes()
+
+    -- only keep recipes where the item itself or all of its ingredients are known to the storage service,
+    -- otherwise we don't have the maxCount of the item(s) required for allocating buffers (or any other
+    -- logic requiring calculating required slot count based on ingredients)
+    recipes = Utils.filterMap(recipes, function(recipe)
+        if not storedStock[recipe.item] then
+            return false
+        end
+
+        local ingredients = CraftingApi.getIngredients(recipe, recipes)
+
+        return Utils.every(ingredients, function(ingredient)
+            return storedStock[ingredient] ~= nil
+        end)
+    end)
+
+    return recipes
+end
+
+---@param type InventoryType
+---@return string[]
+function StorageService.getByType(type)
+    return InventoryApi.getByType(type)
 end
 
 ---@param handle InventoryHandle
@@ -176,6 +199,13 @@ function StorageService.fulfill(from, to, stock)
     return InventoryApi.fulfill(fromInventories, fromTag, toInventories, toTag, stock, options)
 end
 
+---@param item string
+---@return integer
+function StorageService.getItemCount(item)
+    local storages = InventoryApi.getByType("storage")
+    return InventoryApi.getItemCount(storages, item, "withdraw")
+end
+
 ---@return ItemStock
 function StorageService.getStock()
     local storages = InventoryApi.getByType("storage")
@@ -190,32 +220,30 @@ end
 
 ---@param name string
 ---@param tag InventorySlotTag
+---@return ItemStock
 function StorageService.getStockByName(name, tag)
     return InventoryApi.getStock({name}, tag)
+end
+
+---@param item string
+---@return integer?
+function StorageService.getCraftableCount(item)
+    local storedStock = StorageService.getStock()
+    local recipes = getCraftingRecipes(storedStock)
+
+    if not recipes[item] then
+        return nil
+    end
+
+    return CraftingApi.getCraftableCount(item, storedStock, recipes)
 end
 
 ---Returns all items that could be crafted and how many of those we could craft.
 ---Recipes for which the ItemDetails are not known (either of the crafted item or any of its ingredients) are omitted.
 ---@return ItemStock
 function StorageService.getCraftableStock()
-    local recipes = Rpc.nearest(DatabaseService).getCraftingRecipes()
     local storedStock = StorageService.getStock()
-
-    -- only keep recipes where the item itself or all of its ingredients are known to the storage service,
-    -- otherwise we don't have the maxCount of the item(s) required for allocating buffers (or any other
-    -- logic requiring calculating required slot count based on ingredients)
-    recipes = Utils.filterMap(recipes, function(recipe)
-        if not storedStock[recipe.item] then
-            return false
-        end
-
-        local ingredients = CraftingApi.getIngredients(recipe, recipes)
-
-        return Utils.every(ingredients, function(ingredient)
-            return storedStock[ingredient] ~= nil
-        end)
-    end)
-
+    local recipes = getCraftingRecipes(storedStock)
     local craftableStock = {}
 
     for item in pairs(recipes) do
@@ -258,8 +286,34 @@ function StorageService.getBufferStock(bufferId)
 end
 
 ---@param bufferId integer
-function StorageService.flushAndFreeBuffer(bufferId)
-    TaskBufferApi.flushBuffer(bufferId)
+---@param to? InventoryHandle
+function StorageService.flushAndFreeBuffer(bufferId, to)
+    ---@type TransferOptions
+    local options = {fromSequential = true}
+    ---@type string[]
+    local toInventories = {}
+    ---@type InventorySlotTag
+    local toTag = "input"
+
+    if not to then
+        toInventories = InventoryApi.getByType("storage")
+    else
+        toInventories, toTag, options = getToHandleTransferArguments(to, options)
+    end
+
+    local buffer = TaskBufferApi.getBuffer(bufferId)
+
+    if to and isBufferHandle(to) then
+        -- [todo] duplicated from StorageService.empty()
+        local fromStock = InventoryApi.getStock(buffer.inventories, "buffer")
+        local bufferId = to --[[@as integer]]
+        TaskBufferApi.resizeByStock(bufferId, fromStock)
+    end
+
+    while not InventoryApi.empty(buffer.inventories, "buffer", toInventories, toTag, options) do
+        os.sleep(7)
+    end
+
     TaskBufferApi.freeBuffer(bufferId)
 end
 

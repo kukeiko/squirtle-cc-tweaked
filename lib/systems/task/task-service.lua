@@ -106,11 +106,37 @@ function TaskService.acceptTask(acceptedBy, taskType)
     return task
 end
 
+---@class ProvideItemsTaskOptions
+---@field issuedBy string
+---@field partOfTaskId? integer
+---@field label? string
+---@field items ItemStock
+---@field to InventoryHandle
+---@field craftMissing boolean
+---@param options ProvideItemsTaskOptions
+---@return ProvideItemsTask
+function TaskService.provideItems(options)
+    local task = TaskService.findTask("provide-items", options.partOfTaskId, options.label) --[[@as ProvideItemsTask?]]
+
+    if not task then
+        local databaseService = Rpc.nearest(DatabaseService)
+        task = constructTask(options.issuedBy, "provide-items", options.partOfTaskId, options.label) --[[@as ProvideItemsTask]]
+        task.transferredInitial = false
+        task.items = options.items
+        task.to = options.to
+        task.craftMissing = options.craftMissing
+        task = databaseService.createTask(task) --[[@as ProvideItemsTask]]
+    end
+
+    return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
+end
+
 ---@class CraftItemsTaskOptions
 ---@field issuedBy string
 ---@field partOfTaskId? integer
 ---@field label? string
 ---@field items ItemStock
+---@field to? InventoryHandle
 ---@param options CraftItemsTaskOptions
 ---@return CraftItemsTask
 function TaskService.craftItems(options)
@@ -120,6 +146,7 @@ function TaskService.craftItems(options)
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
         task.items = options.items
+        task.to = options.to
         task = databaseService.createTask(task) --[[@as CraftItemsTask]]
     end
 

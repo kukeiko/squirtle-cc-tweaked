@@ -122,6 +122,12 @@ local function resize(bufferId, targetSlotCount)
     DatabaseApi.updateAllocatedBuffer(buffer)
 end
 
+---@param bufferId integer
+---@return AllocatedBuffer
+function TaskBufferApi.getBuffer(bufferId)
+    return DatabaseApi.getAllocatedBuffer(bufferId)
+end
+
 ---@param taskId integer
 ---@param slotCount? integer
 ---@return integer
@@ -162,16 +168,6 @@ end
 ---@param bufferId integer
 function TaskBufferApi.freeBuffer(bufferId)
     DatabaseApi.deleteAllocatedBuffer(bufferId)
-end
-
----@param bufferId integer
-function TaskBufferApi.flushBuffer(bufferId)
-    local storages = InventoryApi.getByType("storage")
-    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
-
-    while not InventoryApi.empty(buffer.inventories, "buffer", storages, "input", {fromSequential = true}) do
-        os.sleep(7)
-    end
 end
 
 ---@param bufferId integer

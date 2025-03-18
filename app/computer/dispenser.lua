@@ -13,6 +13,7 @@ local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local StorageService = require "lib.systems.storage.storage-service"
+local TaskService = require "lib.systems.task.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 
@@ -20,14 +21,18 @@ local readInteger = require "lib.ui.read-integer"
 ---@return SearchableListOption[]
 function getListOptions(storage)
     local stock = storage.getStock()
+    local craftableStock = storage.getCraftableStock()
     local itemDetails = storage.getItemDetails()
-    local nonEmptyStock = Utils.filterMap(stock, function(quantity)
-        return quantity > 0
+
+    local nonEmptyStock = Utils.filterMap(stock, function(quantity, item)
+        return quantity > 0 or (craftableStock[item] or 0) > 0
     end)
 
     local options = Utils.map(nonEmptyStock, function(quantity, item)
+        local suffix = tostring(quantity + (craftableStock[item] or 0))
+
         ---@type SearchableListOption
-        return {id = item, name = itemDetails[item].displayName, suffix = tostring(quantity)}
+        return {id = item, name = itemDetails[item].displayName, suffix = suffix}
     end)
 
     table.sort(options, function(a, b)
@@ -50,32 +55,57 @@ end, function()
     print(string.format("[dispenser %s] connecting to storage service...", version()))
     os.sleep(1)
 
-    local storage = Rpc.nearest(StorageService)
+    local storageService = Rpc.nearest(StorageService)
+    local taskService = Rpc.nearest(TaskService)
     local stash = os.getComputerLabel()
     local idleTimeout = 5
     local refreshInterval = 3
-    local options = getListOptions(storage)
+    local options = getListOptions(storageService)
     local title = getListTitle()
     local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
-        return getListOptions(storage)
+        return getListOptions(storageService)
     end)
 
     EventLoop.run(function()
         while true do
-            local item = searchableList:run()
+            local selection = searchableList:run()
 
-            if item then
-                print(string.format("How many %s?", item.name))
-                local quantity = readInteger()
+            if selection then
+                local available = storageService.getItemCount(selection.id)
+                local craftable = storageService.getCraftableCount(selection.id)
+                local total = available
+                print(string.format("How many %s?", selection.name))
+                print(string.format(" - Stored: %d", available))
+
+                if craftable and craftable > 0 then
+                    total = available + craftable
+                    print(string.format(" - Craftable: %d", craftable))
+                    print(string.format(" - Total: %d", total))
+                end
+
+                local quantity = readInteger(nil, {max = total})
 
                 if quantity and quantity > 0 then
+                    quantity = math.min(total, quantity)
                     term.clear()
                     term.setCursorPos(1, 1)
-                    print("[wait] transferring...")
-                    local storages = storage.getByType("storage")
+
+                    if quantity > available then
+                        print("[wait] crafting & transferring...")
+                    else
+                        print("[wait] transferring...")
+                    end
+
                     -- [todo] I've refactored this to just 1x method call, but now I don't see a way to show the progress to the user :?
-                    storage.transfer(storages, stash, {[item.id] = quantity})
-                    print(string.format("[done] enjoy your %dx %s!", quantity, item.name))
+                    local task = taskService.provideItems({
+                        issuedBy = os.getComputerLabel(),
+                        craftMissing = true,
+                        items = {[selection.id] = quantity},
+                        to = stash
+                    })
+
+                    taskService.deleteTask(task.id)
+                    print(string.format("[done] enjoy your %dx %s!", quantity, selection.name))
                     os.sleep(1)
                 end
             end

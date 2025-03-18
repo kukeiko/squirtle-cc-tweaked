@@ -1,9 +1,11 @@
 local Rpc = require "lib.tools.rpc"
 local TaskService = require "lib.systems.task.task-service"
+local StorageService = require "lib.systems.storage.storage-service"
 
 local function work()
     local name = os.getComputerLabel()
     local taskService = Rpc.nearest(TaskService)
+    local storageService = Rpc.nearest(StorageService)
 
     print(string.format("[awaiting] next %s...", "craft-items"))
     local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
@@ -36,8 +38,7 @@ local function work()
         return taskService.failTask(task.id)
     end
 
-    -- [todo] currently, io-crafter is the one flushing crafted items back into the storage,
-    -- but I would like this worker to do it.
+    storageService.flushAndFreeBuffer(allocateIngredientsTask.bufferId, task.to)
     print(string.format("[finish] %s %d", task.type, task.id))
     taskService.finishTask(task.id)
 end

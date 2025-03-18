@@ -20,17 +20,17 @@
 ---@field items ItemStock
 ---@field to InventoryHandle
 ---
+---@class CraftItemsTask : Task
+---@field type "craft-items"
+---@field items ItemStock
+---@field quantity integer
+---@field to? InventoryHandle
+---
 ---@class AllocateIngredientsTask : Task
 ---@field type "allocate-ingredients"
 ---@field bufferId? integer
 ---@field items ItemStock
 ---@field craftingDetails? CraftingDetails
----
-----[todo] allow multiple items
----@class CraftItemsTask : Task
----@field type "craft-items"
----@field items ItemStock
----@field quantity integer
 ---
 ---@class CraftFromIngredientsTask : Task
 ---@field type "craft-from-ingredients"

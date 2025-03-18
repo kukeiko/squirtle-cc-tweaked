@@ -13,6 +13,7 @@ local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
 local allocateIngredientsWorker = require "lib.systems.task.workers.allocate-ingredients-worker"
+local provideItemsWorker = require "lib.systems.task.workers.provide-items-worker"
 
 local function main()
     local monitor = peripheral.find("monitor")
@@ -31,6 +32,8 @@ local function main()
         allocateIngredientsWorker()
     end, function()
         craftItemsWorker()
+    end, function()
+        provideItemsWorker()
     end)
 end
 

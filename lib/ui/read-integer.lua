@@ -3,6 +3,7 @@ local EventLoop = require "lib.tools.event-loop"
 
 ---@class ReadIntegerOptions
 ---@field cancel? table
+---@field max? integer
 
 ---@param value? integer
 ---@param win table
@@ -62,6 +63,10 @@ return function(value, options)
                 value = tonumber(key)
             else
                 value = tonumber(tostring(value) .. key)
+            end
+
+            if options.max and value > options.max then
+                value = options.max
             end
         end
 

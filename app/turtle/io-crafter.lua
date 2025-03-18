@@ -138,10 +138,8 @@ end, function()
             taskService.updateTask(task)
         end
 
-        print("[busy] craft done! flushing buffer...")
-        storageService.flushAndFreeBuffer(task.bufferId)
+        print("[busy] craft done!")
         taskService.finishTask(task.id)
-        print("[done] buffer empty!")
         print(string.format("[finish] %s %d", task.type, task.id))
     end
 end)

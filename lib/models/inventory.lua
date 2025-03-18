@@ -28,6 +28,10 @@ end
 ---@param tag InventorySlotTag
 ---@return integer
 function Inventory.getItemCount(inventory, item, tag)
+    if not inventory.items[item] then
+        return 0
+    end
+
     local count = 0
 
     for index, slot in pairs(inventory.slots) do
@@ -63,6 +67,10 @@ end
 ---@param tag InventorySlotTag
 ---@return integer
 function Inventory.getItemMaxCount(inventory, item, tag)
+    if not inventory.items[item] then
+        return 0
+    end
+
     local maxCount = 0
 
     for index, slot in pairs(inventory.slots) do
@@ -81,6 +89,10 @@ end
 ---@param tag InventorySlotTag
 ---@return integer
 function Inventory.getItemOpenCount(inventory, item, tag)
+    if not inventory.items[item] then
+        return 0
+    end
+
     local count = Inventory.getItemCount(inventory, item, tag)
     local maxCount = Inventory.getItemMaxCount(inventory, item, tag)
 
