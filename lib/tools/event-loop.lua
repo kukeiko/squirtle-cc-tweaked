@@ -205,6 +205,17 @@ function EventLoop.runTimed(timeout, ...)
     return not timeoutHit
 end
 
+---@param key number
+function EventLoop.pullKey(key)
+    while true do
+        local _, pulledKey = EventLoop.pull("key")
+
+        if pulledKey == key then
+            return
+        end
+    end
+end
+
 ---@param min integer
 ---@param max integer
 ---@return integer

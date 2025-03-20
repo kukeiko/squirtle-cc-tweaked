@@ -39,6 +39,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p ?.lua -o dist/computer/dispenser"
         },
         {
+            "label": "build computer:dispenser:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p ?.lua -o ../21/dispenser"
+        },
+        {
             "label": "build pocket:craft",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/craft"

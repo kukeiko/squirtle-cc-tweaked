@@ -24,9 +24,11 @@ local SearchableList = {}
 ---@param idleTimeout? integer
 ---@param refreshInterval? integer
 ---@param refresher? fun() : SearchableListOption[]
+---@param width? integer
+---@param height? integer
 ---@return SearchableList
-function SearchableList.new(options, title, idleTimeout, refreshInterval, refresher)
-    local w, h = term.getSize()
+function SearchableList.new(options, title, idleTimeout, refreshInterval, refresher, width, height)
+    local termWidth, termHeight = term.getSize()
 
     ---@type SearchableList | {}
     local instance = {
@@ -34,7 +36,7 @@ function SearchableList.new(options, title, idleTimeout, refreshInterval, refres
         list = options,
         searchText = "",
         index = 1,
-        window = window.create(term.current(), 1, 1, w, h),
+        window = window.create(term.current(), 1, 1, width or termWidth, height or termHeight),
         title = title,
         isRunning = false,
         idleTimeout = idleTimeout,
@@ -51,7 +53,7 @@ end
 function SearchableList:setOptions(options)
     local selectedId = (self.options[self.index] or {}).id
     self.options = options
-    local newIndex = Utils.findIndex(options, function(item, index)
+    local newIndex = Utils.findIndex(options, function(item)
         return item.id == selectedId
     end)
 
@@ -68,32 +70,6 @@ function SearchableList:setOptions(options)
     if self.isRunning then
         self:draw()
     end
-end
-
----@param searchableList SearchableList
----@return fun() : nil
-local function refresh(searchableList)
-    if not searchableList.idleTimeout or not searchableList.refreshInterval or not searchableList.refresher then
-        return function()
-        end
-    end
-
-    local idleTimer = os.startTimer(searchableList.idleTimeout)
-    local refreshTimer = os.startTimer(searchableList.refreshInterval)
-
-    return function()
-        if idleTimer then
-            os.cancelTimer(idleTimer)
-        end
-
-        if refreshTimer then
-            os.cancelTimer(refreshTimer)
-        end
-    end
-end
-
----@param searchableList SearchableList
-local function draw(searchableList)
 end
 
 ---@return SearchableListOption?
@@ -114,7 +90,6 @@ function SearchableList:run()
 
     while (true) do
         self:draw()
-
         local event, value = EventLoop.pull()
         local filterDirty = false
         local userInteracted = false
@@ -130,7 +105,7 @@ function SearchableList:run()
         elseif event == "key" then
             if (value == keys.f4) then
                 break
-            elseif (value == keys.enter) then
+            elseif (value == keys.enter or value == keys.numPadEnter) then
                 if (#self.list > 0) then
                     result = self.list[self.index]
                     break
@@ -165,9 +140,6 @@ function SearchableList:run()
             self.index = 1
             -- set flag to reset idle and start refresh if necessary
             userInteracted = true
-        elseif event == "terminate" then
-            -- [todo] need to properly understand terminate event so that I don't have to check for it here
-            break
         end
 
         if userInteracted and self.idleTimeout and self.refreshInterval and self.refresher then
@@ -184,7 +156,6 @@ function SearchableList:run()
     end
 
     self.window.clear()
-    self.window.setCursorPos(1, 1)
     self.isRunning = false
 
     return result
@@ -285,6 +256,8 @@ function SearchableList:draw()
 
         win.setTextColor(colors.white)
     end
+
+    win.setCursorPos(1, 1)
 end
 
 return SearchableList

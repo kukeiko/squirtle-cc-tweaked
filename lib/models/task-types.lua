@@ -8,6 +8,7 @@
 ---@field label? string
 ---@field status TaskStatus
 ---@field type TaskType
+---@field autoDelete boolean
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
