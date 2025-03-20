@@ -372,7 +372,7 @@ function Utils.waitForUserToHitEnter(text)
 end
 
 function Utils.isDev()
-    return fs.exists("package.json")
+    return fs.exists("package.json") or fs.exists("is-dev")
 end
 
 ---@param ... string
