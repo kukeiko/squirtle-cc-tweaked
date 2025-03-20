@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local ItemStock = require "lib.models.item-stock"
 local TaskService = require "lib.systems.task.task-service"
@@ -28,17 +29,20 @@ local function work()
     if task.craftMissing then
         local bufferStock = storageService.getBufferStock(task.bufferId)
         local open = ItemStock.subtract(task.items, bufferStock)
-        local craftItemsTask = taskService.craftItems({
-            issuedBy = os.getComputerLabel(),
-            label = "craft-missing-items",
-            partOfTaskId = task.id,
-            items = open,
-            to = task.bufferId
-        })
 
-        if craftItemsTask.status == "failed" then
-            print("[error] craft items failed")
-            return taskService.failTask(task.id)
+        if not Utils.isEmpty(open) then
+            local craftItemsTask = taskService.craftItems({
+                issuedBy = os.getComputerLabel(),
+                label = "craft-missing-items",
+                partOfTaskId = task.id,
+                items = open,
+                to = task.bufferId
+            })
+
+            if craftItemsTask.status == "failed" then
+                print("[error] craft items failed")
+                return taskService.failTask(task.id)
+            end
         end
     end
 
