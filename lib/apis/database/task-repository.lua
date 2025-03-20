@@ -62,8 +62,11 @@ function TaskRepository.completeTask(id, status)
     end
 
     task.status = status
+
+    local delete = task.autoDelete and status == "finished"
+
     tasks = Utils.filter(tasks, function(item)
-        return item.partOfTaskId ~= task.id
+        return (delete and item.id ~= id) or item.partOfTaskId ~= task.id
     end)
 
     writeTasks(tasks)

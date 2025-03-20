@@ -9,10 +9,19 @@ local TaskService = {name = "task", host = ""}
 ---@param type TaskType
 ---@param partOfTaskId? integer
 ---@param label? string
+---@param autoDelete? boolean
 ---@return Task
-local function constructTask(issuedBy, type, partOfTaskId, label)
+local function constructTask(issuedBy, type, partOfTaskId, label, autoDelete)
     ---@type Task
-    local task = {id = 0, issuedBy = issuedBy, status = "issued", type = type, partOfTaskId = partOfTaskId, label = label}
+    local task = {
+        id = 0,
+        issuedBy = issuedBy,
+        status = "issued",
+        type = type,
+        partOfTaskId = partOfTaskId,
+        label = label,
+        autoDelete = autoDelete or false
+    }
 
     return task
 end
@@ -110,6 +119,8 @@ end
 ---@field issuedBy string
 ---@field partOfTaskId? integer
 ---@field label? string
+---@field await? boolean
+---@field autoDelete? boolean
 ---@field items ItemStock
 ---@field to InventoryHandle
 ---@field craftMissing boolean
@@ -120,7 +131,7 @@ function TaskService.provideItems(options)
 
     if not task then
         local databaseService = Rpc.nearest(DatabaseService)
-        task = constructTask(options.issuedBy, "provide-items", options.partOfTaskId, options.label) --[[@as ProvideItemsTask]]
+        task = constructTask(options.issuedBy, "provide-items", options.partOfTaskId, options.label, options.autoDelete) --[[@as ProvideItemsTask]]
         task.transferredInitial = false
         task.items = options.items
         task.to = options.to
@@ -128,7 +139,11 @@ function TaskService.provideItems(options)
         task = databaseService.createTask(task) --[[@as ProvideItemsTask]]
     end
 
-    return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
+    if options.await then
+        return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
+    end
+
+    return task
 end
 
 ---@class CraftItemsTaskOptions
