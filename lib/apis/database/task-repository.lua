@@ -198,6 +198,14 @@ function TaskRepository.getProvideItemsReport(issuedBy)
         end
     end
 
+    -- fix report showing more items than wanted because recipes can produce more than 1x item at a time,
+    -- e.g. wants 1x stick, crafts 4x => shows 4/1 instead of 1/1 without this hack
+    for item, quantity in pairs(report.found) do
+        if quantity > report.wanted[item] then
+            report.found[item] = report.wanted[item]
+        end
+    end
+
     return report
 end
 
