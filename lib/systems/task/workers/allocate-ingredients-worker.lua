@@ -29,22 +29,15 @@ return function()
             local availableStock = ItemStock.merge({bufferStock, storageStock})
             local craftingDetails = CraftingApi.getCraftingDetails(task.items, availableStock, recipes)
             local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})
+            task.missing = craftingDetails.unavailable
+            taskService.updateTask(task)
 
-            -- [todo] update in a service the wanted items of this task (crafting.unavailable)
-            local open = ItemStock.subtract(targetStock, bufferStock)
-
-            if Utils.isEmpty(open) then
+            if storageService.fulfill(storageService.getByType("storage"), task.bufferId, targetStock) then
                 task.craftingDetails = craftingDetails
                 task.missing = {}
                 taskService.updateTask(task)
                 break
-            end
-
-            task.missing = craftingDetails.unavailable
-            taskService.updateTask(task)
-            local from = storageService.getByType("storage")
-
-            if not storageService.fulfill(from, task.bufferId, targetStock) then
+            else
                 os.sleep(5)
             end
         end
