@@ -105,18 +105,18 @@ function SearchableList:run()
         elseif event == "key" then
             if (value == keys.f4) then
                 break
-            elseif (value == keys.enter or value == keys.numPadEnter) then
+            elseif value == keys.enter or value == keys.numPadEnter then
                 if (#self.list > 0) then
                     result = self.list[self.index]
                     break
                 end
-            elseif (value == keys.backspace) then
+            elseif value == keys.backspace then
                 local len = #self.searchText
                 if (len ~= 0) then
                     self.searchText = self.searchText:sub(1, len - 1)
                     filterDirty = true
                 end
-            elseif (value == keys.up) then
+            elseif value == keys.up then
                 self.index = self.index - 1
                 if (self.index < 1) then
                     if (#self.list == 0) then
@@ -125,11 +125,19 @@ function SearchableList:run()
                         self.index = #self.list
                     end
                 end
-            elseif (value == keys.down) then
+            elseif value == keys.down then
                 self.index = self.index + 1
                 if (self.index > #self.list) then
                     self.index = 1
                 end
+            elseif value == keys.pageUp then
+                self.index = math.max(1, self.index - 10)
+            elseif value == keys.pageDown then
+                self.index = math.min(#self.list, self.index + 10)
+            elseif value == keys.home then
+                self.index = 1
+            elseif value == keys["end"] then
+                self.index = #self.list
             end
 
             -- set flag to reset idle and start refresh if necessary
@@ -155,6 +163,7 @@ function SearchableList:run()
         end
     end
 
+    -- [todo] cancel timers
     self.window.clear()
     self.isRunning = false
 
