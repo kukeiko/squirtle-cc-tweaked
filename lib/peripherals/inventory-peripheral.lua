@@ -69,7 +69,7 @@ end
 
 ---@param side string
 ---@param slot integer
----@return ItemStack
+---@return ItemStack?
 function InventoryPeripheral.getStack(side, slot)
     return peripheral.call(side, "getItemDetail", slot)
 end

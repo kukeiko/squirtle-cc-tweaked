@@ -93,10 +93,11 @@ function InventoryCollection.isMounted(name)
 end
 
 ---@param inventories string[]
-function InventoryCollection.refresh(inventories)
+---@param lockId? integer
+function InventoryCollection.refresh(inventories, lockId)
     local fns = Utils.map(inventories, function(inventory)
         return function()
-            local lockSuccess, unlock = InventoryLocks.lock({inventory})
+            local lockSuccess, unlock = InventoryLocks.lock({inventory}, lockId)
 
             if not lockSuccess then
                 return

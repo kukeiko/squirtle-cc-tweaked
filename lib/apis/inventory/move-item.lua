@@ -29,8 +29,10 @@ end
 ---@param toSlot? integer
 ---@return integer
 local function pushItems(from, to, fromSlot, limit, toSlot)
+    local transferred = peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
     os.sleep(.25)
-    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
+
+    return transferred
 end
 
 ---@param from string
@@ -47,7 +49,7 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
         return 0
     end
 
-    local lockSuccess, unlock = InventoryLocks.lock({from, to}, lockId)
+    local lockSuccess, unlock, lockId = InventoryLocks.lock({from, to}, lockId)
 
     if not lockSuccess then
         return 0
@@ -63,11 +65,24 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
         local toSlot = Inventory.nextToSlot(toInventory, item, toTag)
 
         while transferredTotal < total and fromSlot and fromStack and fromStack.count > 0 and toSlot do
-            local open = total - transferredTotal
-            local transfer = math.min(open, rate, fromStack.count)
-            local transferred = pushItems(from, to, fromSlot.index, transfer, toSlot.index)
+            if fromInventory.type == "storage" then
+                -- refresh the inventory to prevent accidentally "deleting" storage stacks.
+                -- bit of a hack, but currently no other idea on how else to fix it.
+                -- this doesn't even completely fix it if a player manages to take out items after refresh and before pushItems()
+                InventoryCollection.refresh({from}, lockId)
+                fromInventory = InventoryCollection.get(from)
+                fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
 
-            if transferred == 0 then
+                if not fromSlot or not fromStack or fromStack.count == 0 then
+                    break
+                end
+            end
+
+            local open = total - transferredTotal
+            local quantity = math.min(open, rate, fromStack.count)
+            local transferred = pushItems(from, to, fromSlot.index, quantity, toSlot.index)
+
+            if transferred ~= quantity then
                 -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
                 InventoryCollection.mount({from, to})
                 return
