@@ -26,8 +26,8 @@ return function()
         while true do
             local bufferStock = storageService.getBufferStock(task.bufferId)
             local storageStock = storageService.getStock()
-            local currentStock = ItemStock.merge({bufferStock, storageStock})
-            local craftingDetails = CraftingApi.getCraftingDetails(task.items, currentStock, recipes)
+            local availableStock = ItemStock.merge({bufferStock, storageStock})
+            local craftingDetails = CraftingApi.getCraftingDetails(task.items, availableStock, recipes)
             local targetStock = ItemStock.merge({craftingDetails.available, craftingDetails.unavailable})
 
             -- [todo] update in a service the wanted items of this task (crafting.unavailable)
@@ -35,10 +35,13 @@ return function()
 
             if Utils.isEmpty(open) then
                 task.craftingDetails = craftingDetails
+                task.missing = {}
                 taskService.updateTask(task)
                 break
             end
 
+            task.missing = craftingDetails.unavailable
+            taskService.updateTask(task)
             local from = storageService.getByType("storage")
 
             if not storageService.fulfill(from, task.bufferId, targetStock) then

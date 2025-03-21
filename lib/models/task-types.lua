@@ -19,18 +19,27 @@
 ---@field transferredInitial boolean
 ---@field craftMissing boolean
 ---@field items ItemStock
+---@field transferred ItemStock
+---@field crafted ItemStock
 ---@field to InventoryHandle
+---
+---@class ProvideItemsTaskReport
+---@field wanted ItemStock
+---@field found ItemStock
+---@field missing ItemStock
 ---
 ---@class CraftItemsTask : Task
 ---@field type "craft-items"
 ---@field items ItemStock
 ---@field quantity integer
+---@field crafted ItemStock
 ---@field to? InventoryHandle
 ---
 ---@class AllocateIngredientsTask : Task
 ---@field type "allocate-ingredients"
 ---@field bufferId? integer
 ---@field items ItemStock
+---@field missing ItemStock
 ---@field craftingDetails? CraftingDetails
 ---
 ---@class CraftFromIngredientsTask : Task
@@ -38,4 +47,5 @@
 ---@field bufferId integer
 ---@field craftingDetails CraftingDetails
 ---@field usedRecipes? UsedCraftingRecipe[]
+---@field crafted ItemStock
 ---

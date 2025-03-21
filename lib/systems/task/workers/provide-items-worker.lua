@@ -21,8 +21,9 @@ local function work()
 
     if not task.transferredInitial then
         local from = storageService.getByType("storage")
-        storageService.fulfill(from, task.bufferId, task.items)
+        local _, transferred = storageService.fulfill(from, task.bufferId, task.items)
         task.transferredInitial = true
+        task.transferred = transferred
         taskService.updateTask(task)
     end
 
@@ -43,6 +44,9 @@ local function work()
                 print("[error] craft items failed")
                 return taskService.failTask(task.id)
             end
+
+            task.crafted = craftItemsTask.crafted
+            taskService.updateTask(task)
         end
     end
 

@@ -90,8 +90,8 @@ function CraftingApi.getCraftingDetails(items, storage, recipes)
     ---@param item string
     ---@param openQuantity integer
     ---@param blacklist string[]
-    ---@param takeFromStorage boolean
-    local function recurse(item, openQuantity, blacklist, takeFromStorage)
+    ---@param isRootRecipe boolean
+    local function recurse(item, openQuantity, blacklist, isRootRecipe)
         blacklist = Utils.copy(blacklist or {})
         table.insert(blacklist, item)
 
@@ -104,7 +104,7 @@ function CraftingApi.getCraftingDetails(items, storage, recipes)
 
         local available = 0
 
-        if takeFromStorage then
+        if not isRootRecipe then
             -- reuse items from storage if we're allowed to and they exist.
             -- keep track of taken items in the expandedStock, and only change mutatedStorage to take from instead of affecting the original storage.
             available = math.min(mutatedStorage[item] or storage[item] or 0, openQuantity)
@@ -131,7 +131,13 @@ function CraftingApi.getCraftingDetails(items, storage, recipes)
             local timesCrafted = math.ceil(open / recipe.quantity)
             local craftedQuantity = timesCrafted * recipe.quantity
             ---@type UsedCraftingRecipe
-            local usedRecipe = {ingredients = recipe.ingredients, item = recipe.item, quantity = recipe.quantity, timesUsed = timesCrafted}
+            local usedRecipe = {
+                ingredients = recipe.ingredients,
+                item = recipe.item,
+                quantity = recipe.quantity,
+                timesUsed = timesCrafted,
+                isRoot = isRootRecipe
+            }
             table.insert(usedRecipes, usedRecipe)
 
             if craftedQuantity > open then
@@ -139,7 +145,7 @@ function CraftingApi.getCraftingDetails(items, storage, recipes)
             end
 
             for ingredient, ingredientSlots in pairs(recipe.ingredients) do
-                recurse(ingredient, #ingredientSlots * timesCrafted, blacklist, true)
+                recurse(ingredient, #ingredientSlots * timesCrafted, blacklist, false)
             end
         else
             unavailableStock[item] = (unavailableStock[item] or 0) + open
@@ -147,7 +153,7 @@ function CraftingApi.getCraftingDetails(items, storage, recipes)
     end
 
     for item, quantity in pairs(items) do
-        recurse(item, quantity, {}, false)
+        recurse(item, quantity, {}, true)
     end
 
     -- remove or reduce from expandedStock the items that were crafted during fulfillment of the targetStock.

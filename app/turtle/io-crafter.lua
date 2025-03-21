@@ -59,6 +59,20 @@ local function craftFromBottomInventory(recipe)
 end
 
 ---@param task CraftFromIngredientsTask
+---@param taskService TaskService|RpcClient
+local function removeCurrentRecipe(task, taskService)
+    local recipe = task.usedRecipes[1]
+
+    if recipe.isRoot then
+        -- we don't want to report items that are only ingredients of other items
+        task.crafted[recipe.item] = (task.crafted[recipe.item] or 0) + (recipe.quantity * recipe.timesUsed)
+    end
+
+    table.remove(task.usedRecipes, 1)
+    taskService.updateTask(task)
+end
+
+---@param task CraftFromIngredientsTask
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
 local function recover(task, storageService, taskService)
@@ -86,8 +100,7 @@ local function recover(task, storageService, taskService)
         end
 
         -- after, update task and return
-        table.remove(task.usedRecipes, 1)
-        taskService.updateTask(task)
+        removeCurrentRecipe(task, taskService)
         return
     end
 
@@ -134,11 +147,10 @@ end, function()
             end
 
             -- mark crafting step as finished
-            table.remove(task.usedRecipes, 1)
-            taskService.updateTask(task)
+            removeCurrentRecipe(task, taskService)
         end
 
-        print("[busy] craft done!")
+        print("[success] craft done!")
         taskService.finishTask(task.id)
         print(string.format("[finish] %s %d", task.type, task.id))
     end

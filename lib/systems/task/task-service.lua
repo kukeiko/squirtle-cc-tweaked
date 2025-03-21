@@ -1,6 +1,7 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local DatabaseService = require "lib.systems.database.database-service"
+local TaskRepository = require "lib.apis.database.task-repository"
 
 ---@class TaskService : Service
 local TaskService = {name = "task", host = ""}
@@ -136,6 +137,8 @@ function TaskService.provideItems(options)
         task.items = options.items
         task.to = options.to
         task.craftMissing = options.craftMissing
+        task.transferred = {}
+        task.crafted = {}
         task = databaseService.createTask(task) --[[@as ProvideItemsTask]]
     end
 
@@ -144,6 +147,14 @@ function TaskService.provideItems(options)
     end
 
     return task
+end
+
+---@param issuedBy string
+---@return ProvideItemsTaskReport
+function TaskService.getProvideItemsReport(issuedBy)
+    -- [todo] we're being naughty here by directly accessing TaskRepository instead of going through DatabaseSevice,
+    -- but I'm kinda thinking we want to do this everywhere else anyway as I see no need for the added layering of a DatabaseService
+    return TaskRepository.getProvideItemsReport(issuedBy)
 end
 
 ---@class CraftItemsTaskOptions
@@ -161,6 +172,7 @@ function TaskService.craftItems(options)
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
         task.items = options.items
+        task.crafted = {}
         task.to = options.to
         task = databaseService.createTask(task) --[[@as CraftItemsTask]]
     end
@@ -182,6 +194,7 @@ function TaskService.allocateIngredients(options)
         local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask]]
         task.items = options.items
+        task.missing = {}
         task = databaseService.createTask(task) --[[@as AllocateIngredientsTask]]
     end
 
@@ -204,6 +217,7 @@ function TaskService.craftFromIngredients(options)
         task = constructTask(options.issuedBy, "craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask]]
         task.craftingDetails = options.craftingDetails
         task.bufferId = options.bufferId
+        task.crafted = {}
         task = databaseService.createTask(task) --[[@as CraftFromIngredientsTask]]
     end
 

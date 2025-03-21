@@ -11,6 +11,7 @@
 ---@field event? string
 ---
 ---@class UsedCraftingRecipe : CraftingRecipe
+---@field isRoot boolean
 ---@field timesUsed integer
 ---
 ---[todo] find a better name

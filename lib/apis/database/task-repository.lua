@@ -1,4 +1,5 @@
 local Utils = require "lib.tools.utils"
+local ItemStock = require "lib.models.item-stock"
 
 local TaskRepository = {}
 
@@ -66,7 +67,11 @@ function TaskRepository.completeTask(id, status)
     local delete = task.autoDelete and status == "finished"
 
     tasks = Utils.filter(tasks, function(item)
-        return (delete and item.id ~= id) or item.partOfTaskId ~= task.id
+        if delete and item.id == id then
+            return false
+        end
+
+        return item.partOfTaskId ~= id
     end)
 
     writeTasks(tasks)
@@ -123,6 +128,77 @@ function TaskRepository.getTask(id)
     end
 
     return task
+end
+
+---@param taskType TaskType
+---@param issuedBy? string
+---@param partOfTaskId? integer
+---@return Task[]
+function TaskRepository.findTasks(taskType, issuedBy, partOfTaskId)
+    return Utils.filter(TaskRepository.getTasks(), function(task)
+        return task.type == taskType and (partOfTaskId == nil or task.partOfTaskId == partOfTaskId) and
+                   (issuedBy == nil or task.issuedBy == issuedBy)
+    end)
+end
+
+---@param issuedBy? string
+---@param partOfTaskId? integer
+---@return ProvideItemsTask[]
+function TaskRepository.findProvideItemsTasks(issuedBy, partOfTaskId)
+    return TaskRepository.findTasks("provide-items", issuedBy, partOfTaskId)
+end
+
+---@param issuedBy? string
+---@param partOfTaskId? integer
+---@return CraftItemsTask[]
+function TaskRepository.findCraftItemsTasks(issuedBy, partOfTaskId)
+    return TaskRepository.findTasks("craft-items", issuedBy, partOfTaskId)
+end
+
+---@param issuedBy? string
+---@param partOfTaskId? integer
+---@return AllocateIngredientsTask[]
+function TaskRepository.findAllocateIngredientsTasks(issuedBy, partOfTaskId)
+    return TaskRepository.findTasks("allocate-ingredients", issuedBy, partOfTaskId)
+end
+
+---@param issuedBy? string
+---@param partOfTaskId? integer
+---@return CraftFromIngredientsTask[]
+function TaskRepository.findCraftFromIngredientsTasks(issuedBy, partOfTaskId)
+    return TaskRepository.findTasks("craft-from-ingredients", issuedBy, partOfTaskId)
+end
+
+---@param issuedBy string
+---@return ProvideItemsTaskReport
+function TaskRepository.getProvideItemsReport(issuedBy)
+    -- [todo] this method supports that 1x ProvideItemsTask can have multiple CraftItemsTasks, which is not the case and probably never will be.
+    -- maybe I should refactor it completely - but for now it is fine as long as it works!
+    ---@type ProvideItemsTaskReport
+    local report = {missing = {}, found = {}, wanted = {}}
+    local provideItemsTasks = TaskRepository.findProvideItemsTasks(issuedBy)
+
+    for _, provideItemsTask in pairs(provideItemsTasks) do
+        report.wanted = ItemStock.merge({report.wanted, provideItemsTask.items})
+        report.found = ItemStock.merge({report.found, provideItemsTask.transferred, provideItemsTask.crafted})
+        local craftItemsTasks = TaskRepository.findCraftItemsTasks(nil, provideItemsTask.id)
+
+        for _, craftItemsTask in pairs(craftItemsTasks) do
+            report.found = ItemStock.merge({report.found, craftItemsTask.crafted})
+            local allocateIngredientsTasks = TaskRepository.findAllocateIngredientsTasks(nil, craftItemsTask.id)
+            local craftFromIngredientsTasks = TaskRepository.findCraftFromIngredientsTasks(nil, craftItemsTask.id)
+
+            for _, allocateIngredientsTask in pairs(allocateIngredientsTasks) do
+                report.missing = ItemStock.merge({report.missing, allocateIngredientsTask.missing})
+            end
+
+            for _, craftFromIngredientsTask in pairs(craftFromIngredientsTasks) do
+                report.found = ItemStock.merge({report.found, craftFromIngredientsTask.crafted})
+            end
+        end
+    end
+
+    return report
 end
 
 return TaskRepository

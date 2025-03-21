@@ -38,6 +38,8 @@ local function work()
         return taskService.failTask(task.id)
     end
 
+    task.crafted = craftFromIngredientsTask.crafted
+    taskService.updateTask(task)
     storageService.flushAndFreeBuffer(allocateIngredientsTask.bufferId, task.to)
     print(string.format("[finish] %s %d", task.type, task.id))
     taskService.finishTask(task.id)
