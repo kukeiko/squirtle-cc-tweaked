@@ -170,7 +170,7 @@ function InventoryCollection.getSlotCount(inventories, tag)
 end
 
 ---@param inventories string[]
----@param tag InventorySlotTag
+---@param tag? InventorySlotTag
 ---@return ItemStock
 function InventoryCollection.getStock(inventories, tag)
     local stocks = Utils.map(InventoryCollection.resolve(inventories), function(inventory)

@@ -35,11 +35,11 @@ return function()
         local siloInputs = InventoryApi.getByType("silo:input")
         -- [todo] I'm pretty sure we can combine the next 3x .empty() calls by using the "toSequential = true" option,
         -- and also the same with the 2x .empty() calls after
-        InventoryApi.empty(furnaces, "output", storages, "input")
-        InventoryApi.empty(furnaces, "output", outputs, "input")
-        InventoryApi.empty(furnaces, "output", siloInputs, "input")
-        InventoryApi.empty(outputs, "output", storages, "input")
-        InventoryApi.empty(outputs, "output", siloInputs, "input")
+        InventoryApi.empty(furnaces, storages)
+        InventoryApi.empty(furnaces, outputs)
+        InventoryApi.empty(furnaces, siloInputs)
+        InventoryApi.empty(outputs, storages)
+        InventoryApi.empty(outputs, siloInputs)
         InventoryApi.transferItem(furnaces, "fuel", storages, "input", "minecraft:bucket")
 
         print("[move] fuel from input")

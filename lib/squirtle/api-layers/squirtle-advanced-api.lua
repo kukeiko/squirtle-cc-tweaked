@@ -187,7 +187,7 @@ function SquirtleAdvancedApi.pushOutput(from, to, keep)
         end
     end
 
-    return InventoryApi.transfer({from}, "buffer", {to}, "output", stock)
+    return InventoryApi.transfer({from}, {to}, stock, {fromTag = "buffer"})
 end
 
 ---@param from string
@@ -237,7 +237,7 @@ function SquirtleAdvancedApi.pullInput(from, to, transferredOutput, max)
         items[item] = math.min(maxInputStock - inputInToStock, InventoryApi.getItemCount({from}, item, "input"))
     end
 
-    return InventoryApi.transfer({from}, "input", {to}, "buffer", items)
+    return InventoryApi.transfer({from}, {to}, items, {fromTag = "input", toTag = "buffer"})
 end
 
 return SquirtleAdvancedApi

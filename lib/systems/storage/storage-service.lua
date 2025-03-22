@@ -4,106 +4,9 @@ local DatabaseService = require "lib.systems.database.database-service"
 local CraftingApi = require "lib.apis.crafting-api"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local TaskBufferApi = require "lib.apis.inventory.task-buffer-api"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
-
----@param handle InventoryHandle
----@return boolean
-local function isBufferHandle(handle)
-    return type(handle) == "number"
-end
-
----@param handle InventoryHandle
----@return InventoryType?
-local function getTypeByHandle(handle)
-    if type(handle) == "number" then
-        return "buffer"
-    elseif type(handle) == "string" then
-        return "stash"
-    end
-
-    return nil
-end
-
----@param handle InventoryHandle
----@return string[]
-local function resolveHandle(handle)
-    if type(handle) == "number" then
-        return TaskBufferApi.resolveBuffer(handle)
-    elseif type(handle) == "string" then
-        return {InventoryApi.getByTypeAndLabel("stash", handle)}
-    else
-        return handle --[[@as table<string>]]
-    end
-end
-
----@param type InventoryType?
----@return InventorySlotTag
-local function getDefaultFromSlotTag(type)
-    if type == "buffer" or type == "stash" then
-        return "buffer"
-    end
-
-    return "output"
-end
-
----@param type InventoryType?
----@return InventorySlotTag
-local function getDefaultToSlotTag(type)
-    if type == "buffer" or type == "stash" then
-        return "buffer"
-    end
-
-    return "input"
-end
-
----@param type InventoryType?
----@param options TransferOptions
----@return TransferOptions
-local function getDefaultFromOptions(type, options)
-    if type == "buffer" and options.fromSequential == nil then
-        options.fromSequential = true
-    end
-
-    return options
-end
-
----@param type InventoryType?
----@param options TransferOptions
----@return TransferOptions
-local function getDefaultToOptions(type, options)
-    if type == "buffer" and options.toSequential == nil then
-        options.toSequential = true
-    end
-
-    return options
-end
-
----@param handle InventoryHandle
----@param options? TransferOptions
----@return string[] inventories, InventorySlotTag tag, TransferOptions options
-local function getFromHandleTransferArguments(handle, options)
-    local type = getTypeByHandle(handle)
-    local inventories = resolveHandle(handle)
-    local tag = getDefaultFromSlotTag(type)
-    local options = getDefaultFromOptions(type, options or {})
-
-    return inventories, tag, options
-end
-
----@param handle InventoryHandle
----@param options? TransferOptions
----@return string[] inventories, InventorySlotTag tag, TransferOptions options
-local function getToHandleTransferArguments(handle, options)
-    local type = getTypeByHandle(handle)
-    local inventories = resolveHandle(handle)
-    local tag = getDefaultToSlotTag(type)
-    local options = getDefaultToOptions(type, options or {})
-
-    return inventories, tag, options
-end
 
 ---@param storedStock ItemStock
 ---@return CraftingRecipes
@@ -136,7 +39,7 @@ end
 
 ---@param handle InventoryHandle
 function StorageService.refresh(handle)
-    InventoryApi.refreshInventories(resolveHandle(handle))
+    InventoryApi.refreshInventories(handle)
 end
 
 ---@param from InventoryHandle
@@ -144,15 +47,7 @@ end
 ---@param stock ItemStock
 ---@return boolean success, ItemStock transferred, ItemStock open
 function StorageService.transfer(from, to, stock)
-    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
-    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
-
-    if isBufferHandle(to) then
-        local bufferId = to --[[@as integer]]
-        TaskBufferApi.resizeByStock(bufferId, stock)
-    end
-
-    return InventoryApi.transfer(fromInventories, fromTag, toInventories, toTag, stock, options)
+    return InventoryApi.transfer(from, to, stock)
 end
 
 ---@param from string[]
@@ -169,18 +64,7 @@ end
 ---@param to InventoryHandle
 ---@return boolean success, ItemStock transferred, ItemStock open
 function StorageService.empty(from, to)
-    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
-    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
-
-    if isBufferHandle(to) then
-        -- [todo] duplicate logic, InventoryApi is also reading the stock like this.
-        -- maybe a sign that we should move this logic to InventoryApi.
-        local fromStock = InventoryApi.getStock(fromInventories, fromTag)
-        local bufferId = to --[[@as integer]]
-        TaskBufferApi.resizeByStock(bufferId, fromStock)
-    end
-
-    return InventoryApi.empty(fromInventories, fromTag, toInventories, toTag, options)
+    return InventoryApi.empty(from, to)
 end
 
 ---@param from InventoryHandle
@@ -188,15 +72,7 @@ end
 ---@param stock ItemStock
 ---@return boolean success, ItemStock transferred, ItemStock open
 function StorageService.fulfill(from, to, stock)
-    local fromInventories, fromTag, options = getFromHandleTransferArguments(from)
-    local toInventories, toTag, options = getToHandleTransferArguments(to, options)
-
-    if isBufferHandle(to) then
-        local bufferId = to --[[@as integer]]
-        TaskBufferApi.resizeByStock(bufferId, stock)
-    end
-
-    return InventoryApi.fulfill(fromInventories, fromTag, toInventories, toTag, stock, options)
+    return InventoryApi.fulfill(from, to, stock)
 end
 
 ---@param item string
@@ -267,7 +143,7 @@ end
 ---@param slotCount? integer
 ---@return integer
 function StorageService.allocateTaskBuffer(taskId, slotCount)
-    return TaskBufferApi.allocateTaskBuffer(taskId, slotCount)
+    return InventoryApi.allocateTaskBuffer(taskId, slotCount)
 end
 
 ---@param taskId integer
@@ -275,46 +151,20 @@ end
 ---@return integer
 function StorageService.allocateTaskBufferForStock(taskId, stock)
     local slotCount = StorageService.getRequiredSlotCount(stock)
-    return TaskBufferApi.allocateTaskBuffer(taskId, slotCount)
+    return InventoryApi.allocateTaskBuffer(taskId, slotCount)
 end
 
 ---[todo] to be replaced by a more generic method that accepts InventoryHandle
 ---@param bufferId integer
 ---@return ItemStock
 function StorageService.getBufferStock(bufferId)
-    return TaskBufferApi.getBufferStock(bufferId)
+    return InventoryApi.getBufferStock(bufferId)
 end
 
 ---@param bufferId integer
 ---@param to? InventoryHandle
 function StorageService.flushAndFreeBuffer(bufferId, to)
-    ---@type TransferOptions
-    local options = {fromSequential = true}
-    ---@type string[]
-    local toInventories = {}
-    ---@type InventorySlotTag
-    local toTag = "input"
-
-    if not to then
-        toInventories = InventoryApi.getByType("storage")
-    else
-        toInventories, toTag, options = getToHandleTransferArguments(to, options)
-    end
-
-    local buffer = TaskBufferApi.getBuffer(bufferId)
-
-    if to and isBufferHandle(to) then
-        -- [todo] duplicated from StorageService.empty()
-        local fromStock = InventoryApi.getStock(buffer.inventories, "buffer")
-        local bufferId = to --[[@as integer]]
-        TaskBufferApi.resizeByStock(bufferId, fromStock)
-    end
-
-    while not InventoryApi.empty(buffer.inventories, "buffer", toInventories, toTag, options) do
-        os.sleep(7)
-    end
-
-    TaskBufferApi.freeBuffer(bufferId)
+    InventoryApi.flushAndFreeBuffer(bufferId, to)
 end
 
 return StorageService

@@ -54,7 +54,9 @@
 ---
 ---@class TransferOptions
 ---@field fromSequential? boolean
+---@field fromTag? InventorySlotTag
 ---@field toSequential? boolean
+---@field toTag? InventorySlotTag
 ---@field rate? integer
 ---@field lockId? integer
 ---

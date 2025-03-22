@@ -115,7 +115,7 @@ function Inventory.getSlotCount(inventory, tag)
 end
 
 ---@param inventory Inventory
----@param tag InventorySlotTag
+---@param tag? InventorySlotTag
 ---@return ItemStock
 function Inventory.getStock(inventory, tag)
     ---@type ItemStock
@@ -124,7 +124,7 @@ function Inventory.getStock(inventory, tag)
     for index, slot in pairs(inventory.slots) do
         local stack = inventory.stacks[index]
 
-        if stack and slot.tags[tag] then
+        if stack and (not tag or slot.tags[tag]) then
             stock[stack.name] = (stock[stack.name] or 0) + stack.count
         end
     end

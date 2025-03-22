@@ -5,16 +5,16 @@ return function()
         local dumps = InventoryApi.getRefreshedByType("dump")
 
         local quickAccesses = InventoryApi.getByType("quick-access")
-        InventoryApi.empty(dumps, "output", quickAccesses, "input")
+        InventoryApi.empty(dumps, quickAccesses)
 
         local io = InventoryApi.getByType("io")
-        InventoryApi.empty(dumps, "output", io, "input")
+        InventoryApi.empty(dumps, io)
 
         local storages = InventoryApi.getByType("storage")
-        InventoryApi.empty(dumps, "output", storages, "input")
+        InventoryApi.empty(dumps, storages)
 
         local siloInputs = InventoryApi.getByType("silo:input")
-        InventoryApi.empty(dumps, "output", siloInputs, "input")
+        InventoryApi.empty(dumps, siloInputs)
 
         local composterConfigs = InventoryApi.getRefreshedByType("composter-config")
 
