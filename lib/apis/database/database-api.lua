@@ -100,6 +100,13 @@ function DatabaseApi.getCraftingRecipe(item)
     return recipe
 end
 
+---@param recipe CraftingRecipe
+function DatabaseApi.saveCraftingRecipe(recipe)
+    local recipes = DatabaseApi.getCraftingRecipes()
+    recipes[recipe.item] = recipe
+    DatabaseApi.setCraftingRecipes(recipes)
+end
+
 ---@param task Task
 ---@return Task
 function DatabaseApi.createTask(task)

@@ -219,6 +219,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-crafter"
         },
         {
+            "label": "build turtle:recipe-reader",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/recipe-reader.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/recipe-reader"
+        },
+        {
             "label": "build pocket:craft",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/craft"

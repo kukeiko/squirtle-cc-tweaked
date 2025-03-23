@@ -5,7 +5,8 @@ local programs = {
     ["Storage Workers"] = "app/computer/storage-workers.lua",
     ["Home"] = "app/computer/dispenser.lua",
     ["Crafty"] = "app/turtle/io-crafter.lua",
-    ["Lumberjack"] = "app/turtle/lumberjack/lumberjack.lua"
+    ["Lumberjack"] = "app/turtle/lumberjack/lumberjack.lua",
+    ["Recipes"] = "app/turtle/recipe-reader.lua"
 }
 
 if programs[label] then

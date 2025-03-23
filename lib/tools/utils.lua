@@ -365,7 +365,8 @@ function Utils.waitForUserToHitEnter(text)
 
     while true do
         local _, key = os.pullEvent("key")
-        if (key == keys.enter) then
+
+        if key == keys.enter or key == keys.numPadEnter then
             break
         end
     end
