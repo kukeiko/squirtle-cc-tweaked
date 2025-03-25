@@ -161,7 +161,7 @@ function EventLoop.waitForAny(...)
 
     threads = runThreads(threads, {})
 
-    while not anyFinished do
+    while not anyFinished and #threads > 0 do
         threads = runThreads(threads, table.pack(EventLoop.pull()))
     end
 end
