@@ -86,13 +86,10 @@ local function main()
             Inventory.refresh("stash")
         end
     end, function()
-        local _, key = EventLoop.pull("key")
-
-        if key == keys.f4 then
-            print("[stop] storage")
-            Inventory.stop()
-            EventLoop.queue("storage:stop")
-        end
+        EventLoop.pullKey(keys.f4)
+        print("[stop] storage")
+        Inventory.stop()
+        EventLoop.queue("storage:stop")
     end)
 end
 
