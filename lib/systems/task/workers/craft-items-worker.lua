@@ -14,12 +14,7 @@ local function work()
     print(string.format("[accepted] %s #%d", task.type, task.id))
 
     -- print("[busy] allocating ingredients...")
-    local allocateIngredientsTask = taskService.allocateIngredients({
-        issuedBy = name,
-        items = task.items,
-        partOfTaskId = task.id,
-        label = "allocate-ingredients"
-    })
+    local allocateIngredientsTask = taskService.allocateIngredients({issuedBy = name, items = task.items, partOfTaskId = task.id})
 
     if allocateIngredientsTask.status == "failed" then
         print("[error] allocating ingredients failed")
@@ -30,7 +25,6 @@ local function work()
     local craftFromIngredientsTask = taskService.craftFromIngredients({
         issuedBy = name,
         partOfTaskId = task.id,
-        label = "craft-from-ingredients",
         bufferId = allocateIngredientsTask.bufferId,
         craftingDetails = allocateIngredientsTask.craftingDetails
     })
@@ -44,6 +38,7 @@ local function work()
 
     while not Utils.isEmpty(spillover) do
         -- [todo] might transfer too much if worker crashes
+        -- add a new transfer method .keep() that works similarly to .fulfill()
         storageService.transfer(allocateIngredientsTask.bufferId, storageService.getByType("storage"), spillover)
         spillover = ItemStock.subtract(storageService.getBufferStock(allocateIngredientsTask.bufferId), task.items)
         os.sleep(5)

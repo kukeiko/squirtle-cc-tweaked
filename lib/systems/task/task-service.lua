@@ -184,7 +184,7 @@ end
 ---@field issuedBy string
 ---@field items ItemStock
 ---@field partOfTaskId integer
----@field label string
+---@field label? string
 ---@param options AllocateIngredientsTaskOptions
 ---@return AllocateIngredientsTask
 function TaskService.allocateIngredients(options)
@@ -204,7 +204,7 @@ end
 ---@class CraftFromIngredientsTaskOptions
 ---@field issuedBy string
 ---@field partOfTaskId integer
----@field label string
+---@field label? string
 ---@field craftingDetails CraftingDetails
 ---@field bufferId integer
 ---@param options CraftFromIngredientsTaskOptions

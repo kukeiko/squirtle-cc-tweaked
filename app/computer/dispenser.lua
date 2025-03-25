@@ -78,7 +78,7 @@ end
 
 ---@param left? string
 ---@param right? string
-local function drawStatusBar(left, right)
+local function drawNavBar(left, right)
     local termWidth, termHeight = term.getSize()
     term.setCursorPos(1, termHeight - 1)
     term.write(string.rep("-", termWidth))
@@ -120,7 +120,6 @@ local function showDispenseScreen(storageService, taskService, selection)
     local quantity = readInteger()
 
     if quantity and quantity > 0 then
-        -- quantity = math.min(total, quantity)
         term.clear()
         term.setCursorPos(1, 1)
 
@@ -155,7 +154,7 @@ local function showMissing(storageService, taskService)
 
     while true do
         term.clear()
-        drawStatusBar("< Transfers")
+        drawNavBar("< Transfers")
 
         ---@type "transfers"?
         local action
@@ -185,7 +184,7 @@ local function showTransfers(storageService, taskService)
 
     while true do
         term.clear()
-        drawStatusBar("< Items", "Missing >")
+        drawNavBar("< Items", "Missing >")
 
         ---@type "items"|"missing"?
         local action
@@ -220,7 +219,7 @@ local function showItemList(storageService, taskService)
 
     while true do
         term.clear()
-        drawStatusBar(nil, "Transfers >")
+        drawNavBar(nil, "Transfers >")
 
         ---@type SearchableListOption?
         local selection

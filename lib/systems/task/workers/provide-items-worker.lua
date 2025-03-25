@@ -34,7 +34,6 @@ local function work()
         if not Utils.isEmpty(open) then
             local craftItemsTask = taskService.craftItems({
                 issuedBy = os.getComputerLabel(),
-                label = "craft-missing-items",
                 partOfTaskId = task.id,
                 items = open,
                 to = task.bufferId
