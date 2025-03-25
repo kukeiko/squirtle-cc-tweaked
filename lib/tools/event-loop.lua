@@ -8,6 +8,7 @@ local Utils = require "lib.tools.utils"
 ---@field window? table
 
 local EventLoop = {}
+
 ---@type EventLoopThread?
 local currentThread
 
@@ -139,7 +140,7 @@ function EventLoop.run(...)
     end
 end
 
----@param options { accept?: fun(event: string) : boolean; window?:table }
+---@param options { accept?: fun(event: string) : boolean; window?: table }
 function EventLoop.configure(options)
     if currentThread == nil then
         error("no active thread")

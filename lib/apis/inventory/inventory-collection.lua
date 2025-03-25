@@ -66,6 +66,12 @@ function InventoryCollection.getByTypeAndLabel(inventoryType, label)
     error(string.format("inventory w/ type %s and label %s doesn't exist", inventoryType, label))
 end
 
+---@param name string
+---@return InventoryType
+function InventoryCollection.getType(name)
+    return cache[name].type
+end
+
 ---@param inventories string[]
 ---@param expected? InventoryType
 function InventoryCollection.mount(inventories, expected)

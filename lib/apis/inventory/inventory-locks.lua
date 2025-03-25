@@ -33,6 +33,8 @@ local function addLocks(inventories, lockId)
             locks[inventory].count = locks[inventory].count + 1
         end
     end
+
+    EventLoop.queue("inventory-locks:lock")
 end
 
 ---@param inventories string[]
@@ -147,6 +149,19 @@ function InventoryLocks.lock(inventories, lockId)
     end
 
     return true, releaseLocks, lockId
+end
+
+---@return string[]
+function InventoryLocks.getLockedInventories()
+    return Utils.getKeys(locks)
+end
+
+function InventoryLocks.pullLockChange()
+    EventLoop.waitForAny(function()
+        EventLoop.pull("inventory-locks:lock")
+    end, function()
+        EventLoop.pull("inventory-locks:unlock")
+    end)
 end
 
 function InventoryLocks.clear()
