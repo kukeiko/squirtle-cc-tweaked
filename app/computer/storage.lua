@@ -101,46 +101,7 @@ local function getActiveLockList()
     return options
 end
 
----@param left? string
----@param right? string
-local function drawNavBar(left, right)
-    local termWidth, termHeight = term.getSize()
-    term.setCursorPos(1, termHeight - 1)
-    term.write(string.rep("-", termWidth))
-    term.setCursorPos(1, termHeight)
-    term.clearLine()
-
-    if left then
-        term.setCursorPos(1, termHeight)
-        term.write(left)
-    end
-
-    if right then
-        term.setCursorPos(termWidth - #right, termHeight)
-        term.write(right)
-    end
-end
-
-local monitor = peripheral.find("monitor")
-
-if monitor then
-    monitor.setTextScale(1.0)
-    term.redirect(monitor)
-end
-
-term.clear()
-local w, h = term.getSize()
-local logWindow = window.create(term.current(), 1, 1, w, h - 2)
-local locksWindow = window.create(term.current(), 1, 1, w, h - 2, false)
-drawNavBar(nil, "Locks >")
-
-EventLoop.run(function()
-    EventLoop.configure({window = logWindow})
-    os.sleep(.1)
-    main()
-end, function()
-    EventLoop.configure({window = locksWindow})
-    os.sleep(.1)
+local function activeLocks()
     local list = SearchableList.new(getActiveLockList(), "Active Locks")
 
     EventLoop.run(function()
@@ -153,18 +114,19 @@ end, function()
             list:setOptions(getActiveLockList())
         end
     end)
-end, function()
-    while true do
-        EventLoop.pullKey(keys.right)
-        logWindow.setVisible(false)
-        locksWindow.setVisible(true)
-        drawNavBar("< Logs")
-    end
-end, function()
-    while true do
-        EventLoop.pullKey(keys.left)
-        logWindow.setVisible(true)
-        locksWindow.setVisible(false)
-        drawNavBar(nil, "Locks >")
-    end
-end)
+end
+
+local monitor = peripheral.find("monitor")
+
+if monitor then
+    monitor.setTextScale(1.0)
+    term.redirect(monitor)
+end
+
+term.clear()
+
+local Shell = require "lib.ui.shell"
+
+Shell:addWindow("Logs", main)
+Shell:addWindow("Locks", activeLocks)
+Shell:run()
