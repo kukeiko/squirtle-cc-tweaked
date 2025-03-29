@@ -14,6 +14,7 @@ local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local StorageService = require "lib.systems.storage.storage-service"
 local TaskService = require "lib.systems.task.task-service"
+local Shell = require "lib.ui.shell"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 
@@ -76,24 +77,6 @@ local function getMissingListOptions(storageService, taskService)
     return options
 end
 
----@param left? string
----@param right? string
-local function drawNavBar(left, right)
-    local termWidth, termHeight = term.getSize()
-    term.setCursorPos(1, termHeight - 1)
-    term.write(string.rep("-", termWidth))
-
-    if left then
-        term.setCursorPos(1, termHeight)
-        term.write(left)
-    end
-
-    if right then
-        term.setCursorPos(termWidth - #right, termHeight)
-        term.write(right)
-    end
-end
-
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
 ---@param selection SearchableListOption
@@ -147,28 +130,12 @@ end
 local function showMissing(storageService, taskService)
     local options = getMissingListOptions(storageService, taskService)
     local title = "Missing Ingredients"
-    local _, termHeight = term.getSize()
     local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
         return getMissingListOptions(storageService, taskService)
-    end, nil, termHeight - 2)
+    end)
 
     while true do
-        term.clear()
-        drawNavBar("< Transfers")
-
-        ---@type "transfers"?
-        local action
-
-        EventLoop.waitForAny(function()
-            searchableList:run()
-        end, function()
-            EventLoop.pullKey(keys.left)
-            action = "transfers"
-        end)
-
-        if action == "transfers" then
-            return nil
-        end
+        searchableList:run()
     end
 end
 
@@ -177,33 +144,12 @@ end
 local function showTransfers(storageService, taskService)
     local options = getTransfersListOptions(storageService, taskService)
     local title = "Transfers"
-    local _, termHeight = term.getSize()
     local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
         return getTransfersListOptions(storageService, taskService)
-    end, nil, termHeight - 2)
+    end)
 
     while true do
-        term.clear()
-        drawNavBar("< Items", "Missing >")
-
-        ---@type "items"|"missing"?
-        local action
-
-        EventLoop.waitForAny(function()
-            searchableList:run()
-        end, function()
-            EventLoop.pullKey(keys.left)
-            action = "items"
-        end, function()
-            EventLoop.pullKey(keys.right)
-            action = "missing"
-        end)
-
-        if action == "items" then
-            return nil
-        elseif action == "missing" then
-            showMissing(storageService, taskService)
-        end
+        searchableList:run()
     end
 end
 
@@ -212,27 +158,16 @@ end
 local function showItemList(storageService, taskService)
     local options = getDispenseItemsListOptions(storageService)
     local title = getDispenseItemsListTitle()
-    local _, termHeight = term.getSize()
+
     local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
         return getDispenseItemsListOptions(storageService)
-    end, nil, termHeight - 2)
+    end)
 
     while true do
-        term.clear()
-        drawNavBar(nil, "Transfers >")
-
-        ---@type SearchableListOption?
-        local selection
-        EventLoop.waitForAny(function()
-            selection = searchableList:run()
-        end, function()
-            EventLoop.pullKey(keys.right)
-        end)
+        local selection = searchableList:run()
 
         if selection then
             showDispenseScreen(storageService, taskService, selection)
-        else
-            showTransfers(storageService, taskService)
         end
     end
 end
@@ -243,5 +178,18 @@ end, function()
     print(string.format("[dispenser %s] connecting to services...", version()))
     local storageService = Rpc.nearest(StorageService)
     local taskService = Rpc.nearest(TaskService)
-    showItemList(storageService, taskService)
+
+    Shell:addWindow("Items", function()
+        showItemList(storageService, taskService)
+    end)
+
+    Shell:addWindow("Transfers", function()
+        showTransfers(storageService, taskService)
+    end)
+
+    Shell:addWindow("Missing", function()
+        showMissing(storageService, taskService)
+    end)
+
+    Shell:run()
 end)
