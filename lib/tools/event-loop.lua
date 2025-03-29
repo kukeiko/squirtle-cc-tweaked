@@ -140,6 +140,42 @@ function EventLoop.run(...)
     end
 end
 
+---@param ... function
+function EventLoop.createRun(...)
+    local threads = Utils.map({...}, function(fn)
+        return createThread(fn)
+    end)
+
+    ---@type EventLoopThread[]
+    local addedThreads = {}
+
+    ---@param ... function
+    local function add(...)
+        for _, fn in pairs({...}) do
+            table.insert(addedThreads, createThread(fn))
+        end
+    end
+
+    local function run()
+        -- [todo] should also already run the addedThreads
+        threads = runThreads(threads, {})
+
+        while #threads > 0 do
+            threads = runThreads(threads, table.pack(EventLoop.pull()))
+
+            if #addedThreads > 0 then
+                for _, thread in pairs(runThreads(addedThreads, {})) do
+                    table.insert(threads, thread)
+                end
+
+                addedThreads = {}
+            end
+        end
+    end
+
+    return add, run
+end
+
 ---@param options { accept?: fun(event: string) : boolean; window?: table }
 function EventLoop.configure(options)
     if currentThread == nil then
@@ -213,6 +249,18 @@ function EventLoop.pullKey(key)
 
         if pulledKey == key then
             return
+        end
+    end
+end
+
+---@param keys number[]
+---@return number
+function EventLoop.pullKeys(keys)
+    while true do
+        local _, pulledKey = EventLoop.pull("key")
+
+        if Utils.indexOf(keys, pulledKey) then
+            return pulledKey
         end
     end
 end

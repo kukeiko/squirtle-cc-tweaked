@@ -18,8 +18,9 @@ local readInteger = require "lib.ui.read-integer"
 local CraftingApi = require "lib.apis.crafting-api"
 local TaskService = require "lib.systems.task.task-service"
 local AppsService = require "lib.systems.runtime.apps-service"
-local TaskBufferService = require "lib.systems.task.task-buffer-service"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
+local EditEntity = require "lib.ui.edit-entity"
+local Shell = require "lib.ui.shell"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -98,20 +99,6 @@ end
 -- AppsService.folder = "test-apps"
 -- local client = Rpc.nearest(AppsService)
 -- AppsService.setComputerApps(client.getComputerApps(true), true)
-
--- ---@type SubwayStation
--- local subwayStation = {id = "foo", name = "Foo Bahnhof", type = "hub"}
--- local editEntity = EditEntity.new()
-
--- ---@type SubwayStationType[]
--- local types = {"hub", "endpoint", "platform", "switch"}
-
--- editEntity:addField("string", "id", "Id")
--- editEntity:addField("string", "name", "Name")
--- editEntity:addField("string", "type", "Type", {values = types})
-
--- local result = editEntity:run(subwayStation)
--- Utils.prettyPrint(result)
 
 -- Inventories.mount("top")
 
@@ -264,18 +251,6 @@ function testDanceTask()
     end
 end
 
-function testTransferItemsTask()
-    local taskService = Rpc.tryNearest(TaskService)
-    local task = taskService.transferItems({
-        issuedBy = os.getComputerLabel(),
-        items = {["minecraft:rail"] = 128},
-        to = {"minecraft:chest_10"},
-        toTag = "input"
-    })
-
-    Utils.prettyPrint(task)
-end
-
 function testUtilsReverse()
     local tbl = {"foo", "bar", "baz"}
     Utils.prettyPrint(Utils.reverse(tbl))
@@ -424,18 +399,24 @@ local recipes = {
         quantity = 1,
         ingredients = {["minecraft:redstone"] = {2}, ["minecraft:stick"] = {5}}
     },
-    ["minecraft:stick"] = {item = "minecraft:stick", quantity = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}}
+    ["minecraft:stick"] = {item = "minecraft:stick", quantity = 4, ingredients = {["minecraft:birch_planks"] = {2, 5}}},
+    ["minecraft:repeater"] = {
+        item = "minecraft:repeater",
+        quantity = 1,
+        ingredients = {["minecraft:redstone_torch"] = {4, 6}, ["minecraft:redstone"] = {5}, ["minecraft:stone"] = {7, 8, 9}}
+    }
 }
 
-function testGetCraftingDetails()
+local function testGetCraftingDetails()
     function testRedstoneTorch()
         ---@type ItemStock
-        local targetStock = {["minecraft:redstone_torch"] = 4}
+        local targetStock = {["minecraft:redstone_torch"] = 4, ["minecraft:repeater"] = 1}
         ---@type ItemStock
         local availableStock = {
             ["minecraft:redstone_torch"] = 1,
             ["minecraft:redstone"] = 3,
             ["minecraft:stick"] = 1,
+            ["minecraft:repeater"] = 3,
             ["minecraft:birch_planks"] = 2
         }
 
@@ -451,7 +432,8 @@ function testGetCraftingDetails()
         return CraftingApi.getCraftingDetails(targetStock, availableStock, recipes)
     end
 
-    local details = testAnvil()
+    local details = testRedstoneTorch()
+    -- local details = testAnvil()
 
     print("[available]")
     Utils.prettyPrint(details.available)
@@ -589,10 +571,61 @@ local function testInventoryLocks()
     end)
 end
 
+local function testSuckSlot()
+    os.sleep(1)
+    print(Squirtle.suckItem("bottom", "minecraft:glass", 96))
+end
+
+local function testEditEntity()
+    ---@type SubwayStation
+    local subwayStation = {id = "foo", name = "Foo Bahnhof", type = "hub", tracks = {}}
+    local editEntity = EditEntity.new()
+
+    ---@type SubwayStationType[]
+    local types = {"hub", "endpoint", "platform", "switch"}
+
+    editEntity:addField("string", "id", "Id")
+    editEntity:addField("string", "name", "Name")
+    editEntity:addField("string", "type", "Type", {values = types})
+
+    local result = editEntity:run(subwayStation)
+    Utils.prettyPrint(result)
+
+end
+
+local function testShowWirelessMessages()
+    local modem = peripheral.wrap("right")
+    modem.open(64) -- rpc channel
+
+    EventLoop.run(function()
+        while true do
+            local event = table.pack(EventLoop.pull("modem_message"))
+            Utils.prettyPrint(event[5])
+        end
+    end)
+end
+
+local function testShell()
+    Shell:addWindow("Foo", function()
+        print("hello, this is Foo!")
+        EventLoop.pullKey(keys.enter)
+    end)
+    Shell:addWindow("Bar", function()
+        print("hello, this is Bar!")
+        EventLoop.pullKey(keys.enter)
+
+        Shell:addWindow("Baz", function()
+            print("hello, this is Baz!")
+            EventLoop.pullKey(keys.enter)
+        end)
+    end)
+    Shell:run()
+end
+
 local now = os.epoch("utc")
 
 for _ = 1, 1 do
-    testInventoryLocks()
+    testShell()
 end
 
-print("[time]", (os.epoch("utc") - now) / 1000, "ms")
+-- print("[time]", (os.epoch("utc") - now) / 1000, "ms")
