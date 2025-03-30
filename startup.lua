@@ -8,7 +8,12 @@ local programs = {
     ["Lumberjack"] = "app/turtle/lumberjack/lumberjack.lua",
     ["Recipes"] = "app/turtle/recipe-reader.lua",
     ["Simon Says: Server"] = "app/computer/simon-says.lua 2",
-    ["Simon Says: Client"] = "app/computer/simon-says.lua client"
+    ["Simon Says: Client"] = "app/computer/simon-says.lua client",
+    ["Target Practice: Host"] = "app/computer/target-practice client",
+    ["Target Practice: Target #1"] = "app/computer/target-practice",
+    ["Target Practice: Target #2"] = "app/computer/target-practice",
+    ["Target Practice: Target #3"] = "app/computer/target-practice",
+    ["Target Practice: Target #4"] = "app/computer/target-practice"
 }
 
 if programs[label] then
