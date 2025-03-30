@@ -223,7 +223,7 @@ end
 
 ---@param timeout? number
 ---@param ... function
----@return boolean
+---@return boolean true if timeout was not hit
 function EventLoop.runTimed(timeout, ...)
     local fns = {...}
     local timeoutHit = false
