@@ -11,8 +11,8 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
-local score = 0
 local maxScore = 10
 local maxSimultaneousTargets = 2
 
@@ -42,7 +42,11 @@ function TargetPracticeService.showTarget(duration)
 end
 
 local function server()
+    Utils.writeStartupFile("target-practice")
+
     EventLoop.run(function()
+        RemoteService.run({"target-practice"})
+    end, function()
         Rpc.host(TargetPracticeService)
     end, function()
         while true do
@@ -131,11 +135,18 @@ local function game()
 end
 
 local function client()
-    os.sleep(3) -- give targets enough time to boot
+    Utils.writeStartupFile("target-practice", tostring("client"))
 
-    while true do
-        game()
-    end
+    EventLoop.run(function()
+        RemoteService.run({"target-practice"})
+    end, function()
+        -- [todo] should wait for player input to start the game so that all targets are in range
+        os.sleep(3) -- give targets enough time to boot
+
+        while true do
+            game()
+        end
+    end)
 end
 
 EventLoop.run(function()

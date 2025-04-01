@@ -248,5 +248,10 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/simon-says.lua -p app/computer/?.lua -p ?.lua -o dist/computer/simon-says"
         },
+        {
+            "label": "build computer:target-practice",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/target-practice.lua -p app/computer/?.lua -p ?.lua -o dist/computer/target-practice"
+        },
     ]
 }
