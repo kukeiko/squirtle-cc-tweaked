@@ -20,7 +20,7 @@ local playedSounds = {}
 local activePlayers = 0
 local requiredPlayers = 1
 local score = 0
-local maxScore = 3
+local maxScore = 10
 local responseTime = 2
 local scoreSide = "right"
 
