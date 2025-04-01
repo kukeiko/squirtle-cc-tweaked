@@ -18,8 +18,8 @@ local maxScore = 10
 local hitSide = Side.getName(Side.left)
 local showTargetSide = Side.getName(Side.right)
 local scoreSide = Side.getName(Side.right)
-local cooldowns = {5, 4, 4, 3, 3, 2, 2, 1, 1, 1}
-local durations = {5, 5, 4, 4, 3, 3, 2, 2, 1, 1}
+local cooldowns = {5, 4, 3, 3, 2, 2, 1, 1, 0, 0}
+local durations = {5, 4, 3, 3, 2, 2, 1, 1, 1, 1}
 
 ---@class TargetPracticeService : Service
 local TargetPracticeService = {name = "target-practice", maxDistance = 128}
@@ -112,6 +112,7 @@ end
 ---@param playerCount integer
 local function game(playerCount)
     local score = 0
+    local speaker = peripheral.find("speaker")
 
     ---@param nextScore integer
     local function setScore(nextScore)
@@ -154,8 +155,20 @@ local function game(playerCount)
 
         if hitCount == playerCount then
             setScore(score + 1)
+
+            if speaker then
+                if score == maxScore then
+                    speaker.playSound("ui.toast.challenge_complete", 3)
+                else
+                    speaker.playSound("entity.player.levelup", 3)
+                end
+            end
         else
             setScore(score - 1)
+
+            if speaker then
+                speaker.playSound("block.lava.extinguish", 3)
+            end
         end
 
         previousTargets = nextTargets
