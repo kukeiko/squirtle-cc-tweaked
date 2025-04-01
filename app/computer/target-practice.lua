@@ -15,31 +15,36 @@ local Side = require "lib.apis.side"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
 local maxScore = 10
-local maxSimultaneousTargets = 2
 local hitSide = Side.getName(Side.left)
 local showTargetSide = Side.getName(Side.right)
 local scoreSide = Side.getName(Side.right)
+local cooldowns = {5, 4, 4, 3, 3, 2, 2, 1, 1, 1}
+local durations = {5, 5, 4, 4, 3, 3, 2, 2, 1, 1}
 
 ---@class TargetPracticeService : Service
 local TargetPracticeService = {name = "target-practice", maxDistance = 128}
+local isTogglingTarget = false
+
+local function toggleShowTarget()
+    isTogglingTarget = true
+    redstone.setOutput(showTargetSide, true)
+    os.sleep(1)
+    redstone.setOutput(showTargetSide, false)
+    os.sleep(1)
+    isTogglingTarget = false
+end
 
 ---@param duration number
 ---@return boolean hit
 function TargetPracticeService.showTarget(duration)
     local hit = EventLoop.runUntil("target-practice:hit", function()
-        redstone.setOutput(showTargetSide, true)
-        os.sleep(1)
-        redstone.setOutput(showTargetSide, false)
+        toggleShowTarget()
         os.sleep(duration)
-        redstone.setOutput(showTargetSide, true)
-        os.sleep(1)
-        redstone.setOutput(showTargetSide, false)
+        toggleShowTarget()
     end)
 
     if hit then
-        redstone.setOutput(showTargetSide, true)
-        os.sleep(1)
-        redstone.setOutput(showTargetSide, false)
+        toggleShowTarget()
     end
 
     return hit
@@ -57,6 +62,10 @@ local function server()
             EventLoop.pull("redstone")
 
             if redstone.getInput(hitSide) then
+                while isTogglingTarget do
+                    os.sleep(.1)
+                end
+
                 print("[hit]", redstone.getAnalogInput(hitSide))
                 EventLoop.queue("target-practice:hit")
                 os.sleep(1) -- to debounce observer input and multiple hits
@@ -91,10 +100,18 @@ local function pickTargets(targets, previousTargets, maxSimultaneousTargets)
     return nextTargets
 end
 
-local function game()
+local function showWonAnimation()
+    for _ = 1, 3 do
+        redstone.setOutput(scoreSide, false)
+        os.sleep(.5)
+        redstone.setOutput(scoreSide, true)
+        os.sleep(.5)
+    end
+end
+
+---@param playerCount integer
+local function game(playerCount)
     local score = 0
-    local timeBetweenTargets = 5
-    local timeShowTargets = 5
 
     ---@param nextScore integer
     local function setScore(nextScore)
@@ -107,35 +124,45 @@ local function game()
 
     local targets = Rpc.all(TargetPracticeService)
 
-    if #targets < maxSimultaneousTargets * 2 then
-        error(string.format("not enough targets, found %d/%d", #targets, maxSimultaneousTargets * 2))
+    if #targets < playerCount * 2 then
+        error(string.format("not enough targets, found %d/%d", #targets, playerCount * 2))
     end
 
     ---@type (TargetPracticeService|RpcClient)[]
     local previousTargets = {}
 
     while score < maxScore do
-        os.sleep(timeBetweenTargets)
+        local cooldown = cooldowns[score] or 5
+        local duration = durations[score] or 5
+        print(string.format("[cooldown] %ds", cooldown))
+        os.sleep(cooldown)
+        local nextTargets = pickTargets(targets, previousTargets, playerCount)
+        print(string.format("[duration] %ds", duration))
 
-        ---@type (TargetPracticeService|RpcClient)[]
-        local nextTargets = pickTargets(targets, previousTargets, maxSimultaneousTargets)
-
+        local hitCount = 0
         EventLoop.run(table.unpack(Utils.map(nextTargets, function(target)
             return function()
-                if target.showTarget(timeShowTargets) then
-                    setScore(score + 1)
+                if target.showTarget(duration) then
+                    hitCount = hitCount + 1
                     print("[hit]", target.host)
                 else
-                    setScore(score - 1)
+                    hitCount = hitCount - 1
                     print("[miss]", target.host)
                 end
             end
         end)))
 
+        if hitCount == playerCount then
+            setScore(score + 1)
+        else
+            setScore(score - 1)
+        end
+
         previousTargets = nextTargets
     end
 
     print("[success] the players won!")
+    showWonAnimation()
 end
 
 local function client()
@@ -144,11 +171,12 @@ local function client()
     EventLoop.run(function()
         RemoteService.run({"target-practice"})
     end, function()
-        -- [todo] should wait for player input to start the game so that all targets are in range
-        os.sleep(3) -- give targets enough time to boot
-
         while true do
-            game()
+            print("[prompt] how many players?")
+            local playerCount = EventLoop.pullInteger(1, 4)
+            print("[players]", playerCount)
+            print("[start] get ready!")
+            game(playerCount)
         end
     end)
 end
