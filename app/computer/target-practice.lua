@@ -18,8 +18,16 @@ local maxScore = 10
 local hitSide = Side.getName(Side.left)
 local showTargetSide = Side.getName(Side.right)
 local scoreSide = Side.getName(Side.right)
-local cooldowns = {5, 4, 3, 3, 2, 2, 1, 1, 0, 0}
-local durations = {5, 4, 3, 3, 2, 2, 1, 1, 1, 1}
+local cooldowns = {
+    {5, 5, 5, 5, 4, 4, 4, 3, 3, 3}, -- easy
+    {5, 4, 3, 3, 2, 2, 1, 1, 0, 0}, -- medium
+    {3, 2, 1, 1, 1, 0, 0, 0, 0, 0} -- hard
+}
+local durations = {
+    {5, 5, 5, 5, 4, 4, 4, 3, 3, 3}, -- easy
+    {5, 4, 3, 3, 2, 2, 1, 1, 1, 1}, -- medium
+    {2, 2, 2, 1, 1, 1, 1, 1, 1, 1} -- hard
+}
 
 ---@class TargetPracticeService : Service
 local TargetPracticeService = {name = "target-practice", maxDistance = 128}
@@ -110,7 +118,8 @@ local function showWonAnimation()
 end
 
 ---@param playerCount integer
-local function game(playerCount)
+---@param difficulty integer
+local function game(playerCount, difficulty)
     local score = 0
     local speaker = peripheral.find("speaker")
 
@@ -133,8 +142,8 @@ local function game(playerCount)
     local previousTargets = {}
 
     while score < maxScore do
-        local cooldown = cooldowns[score] or 5
-        local duration = durations[score] or 5
+        local cooldown = cooldowns[difficulty][score + 1]
+        local duration = durations[difficulty][score + 1]
         print(string.format("[cooldown] %ds", cooldown))
         os.sleep(cooldown)
         local nextTargets = pickTargets(targets, previousTargets, playerCount)
@@ -157,9 +166,7 @@ local function game(playerCount)
             setScore(score + 1)
 
             if speaker then
-                if score == maxScore then
-                    speaker.playSound("ui.toast.challenge_complete", 3)
-                else
+                if score < maxScore then
                     speaker.playSound("entity.player.levelup", 3)
                 end
             end
@@ -174,6 +181,9 @@ local function game(playerCount)
         previousTargets = nextTargets
     end
 
+    speaker.playSound("ui.toast.challenge_complete", 3)
+    setScore(maxScore)
+    os.sleep(.5)
     print("[success] the players won!")
     showWonAnimation()
 end
@@ -188,8 +198,14 @@ local function client()
             print("[prompt] how many players?")
             local playerCount = EventLoop.pullInteger(1, 4)
             print("[players]", playerCount)
+
+            print("[prompt] what difficulty?")
+            print(" (1) easy")
+            print(" (2) medium")
+            print(" (3) hard")
+            local difficulty = EventLoop.pullInteger(1, 3)
             print("[start] get ready!")
-            game(playerCount)
+            game(playerCount, difficulty)
         end
     end)
 end
