@@ -11,10 +11,14 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local Side = require "lib.apis.side"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
 local maxScore = 10
 local maxSimultaneousTargets = 2
+local hitSide = Side.getName(Side.left)
+local showTargetSide = Side.getName(Side.right)
+local scoreSide = Side.getName(Side.right)
 
 ---@class TargetPracticeService : Service
 local TargetPracticeService = {name = "target-practice", maxDistance = 128}
@@ -23,19 +27,19 @@ local TargetPracticeService = {name = "target-practice", maxDistance = 128}
 ---@return boolean hit
 function TargetPracticeService.showTarget(duration)
     local hit = EventLoop.runUntil("target-practice:hit", function()
-        redstone.setOutput("back", true)
+        redstone.setOutput(showTargetSide, true)
         os.sleep(1)
-        redstone.setOutput("back", false)
+        redstone.setOutput(showTargetSide, false)
         os.sleep(duration)
-        redstone.setOutput("back", true)
+        redstone.setOutput(showTargetSide, true)
         os.sleep(1)
-        redstone.setOutput("back", false)
+        redstone.setOutput(showTargetSide, false)
     end)
 
     if hit then
-        redstone.setOutput("back", true)
+        redstone.setOutput(showTargetSide, true)
         os.sleep(1)
-        redstone.setOutput("back", false)
+        redstone.setOutput(showTargetSide, false)
     end
 
     return hit
@@ -52,8 +56,8 @@ local function server()
         while true do
             EventLoop.pull("redstone")
 
-            if redstone.getInput("front") then
-                print("[hit]", redstone.getAnalogInput("front"))
+            if redstone.getInput(hitSide) then
+                print("[hit]", redstone.getAnalogInput(hitSide))
                 EventLoop.queue("target-practice:hit")
                 os.sleep(1) -- to debounce observer input and multiple hits
             end
@@ -96,7 +100,7 @@ local function game()
     local function setScore(nextScore)
         score = math.max(0, math.min(nextScore, maxScore))
         print("[score]", score)
-        redstone.setAnalogOutput("right", score)
+        redstone.setAnalogOutput(scoreSide, score)
     end
 
     setScore(0)
@@ -135,7 +139,7 @@ local function game()
 end
 
 local function client()
-    Utils.writeStartupFile("target-practice", tostring("client"))
+    Utils.writeStartupFile("target-practice client")
 
     EventLoop.run(function()
         RemoteService.run({"target-practice"})
