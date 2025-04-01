@@ -186,6 +186,7 @@ local function game(playerCount, difficulty)
     os.sleep(.5)
     print("[success] the players won!")
     showWonAnimation()
+    redstone.setOutput("bottom", true)
 end
 
 local function testAllTargets()
@@ -204,6 +205,7 @@ local function client()
         RemoteService.run({"target-practice"})
     end, function()
         while true do
+            redstone.setOutput("bottom", false)
             print("[prompt] how many players?")
             local playerCount = EventLoop.pullInteger(0, 4)
 
@@ -212,7 +214,6 @@ local function client()
                 testAllTargets()
             else
                 print("[players]", playerCount)
-
                 print("[prompt] what difficulty?")
                 print(" (1) easy")
                 print(" (2) medium")
@@ -220,6 +221,7 @@ local function client()
                 local difficulty = EventLoop.pullInteger(1, 3)
                 print("[start] get ready!")
                 game(playerCount, difficulty)
+                Utils.waitForUserToHitEnter("(hit enter to close door and restart)")
             end
         end
     end)
