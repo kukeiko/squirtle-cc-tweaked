@@ -188,6 +188,15 @@ local function game(playerCount, difficulty)
     showWonAnimation()
 end
 
+local function testAllTargets()
+    local targets = Rpc.all(TargetPracticeService)
+    EventLoop.run(table.unpack(Utils.map(targets, function(target)
+        return function()
+            target.showTarget(3)
+        end
+    end)))
+end
+
 local function client()
     Utils.writeStartupFile("target-practice client")
 
@@ -196,16 +205,22 @@ local function client()
     end, function()
         while true do
             print("[prompt] how many players?")
-            local playerCount = EventLoop.pullInteger(1, 4)
-            print("[players]", playerCount)
+            local playerCount = EventLoop.pullInteger(0, 4)
 
-            print("[prompt] what difficulty?")
-            print(" (1) easy")
-            print(" (2) medium")
-            print(" (3) hard")
-            local difficulty = EventLoop.pullInteger(1, 3)
-            print("[start] get ready!")
-            game(playerCount, difficulty)
+            if playerCount == 0 then
+                print("[test] all targets")
+                testAllTargets()
+            else
+                print("[players]", playerCount)
+
+                print("[prompt] what difficulty?")
+                print(" (1) easy")
+                print(" (2) medium")
+                print(" (3) hard")
+                local difficulty = EventLoop.pullInteger(1, 3)
+                print("[start] get ready!")
+                game(playerCount, difficulty)
+            end
         end
     end)
 end
