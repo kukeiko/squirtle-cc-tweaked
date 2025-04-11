@@ -7,10 +7,10 @@
 ---@class RemoteIntParameterCommand : RemoteCommand
 ---@field type "int-parameter"
 ---@field name string
----@field get fun() : integer
+---@field get fun() : integer?
 ---@field set fun(value: integer|nil) : boolean, string?
----@field min integer
----@field max integer
+---@field min integer?
+---@field max integer?
 ---@field nullable boolean
 ---@field requiresReboot boolean
 ---

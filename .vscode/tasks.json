@@ -253,5 +253,20 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/target-practice.lua -p app/computer/?.lua -p ?.lua -o dist/computer/target-practice"
         },
+        {
+            "label": "build computer:teleport",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/teleport.lua -p app/computer/?.lua -p ?.lua -o dist/computer/teleport"
+        },
+        {
+            "label": "build pocket:teleport",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/teleport"
+        },
+        {
+            "label": "build pocket:teleport:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o ../23/teleport.lua"
+        },
     ]
 }

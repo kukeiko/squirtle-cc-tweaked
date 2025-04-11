@@ -41,7 +41,7 @@ local function remoteCommandToListOption(command, remote)
     if command.type == "int-parameter" then
         command = command --[[@as RemoteIntParameterCommand]]
         ---@type SearchableListOption
-        local option = {id = command.id, name = command.name, suffix = tostring(remote.getIntParameter(command.id))}
+        local option = {id = command.id, name = command.name, suffix = tostring(remote.getIntParameter(command.id) or nil)}
 
         return option
     else
@@ -56,12 +56,23 @@ local function runCommand(command, remote)
         command = command --[[@as RemoteIntParameterCommand]]
 
         print(string.format("[prompt] enter new value for %s", command.name))
-        print(string.format("[min] %d, [max] %d, [optional] %s", command.min, command.max, command.nullable))
+        local hints = {}
+
+        if command.min then
+            table.insert(hints, string.format("[min] %d", command.min))
+        end
+
+        if command.max then
+            table.insert(hints, string.format("[max] %d", command.max))
+        end
+
+        table.insert(hints, string.format("[optional] %s", command.nullable))
+        print(table.concat(hints, ", "))
 
         local value = readInteger()
 
         while not value and not command.nullable do
-            value = readInteger()
+            value = readInteger(value, {min = command.min, max = command.max})
         end
 
         local succees, message = remote.setIntParameter(command.id, value)
@@ -145,3 +156,6 @@ end
 EventLoop.run(function()
     showRemotes()
 end)
+
+term.clear()
+term.setCursorPos(1, 1)

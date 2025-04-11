@@ -13,7 +13,8 @@ local programs = {
     ["Target Practice: Target #1"] = "app/computer/target-practice",
     ["Target Practice: Target #2"] = "app/computer/target-practice",
     ["Target Practice: Target #3"] = "app/computer/target-practice",
-    ["Target Practice: Target #4"] = "app/computer/target-practice"
+    ["Target Practice: Target #4"] = "app/computer/target-practice",
+    ["Teleporter"] = "app/computer/teleport nil nil 23"
 }
 
 if programs[label] then

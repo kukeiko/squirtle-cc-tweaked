@@ -3,6 +3,7 @@ local EventLoop = require "lib.tools.event-loop"
 
 ---@class ReadIntegerOptions
 ---@field cancel? table
+---@field min? integer
 ---@field max? integer
 
 ---@param value? integer
@@ -67,6 +68,10 @@ return function(value, options)
 
             if options.max and value > options.max then
                 value = options.max
+            end
+
+            if options.min and value < options.min then
+                value = options.min
             end
         end
 
