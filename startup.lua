@@ -14,7 +14,10 @@ local programs = {
     ["Target Practice: Target #2"] = "app/computer/target-practice",
     ["Target Practice: Target #3"] = "app/computer/target-practice",
     ["Target Practice: Target #4"] = "app/computer/target-practice",
-    ["Teleporter"] = "app/computer/teleport nil nil 23"
+    ["Teleporter"] = "app/computer/teleport nil nil 23",
+    ["Xylophone: Server"] = "app/computer/xylophone 2",
+    ["Xylophone: Note #1"] = "app/computer/xylophone client 1",
+    ["Xylophone: Note #2"] = "app/computer/xylophone client 2"
 }
 
 if programs[label] then

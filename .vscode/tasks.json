@@ -268,5 +268,10 @@
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o ../23/teleport.lua"
         },
+        {
+            "label": "build computer:xylophone",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/xylophone.lua -p app/computer/?.lua -p ?.lua -o dist/computer/xylophone"
+        }
     ]
 }
