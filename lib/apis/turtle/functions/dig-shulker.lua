@@ -1,9 +1,10 @@
 local DatabaseApi = require "lib.apis.database.database-api"
-local SquirtleBasicApi = require "lib.squirtle.api-layers.squirtle-basic-api"
+local TurtleMiningApi = require "lib.apis.turtle.turtle-mining-api"
 
 ---@param side string
 return function(side)
-    SquirtleBasicApi.dig(side)
+    -- [todo] assert that there is a shulker?
+    TurtleMiningApi.dig(side)
     local diskState = DatabaseApi.getSquirtleDiskState()
     diskState.shulkerSides = {}
     diskState.cleanupSides[side] = nil

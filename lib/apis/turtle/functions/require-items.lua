@@ -1,8 +1,6 @@
 local Utils = require "lib.tools.utils"
-local Elemental = require "lib.squirtle.api-layers.squirtle-elemental-api"
-local Basic = require "lib.squirtle.api-layers.squirtle-basic-api"
-local placeShulker = require "lib.squirtle.place-shulker"
-local digShulker = require "lib.squirtle.dig-shulker"
+local TurtleInventoryApi = require "lib.apis.turtle.turtle-inventory-api"
+local TurtleSharedApi = require "lib.apis.turtle.turtle-shared-api"
 
 -- [todo] add remaining
 -- [todo] or, alternatively: make connection to StorageService mandatory and use its StorageService.getRequiredSlotCount()
@@ -30,7 +28,7 @@ end
 local function getMissing(items)
     ---@type table<string, integer>
     local open = {}
-    local stock = Basic.getStock()
+    local stock = TurtleInventoryApi.getStock()
 
     for item, required in pairs(items) do
         local missing = required - (stock[item] or 0)
@@ -112,12 +110,12 @@ local function fillShulker(items, shulker)
         printItemList(open)
         os.pullEvent("turtle_inventory")
 
-        for slot = 1, Elemental.size() do
-            local item = Elemental.getStack(slot)
+        for slot = 1, TurtleInventoryApi.size() do
+            local item = TurtleInventoryApi.getStack(slot)
 
             if item and item.name ~= "minecraft:shulker_box" then
-                Elemental.select(slot)
-                Basic.drop(shulker)
+                TurtleInventoryApi.select(slot)
+                TurtleInventoryApi.drop(shulker)
             end
         end
 
@@ -178,7 +176,7 @@ local function requireItemsUsingShulker(items)
     -- shulkers have 27 slots, but we want to keep one slot empty per shulker so that suckSlot() doesn't have to temporarily load an item from the shulker into the turtle inventory
     local maxStacksPerShulker = 26
     local numShulkers = math.ceil(numStacks / maxStacksPerShulker)
-    local maxShulkers = Elemental.size() - 1
+    local maxShulkers = TurtleInventoryApi.size() - 1
 
     -- [todo] assumes an empty inventory
     if numShulkers > maxShulkers then
@@ -192,17 +190,17 @@ local function requireItemsUsingShulker(items)
 
     for _ = 1, numShulkers do
         for slot = 1, 16 do
-            local item = Elemental.getStack(slot, true)
+            local item = TurtleInventoryApi.getStack(slot, true)
 
             if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
-                Elemental.select(slot)
-                local placedSide = placeShulker()
+                TurtleInventoryApi.select(slot)
+                local placedSide = TurtleSharedApi.placeShulker()
                 local itemsForShulker, leftOverFromSlice = sliceNumStacksFromItems(openItems, maxStacksPerShulker)
                 openItems = leftOverFromSlice
                 fillShulker(itemsForShulker, placedSide)
-                local shulkerSlot = Basic.selectFirstEmpty()
-                digShulker(placedSide)
-                local shulkerItem = Basic.getStack(shulkerSlot, true)
+                local shulkerSlot = TurtleInventoryApi.selectFirstEmpty()
+                TurtleSharedApi.digShulker(placedSide)
+                local shulkerItem = TurtleInventoryApi.getStack(shulkerSlot, true)
 
                 if not shulkerItem then
                     error("my shulker went poof :(")
@@ -225,7 +223,7 @@ return function(items, shulker)
 
     -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,
     -- yet we still count stacks of total items required)
-    if shulker or numStacks > Elemental.size() then
+    if shulker or numStacks > TurtleInventoryApi.size() then
         requireItemsUsingShulker(items)
     else
         requireItemsNoShulker(items)

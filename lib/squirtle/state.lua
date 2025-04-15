@@ -1,3 +1,4 @@
+-- [todo] move to apis/turtle and remove usage from anyone but TurtleStateApi
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
 
@@ -93,6 +94,7 @@ function State.checkResumeEnd()
         State.simulate = false
         State.simulation = {}
 
+        print("[simulate] end simulation")
         return true
     end
 
