@@ -9,14 +9,14 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local Turtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.squirtle.squirtle-api"
 
 local function readPattern()
     ---@type string[]
     local pattern = {}
 
-    for slot = 1, Turtle.size() do
-        local stack = Turtle.getStack(slot)
+    for slot = 1, TurtleApi.size() do
+        local stack = TurtleApi.getStack(slot)
 
         if stack then
             for _ = 1, stack.count do
@@ -30,6 +30,9 @@ end
 
 ---@return integer
 local function promptPatternMode()
+    term.clear()
+    term.setCursorPos(1, 1)
+
     print("[prompt] choose pattern mode:")
     print(" (1) alternate block")
     print(" (2) alternate layer")
@@ -75,9 +78,36 @@ local function promptPattern(patternMode)
     end
 end
 
+---@return "up" | "left" | "right"
+local function promptExitDirection()
+    term.clear()
+    term.setCursorPos(1, 1)
+
+    print("[prompt] towards which direction can I move to place the last block?")
+    print(" (1) up")
+    print(" (2) right")
+    print(" (3) left")
+
+    local directions = {"up", "right", "left"}
+    return directions[EventLoop.pullInteger(1, 3)]
+end
+
+---@return boolean
+local function promptShouldReturnHome()
+    term.clear()
+    term.setCursorPos(1, 1)
+
+    print("[prompt] should I return home?")
+    print(" (1) yes")
+    print(" (2) no")
+
+    local options = {true, false}
+    return options[EventLoop.pullInteger(1, 2)]
+end
+
 ---@param state WallAppState
 local function sequence(state)
-    Turtle.turn("back")
+    TurtleApi.turn("back")
     local patternIndex = 1
 
     for line = 1, state.height do
@@ -87,17 +117,40 @@ local function sequence(state)
             item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
 
             if column ~= state.depth then
-                Turtle.move("back")
-                Turtle.put("front", item)
+                TurtleApi.move("back")
+                TurtleApi.put("front", item)
             elseif line == state.height then
+                -- last block: move based on configured exit direction
+                if state.exitDirection == "up" then
+                    TurtleApi.move("up")
+                    TurtleApi.put("bottom", item)
+                elseif state.exitDirection == "left" then
+                    if line % 2 == 0 then
+                        TurtleApi.turn("right")
+                    else
+                        TurtleApi.turn("left")
+                    end
+
+                    TurtleApi.move("back")
+                    TurtleApi.put("front", item)
+                elseif state.exitDirection == "right" then
+                    if line % 2 == 0 then
+                        TurtleApi.turn("left")
+                    else
+                        TurtleApi.turn("right")
+                    end
+
+                    TurtleApi.move("back")
+                    TurtleApi.put("front", item)
+                end
                 -- exit out without placing the last block so the turtle is easier to find for the player to pick up again
                 return
             else
-                Turtle.move("up")
-                Turtle.put("bottom", item)
+                TurtleApi.move("up")
+                TurtleApi.put("bottom", item)
 
                 if line ~= state.height then
-                    Turtle.turn("back")
+                    TurtleApi.turn("back")
                 end
             end
 
@@ -112,40 +165,59 @@ local function sequence(state)
     end
 end
 
----@class WallAppState
----@field patternMode integer
----@field pattern string[]
-local state = {depth = 0, height = 0}
+EventLoop.run(function()
+    ---@class WallAppState
+    ---@field patternMode integer
+    ---@field pattern string[]
+    ---@field exitDirection "up" | "left" | "right"
+    ---@field shouldReturnHome boolean
+    local state = {depth = 0, height = 0, exitDirection = "up", shouldReturnHome = false}
 
-local function printUsage()
-    print("Usage:")
-    print("wall <depth> <height>")
-end
+    local function printUsage()
+        print("Usage:")
+        print("wall <depth> <height>")
+    end
 
-term.clear()
-term.setCursorPos(1, 1)
-print(string.format("[wall %s] booting...", version()))
-local depth = tonumber(arg[1])
-local height = tonumber(arg[2])
+    term.clear()
+    term.setCursorPos(1, 1)
+    print(string.format("[wall %s] booting...", version()))
+    local depth = tonumber(arg[1])
+    local height = tonumber(arg[2])
 
-if not depth or not height or depth < 1 or height < 1 then
-    return printUsage()
-end
+    if not depth or not height or depth < 1 or height < 1 then
+        return printUsage()
+    end
 
--- [todo] make this app resumable, however: in case of a crash, the player has to help the turtle orientate itself
--- by providing a disk-drive and breaking a block at top or bottom for the turtle to place it.
--- should use SquirtleService to communicate that the turtle needs help from the player.
-state.patternMode = promptPatternMode()
-state.pattern = promptPattern(state.patternMode)
-state.depth = depth
-state.height = height
-Turtle.beginSimulation()
--- SquirtleState.simulate = true
--- [todo] hotfix - need easier way to just simulate placed blocks
--- SquirtleState.simulation.current = {facing = 0, fuel = 0, position = {x = 0, y = 0, z = 0}}
-sequence(state)
-local results = Turtle.endSimulation()
-Turtle.requireItems(results.placed)
-print("[ok] all good now! building...")
-sequence(state)
-print("[done]")
+    -- [todo] make this app resumable, however: in case of a crash, the player has to help the turtle orientate itself
+    -- by providing a disk-drive and breaking a block at top or bottom for the turtle to place it.
+    -- should use SquirtleService to communicate that the turtle needs help from the player.
+    state.patternMode = promptPatternMode()
+    state.pattern = promptPattern(state.patternMode)
+    state.exitDirection = promptExitDirection()
+    state.shouldReturnHome = promptShouldReturnHome()
+    state.depth = depth
+    state.height = height
+    TurtleApi.beginSimulation()
+    sequence(state)
+    local results = TurtleApi.endSimulation()
+    TurtleApi.requireItems(results.placed)
+    print("[ok] all good now! building...")
+    local home = TurtleApi.getPosition()
+
+    -- [todo] what delta to apply for exitDirection == "up"?
+    if state.exitDirection == "left" then
+        home = TurtleApi.getDeltaPosition("left")
+    elseif state.exitDirection == "right" then
+        home = TurtleApi.getDeltaPosition("right")
+    end
+
+    sequence(state)
+
+    if state.shouldReturnHome then
+        print("[home] going home!")
+        TurtleApi.navigate(home)
+    end
+
+    print("[done]")
+end)
+
