@@ -105,6 +105,19 @@ local function promptShouldReturnHome()
     return options[EventLoop.pullInteger(1, 2)]
 end
 
+---@return boolean
+local function promptShouldDigArea()
+    term.clear()
+    term.setCursorPos(1, 1)
+
+    print("[prompt] should I dig out the area first?")
+    print(" (1) yes")
+    print(" (2) no")
+
+    local options = {true, false}
+    return options[EventLoop.pullInteger(1, 2)]
+end
+
 ---@param state WallAppState
 local function sequence(state)
     TurtleApi.turn("back")
@@ -171,7 +184,8 @@ EventLoop.run(function()
     ---@field pattern string[]
     ---@field exitDirection "up" | "left" | "right"
     ---@field shouldReturnHome boolean
-    local state = {depth = 0, height = 0, exitDirection = "up", shouldReturnHome = false}
+    ---@field shouldDigArea boolean
+    local state = {depth = 0, height = 0, exitDirection = "up", shouldReturnHome = false, shouldDigArea = false}
 
     local function printUsage()
         print("Usage:")
@@ -195,6 +209,7 @@ EventLoop.run(function()
     state.pattern = promptPattern(state.patternMode)
     state.exitDirection = promptExitDirection()
     state.shouldReturnHome = promptShouldReturnHome()
+    state.shouldDigArea = promptShouldDigArea()
     state.depth = depth
     state.height = height
     TurtleApi.beginSimulation()
@@ -209,6 +224,12 @@ EventLoop.run(function()
         home = TurtleApi.getDeltaPosition("left")
     elseif state.exitDirection == "right" then
         home = TurtleApi.getDeltaPosition("right")
+    end
+
+    if state.shouldDigArea then
+        -- [todo] when I make this app resumable, I should consider that digArea() is using navigate(), which is not simulation safe yet.
+        -- either I make it simulation safe, or change digArea() to use simple way of moving back
+        TurtleApi.digArea(state.depth, 1, state.height)
     end
 
     sequence(state)

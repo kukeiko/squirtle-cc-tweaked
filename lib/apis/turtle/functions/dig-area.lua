@@ -42,7 +42,7 @@ return function(TurtleApi, depth, width, height)
         return
     end
 
-    local home = TurtleApi.locate()
+    local home = TurtleApi.getPosition()
     local facing = TurtleApi.getFacing()
 
     if math.abs(width) > depth then
