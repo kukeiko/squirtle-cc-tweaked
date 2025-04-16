@@ -9,8 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Squirtle = require "lib.squirtle.squirtle-api"
-local SquirtleState = require "lib.squirtle.state"
+local Turtle = require "lib.squirtle.squirtle-api"
 local boot = require "bone-meal.boot"
 local sequence = require "bone-meal.sequence"
 
@@ -21,17 +20,17 @@ if not state then
     return nil
 end
 
-SquirtleState.simulate = true
+Turtle.beginSimulation()
 sequence(state)
--- [todo] also require fuel based on steps taken
-SquirtleState.results.placed[state.blocks.waterBucket] = 2
-SquirtleState.results.placed[state.blocks.lavaBucket] = 1
-SquirtleState.results.placed[state.blocks.boneMeal] = 64
-SquirtleState.simulate = false
-Squirtle.requireItems(SquirtleState.results.placed)
+Turtle.recordPlacedBlock(state.blocks.waterBucket, 2)
+Turtle.recordPlacedBlock(state.blocks.lavaBucket, 1)
+Turtle.recordPlacedBlock(state.blocks.boneMeal, 64)
+local results = Turtle.endSimulation()
+Turtle.refuelTo(results.steps)
+Turtle.requireItems(results.placed)
 print("[ok] all good now! building...")
-local home = Squirtle.getPosition()
-local facing = Squirtle.getFacing()
+local home = Turtle.getPosition()
+local facing = Turtle.getFacing()
 sequence(state)
-Squirtle.navigate(home)
-Squirtle.face(facing)
+Turtle.navigate(home)
+Turtle.face(facing)

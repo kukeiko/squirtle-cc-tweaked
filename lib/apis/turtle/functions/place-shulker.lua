@@ -1,14 +1,13 @@
 local DatabaseApi = require "lib.apis.database.database-api"
-local SquirtleState = require "lib.squirtle.state"
 local TurtleBuildingApi = require "lib.apis.turtle.turtle-building-api"
+local TurtleStateApi = require "lib.apis.turtle.turtle-state-api"
 
 ---@return string
 return function()
     local diskState = DatabaseApi.getSquirtleDiskState()
-    -- [todo] use TurtleStateApi
-    diskState.shulkerSides = SquirtleState.shulkerSides
+    diskState.shulkerSides = TurtleStateApi.getShulkerSides()
     DatabaseApi.saveSquirtleDiskState(diskState)
-    local placedSide = TurtleBuildingApi.tryReplaceAtOneOf(SquirtleState.shulkerSides, "minecraft:shulker_box")
+    local placedSide = TurtleBuildingApi.tryReplaceAtOneOf(TurtleStateApi.getShulkerSides(), "minecraft:shulker_box")
 
     if not placedSide then
         error("todo: need help from player")

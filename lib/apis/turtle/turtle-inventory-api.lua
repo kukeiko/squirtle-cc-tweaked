@@ -518,6 +518,7 @@ function TurtleInventoryApi.selectItem(name)
     local slot = TurtleInventoryApi.find(name, true)
 
     if not slot then
+        -- [todo] why not "for slot = 1, TurtleInventoryApi.size() do ..."?
         local nextShulkerSlot = 1
 
         while true do

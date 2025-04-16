@@ -9,15 +9,14 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local Squirtle = require "lib.squirtle.squirtle-api"
-local SquirtleState = require "lib.squirtle.state"
+local Turtle = require "lib.squirtle.squirtle-api"
 
 local function readPattern()
     ---@type string[]
     local pattern = {}
 
-    for slot = 1, Squirtle.size() do
-        local stack = Squirtle.getStack(slot)
+    for slot = 1, Turtle.size() do
+        local stack = Turtle.getStack(slot)
 
         if stack then
             for _ = 1, stack.count do
@@ -78,7 +77,7 @@ end
 
 ---@param state WallAppState
 local function sequence(state)
-    Squirtle.turn("back")
+    Turtle.turn("back")
     local patternIndex = 1
 
     for line = 1, state.height do
@@ -88,17 +87,17 @@ local function sequence(state)
             item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
 
             if column ~= state.depth then
-                Squirtle.move("back")
-                Squirtle.put("front", item)
+                Turtle.move("back")
+                Turtle.put("front", item)
             elseif line == state.height then
                 -- exit out without placing the last block so the turtle is easier to find for the player to pick up again
                 return
             else
-                Squirtle.move("up")
-                Squirtle.put("bottom", item)
+                Turtle.move("up")
+                Turtle.put("bottom", item)
 
                 if line ~= state.height then
-                    Squirtle.turn("back")
+                    Turtle.turn("back")
                 end
             end
 
@@ -140,12 +139,13 @@ state.patternMode = promptPatternMode()
 state.pattern = promptPattern(state.patternMode)
 state.depth = depth
 state.height = height
-SquirtleState.simulate = true
--- [todo] hotfix - need easier way to simulate placed blocks
-SquirtleState.simulation.current = {facing = 0, fuel = 0, position = {x = 0, y = 0, z = 0}}
+Turtle.beginSimulation()
+-- SquirtleState.simulate = true
+-- [todo] hotfix - need easier way to just simulate placed blocks
+-- SquirtleState.simulation.current = {facing = 0, fuel = 0, position = {x = 0, y = 0, z = 0}}
 sequence(state)
-SquirtleState.simulate = false
-Squirtle.requireItems(SquirtleState.results.placed)
+local results = Turtle.endSimulation()
+Turtle.requireItems(results.placed)
 print("[ok] all good now! building...")
 sequence(state)
 print("[done]")

@@ -1,33 +1,32 @@
 local Side = require "lib.apis.side"
-local Squirtle = require "lib.squirtle.squirtle-api"
-local SquirtleState = require "lib.squirtle.state"
+local Turtle = require "lib.squirtle.squirtle-api"
 
-local move = Squirtle.move
-local turn = Squirtle.turn
-local put = Squirtle.put
+local move = Turtle.move
+local turn = Turtle.turn
+local put = Turtle.put
 
 local strafe = function(direction)
-    Squirtle.turn(direction)
-    Squirtle.move("forward")
-    Squirtle.turn(Side.rotate180(direction))
+    Turtle.turn(direction)
+    Turtle.move("forward")
+    Turtle.turn(Side.rotate180(direction))
 end
 
 ---@param state BoneMealAppState
 local placeWater = function(state)
-    Squirtle.selectItem(state.blocks.waterBucket)
-    Squirtle.place("down")
+    Turtle.selectItem(state.blocks.waterBucket)
+    Turtle.place("down")
 end
 
 ---@param state BoneMealAppState
 local takeWater = function(state)
-    Squirtle.selectItem(state.blocks.bucket)
-    return Squirtle.place("down")
+    Turtle.selectItem(state.blocks.bucket)
+    return Turtle.place("down")
 end
 
 ---@param state BoneMealAppState
 local placeLava = function(state)
-    Squirtle.selectItem(state.blocks.lavaBucket)
-    Squirtle.place("down")
+    Turtle.selectItem(state.blocks.lavaBucket)
+    Turtle.place("down")
 end
 
 ---@param state BoneMealAppState
@@ -59,7 +58,7 @@ local function putFloored(state, block)
     put("bottom", block)
 end
 
-local restoreBreakable = Squirtle.setBreakable(function()
+local restoreBreakable = Turtle.setBreakable(function()
     return true
 end)
 
@@ -314,7 +313,7 @@ local function placeWaterItemCollection(state)
     put("front", state.blocks.filler)
     move("down")
 
-    if not SquirtleState.simulate then
+    if not Turtle.isSimulating() then
         redstone.setOutput("bottom", true)
     end
 
@@ -330,7 +329,7 @@ local function placeWaterItemCollection(state)
         end
     end
 
-    if not SquirtleState.simulate then
+    if not Turtle.isSimulating() then
         redstone.setOutput("bottom", false)
     end
 
@@ -384,8 +383,8 @@ local function placeFloor(state)
     moveToNextLine("left")
     putLine(state, 3)
     move("forward")
-    Squirtle.selectItem(state.blocks.boneMeal)
-    Squirtle.drop("down")
+    Turtle.selectItem(state.blocks.boneMeal)
+    Turtle.drop("down")
     move("forward")
     putLine(state, 2)
 
@@ -564,9 +563,9 @@ local function buildCompostersAndHoppers(state)
 
     -- making sure we do not load from shulker during hopper placement,
     -- as the hoppers will suck items from the shulker
-    Squirtle.selectItem(state.blocks.composter)
+    Turtle.selectItem(state.blocks.composter)
 
-    if not SquirtleState.simulate then
+    if not Turtle.isSimulating() then
         redstone.setOutput("bottom", true)
     end
 
@@ -585,7 +584,7 @@ local function buildCompostersAndHoppers(state)
     move("back")
     put("front", state.blocks.composter)
 
-    if not SquirtleState.simulate then
+    if not Turtle.isSimulating() then
         redstone.setOutput("bottom", false)
     end
 end

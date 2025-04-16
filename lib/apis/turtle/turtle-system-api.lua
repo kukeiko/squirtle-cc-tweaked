@@ -2,7 +2,6 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.models.item-stock"
 local DatabaseApi = require "lib.apis.database.database-api"
-local State = require "lib.squirtle.state"
 local TurtleStateApi = require "lib.apis.turtle.turtle-state-api"
 local TurtleInventoryApi = require "lib.apis.turtle.turtle-inventory-api"
 local TurtleMiningApi = require "lib.apis.turtle.turtle-mining-api"
@@ -12,44 +11,10 @@ local TurtleSharedApi = require "lib.apis.turtle.turtle-shared-api"
 ---@class TurtleSystemApi
 local TurtleSystemApi = {}
 
----@param initial SimulationDetails?
----@param target SimulationDetails?
-function TurtleSystemApi.simulate(initial, target)
-    State.simulate = true
-    State.simulation.initial = initial
-    State.simulation.target = target
-
-    if initial then
-        State.simulation.current = Utils.clone(initial)
-    else
-        State.simulation.current = nil
-    end
-
-    State.checkResumeEnd()
-end
-
----@class TurtleConfigurationOptions
----@field orientate? "move"|"disk-drive"
----@field breakDirection? "top"|"front"|"bottom"
----@field shulkerSides? PlaceSide[]
----@param options TurtleConfigurationOptions
-function TurtleSystemApi.configure(options)
-    if options.orientate then
-        State.orientationMethod = options.orientate
-    end
-
-    if options.breakDirection then
-        State.breakDirection = options.breakDirection
-    end
-
-    if options.shulkerSides then
-        State.shulkerSides = options.shulkerSides
-    end
-end
-
 function TurtleSystemApi.cleanup()
     local diskState = DatabaseApi.getSquirtleDiskState()
 
+    -- [todo] what is the difference between cleanupSides & diskDriveSides/shulkerSides?
     for side, block in pairs(diskState.cleanupSides) do
         if TurtleMiningApi.probe(side, block) then
             TurtleInventoryApi.selectEmpty()
@@ -117,21 +82,24 @@ function TurtleSystemApi.runResumable(name, args, start, main, resume, finish, a
             math.randomseed(randomSeed)
 
             -- set up initial state for potential later shutdown recovery
-            ---@type SimulationDetails
+            ---@type SimulationState
             local initialState = {
                 facing = TurtleStateApi.getFacing(),
                 fuel = TurtleStateApi.getNonInfiniteFuelLevel(),
                 position = TurtleStateApi.getPosition()
             }
 
+            -- [todo] old code left for reference in case refactor broke something
             -- simulate main() to capture required fuel & items
-            State.simulate = true
-            State.simulation.current = Utils.clone(initialState)
-            main(state)
-            State.simulate = false
-            State.simulation.current = nil
-            TurtleMovementApi.refuelTo(State.results.steps)
-            local required = State.results.placed
+            -- State.simulate = true
+            -- State.simulation.current = Utils.clone(initialState)
+            -- main(state)
+            -- State.simulate = false
+            -- State.simulation.current = nil
+            TurtleStateApi.beginSimulation()
+            local results = TurtleStateApi.endSimulation()
+            TurtleMovementApi.refuelTo(results.steps)
+            local required = results.placed
 
             if additionalRequiredItems then
                 required = ItemStock.add(required, additionalRequiredItems)
@@ -155,7 +123,7 @@ function TurtleSystemApi.runResumable(name, args, start, main, resume, finish, a
             TurtleSystemApi.cleanup() -- replaces recover()
 
             local initialState = resumable.initialState
-            ---@type SimulationDetails
+            ---@type SimulationState
             local targetState = {
                 facing = TurtleStateApi.getFacing(),
                 fuel = TurtleStateApi.getNonInfiniteFuelLevel(),
@@ -165,7 +133,8 @@ function TurtleSystemApi.runResumable(name, args, start, main, resume, finish, a
             -- enable simulation so that the later call to main() gets simulated until
             -- it reaches the state the turtle was in when it shut off
             print("[simulate] enabling simulation...")
-            TurtleSystemApi.simulate(initialState, targetState)
+            -- TurtleSystemApi.simulate(initialState, targetState)
+            TurtleStateApi.beginSimulation(initialState, targetState)
         end
 
         resumable = DatabaseApi.getSquirtleResumable(name)

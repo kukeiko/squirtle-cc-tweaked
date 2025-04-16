@@ -1,5 +1,4 @@
 local getNative = require "lib.apis.turtle.functions.get-native"
-local SquirtleState = require "lib.squirtle.state"
 local TurtleStateApi = require "lib.apis.turtle.turtle-state-api"
 local TurtleMiningApi = require "lib.apis.turtle.turtle-mining-api"
 local TurtleInventoryApi = require "lib.apis.turtle.turtle-inventory-api"
@@ -106,11 +105,7 @@ end
 local function simulateTryPut(block)
     -- [todo] use TurtleStateApi
     if block then
-        if not SquirtleState.results.placed[block] then
-            SquirtleState.results.placed[block] = 0
-        end
-
-        SquirtleState.results.placed[block] = SquirtleState.results.placed[block] + 1
+        TurtleStateApi.recordPlacedBlock(block)
     end
 
     return true

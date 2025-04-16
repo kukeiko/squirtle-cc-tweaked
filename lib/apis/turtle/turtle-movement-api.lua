@@ -2,7 +2,6 @@ local Utils = require "lib.tools.utils"
 local World = require "lib.models.world"
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
-local State = require "lib.squirtle.state"
 local getNative = require "lib.apis.turtle.functions.get-native"
 local TurtleStateApi = require "lib.apis.turtle.turtle-state-api"
 local TurtleInventoryApi = require "lib.apis.turtle.turtle-inventory-api"
@@ -24,7 +23,7 @@ function TurtleMovementApi.turn(direction)
         TurtleMovementApi.turn("left")
         TurtleMovementApi.turn("left")
     elseif direction == "left" or direction == "right" then
-        if State.flipTurns then
+        if TurtleStateApi.getFlipTurns() then
             if direction == "left" then
                 direction = "right"
             elseif direction == "right" then
@@ -32,11 +31,11 @@ function TurtleMovementApi.turn(direction)
             end
         end
 
-        if State.simulate then
-            State.advanceTurn(direction)
+        if TurtleStateApi.isSimulating() then
+            TurtleStateApi.advanceTurn(direction)
         else
             getNative("turn", direction)()
-            State.facing = Cardinal.rotate(State.facing, direction)
+            TurtleStateApi.setFacing(Cardinal.rotate(TurtleStateApi.getFacing(), direction))
         end
     end
 end
@@ -171,7 +170,7 @@ function TurtleMovementApi.tryWalk(direction, steps)
     local native = getNative("go", direction)
     steps = steps or 1
 
-    if State.simulate then
+    if TurtleStateApi.isSimulating() then
         -- [note] "tryWalk()" doesn't simulate any steps because it is assumed that it is called only to move until an unbreakable block is hit,
         -- and since we're not simulating an actual world we can not really return a meaningful value of steps taken.
         return false, 0
@@ -222,17 +221,17 @@ local function tryMoveBack(steps)
     local didTurnBack = false
 
     for step = 1, steps do
-        if State.isResuming() and not State.facingTargetReached() and State.fuelTargetReached() then
+        if TurtleStateApi.isResuming() and TurtleStateApi.fuelTargetReached() and not TurtleStateApi.facingTargetReached() then
             -- we seem to be in correct position but the facing is off, meaning that there must've been
             -- a block that caused us to turn to try and mine it. in order to resume, we'll just
-            -- stop the simulation and orient the turtle towards the initial state, so that the
-            -- turning code gets run from start.
-            State.simulate = false
-            TurtleMovementApi.face(State.simulation.current.facing)
+            -- stop the simulation and orient the turtle so that the turning code gets run from the beginning.
+            local facing = TurtleStateApi.getFacing()
+            TurtleStateApi.endSimulation()
+            TurtleMovementApi.face(facing)
         end
 
-        if State.simulate then
-            State.advanceFuel()
+        if TurtleStateApi.isSimulating() then
+            TurtleStateApi.advanceFuel()
         else
             while not native() do
                 if not didTurnBack then
@@ -248,7 +247,7 @@ local function tryMoveBack(steps)
 
                 local block = TurtleMiningApi.probe(direction)
 
-                if block and not State.canBreak(block) then
+                if block and not TurtleStateApi.canBreak(block) then
                     TurtleMovementApi.turn("left")
                     TurtleMovementApi.turn("left")
 
@@ -282,9 +281,9 @@ function TurtleMovementApi.tryMove(direction, steps)
     local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleStateApi.getFacing()))
 
     for step = 1, steps do
-        if State.simulate then
-            State.advanceFuel()
-            State.advancePosition(delta)
+        if TurtleStateApi.isSimulating() then
+            TurtleStateApi.advanceFuel()
+            TurtleStateApi.advancePosition(delta)
         else
             while not native() do
                 while TurtleMiningApi.tryMine(direction) do
@@ -292,7 +291,7 @@ function TurtleMovementApi.tryMove(direction, steps)
 
                 local block = TurtleMiningApi.probe(direction)
 
-                if block and not State.canBreak(block) then
+                if block and not TurtleStateApi.canBreak(block) then
                     return false, step - 1, string.format("blocked by %s", block.name)
                 end
             end

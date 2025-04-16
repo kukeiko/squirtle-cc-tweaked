@@ -9,8 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Squirtle = require "lib.squirtle.squirtle-api"
-local SquirtleState = require "lib.squirtle.state"
+local Turtle = require "lib.squirtle.squirtle-api"
 local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 
@@ -24,10 +23,10 @@ end
 -- [note] importante when making resumability easier to use:
 -- orientate() relies on Simulation being inactive - otherwise placing the disk drive would be simulated :D
 
-SquirtleState.simulate = true
+Turtle.beginSimulation()
 sequence(state)
--- [todo] also require fuel based on steps taken
-Squirtle.requireItems(SquirtleState.results.placed)
-print("all good now! building...")
-SquirtleState.simulate = false
+local results = Turtle.endSimulation()
+Turtle.requireItems(results.placed)
+Turtle.refuelTo(results.steps)
+print("[ok] all good now! building...")
 sequence(state)

@@ -1,7 +1,6 @@
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
 local DatabaseApi = require "lib.apis.database.database-api"
-local State = require "lib.squirtle.state"
 local TurtleStateApi = require "lib.apis.turtle.turtle-state-api"
 local TurtleMiningApi = require "lib.apis.turtle.turtle-mining-api"
 local TurtleMovementApi = require "lib.apis.turtle.turtle-movement-api"
@@ -160,7 +159,7 @@ end
 ---@param directions? OrientationSide[]
 ---@return integer facing
 function TurtleLocationApi.orientate(method, directions)
-    method = method or State.orientationMethod
+    method = method or TurtleStateApi.getOrientationMethod()
 
     if method == "disk-drive" then
         TurtleStateApi.setFacing(orientateUsingDiskDrive(directions))
