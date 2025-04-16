@@ -9,7 +9,7 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local TurtleApi = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Rpc = require "lib.tools.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 
