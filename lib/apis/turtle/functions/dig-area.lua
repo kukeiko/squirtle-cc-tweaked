@@ -1,0 +1,137 @@
+---@generic T
+---@param a T
+---@param b T
+---@return T, T
+local function swap(a, b)
+    return b, a
+end
+
+---@param TurtleApi TurtleApi
+---@param depth integer
+---@param width integer
+---@param height integer
+return function(TurtleApi, depth, width, height)
+    assert(depth > 0, "depth must be greater than 0")
+    assert(width ~= 0, "width can't be 0")
+    assert(height ~= 0, "height can't be 0")
+    local vertical = "up"
+
+    if height < 0 then
+        vertical = "down"
+    end
+
+    height = math.abs(height)
+
+    if depth < 3 and math.abs(width) == 1 then
+        for y = 1, height do
+            if depth == 2 then
+                TurtleApi.dig()
+            end
+
+            if y ~= height then
+                TurtleApi.move(vertical)
+            end
+        end
+
+        if vertical == "down" then
+            TurtleApi.move("up", height - 1)
+        else
+            TurtleApi.move("down", height - 1)
+        end
+
+        return
+    end
+
+    local home = TurtleApi.locate()
+    local facing = TurtleApi.getFacing()
+
+    if math.abs(width) > depth then
+        if width > 0 then
+            TurtleApi.turn("right")
+            depth = -depth
+        else
+            TurtleApi.turn("left")
+            width = -width
+        end
+
+        width, depth = swap(width, depth)
+    end
+
+    local left = "left"
+    local right = "right"
+
+    if width < 0 then
+        left = "right"
+        right = "left"
+        width = math.abs(width)
+    end
+
+    ---@param y integer
+    local function digColumn(y)
+        for row = 1, depth do
+            -- [todo] there are cases where we don't need to dig up/down:
+            -- 1) if on last layer and remainder > 0
+            -- 2) if just switched layer
+            TurtleApi.dig("down")
+            TurtleApi.dig("up")
+
+            if row ~= depth then
+                TurtleApi.move()
+            end
+        end
+    end
+
+    ---@param column integer
+    ---@param layer integer
+    local function moveToNextColumn(column, layer)
+        local direction = left
+
+        if width % 2 == 0 and layer % 2 == 0 then
+            if column % 2 == 0 then
+                direction = right
+            end
+        elseif column % 2 == 1 then
+            direction = right
+        end
+
+        TurtleApi.turn(direction)
+        TurtleApi.move()
+        TurtleApi.turn(direction)
+    end
+
+    local layers = math.ceil(height / 3)
+    local remainder = height % 3
+    local y = 1
+
+    if height > 2 then
+        TurtleApi.move(vertical)
+        y = 2
+    end
+
+    for layer = 1, layers do
+        for column = 1, width do
+            digColumn(y)
+
+            if column == width then
+                if layer ~= layers then
+                    TurtleApi.turn("back")
+                end
+            else
+                moveToNextColumn(column, layer)
+            end
+        end
+
+        if layer < layers then
+            if layer + 1 == layers and remainder ~= 0 then
+                TurtleApi.move(vertical, remainder)
+                y = y + remainder
+            else
+                TurtleApi.move(vertical, 3)
+                y = y + 3
+            end
+        end
+    end
+
+    TurtleApi.navigate(home)
+    TurtleApi.face(facing)
+end

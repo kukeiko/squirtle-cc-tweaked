@@ -9,6 +9,7 @@ local InventoryApi = require "lib.apis.inventory.inventory-api"
 local DatabaseApi = require "lib.apis.database.database-api"
 local getNative = require "lib.apis.turtle.functions.get-native"
 local findPath = require "lib.apis.turtle.functions.find-path"
+local digArea = require "lib.apis.turtle.functions.dig-area"
 
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
@@ -611,12 +612,17 @@ end
 ---@param steps integer?
 ---@return boolean, integer, string?
 function TurtleApi.tryMove(direction, steps)
+    steps = steps or 1
+
+    if not TurtleApi.isSimulating() and not TurtleApi.hasFuel(steps) then
+        TurtleApi.refuelTo(steps)
+    end
+
     if direction == "back" then
         return tryMoveBack(steps)
     end
 
     direction = direction or "forward"
-    steps = steps or 1
     local native = getNative("go", direction)
 
     for step = 1, steps do
@@ -901,45 +907,7 @@ end
 ---@param width integer
 ---@param height integer
 function TurtleApi.digArea(depth, width, height)
-    local verticalDirection = "up"
-
-    if height < 0 then
-        verticalDirection = "down"
-    end
-
-    height = math.abs(height)
-
-    for layer = 1, height do
-        if layer < height and height > 2 and (layer + 1) % 3 ~= 0 then
-            TurtleApi.move(verticalDirection)
-        else
-            for row = 1, width do
-                for column = 1, depth do
-                    if layer > 1 and layer ~= height then
-                        TurtleApi.dig("down")
-                    end
-
-                    if layer ~= height then
-                        TurtleApi.dig("up")
-                    end
-
-                    if column ~= depth then
-                        TurtleApi.move()
-                    end
-                end
-
-                if row == width then
-                    TurtleApi.turn("back")
-                else
-                    if row % 2 == 0 then
-                        TurtleApi.turn("left")
-                    else
-                        TurtleApi.turn("right")
-                    end
-                end
-            end
-        end
-    end
+    return digArea(TurtleApi, depth, width, height)
 end
 
 ---@param direction? string
