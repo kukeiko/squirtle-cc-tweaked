@@ -35,7 +35,7 @@ function TurtleMovementApi.turn(direction)
             TurtleStateApi.simulateTurn(direction)
         else
             getNative("turn", direction)()
-            TurtleStateApi.setFacing(Cardinal.rotate(TurtleStateApi.getFacing(), direction))
+            TurtleStateApi.changeFacing(direction)
         end
     end
 end
@@ -145,7 +145,7 @@ function TurtleMovementApi.refuelTo(fuel)
 end
 
 ---@param action string
----@param direction string
+---@param direction MoveDirection
 ---@param steps integer
 ---@param stepsTaken integer
 ---@param originalMessage? string
@@ -162,7 +162,7 @@ end
 
 ---Move towards the given direction without trying to remove any obstacles found. Will prompt for fuel if there isn't enough.
 ---If simulation is active, will always return false with 0 steps taken.
----@param direction? string
+---@param direction? MoveDirection
 ---@param steps? integer
 ---@return boolean success, integer stepsTaken, string? error
 function TurtleMovementApi.tryWalk(direction, steps)
@@ -180,13 +180,11 @@ function TurtleMovementApi.tryWalk(direction, steps)
         TurtleMovementApi.refuelTo(steps)
     end
 
-    local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleStateApi.getFacing()))
-
     for step = 1, steps do
         local success, message = native()
 
         if success then
-            TurtleStateApi.changePosition(delta)
+            TurtleStateApi.changePosition(direction)
         else
             return false, step - 1, message
         end
@@ -198,7 +196,7 @@ end
 ---Move towards the given direction without trying to remove any obstacles found. Will prompt for fuel if there isn't enough.
 ---Throws an error if it failed to move all steps.
 ---If simulation is active, will always throw.
----@param direction? string
+---@param direction? MoveDirection
 ---@param steps? integer
 function TurtleMovementApi.walk(direction, steps)
     direction = direction or "forward"
@@ -254,6 +252,8 @@ local function tryMoveBack(steps)
                     return false, step - 1, string.format("blocked by %s", block.name)
                 end
             end
+
+            TurtleStateApi.changePosition("back")
         end
     end
 
@@ -267,7 +267,7 @@ end
 
 ---[todo] tryMove() should throw an error if called directly when simulating. since move() can be called while simulating,
 ---i'll need to move the function body out so move() can still call it.
----@param direction string?
+---@param direction MoveDirection?
 ---@param steps integer?
 ---@return boolean, integer, string?
 function TurtleMovementApi.tryMove(direction, steps)
@@ -278,7 +278,6 @@ function TurtleMovementApi.tryMove(direction, steps)
     direction = direction or "forward"
     steps = steps or 1
     local native = getNative("go", direction)
-    local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleStateApi.getFacing()))
 
     for step = 1, steps do
         if TurtleStateApi.isSimulating() then
@@ -295,14 +294,14 @@ function TurtleMovementApi.tryMove(direction, steps)
                 end
             end
 
-            TurtleStateApi.changePosition(delta)
+            TurtleStateApi.changePosition(direction)
         end
     end
 
     return true, steps
 end
 
----@param direction? string
+---@param direction? MoveDirection
 ---@param steps? integer
 function TurtleMovementApi.move(direction, steps)
     direction = direction or "forward"
@@ -322,23 +321,23 @@ function TurtleMovementApi.tryMoveToPoint(target)
     local delta = Vector.minus(target, TurtleStateApi.getPosition())
 
     if delta.y > 0 then
-        if not TurtleMovementApi.tryMove("top", delta.y) then
+        if not TurtleMovementApi.tryMove("up", delta.y) then
             return false, "top"
         end
     elseif delta.y < 0 then
-        if not TurtleMovementApi.tryMove("bottom", -delta.y) then
+        if not TurtleMovementApi.tryMove("down", -delta.y) then
             return false, "bottom"
         end
     end
 
     if delta.x > 0 then
         TurtleMovementApi.face(Cardinal.east)
-        if not TurtleMovementApi.tryMove("front", delta.x) then
+        if not TurtleMovementApi.tryMove("forward", delta.x) then
             return false, "front"
         end
     elseif delta.x < 0 then
         TurtleMovementApi.face(Cardinal.west)
-        if not TurtleMovementApi.tryMove("front", -delta.x) then
+        if not TurtleMovementApi.tryMove("forward", -delta.x) then
             return false, "front"
         end
     end
@@ -346,13 +345,13 @@ function TurtleMovementApi.tryMoveToPoint(target)
     if delta.z > 0 then
         TurtleMovementApi.face(Cardinal.south)
 
-        if not TurtleMovementApi.tryMove("front", delta.z) then
+        if not TurtleMovementApi.tryMove("forward", delta.z) then
             return false, "front"
         end
     elseif delta.z < 0 then
         TurtleMovementApi.face(Cardinal.north)
 
-        if not TurtleMovementApi.tryMove("front", -delta.z) then
+        if not TurtleMovementApi.tryMove("forward", -delta.z) then
             return false, "front"
         end
     end

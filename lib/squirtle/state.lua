@@ -7,9 +7,6 @@ local Vector = require "lib.models.vector"
 ---@field placed ItemStock
 local SimulationResults = {placed = {}, steps = 0}
 ---
----@alias DigSide "top" | "front" | "bottom"
----@alias PlaceSide "top" | "front" | "bottom"
----
 ---@alias OrientationMethod "move"|"disk-drive"
 ---@alias DiskDriveOrientationSide "top" | "bottom"
 ---@alias MoveOrientationSide "front" | "back" | "left" | "right"

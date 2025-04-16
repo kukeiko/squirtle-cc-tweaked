@@ -25,6 +25,15 @@ function TurtleStateApi.setFacing(facing)
     State.facing = facing
 end
 
+---@param direction "left"|"right"
+function TurtleStateApi.changeFacing(direction)
+    if TurtleStateApi.isSimulating() then
+        error("can't change facing: simulation active")
+    end
+
+    State.facing = Cardinal.rotate(State.facing, direction)
+end
+
 ---@return Vector
 function TurtleStateApi.getPosition()
     if TurtleStateApi.isSimulating() then
@@ -34,13 +43,26 @@ function TurtleStateApi.getPosition()
     return Vector.copy(State.position)
 end
 
+---@param direction string
+---@return Vector
+function TurtleStateApi.getDeltaPosition(direction)
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleStateApi.getFacing()))
+
+    return Vector.plus(TurtleStateApi.getPosition(), delta)
+end
+
 ---@param position Vector
 function TurtleStateApi.setPosition(position)
     State.position = position
 end
 
----@param delta Vector
-function TurtleStateApi.changePosition(delta)
+---@param direction MoveDirection
+function TurtleStateApi.changePosition(direction)
+    if TurtleStateApi.isSimulating() then
+        error("can't change position: simulation active")
+    end
+
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, State.facing))
     State.position = Vector.plus(State.position, delta)
 end
 

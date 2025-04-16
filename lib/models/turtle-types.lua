@@ -20,3 +20,7 @@
 ---@field fuel integer
 ---@field facing integer
 ---@field position Vector
+---
+---@alias DigSide "top" | "front" | "bottom"
+---@alias PlaceSide "top" | "front" | "bottom"
+---@alias MoveDirection "forward" | "back" | "up" | "down"
