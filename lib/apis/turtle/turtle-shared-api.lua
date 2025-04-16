@@ -1,28 +1,28 @@
 ---@class TurtleSharedApi
 local TurtleSharedApi = {}
 
----@type fun(items: table<string, integer>, shulker: boolean?) : nil
+---@type fun(items: table<string, integer>, alwaysUseShulker: boolean?) : nil
 local requireItemsFn = function()
     error("requireItems() not bound")
 end
 
----@param requireItems fun(items: table<string, integer>, shulker: boolean?) : nil
+---@param requireItems fun(items: table<string, integer>, alwaysUseShulker: boolean?) : nil
 function TurtleSharedApi.setRequireItems(requireItems)
     requireItemsFn = requireItems
 end
 
 ---@param items table<string, integer>
----@param shulker boolean?
-function TurtleSharedApi.requireItems(items, shulker)
-    return requireItemsFn(items, shulker)
+---@param alwaysUseShulker boolean?
+function TurtleSharedApi.requireItems(items, alwaysUseShulker)
+    return requireItemsFn(items, alwaysUseShulker)
 end
 
 ---@param item string
 ---@param quantity? integer
----@param shulker? boolean
-function TurtleSharedApi.requireItem(item, quantity, shulker)
+---@param alwaysUseShulker? boolean
+function TurtleSharedApi.requireItem(item, quantity, alwaysUseShulker)
     quantity = quantity or 1
-    TurtleSharedApi.requireItems({[item] = quantity}, shulker)
+    TurtleSharedApi.requireItems({[item] = quantity}, alwaysUseShulker)
 end
 
 ---@type fun() : string

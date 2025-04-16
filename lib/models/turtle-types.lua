@@ -1,6 +1,7 @@
 ---@class TurtleDiskState
 ---In which directions the turtle should check for placed shulkers & disk drives that are "left over"
----due to a reboot/unload during shulker item transfer or orientating via disk drives.
+---due to a reboot/unload during shulker item transfer or orientating via disk drives. Key is the side,
+---and value the block to break if it matches the probed one.
 ---@field cleanupSides table<PlaceSide, string>
 ---In which directions the turtle is about to try to place a disk drive.
 ---@field diskDriveSides PlaceSide[]

@@ -219,9 +219,9 @@ function DatabaseApi.deleteAllocatedBuffer(bufferId)
     writeEntities(entityTypes.allocatedBuffers, buffers)
 end
 
----@return SquirtleDiskState
+---@return TurtleDiskState
 function DatabaseApi.getSquirtleDiskState()
-    ---@type SquirtleDiskState
+    ---@type TurtleDiskState
     local state = readEntities(entityTypes.squirtleDiskState)
     state.cleanupSides = state.cleanupSides or {}
     state.diskDriveSides = state.diskDriveSides or {}
@@ -229,18 +229,18 @@ function DatabaseApi.getSquirtleDiskState()
     return state
 end
 
----@param state SquirtleDiskState
+---@param state TurtleDiskState
 function DatabaseApi.saveSquirtleDiskState(state)
     writeEntities(entityTypes.squirtleDiskState, state)
 end
 
----@return SquirtleResumable[]
+---@return TurtleResumable[]
 function DatabaseApi.getSquirtleResumables()
     return readEntities(entityTypes.squirtleResumables)
 end
 
 ---@param name string
----@return SquirtleResumable?
+---@return TurtleResumable?
 function DatabaseApi.findSquirtleResumable(name)
     return Utils.find(DatabaseApi.getSquirtleResumables(), function(item)
         return item.name == name
@@ -248,7 +248,7 @@ function DatabaseApi.findSquirtleResumable(name)
 end
 
 ---@param name string
----@return SquirtleResumable
+---@return TurtleResumable
 function DatabaseApi.getSquirtleResumable(name)
     local resumable = DatabaseApi.findSquirtleResumable(name)
 
@@ -259,8 +259,8 @@ function DatabaseApi.getSquirtleResumable(name)
     return resumable
 end
 
----@param resumable SquirtleResumable
----@return SquirtleResumable
+---@param resumable TurtleResumable
+---@return TurtleResumable
 function DatabaseApi.createSquirtleResumable(resumable)
     pushEntity(entityTypes.squirtleResumables, resumable)
 

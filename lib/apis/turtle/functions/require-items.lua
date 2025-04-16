@@ -213,8 +213,8 @@ local function requireItemsUsingShulker(items)
 end
 
 ---@param items table<string, integer>
----@param shulker boolean?
-return function(items, shulker)
+---@param alwaysUseShulker boolean?
+return function(items, alwaysUseShulker)
     if Utils.isEmpty(items) then
         return
     end
@@ -223,7 +223,7 @@ return function(items, shulker)
 
     -- [todo] assumes an empty inventory. also, doesn't consider current inventory state (e.g. we might already have some items,
     -- yet we still count stacks of total items required)
-    if shulker or numStacks > TurtleInventoryApi.size() then
+    if alwaysUseShulker or numStacks > TurtleInventoryApi.size() then
         requireItemsUsingShulker(items)
     else
         requireItemsNoShulker(items)

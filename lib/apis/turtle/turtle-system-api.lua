@@ -89,14 +89,8 @@ function TurtleSystemApi.runResumable(name, args, start, main, resume, finish, a
                 position = TurtleStateApi.getPosition()
             }
 
-            -- [todo] old code left for reference in case refactor broke something
-            -- simulate main() to capture required fuel & items
-            -- State.simulate = true
-            -- State.simulation.current = Utils.clone(initialState)
-            -- main(state)
-            -- State.simulate = false
-            -- State.simulation.current = nil
             TurtleStateApi.beginSimulation()
+            main(state)
             local results = TurtleStateApi.endSimulation()
             TurtleMovementApi.refuelTo(results.steps)
             local required = results.placed
@@ -132,8 +126,6 @@ function TurtleSystemApi.runResumable(name, args, start, main, resume, finish, a
 
             -- enable simulation so that the later call to main() gets simulated until
             -- it reaches the state the turtle was in when it shut off
-            print("[simulate] enabling simulation...")
-            -- TurtleSystemApi.simulate(initialState, targetState)
             TurtleStateApi.beginSimulation(initialState, targetState)
         end
 

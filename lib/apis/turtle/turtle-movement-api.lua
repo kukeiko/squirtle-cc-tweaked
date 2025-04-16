@@ -32,7 +32,7 @@ function TurtleMovementApi.turn(direction)
         end
 
         if TurtleStateApi.isSimulating() then
-            TurtleStateApi.advanceTurn(direction)
+            TurtleStateApi.simulateTurn(direction)
         else
             getNative("turn", direction)()
             TurtleStateApi.setFacing(Cardinal.rotate(TurtleStateApi.getFacing(), direction))
@@ -231,7 +231,7 @@ local function tryMoveBack(steps)
         end
 
         if TurtleStateApi.isSimulating() then
-            TurtleStateApi.advanceFuel()
+            TurtleStateApi.simulateMove("back")
         else
             while not native() do
                 if not didTurnBack then
@@ -282,8 +282,7 @@ function TurtleMovementApi.tryMove(direction, steps)
 
     for step = 1, steps do
         if TurtleStateApi.isSimulating() then
-            TurtleStateApi.advanceFuel()
-            TurtleStateApi.advancePosition(delta)
+            TurtleStateApi.simulateMove(direction)
         else
             while not native() do
                 while TurtleMiningApi.tryMine(direction) do

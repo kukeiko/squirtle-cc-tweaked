@@ -188,8 +188,7 @@ end
 local function checkResumeEnd()
     if TurtleStateApi.isResuming() and TurtleStateApi.simulationCurrentMatchesTarget() then
         State.simulation = nil
-
-        print("[simulate] end simulation")
+        print("[simulate] end simulation: reached target state")
         return true
     end
 
@@ -203,15 +202,17 @@ function TurtleStateApi.beginSimulation(initialState, targetState)
         error("can't begin simulation: already simulating")
     end
 
-    ---@type SimulationState
-    local current = initialState or
-                        {
+    print("[simulate] enabling simulation...")
+
+    if not initialState then
+        initialState = {
             facing = TurtleStateApi.getFacing(),
             fuel = TurtleStateApi.getNonInfiniteFuelLevel(),
             position = TurtleStateApi.getPosition()
         }
+    end
 
-    State.simulation = {current = current, target = targetState}
+    State.simulation = {current = initialState, target = targetState}
 
     if targetState then
         checkResumeEnd()
@@ -224,6 +225,7 @@ function TurtleStateApi.endSimulation()
         error("can't end simulation: not simulating")
     end
 
+    print("[simulate] simulation ended")
     State.simulation = nil
 
     return State.results
@@ -234,8 +236,6 @@ function TurtleStateApi.simulationCurrentMatchesTarget()
     -- [todo] not checking position yet
     local facing = State.simulation.current.facing == State.simulation.target.facing
     local fuel = State.simulation.current.fuel == State.simulation.target.fuel
-
-    -- print(State.simulation.current.fuel, State.simulation.target.fuel)
 
     return facing and fuel
 end
@@ -253,27 +253,26 @@ function TurtleStateApi.isResuming()
     return TurtleStateApi.isSimulating() and State.simulation.target ~= nil
 end
 
-function TurtleStateApi.advanceFuel()
-    if State.simulation.current then
-        State.simulation.current.fuel = State.simulation.current.fuel - 1
-        checkResumeEnd()
+---@param direction string
+function TurtleStateApi.simulateMove(direction)
+    if not TurtleStateApi.isSimulating() then
+        error("can't simulate move: not simulating")
     end
+
+    local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleStateApi.getFacing()))
+    State.simulation.current.fuel = State.simulation.current.fuel - 1
+    State.simulation.current.position = Vector.plus(State.simulation.current.position, delta)
+    checkResumeEnd()
 end
 
 ---@param direction string
-function TurtleStateApi.advanceTurn(direction)
-    if State.simulation.current then
-        State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
-        checkResumeEnd()
+function TurtleStateApi.simulateTurn(direction)
+    if not TurtleStateApi.isSimulating() then
+        error("can't simulate turn: not simulating")
     end
-end
 
----@param delta Vector
-function TurtleStateApi.advancePosition(delta)
-    if State.simulation.current then
-        State.simulation.current.position = Vector.plus(State.simulation.current.position, delta)
-        checkResumeEnd()
-    end
+    State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
+    checkResumeEnd()
 end
 
 ---@param block string

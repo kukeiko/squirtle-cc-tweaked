@@ -9,7 +9,7 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.squirtle.squirtle-api"
 local Rpc = require "lib.tools.rpc"
 local SquirtleService = require "lib.squirtle.squirtle-service"
 
@@ -39,9 +39,9 @@ local function start(args)
     end
 
     local height = tonumber(args[2]) or math.ceil(width / 2)
-    Squirtle.configure({shulkerSides = {"top"}})
-    local home = Squirtle.locate()
-    Squirtle.orientate("disk-drive", {"top"})
+    TurtleApi.configure({shulkerSides = {"top"}})
+    local home = TurtleApi.locate()
+    TurtleApi.orientate("disk-drive", {"top"})
 
     ---@type PyramidAppState
     local state = {
@@ -59,8 +59,8 @@ end
 
 ---@param state PyramidAppState
 local function main(state)
-    Squirtle.move()
-    Squirtle.turn("back")
+    TurtleApi.move()
+    TurtleApi.turn("back")
 
     ---@param layer integer
     ---@return string
@@ -75,13 +75,13 @@ local function main(state)
     end
 
     for layer = 1, state.height do
-        if Squirtle.isFull() then
-            Squirtle.tryLoadShulkers()
+        if TurtleApi.isFull() then
+            TurtleApi.tryLoadShulkers()
         end
 
-        Squirtle.put("front", pickRandomBorderBlock(layer))
-        Squirtle.move("up")
-        Squirtle.turn("back")
+        TurtleApi.put("front", pickRandomBorderBlock(layer))
+        TurtleApi.move("up")
+        TurtleApi.turn("back")
 
         local length = state.width - (layer * 2)
 
@@ -101,27 +101,27 @@ local function main(state)
                     end
                 end
 
-                Squirtle.put("bottom", block)
-                Squirtle.move()
+                TurtleApi.put("bottom", block)
+                TurtleApi.move()
             else
-                Squirtle.move("down")
-                Squirtle.put("front", pickRandomBorderBlock(layer))
-                Squirtle.move("up")
-                Squirtle.put("bottom", state.borderBlock)
-                Squirtle.move("back")
+                TurtleApi.move("down")
+                TurtleApi.put("front", pickRandomBorderBlock(layer))
+                TurtleApi.move("up")
+                TurtleApi.put("bottom", state.borderBlock)
+                TurtleApi.move("back")
             end
         end
     end
 
-    Squirtle.tryLoadShulkers()
+    TurtleApi.tryLoadShulkers()
 end
 
 ---@param state PyramidAppState
 local function resume(state)
-    Squirtle.configure({shulkerSides = {"top"}})
+    TurtleApi.configure({shulkerSides = {"top"}})
     -- [todo] the position could actually be inferred during simulation. would make it so that gps is only required when starting.
-    Squirtle.locate()
-    Squirtle.orientate("disk-drive", {"top"})
+    TurtleApi.locate()
+    TurtleApi.orientate("disk-drive", {"top"})
 end
 
 ---@param state PyramidAppState
@@ -129,7 +129,7 @@ local function finish(state)
     -- [todo] home is actually blocked by a block this program placed - either pick the one above as a goal or the one in front of it.
     if state.returnHome then
         print("[return] home")
-        Squirtle.navigate(state.home)
+        TurtleApi.navigate(state.home)
     end
 end
 
@@ -140,7 +140,7 @@ EventLoop.run(function()
         Rpc.host(SquirtleService)
     end)
 end, function()
-    local success, message = Squirtle.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)
+    local success, message = TurtleApi.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)
 
     if success then
         EventLoop.queue("pyramid:stop")
