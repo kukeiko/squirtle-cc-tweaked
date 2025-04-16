@@ -1,4 +1,4 @@
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local isCrops = require "farmer.is-crops"
 local waitUntilCropsReady = require "farmer.wait-until-crops-ready"
 
@@ -10,9 +10,9 @@ local cropsToSeedsMap = {
 }
 
 local function tryPlantAnything()
-    for slot = 1, Squirtle.size() do
-        if Squirtle.selectIfNotEmpty(slot) then
-            if Squirtle.place("down") then
+    for slot = 1, TurtleApi.size() do
+        if TurtleApi.selectIfNotEmpty(slot) then
+            if TurtleApi.place("down") then
                 return
             end
         end
@@ -28,7 +28,7 @@ local function selectSlotWithSeedsOfCrop(crops)
         return false
     end
 
-    return Squirtle.selectItem(seeds)
+    return TurtleApi.selectItem(seeds)
 end
 
 ---@param block Block
@@ -37,13 +37,13 @@ local function harvestCrops(block)
         local selectedSeed = selectSlotWithSeedsOfCrop(block.name)
 
         if not selectedSeed then
-            Squirtle.selectFirstEmpty()
+            TurtleApi.selectFirstEmpty()
             -- [todo] error handling
         end
 
-        Squirtle.dig("down")
+        TurtleApi.dig("down")
 
-        if not Squirtle.place("down") then
+        if not TurtleApi.place("down") then
             tryPlantAnything()
         end
     end
@@ -54,7 +54,7 @@ return function(block)
     if block and isCrops(block) then
         harvestCrops(block)
     elseif not block then
-        Squirtle.dig("down")
+        TurtleApi.dig("down")
         tryPlantAnything()
     end
 end

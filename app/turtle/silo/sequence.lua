@@ -1,12 +1,12 @@
-local Turtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 ---@param state SiloAppState
 return function(state)
-    local move = Turtle.move
-    local turn = Turtle.turn
-    local put = Turtle.put
+    local move = TurtleApi.move
+    local turn = TurtleApi.turn
+    local put = TurtleApi.put
 
-    local restoreBreakable = Turtle.setBreakable(function()
+    local restoreBreakable = TurtleApi.setBreakable(function()
         return true
     end)
 
@@ -18,7 +18,7 @@ return function(state)
         turn("right")
         move("forward", 4)
         turn("left")
-        Turtle.setFlipTurns(true)
+        TurtleApi.setFlipTurns(true)
     end
 
     -- place center chests
@@ -337,7 +337,7 @@ return function(state)
     if state.lampLocation == "right" then
         turn("back")
     else
-        Turtle.setFlipTurns(false)
+        TurtleApi.setFlipTurns(false)
         turn("right")
         move("forward", 6)
         turn("right")

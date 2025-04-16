@@ -8,46 +8,46 @@ if not arg then
     return version
 end
 
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 print(string.format("[copper %s] booting...", version()))
 
 local function start()
-    while Squirtle.suck("bottom") do
+    while TurtleApi.suck("bottom") do
     end
 
-    local home = Squirtle.getPosition()
-    local facing = Squirtle.getFacing()
-    Squirtle.move("forward", 2)
-    Squirtle.turn("left")
-    Squirtle.move("forward", 2)
+    local home = TurtleApi.getPosition()
+    local facing = TurtleApi.getFacing()
+    TurtleApi.move("forward", 2)
+    TurtleApi.turn("left")
+    TurtleApi.move("forward", 2)
 
     return home, facing
 end
 
 local function doLine()
     for step = 1, 4 do
-        if Squirtle.probe("bottom", "minecraft:oxidized_copper") then
-            Squirtle.tryMine("bottom")
+        if TurtleApi.probe("bottom", "minecraft:oxidized_copper") then
+            TurtleApi.tryMine("bottom")
         end
 
-        if not Squirtle.probe("bottom") then
-            if Squirtle.selectItem("minecraft:copper_block") then
-                Squirtle.place("bottom")
+        if not TurtleApi.probe("bottom") then
+            if TurtleApi.selectItem("minecraft:copper_block") then
+                TurtleApi.place("bottom")
             end
         end
 
         if step ~= 4 then
-            Squirtle.move("forward", 5)
+            TurtleApi.move("forward", 5)
         end
     end
 end
 
 ---@param direction "left"|"right"
 local function toNextLine(direction)
-    Squirtle.turn(direction)
-    Squirtle.move("forward", 5)
-    Squirtle.turn(direction)
+    TurtleApi.turn(direction)
+    TurtleApi.move("forward", 5)
+    TurtleApi.turn(direction)
 end
 
 ---@param layers integer
@@ -76,10 +76,10 @@ local function layers(layers, lines)
         end
 
         if layer ~= layers then
-            Squirtle.move("forward")
-            Squirtle.move("up", 5)
-            Squirtle.turn("back")
-            Squirtle.move("forward")
+            TurtleApi.move("forward")
+            TurtleApi.move("up", 5)
+            TurtleApi.turn("back")
+            TurtleApi.move("forward")
         end
     end
 end
@@ -87,9 +87,9 @@ end
 ---@param home Vector
 ---@param facing integer
 local function finish(home, facing)
-    Squirtle.navigate(home)
-    Squirtle.face(facing)
-    Squirtle.dump("bottom")
+    TurtleApi.navigate(home)
+    TurtleApi.face(facing)
+    TurtleApi.dump("bottom")
 end
 
 local home, facing = start()

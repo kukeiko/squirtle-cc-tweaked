@@ -1,32 +1,34 @@
 local Side = require "lib.apis.side"
-local Turtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
-local move = Turtle.move
-local turn = Turtle.turn
-local put = Turtle.put
+local move = TurtleApi.move
+local turn = TurtleApi.turn
+local put = TurtleApi.put
 
 local strafe = function(direction)
-    Turtle.turn(direction)
-    Turtle.move("forward")
-    Turtle.turn(Side.rotate180(direction))
+    TurtleApi.turn(direction)
+    TurtleApi.move("forward")
+    TurtleApi.turn(Side.rotate180(direction))
 end
 
+-- [todo] make dedicated methods in TurtleApi for place/take water/lava which also records it as a used item,
+-- adding used quantity when placing, removing when taking
 ---@param state BoneMealAppState
 local placeWater = function(state)
-    Turtle.selectItem(state.blocks.waterBucket)
-    Turtle.place("down")
+    TurtleApi.selectItem(state.blocks.waterBucket)
+    TurtleApi.place("down")
 end
 
 ---@param state BoneMealAppState
 local takeWater = function(state)
-    Turtle.selectItem(state.blocks.bucket)
-    return Turtle.place("down")
+    TurtleApi.selectItem(state.blocks.bucket)
+    return TurtleApi.place("down")
 end
 
 ---@param state BoneMealAppState
 local placeLava = function(state)
-    Turtle.selectItem(state.blocks.lavaBucket)
-    Turtle.place("down")
+    TurtleApi.selectItem(state.blocks.lavaBucket)
+    TurtleApi.place("down")
 end
 
 ---@param state BoneMealAppState
@@ -58,7 +60,7 @@ local function putFloored(state, block)
     put("bottom", block)
 end
 
-local restoreBreakable = Turtle.setBreakable(function()
+local restoreBreakable = TurtleApi.setBreakable(function()
     return true
 end)
 
@@ -313,7 +315,7 @@ local function placeWaterItemCollection(state)
     put("front", state.blocks.filler)
     move("down")
 
-    if not Turtle.isSimulating() then
+    if not TurtleApi.isSimulating() then
         redstone.setOutput("bottom", true)
     end
 
@@ -329,7 +331,7 @@ local function placeWaterItemCollection(state)
         end
     end
 
-    if not Turtle.isSimulating() then
+    if not TurtleApi.isSimulating() then
         redstone.setOutput("bottom", false)
     end
 
@@ -383,8 +385,8 @@ local function placeFloor(state)
     moveToNextLine("left")
     putLine(state, 3)
     move("forward")
-    Turtle.selectItem(state.blocks.boneMeal)
-    Turtle.drop("down")
+    TurtleApi.selectItem(state.blocks.boneMeal)
+    TurtleApi.drop("down")
     move("forward")
     putLine(state, 2)
 
@@ -563,9 +565,9 @@ local function buildCompostersAndHoppers(state)
 
     -- making sure we do not load from shulker during hopper placement,
     -- as the hoppers will suck items from the shulker
-    Turtle.selectItem(state.blocks.composter)
+    TurtleApi.selectItem(state.blocks.composter)
 
-    if not Turtle.isSimulating() then
+    if not TurtleApi.isSimulating() then
         redstone.setOutput("bottom", true)
     end
 
@@ -584,7 +586,7 @@ local function buildCompostersAndHoppers(state)
     move("back")
     put("front", state.blocks.composter)
 
-    if not Turtle.isSimulating() then
+    if not TurtleApi.isSimulating() then
         redstone.setOutput("bottom", false)
     end
 end

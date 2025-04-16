@@ -1,4 +1,4 @@
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 local function printUsage()
     print("Usage:")
@@ -6,14 +6,14 @@ local function printUsage()
 end
 
 local function refuel(level)
-    if Squirtle.hasFuel(level) then
+    if TurtleApi.hasFuel(level) then
         return true
     end
 
     shell.run("refuel", "all")
 
-    while not Squirtle.hasFuel(level) do
-        print(string.format("[help] not enough fuel, need %d more.", Squirtle.missingFuel(level)))
+    while not TurtleApi.hasFuel(level) do
+        print(string.format("[help] not enough fuel, need %d more.", TurtleApi.missingFuel(level)))
         print("please put some into inventory")
         os.pullEvent("turtle_inventory")
         shell.run("refuel", "all")

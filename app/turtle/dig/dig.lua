@@ -13,7 +13,7 @@ local Utils = require "lib.tools.utils"
 local World = require "lib.models.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 ---@class DigAppState
 ---@field world World
@@ -30,11 +30,11 @@ end
 ---@param position Vector
 local function digUpDownIfInBounds(world, position)
     if World.isInBoundsY(world, position.y + 1) then
-        Squirtle.tryMine("up")
+        TurtleApi.tryMine("up")
     end
 
     if World.isInBoundsY(world, position.y - 1) then
-        Squirtle.tryMine("down")
+        TurtleApi.tryMine("down")
     end
 end
 
@@ -59,11 +59,11 @@ local function loadIntoShulker(direction)
     local unloadedAll = true
 
     for slot = 1, 16 do
-        local stack = Squirtle.getStack(slot)
+        local stack = TurtleApi.getStack(slot)
 
         if stack and not stack.name:match("shulker") then
-            Squirtle.select(slot)
-            if not Squirtle.drop(direction) then
+            TurtleApi.select(slot)
+            if not TurtleApi.drop(direction) then
                 unloadedAll = false
             end
         end
@@ -79,10 +79,10 @@ local function tryLoadShulkers()
     local placedSide = nil
 
     for slot = 1, 16 do
-        local stack = Squirtle.getStack(slot)
+        local stack = TurtleApi.getStack(slot)
 
         if stack and stack.name:match("shulker") then
-            Squirtle.select(slot)
+            TurtleApi.select(slot)
             -- [todo] there is a chance that the shulker gets placed into the digging area of another turtle
             placedSide = placeAnywhere()
 
@@ -94,8 +94,8 @@ local function tryLoadShulkers()
                 return false
             else
                 local unloadedAll = loadIntoShulker(placedSide)
-                Squirtle.select(slot)
-                Squirtle.mine(placedSide)
+                TurtleApi.select(slot)
+                TurtleApi.mine(placedSide)
 
                 if unloadedAll then
                     return true
@@ -143,19 +143,19 @@ local function main(args)
         end)
     end
 
-    local restoreBreakable = Squirtle.setBreakable(isBreakable)
+    local restoreBreakable = TurtleApi.setBreakable(isBreakable)
 
     while point do
-        if Squirtle.navigate(point, world, isBreakable) then
+        if TurtleApi.navigate(point, world, isBreakable) then
             digUpDownIfInBounds(world, point)
 
             -- [todo] this is not ideal yet considering the following case:
             -- turtle is digging, and at some point fills up all shulkers
             -- then, player gives the turtle an empty shulker box
             -- => because it set the "shulkersFull" flag to true, it'll never try to fill the newly given, empty shulker again.
-            if isGettingFull() and Squirtle.has("minecraft:shulker_box") and not shulkersFull then
+            if isGettingFull() and TurtleApi.has("minecraft:shulker_box") and not shulkersFull then
                 shulkersFull = not tryLoadShulkers()
-                Squirtle.select(1)
+                TurtleApi.select(1)
             end
         end
 
@@ -168,8 +168,8 @@ local function main(args)
 
     restoreBreakable()
     print("[done] going home!")
-    Squirtle.navigate(start, world, isBreakable)
-    Squirtle.face(facing)
+    TurtleApi.navigate(start, world, isBreakable)
+    TurtleApi.face(facing)
 
     return true
 end

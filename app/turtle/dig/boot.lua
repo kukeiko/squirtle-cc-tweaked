@@ -1,4 +1,4 @@
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
@@ -34,7 +34,7 @@ return function(args)
     print(numBlocks .. "x blocks, guessing " .. numBlocks / 32 .. " stacks")
 
     local requiredFuel = math.ceil((numBlocks + returnTripFuel) * 1.2)
-    Squirtle.refuelTo(requiredFuel)
+    TurtleApi.refuelTo(requiredFuel)
 
     local position = Vector.create(0, 0, 0)
     -- [todo] rotate world around actual facing

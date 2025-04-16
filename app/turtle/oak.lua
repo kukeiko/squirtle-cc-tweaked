@@ -14,7 +14,7 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local OakService = require "lib.systems.farms.oak-service"
 
 print(string.format("[oak %s] booting...", version()))
@@ -22,25 +22,25 @@ print(string.format("[oak %s] booting...", version()))
 local minFuel = 80 * 65;
 
 local function isHome()
-    return Squirtle.probe("bottom", "minecraft:barrel") ~= nil
+    return TurtleApi.probe("bottom", "minecraft:barrel") ~= nil
 end
 
 local function isHarvesting()
-    return Squirtle.probe("top", "minecraft:oak_log") ~= nil
+    return TurtleApi.probe("top", "minecraft:oak_log") ~= nil
 end
 
 local function harvest()
     print("[harvest] gettin' logs!")
-    while Squirtle.probe("top", "minecraft:oak_log") do
-        Squirtle.move("up")
+    while TurtleApi.probe("top", "minecraft:oak_log") do
+        TurtleApi.move("up")
     end
 
-    while Squirtle.tryWalk("down") do
+    while TurtleApi.tryWalk("down") do
     end
 end
 
 local function shouldPlantTree()
-    local stock = Squirtle.getStock()
+    local stock = TurtleApi.getStock()
     local needsMoreLogs = (stock["minecraft:oak_log"] or 0) < 64
     local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) >= 32
     local hasSaplings = (stock["minecraft:oak_sapling"] or 0) > 0
@@ -49,21 +49,21 @@ local function shouldPlantTree()
 end
 
 local function plantTree()
-    if Squirtle.probe("front", "minecraft:oak_log") then
+    if TurtleApi.probe("front", "minecraft:oak_log") then
         return true
     end
 
     print("[plant] tree...")
-    Squirtle.put("front", "minecraft:oak_sapling")
+    TurtleApi.put("front", "minecraft:oak_sapling")
 
-    while Squirtle.selectItem("minecraft:bone_meal") and Squirtle.place() do
+    while TurtleApi.selectItem("minecraft:bone_meal") and TurtleApi.place() do
     end
 
     -- when player harvests the leafs they can easily break the sapling. in that case, suck it in
-    while Squirtle.suck() do
+    while TurtleApi.suck() do
     end
 
-    return Squirtle.probe("front", "minecraft:birch_log")
+    return TurtleApi.probe("front", "minecraft:birch_log")
 end
 
 -- [todo] copied from lumberjack
@@ -71,17 +71,17 @@ end
 local function refuel(stash)
     -- [todo] turtle does not make sure to reach min fuel, it happened to me on MP server that
     -- a turtle ran out of fuel while working
-    if not Squirtle.hasFuel(minFuel) then
-        print(string.format("refueling %s more fuel", Squirtle.missingFuel(minFuel)))
-        Squirtle.selectEmpty(1)
+    if not TurtleApi.hasFuel(minFuel) then
+        print(string.format("refueling %s more fuel", TurtleApi.missingFuel(minFuel)))
+        TurtleApi.selectEmpty(1)
 
         for slot, stack in pairs(InventoryPeripheral.getStacks(stash)) do
             if stack.name == "minecraft:charcoal" then
-                Squirtle.suckSlot("bottom", slot)
-                Squirtle.refuel(math.ceil(Squirtle.missingFuel(minFuel) / 80))
+                TurtleApi.suckSlot("bottom", slot)
+                TurtleApi.refuel(math.ceil(TurtleApi.missingFuel(minFuel) / 80))
             end
 
-            if Squirtle.hasFuel(minFuel) then
+            if TurtleApi.hasFuel(minFuel) then
                 break
             end
         end
@@ -89,7 +89,7 @@ local function refuel(stash)
         print("refueled to", turtle.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not Squirtle.dump(stash) then
+        if not TurtleApi.dump(stash) then
             error("stash full")
         end
     else
@@ -101,7 +101,7 @@ end
 local function loadUp(stash)
     for slot, item in pairs(InventoryPeripheral.getStacks(stash)) do
         if item.name == "minecraft:oak_sapling" or item.name == "minecraft:bone_meal" then
-            Squirtle.suckSlot(stash, slot)
+            TurtleApi.suckSlot(stash, slot)
         end
     end
 end
@@ -111,9 +111,9 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("[push] output...")
-    Squirtle.pushOutput(stash, io)
+    TurtleApi.pushOutput(stash, io)
     print("[pull] input...")
-    Squirtle.pullInput(io, stash)
+    TurtleApi.pullInput(io, stash)
 
     local isOutputFull = function()
         return Inventory.getItemOpenCount({io}, "minecraft:oak_log", "output") == 0
@@ -136,7 +136,7 @@ local function doInputOutput(stash, io)
 
         while needsMoreBoneMeal() do
             os.sleep(3)
-            Squirtle.pullInput(io, stash)
+            TurtleApi.pullInput(io, stash)
         end
     end
 
@@ -149,12 +149,12 @@ local function doInputOutput(stash, io)
 
         while needsMoreSaplings() do
             os.sleep(3)
-            Squirtle.pullInput(io, stash)
+            TurtleApi.pullInput(io, stash)
         end
     end
 
     local needsMoreFuel = function()
-        local missingFuel = math.max(minFuel - Squirtle.getNonInfiniteFuelLevel(), 0)
+        local missingFuel = math.max(minFuel - TurtleApi.getNonInfiniteFuelLevel(), 0)
 
         if missingFuel == 0 then
             return false
@@ -168,7 +168,7 @@ local function doInputOutput(stash, io)
 
         while needsMoreFuel() do
             os.sleep(3)
-            Squirtle.pullInput(io, stash)
+            TurtleApi.pullInput(io, stash)
         end
     end
 
@@ -182,14 +182,14 @@ local io = "left"
 if isHarvesting() then
     harvest()
 elseif not isHome() then
-    while Squirtle.tryWalk("down") do
+    while TurtleApi.tryWalk("down") do
     end
 end
 
-if Squirtle.probe("bottom", "minecraft:dirt") then
-    Squirtle.move("back")
-elseif Squirtle.probe("front", "minecraft:chest") then
-    Squirtle.turn("right")
+if TurtleApi.probe("bottom", "minecraft:dirt") then
+    TurtleApi.move("back")
+elseif TurtleApi.probe("front", "minecraft:chest") then
+    TurtleApi.turn("right")
 end
 
 Utils.writeStartupFile("oak")
@@ -198,7 +198,7 @@ EventLoop.run(function()
     Rpc.host(OakService)
 end, function()
     while true do
-        if not Squirtle.dump(stash) then
+        if not TurtleApi.dump(stash) then
             error("stash is full :(")
         end
 
@@ -219,20 +219,20 @@ end, function()
 
         while shouldPlantTree() do
             if plantTree() then
-                Squirtle.move()
+                TurtleApi.move()
                 harvest()
-                Squirtle.move("back")
+                TurtleApi.move("back")
             end
         end
 
         -- suck potentially dropped items
-        Squirtle.suckAll()
-        Squirtle.turn("left")
-        Squirtle.move("up")
-        Squirtle.suckAll()
-        Squirtle.suckAll("down")
-        Squirtle.move("down")
-        Squirtle.turn("right")
+        TurtleApi.suckAll()
+        TurtleApi.turn("left")
+        TurtleApi.move("up")
+        TurtleApi.suckAll()
+        TurtleApi.suckAll("down")
+        TurtleApi.move("down")
+        TurtleApi.turn("right")
     end
 end)
 

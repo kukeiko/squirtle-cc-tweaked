@@ -10,10 +10,10 @@ end
 
 local Vector = require "lib.models.vector"
 local Rpc = require "lib.tools.rpc"
-local SquirtleService = require "lib.squirtle.squirtle-service"
+local TurtleService = require "lib.systems.turtle-service"
 
 print(string.format("[turtle %s] booting...", version()))
-local squirtles = Rpc.all(SquirtleService)
+local squirtles = Rpc.all(TurtleService)
 
 for _, squirtle in pairs(squirtles) do
     local name = squirtle.host

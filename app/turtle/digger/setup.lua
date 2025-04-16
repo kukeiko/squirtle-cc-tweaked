@@ -1,7 +1,7 @@
 local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
 local Cardinal = require "lib.models.cardinal"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Inventory = require "lib.apis.inventory.inventory-api"
 
 local function getDirection()
@@ -9,15 +9,15 @@ local function getDirection()
         local _, key = os.pullEvent("key")
 
         if key == keys.a then
-            Squirtle.turn("left")
+            TurtleApi.turn("left")
         elseif key == keys.d then
-            Squirtle.turn("right")
+            TurtleApi.turn("right")
         elseif key == keys.enter then
             break
         end
     end
 
-    return Squirtle.getFacing()
+    return TurtleApi.getFacing()
 end
 
 local function readNumber(msg, min)
@@ -49,7 +49,7 @@ end
 
 return function()
     print("setup!")
-    local position = Squirtle.getPosition()
+    local position = TurtleApi.getPosition()
     -- [todo] make sure barrel and io-chest are placed
 
     print("use a/d keys to let me look towards 1st digging direction, then hit enter")

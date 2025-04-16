@@ -9,7 +9,7 @@ if not arg then
 end
 
 local World = require "lib.models.world"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 local function printUsage()
     print("Usage:")
@@ -29,13 +29,13 @@ local function main(args)
 
     ---@type Vector
     local goal = {x = x, y = y, z = z}
-    local start = Squirtle.locate()
-    Squirtle.orientate()
+    local start = TurtleApi.locate()
+    TurtleApi.orientate()
     ---@type World
     local world = World.create(start.x, start.y, start.z)
 
     while true do
-        local reachedGoal, msg = Squirtle.navigate(goal, world, function(block)
+        local reachedGoal, msg = TurtleApi.navigate(goal, world, function(block)
             return block.name == "minecraft:stone"
         end)
 
@@ -47,7 +47,7 @@ local function main(args)
         print("going to start in 3s...")
         os.sleep(3)
 
-        local reachedStart, msg = Squirtle.navigate(start, world, function(block)
+        local reachedStart, msg = TurtleApi.navigate(start, world, function(block)
             return block.name == "minecraft:stone"
         end)
 

@@ -1,10 +1,10 @@
 local AppState = require "lib.apis.app-state"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local setup = require "digger.setup"
 
 return function()
-    Squirtle.locate()
-    Squirtle.orientate()
+    TurtleApi.locate()
+    TurtleApi.orientate()
 
     ---@type DiggerAppState
     local state = AppState.load("digger", {})

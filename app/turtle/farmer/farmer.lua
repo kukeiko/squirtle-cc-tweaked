@@ -9,7 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local doHomework = require "farmer.do-homework"
 local doFieldWork = require "farmer.do-field-work"
 local isCrops = require "farmer.is-crops"
@@ -30,19 +30,19 @@ local function getBlockTurnSide(block)
 end
 
 local function moveNext()
-    while not Squirtle.tryWalk() do
-        local block = Squirtle.probe()
+    while not TurtleApi.tryWalk() do
+        local block = TurtleApi.probe()
 
         if not block then
             print("could not move even though front seems to be free")
 
             while not block do
                 os.sleep(1)
-                block = Squirtle.probe()
+                block = TurtleApi.probe()
             end
         end
 
-        Squirtle.turn(getBlockTurnSide(block))
+        TurtleApi.turn(getBlockTurnSide(block))
     end
 end
 
@@ -54,21 +54,21 @@ end
 ---@param args table
 local function main(args)
     print(string.format("[farmer %s] booting...", version()))
-    Squirtle.setBreakable(isCrops)
+    TurtleApi.setBreakable(isCrops)
 
     while true do
-        local block = Squirtle.probe("bottom")
+        local block = TurtleApi.probe("bottom")
 
         if block and block.name == "minecraft:chest" then
-            Squirtle.walk("back")
-            Squirtle.walk("down")
+            TurtleApi.walk("back")
+            TurtleApi.walk("down")
         else
             if block and block.name == "minecraft:barrel" then
                 doHomework()
             elseif block and block.name == "minecraft:spruce_fence" then
-                Squirtle.turn(getBlockTurnSide(block))
+                TurtleApi.turn(getBlockTurnSide(block))
             elseif block and block.name == "minecraft:oak_fence" then
-                Squirtle.turn(getBlockTurnSide(block))
+                TurtleApi.turn(getBlockTurnSide(block))
             else
                 doFieldWork(block)
             end

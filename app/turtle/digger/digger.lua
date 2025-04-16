@@ -12,7 +12,7 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local Vectors = require "lib.models.vector"
 local World = require "lib.models.world"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local AppState = require "lib.apis.app-state"
 local boot = require "digger.boot"
 local Inventory = require "lib.apis.inventory.inventory-api"
@@ -86,24 +86,24 @@ end
 ---@param buffer string
 ---@param fuel integer
 local function refuelFromBuffer(buffer, fuel)
-    print("refueling, have", Squirtle.getFuelLevel())
-    Squirtle.selectFirstEmpty()
+    print("refueling, have", TurtleApi.getFuelLevel())
+    TurtleApi.selectFirstEmpty()
 
     for slot, stack in pairs(InventoryPeripheral.getStacks(buffer)) do
         if stack.name == "minecraft:charcoal" then
-            Squirtle.suckSlot(buffer, slot)
-            Squirtle.refuel() -- [todo] should provide count to not consume a whole stack
+            TurtleApi.suckSlot(buffer, slot)
+            TurtleApi.refuel() -- [todo] should provide count to not consume a whole stack
         end
 
-        if Squirtle.hasFuel(fuel) then
+        if TurtleApi.hasFuel(fuel) then
             break
         end
     end
 
-    print("refueled to", Squirtle.getFuelLevel())
+    print("refueled to", TurtleApi.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not Squirtle.dump(buffer) then
+    if not TurtleApi.dump(buffer) then
         error("buffer barrel full")
     end
 end
@@ -142,21 +142,21 @@ local function main(args)
 
     if not state.checkpoint then
         print("no checkpoint, assuming digging is finished, going home ...")
-        Squirtle.navigate(state.home, nil, isBreakable)
+        TurtleApi.navigate(state.home, nil, isBreakable)
         print("done & home <3")
 
         return
     end
 
-    local position = Squirtle.locate()
+    local position = TurtleApi.locate()
 
     if not World.isInBounds(state.world, position) then
         print("not inside digging area, going there now...")
         -- [todo] goto start first instead (and then to checkpoint) - if digging area is further away the turtle might otherwise
         -- start making new tunnels to get to checkpoint
-        Squirtle.navigate(state.start, nil, isBreakable)
+        TurtleApi.navigate(state.start, nil, isBreakable)
         print("at start! going to checkpoint...")
-        Squirtle.navigate(state.checkpoint, nil, isBreakable)
+        TurtleApi.navigate(state.checkpoint, nil, isBreakable)
         print("should be inside digging area again!")
     end
 
@@ -164,7 +164,7 @@ local function main(args)
     local previous = point
     local maxFailedNavigates = state.world.width * state.world.depth
     local numFailedNavigates = 0
-    Squirtle.select(1)
+    TurtleApi.select(1)
 
     while point do
         if previous and previous.y ~= point.y then
@@ -173,7 +173,7 @@ local function main(args)
             saveState(state)
         end
 
-        local moved, msg = Squirtle.navigate(point, state.world, isBreakable)
+        local moved, msg = TurtleApi.navigate(point, state.world, isBreakable)
 
         if not moved then
             numFailedNavigates = numFailedNavigates + 1
@@ -183,26 +183,26 @@ local function main(args)
             -- to disk after each step, which is not something i want to do
             if numFailedNavigates >= maxFailedNavigates then
                 print("can't dig further, going home")
-                Squirtle.navigate(state.home, nil, isBreakable)
+                TurtleApi.navigate(state.home, nil, isBreakable)
                 error("todo: implement 'blocked to dig further' case, which should allow for reprogramming minable blocks")
             end
         else
             numFailedNavigates = 0
 
-            if isBreakable(Squirtle.probe("top")) then
-                Squirtle.dig("up")
+            if isBreakable(TurtleApi.probe("top")) then
+                TurtleApi.dig("up")
             end
 
-            if isBreakable(Squirtle.probe("bottom")) then
-                Squirtle.dig("down")
+            if isBreakable(TurtleApi.probe("bottom")) then
+                TurtleApi.dig("down")
             end
         end
 
         previous = point
         point = nextPoint(point, state.world, state.start)
 
-        local gettingFull = Squirtle.getStack(16) ~= nil
-        local lowFuel = not Squirtle.hasFuel(1000)
+        local gettingFull = TurtleApi.getStack(16) ~= nil
+        local lowFuel = not TurtleApi.hasFuel(1000)
         local minFuel = 1200
         local buffer = "top"
 
@@ -216,14 +216,14 @@ local function main(args)
             print("saving checkpoint at", point)
             state.checkpoint = point
             saveState(state)
-            Squirtle.navigate(state.home, nil, isBreakable)
+            TurtleApi.navigate(state.home, nil, isBreakable)
 
             if args[1] == "io" then
-                if not Squirtle.dump(buffer) then
+                if not TurtleApi.dump(buffer) then
                     error("buffer full")
                 end
             else
-                while not Squirtle.dump(buffer) do
+                while not TurtleApi.dump(buffer) do
                     print("chest full, sleeping 7s...")
                     os.sleep(7)
                 end
@@ -232,29 +232,29 @@ local function main(args)
             if args[1] == "io" then
                 local io = Inventory.findChest()
 
-                Squirtle.pushAllOutput(buffer, io)
+                TurtleApi.pushAllOutput(buffer, io)
 
-                while not Squirtle.hasFuel(minFuel) do
-                    print("trying to refuel to ", minFuel, ", have", Squirtle.getFuelLevel())
-                    Squirtle.pullInput(io, buffer)
+                while not TurtleApi.hasFuel(minFuel) do
+                    print("trying to refuel to ", minFuel, ", have", TurtleApi.getFuelLevel())
+                    TurtleApi.pullInput(io, buffer)
                     refuelFromBuffer(buffer, minFuel)
 
-                    if not Squirtle.hasFuel(minFuel) then
+                    if not TurtleApi.hasFuel(minFuel) then
                         os.sleep(3)
                     end
                 end
             end
 
             print("unloaded all and have enough fuel - back to work!")
-            Squirtle.select(1)
-            Squirtle.navigate(state.checkpoint, nil, isBreakable)
+            TurtleApi.select(1)
+            TurtleApi.navigate(state.checkpoint, nil, isBreakable)
         end
     end
 
     print("all done! going home...")
     state.checkpoint = nil
     saveState(state)
-    Squirtle.navigate(state.home)
+    TurtleApi.navigate(state.home)
     print("done & home <3")
 end
 

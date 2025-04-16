@@ -9,7 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Turtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 
@@ -23,10 +23,10 @@ end
 -- [note] importante when making resumability easier to use:
 -- orientate() relies on Simulation being inactive - otherwise placing the disk drive would be simulated :D
 
-Turtle.beginSimulation()
+TurtleApi.beginSimulation()
 sequence(state)
-local results = Turtle.endSimulation()
-Turtle.requireItems(results.placed)
-Turtle.refuelTo(results.steps)
+local results = TurtleApi.endSimulation()
+TurtleApi.requireItems(results.placed)
+TurtleApi.refuelTo(results.steps)
 print("[ok] all good now! building...")
 sequence(state)

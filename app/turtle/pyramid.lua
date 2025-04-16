@@ -11,7 +11,7 @@ end
 local EventLoop = require "lib.tools.event-loop"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Rpc = require "lib.tools.rpc"
-local SquirtleService = require "lib.squirtle.squirtle-service"
+local TurtleService = require "lib.systems.turtle-service"
 
 ---@class PyramidAppState
 ---@field width integer
@@ -137,7 +137,7 @@ print(string.format("[pyramid %s] booting...", version()))
 
 EventLoop.run(function()
     EventLoop.runUntil("pyramid:stop", function()
-        Rpc.host(SquirtleService)
+        Rpc.host(TurtleService)
     end)
 end, function()
     local success, message = TurtleApi.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)
@@ -146,7 +146,7 @@ end, function()
         EventLoop.queue("pyramid:stop")
     else
         print(message)
-        SquirtleService.error = message
+        TurtleService.error = message
     end
 end)
 

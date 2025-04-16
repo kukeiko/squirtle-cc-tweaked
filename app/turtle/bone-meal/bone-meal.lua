@@ -9,7 +9,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local Turtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local boot = require "bone-meal.boot"
 local sequence = require "bone-meal.sequence"
 
@@ -20,17 +20,17 @@ if not state then
     return nil
 end
 
-Turtle.beginSimulation()
+TurtleApi.beginSimulation()
 sequence(state)
-Turtle.recordPlacedBlock(state.blocks.waterBucket, 2)
-Turtle.recordPlacedBlock(state.blocks.lavaBucket, 1)
-Turtle.recordPlacedBlock(state.blocks.boneMeal, 64)
-local results = Turtle.endSimulation()
-Turtle.refuelTo(results.steps)
-Turtle.requireItems(results.placed)
+TurtleApi.recordPlacedBlock(state.blocks.waterBucket, 2)
+TurtleApi.recordPlacedBlock(state.blocks.lavaBucket, 1)
+TurtleApi.recordPlacedBlock(state.blocks.boneMeal, 64)
+local results = TurtleApi.endSimulation()
+TurtleApi.refuelTo(results.steps)
+TurtleApi.requireItems(results.placed)
 print("[ok] all good now! building...")
-local home = Turtle.getPosition()
-local facing = Turtle.getFacing()
+local home = TurtleApi.getPosition()
+local facing = TurtleApi.getFacing()
 sequence(state)
-Turtle.navigate(home)
-Turtle.face(facing)
+TurtleApi.navigate(home)
+TurtleApi.face(facing)

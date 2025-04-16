@@ -1,25 +1,25 @@
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 local function digLeftAndRight()
-    Squirtle.turn("left")
-    Squirtle.tryMine()
-    Squirtle.suck()
-    Squirtle.turn("right")
-    Squirtle.turn("right")
-    Squirtle.tryMine()
-    Squirtle.suck()
-    Squirtle.turn("left")
+    TurtleApi.turn("left")
+    TurtleApi.tryMine()
+    TurtleApi.suck()
+    TurtleApi.turn("right")
+    TurtleApi.turn("right")
+    TurtleApi.tryMine()
+    TurtleApi.suck()
+    TurtleApi.turn("left")
 end
 
 local function digUpAndDown()
-    Squirtle.dig("up")
-    Squirtle.dig("down")
+    TurtleApi.dig("up")
+    TurtleApi.dig("down")
 end
 
 local function digSuckMove()
-    Squirtle.tryMine()
-    Squirtle.suck()
-    Squirtle.move()
+    TurtleApi.tryMine()
+    TurtleApi.suck()
+    TurtleApi.move()
 end
 
 local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
@@ -34,22 +34,22 @@ local function moveOutAndCutLeaves(leftAndRightOnFirstStep)
     digSuckMove()
     digUpAndDown()
     digLeftAndRight()
-    Squirtle.walk("back", 2)
+    TurtleApi.walk("back", 2)
 end
 
 local function digAllSides()
     for _ = 1, 4 do
-        Squirtle.tryMine()
-        Squirtle.turn("left")
+        TurtleApi.tryMine()
+        TurtleApi.turn("left")
     end
 end
 
 ---@param minSaplings integer
 local function collectSaplings(minSaplings)
-    if not Squirtle.has("minecraft:birch_sapling", minSaplings) then
+    if not TurtleApi.has("minecraft:birch_sapling", minSaplings) then
         for i = 1, 4 do
             moveOutAndCutLeaves(i % 2 == 1)
-            Squirtle.turn("left")
+            TurtleApi.turn("left")
         end
     end
 end
@@ -58,21 +58,21 @@ end
 return function(minSaplings)
     minSaplings = minSaplings or 32
 
-    while Squirtle.probe("top", "minecraft:birch_log") do
-        Squirtle.move("up")
+    while TurtleApi.probe("top", "minecraft:birch_log") do
+        TurtleApi.move("up")
 
-        if Squirtle.probe("front", "minecraft:birch_leaves") then
+        if TurtleApi.probe("front", "minecraft:birch_leaves") then
             digAllSides()
         end
     end
 
-    Squirtle.move("up") -- goto peak
+    TurtleApi.move("up") -- goto peak
     digAllSides() -- dig peak
-    Squirtle.move("down", 2)
+    TurtleApi.move("down", 2)
     collectSaplings(minSaplings)
-    Squirtle.move("down")
+    TurtleApi.move("down")
     collectSaplings(minSaplings)
 
-    while Squirtle.tryWalk("down") do
+    while TurtleApi.tryWalk("down") do
     end
 end

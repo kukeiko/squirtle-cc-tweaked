@@ -14,7 +14,7 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local DatabaseService = require "lib.systems.database.database-service"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 print(string.format("[recipe-reader %s] booting...", version()))
 Utils.writeStartupFile("recipe-reader")
@@ -34,7 +34,7 @@ local function readRecipe()
     print("You can not use the last column or the last row to place the ingredients.\n")
     print("Once you're done, hit enter.\n")
     Utils.waitForUserToHitEnter()
-    local ingredients = Squirtle.getStacks()
+    local ingredients = TurtleApi.getStacks()
 
     for slot in pairs(ingredients) do
         if Utils.indexOf(bannedSlots, slot) then
@@ -55,7 +55,7 @@ local function readRecipe()
         return os.sleep(3)
     end
 
-    local crafted = Squirtle.getStock()
+    local crafted = TurtleApi.getStock()
     local item = next(crafted)
 
     if not item then
@@ -81,7 +81,7 @@ local function readRecipe()
         print(string.format("Added recipe for %s!\n", item))
         print("Please take out the crafted items")
 
-        while not Squirtle.isEmpty() do
+        while not TurtleApi.isEmpty() do
             EventLoop.pull("turtle_inventory")
         end
     end

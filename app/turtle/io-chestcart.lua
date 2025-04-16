@@ -10,33 +10,33 @@ end
 
 local Utils = require "lib.tools.utils"
 local Redstone = require "lib.apis.redstone"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Inventory = require "lib.apis.inventory.inventory-api"
 
 local function dumpChestcartToBarrel()
-    while Squirtle.suck() do
+    while TurtleApi.suck() do
     end
 
-    if not Squirtle.dump("bottom") then
+    if not TurtleApi.dump("bottom") then
         error("buffer barrel full")
     end
 
-    if Squirtle.suck() then
+    if TurtleApi.suck() then
         dumpChestcartToBarrel()
     end
 end
 
 local function dumpBarrelToChestcart()
-    while Squirtle.suck("bottom") do
+    while TurtleApi.suck("bottom") do
     end
 
-    if not Squirtle.dump("front") then
+    if not TurtleApi.dump("front") then
         -- [todo] recover from error. this should only happen when buffer already had items in it
         -- before chestcart arrived
         error("chestcart full")
     end
 
-    if Squirtle.suck("bottom") then
+    if TurtleApi.suck("bottom") then
         dumpBarrelToChestcart()
     end
 end
@@ -46,7 +46,7 @@ local function waitForChestcart()
     print("waiting for chestcart...")
     os.pullEvent("redstone")
     print("chestcart is here! locking it in place...")
-    Squirtle.put("front", "minecraft:redstone_block")
+    TurtleApi.put("front", "minecraft:redstone_block")
 end
 
 local function lookAtChestcart()
@@ -54,10 +54,10 @@ local function lookAtChestcart()
 
     if signal then
         -- turn towards the chestcart
-        Squirtle.turn(signal)
+        TurtleApi.turn(signal)
     else
         -- unlock piston in case there is no chestcart
-        Squirtle.mine()
+        TurtleApi.mine()
     end
 end
 
@@ -67,14 +67,14 @@ local function emptyChestcart()
         local chest = Inventory.findChest()
 
         if chest == "left" then
-            Squirtle.turn("right")
+            TurtleApi.turn("right")
         else
-            Squirtle.turn("left")
+            TurtleApi.turn("left")
         end
     else
         dumpChestcartToBarrel()
         local chest = Inventory.findChest()
-        Squirtle.turn(chest)
+        TurtleApi.turn(chest)
     end
 end
 
@@ -105,12 +105,12 @@ local function fillAndSendOffChestcart()
         error("chestcart vanished :(")
     end
 
-    Squirtle.turn(signal)
+    TurtleApi.turn(signal)
     print("filling chestcart...")
     dumpBarrelToChestcart()
     print("sending off chestcart!")
-    Squirtle.turn(signal)
-    Squirtle.mine()
+    TurtleApi.turn(signal)
+    TurtleApi.mine()
     os.sleep(3)
 end
 
@@ -126,8 +126,8 @@ local function doIO()
     end
 
     print("transferring items...")
-    local _, transferredOutput = Squirtle.pushOutput("bottom", io)
-    local _, transferredInput = Squirtle.pullInput(io, "bottom", transferredOutput)
+    local _, transferredOutput = TurtleApi.pushOutput("bottom", io)
+    local _, transferredInput = TurtleApi.pullInput(io, "bottom", transferredOutput)
 
     if Utils.isEmpty(transferredInput) and Utils.isEmpty(transferredOutput) then
         print("nothing transferred, sleeping 7s...")
@@ -142,12 +142,12 @@ end
 local function main(args)
     print(string.format("[io-chestcart %s] booting...", version()))
 
-    if not Squirtle.probe("bottom", "minecraft:barrel") then
+    if not TurtleApi.probe("bottom", "minecraft:barrel") then
         error("no barrel at bottom")
     end
 
     while true do
-        local front = Squirtle.probe()
+        local front = TurtleApi.probe()
 
         if front and front.name == "minecraft:redstone_block" then
             lookAtChestcart()

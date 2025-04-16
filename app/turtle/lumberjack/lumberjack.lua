@@ -13,7 +13,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local harvestTree = require "lumberjack.harvest-tree"
 local doFurnaceWork = require "lumberjack.do-furnace-work"
@@ -50,19 +50,19 @@ local function getBlockTurnSide(block)
 end
 
 local function isHome()
-    return Squirtle.probe("bottom", "minecraft:barrel") ~= nil
+    return TurtleApi.probe("bottom", "minecraft:barrel") ~= nil
 end
 
 local function isParked()
-    return isHome() and Squirtle.probe("front", "minecraft:chest") ~= nil
+    return isHome() and TurtleApi.probe("front", "minecraft:chest") ~= nil
 end
 
 local function isAtWork()
-    return Squirtle.probe("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
+    return TurtleApi.probe("bottom", {"minecraft:dirt", "minecraft:grass_block"}) ~= nil
 end
 
 local function isLookingAtTree()
-    return Squirtle.probe("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
+    return TurtleApi.probe("front", {"minecraft:birch_sapling", "minecraft:birch_log"})
 end
 
 local function faceHomeExit()
@@ -71,7 +71,7 @@ local function faceHomeExit()
             return
         end
 
-        Squirtle.turn("left")
+        TurtleApi.turn("left")
     end
 
     error("could not face exit: no furnace found")
@@ -86,25 +86,25 @@ local function refuel(stash, io)
     local saplingsForRefuel = math.max(0, saplingsInStash - (missingSaplingsInIO + minSaplings))
 
     if saplingsForRefuel > 0 then
-        Squirtle.suckItem(stash, "minecraft:birch_sapling", saplingsForRefuel)
+        TurtleApi.suckItem(stash, "minecraft:birch_sapling", saplingsForRefuel)
         -- [todo] this is only refueling from currently selected slot, but what if we have more than one stack of saplings to refuel from?
-        Squirtle.refuel()
+        TurtleApi.refuel()
     end
 
-    if not Squirtle.hasFuel(minFuel) then
-        print(string.format("[refuel] need %s more fuel", Squirtle.missingFuel(minFuel)))
-        Squirtle.selectEmpty(1)
-        Squirtle.suckItem(stash, "minecraft:charcoal", charcoalForRefuel)
-        Squirtle.refuel()
+    if not TurtleApi.hasFuel(minFuel) then
+        print(string.format("[refuel] need %s more fuel", TurtleApi.missingFuel(minFuel)))
+        TurtleApi.selectEmpty(1)
+        TurtleApi.suckItem(stash, "minecraft:charcoal", charcoalForRefuel)
+        TurtleApi.refuel()
         print("[refueled] to", turtle.getFuelLevel())
 
-        if not Squirtle.hasFuel(minFuel) then
+        if not TurtleApi.hasFuel(minFuel) then
             -- get player to help with refueling
-            Squirtle.refuelTo(minFuel)
+            TurtleApi.refuelTo(minFuel)
         end
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not Squirtle.dump(stash) then
+        if not TurtleApi.dump(stash) then
             error("stash full")
         end
     else
@@ -116,9 +116,9 @@ end
 ---@param io string
 local function doInputOutput(stash, io)
     print("[push] output...")
-    Squirtle.pushOutput(stash, io, {["minecraft:birch_sapling"] = minSaplings})
+    TurtleApi.pushOutput(stash, io, {["minecraft:birch_sapling"] = minSaplings})
     print("[pull] input...")
-    Squirtle.pullInput(io, stash, nil, {["minecraft:bone_meal"] = maxPulledBoneMeal})
+    TurtleApi.pullInput(io, stash, nil, {["minecraft:bone_meal"] = maxPulledBoneMeal})
 
     local isCharcoalFull = function()
         return InventoryApi.getItemOpenCount({io}, "minecraft:charcoal", "output") == 0
@@ -147,7 +147,7 @@ local function doInputOutput(stash, io)
 
         while needsMoreBoneMeal() do
             os.sleep(3)
-            Squirtle.pullInput(io, stash)
+            TurtleApi.pullInput(io, stash)
         end
     end
 
@@ -170,7 +170,7 @@ end
 local function doHomework(stash, io, furnace)
     print("[reached] home! dumping to stash...")
 
-    if not Squirtle.dump(stash) then
+    if not TurtleApi.dump(stash) then
         error("stash is full :(")
     end
 
@@ -179,10 +179,10 @@ local function doHomework(stash, io, furnace)
     drainDropper(stash)
     doInputOutput(stash, io)
 
-    while Squirtle.suck(stash) do
+    while TurtleApi.suck(stash) do
     end
 
-    local backpackStock = Squirtle.getStock()
+    local backpackStock = TurtleApi.getStock()
 
     if not backpackStock["minecraft:birch_sapling"] then
         error("out of birch saplings :(")
@@ -195,18 +195,18 @@ end
 
 local function plantTree()
     print("planting tree...")
-    Squirtle.walk("back")
-    Squirtle.put("front", "minecraft:birch_sapling")
+    TurtleApi.walk("back")
+    TurtleApi.put("front", "minecraft:birch_sapling")
 
-    while not Squirtle.probe("front", "minecraft:birch_log") and Squirtle.selectItem("minecraft:bone_meal") do
-        Squirtle.place()
+    while not TurtleApi.probe("front", "minecraft:birch_log") and TurtleApi.selectItem("minecraft:bone_meal") do
+        TurtleApi.place()
     end
 
-    return Squirtle.probe("front", "minecraft:birch_log")
+    return TurtleApi.probe("front", "minecraft:birch_log")
 end
 
 local function shouldPlantTree()
-    local stock = Squirtle.getStock()
+    local stock = TurtleApi.getStock()
     local needsMoreLogs = (stock["minecraft:birch_log"] or 0) < maxLogs
     local hasBoneMeal = (stock["minecraft:bone_meal"] or 0) >= minBoneMealForPlanting
     local hasSaplings = (stock["minecraft:birch_sapling"] or 0) > 0
@@ -215,9 +215,9 @@ local function shouldPlantTree()
 end
 
 local function refuelFromBackpack()
-    while Squirtle.missingFuel() > 0 and Squirtle.selectItem("minecraft:stick") do
+    while TurtleApi.missingFuel() > 0 and TurtleApi.selectItem("minecraft:stick") do
         print("refueling from sticks...")
-        Squirtle.refuel()
+        TurtleApi.refuel()
     end
 
     -- local saplingStock = Squirtle.getStock()["minecraft:birch_sapling"] or 0
@@ -230,29 +230,29 @@ local function refuelFromBackpack()
     -- end
 
     print("condensing backpack...")
-    Squirtle.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
+    TurtleApi.condense() -- need to condense because we are not selecting saplings in reverse order (which we should)
 end
 
 local function doWork()
     print("doing work!")
     assert(isAtWork(), "expected to sit on top of dirt")
 
-    if Squirtle.probe("top", "minecraft:birch_log") then
+    if TurtleApi.probe("top", "minecraft:birch_log") then
         -- should only happen if turtle crashed while planting a tree
         harvestTree()
     end
 
     while shouldPlantTree() do
         if plantTree() then
-            Squirtle.select(1)
-            Squirtle.dig()
-            Squirtle.walk()
+            TurtleApi.select(1)
+            TurtleApi.dig()
+            TurtleApi.walk()
             harvestTree()
             refuelFromBackpack()
         else
             -- this case should only happen when bone meal ran out before sapling could be grown
-            Squirtle.dig()
-            Squirtle.walk()
+            TurtleApi.dig()
+            TurtleApi.walk()
             break
         end
     end
@@ -262,26 +262,26 @@ end
 
 local function main()
     print(string.format("[lumberjack %s] booting...", version()))
-    Squirtle.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
+    TurtleApi.setBreakable({"minecraft:birch_log", "minecraft:birch_leaves", "minecraft:birch_sapling"})
 
     -- recover from an interrupted state
     if not isHome() and not isAtWork() then
         print("rebooted while not at home or work")
 
-        if Squirtle.probe("top", "minecraft:birch_log") then
+        if TurtleApi.probe("top", "minecraft:birch_log") then
             harvestTree()
         elseif isLookingAtTree() then
-            Squirtle.mine()
-            Squirtle.move()
+            TurtleApi.mine()
+            TurtleApi.move()
         else
-            while Squirtle.tryMove("down") do
+            while TurtleApi.tryMove("down") do
             end
 
-            if Squirtle.probe("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence", "minecraft:stone_brick_wall"}) then
+            if TurtleApi.probe("bottom", {"minecraft:spruce_fence", "minecraft:oak_fence", "minecraft:stone_brick_wall"}) then
                 -- turtle crashed and landed on the one fence piece that directs it to the tree.
                 -- should be safe to move back one, go down, and then resume default move routine
-                Squirtle.walk("back")
-                Squirtle.walk("down")
+                TurtleApi.walk("back")
+                TurtleApi.walk("down")
             end
         end
     end
@@ -294,14 +294,14 @@ local function main()
 
             doHomework(stash, io, furnace)
             faceHomeExit()
-            Squirtle.move()
+            TurtleApi.move()
         elseif isAtWork() then
             doWork()
-            Squirtle.turn("left")
-            Squirtle.walk()
+            TurtleApi.turn("left")
+            TurtleApi.walk()
         else
-            while not Squirtle.tryWalk() do
-                local block = Squirtle.probe()
+            while not TurtleApi.tryWalk() do
+                local block = TurtleApi.probe()
 
                 if not block then
                     error("could not move even though front seems to be free")
@@ -309,9 +309,9 @@ local function main()
 
                 if isLookingAtTree() then
                     -- should only happen if sapling got placed by player
-                    Squirtle.mine()
+                    TurtleApi.mine()
                 else
-                    Squirtle.turn(getBlockTurnSide(block))
+                    TurtleApi.turn(getBlockTurnSide(block))
                 end
             end
         end

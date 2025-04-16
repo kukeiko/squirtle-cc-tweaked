@@ -13,9 +13,9 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Print3dService = require "lib.systems.builders.print3d-service"
-local SquirtleService = require "lib.squirtle.squirtle-service"
+local TurtleService = require "lib.systems.turtle-service"
 
 ---@class ColoredPoint
 ---@field vector Vector
@@ -57,10 +57,10 @@ local function start(args)
     ---@type Blueprint3D
     local blueprint = textutils.unserializeJSON(file.readAll())
     file.close()
-    Squirtle.configure({shulkerSides = {"top"}})
-    Squirtle.refuelTo(blueprint.fuel + 1000);
-    local facing = Squirtle.orientate("disk-drive", {"top"})
-    local home = Squirtle.locate()
+    TurtleApi.configure({shulkerSides = {"top"}})
+    TurtleApi.refuelTo(blueprint.fuel + 1000);
+    local facing = TurtleApi.orientate("disk-drive", {"top"})
+    local home = TurtleApi.locate()
     ---@type ItemStock
     local blocks = {}
 
@@ -100,7 +100,7 @@ local function start(args)
         return point
     end)
 
-    Squirtle.requireItems(blocks, true)
+    TurtleApi.requireItems(blocks, true)
 
     print("[ok] all good! waiting for pda signal")
 
@@ -133,7 +133,7 @@ local function main(state)
 
         local above = Vector.plus(point.vector, Vector.create(0, 1, 0))
         local worldPoint = Vector.minus(Vector.plus(state.home, above), state.offset)
-        local success, message = Squirtle.navigate(worldPoint, nil, function()
+        local success, message = TurtleApi.navigate(worldPoint, nil, function()
             return true
         end)
 
@@ -141,23 +141,23 @@ local function main(state)
             error(message)
         end
 
-        Squirtle.put("bottom", point.block)
+        TurtleApi.put("bottom", point.block)
     end
 end
 
 local function resume()
-    Squirtle.configure({shulkerSides = {"top"}})
-    Squirtle.orientate("disk-drive", {"top"})
-    Squirtle.locate()
+    TurtleApi.configure({shulkerSides = {"top"}})
+    TurtleApi.orientate("disk-drive", {"top"})
+    TurtleApi.locate()
 end
 
 ---@param state Print3DState
 local function finish(state)
-    Squirtle.navigate(state.home, nil, function()
+    TurtleApi.navigate(state.home, nil, function()
         return false
     end)
 
-    Squirtle.face(state.homeFacing)
+    TurtleApi.face(state.homeFacing)
 end
 
 -- https://3dviewer.net/ for rotating
@@ -168,20 +168,20 @@ os.sleep(1)
 -- [todo] add kill-switch - turtle should return home
 EventLoop.run(function()
     EventLoop.runUntil("print3d:stop", function()
-        Rpc.host(SquirtleService)
+        Rpc.host(TurtleService)
     end)
 end, function()
     EventLoop.runUntil("print3d:stop", function()
         Rpc.host(Print3dService)
     end)
 end, function()
-    local success, message = Squirtle.runResumable("print3d", arg, start, main, resume, finish)
+    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish)
 
     if success then
         EventLoop.queue("print3d:stop")
         print("[done] I hope you like what I built!")
     else
         print(message)
-        SquirtleService.error = message
+        TurtleService.error = message
     end
 end)

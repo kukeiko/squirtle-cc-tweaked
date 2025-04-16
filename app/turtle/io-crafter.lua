@@ -17,7 +17,7 @@ local StorageService = require "lib.systems.storage.storage-service"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local TaskService = require "lib.systems.task.task-service"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
 print(string.format("[io-crafter %s] booting...", version()))
 Utils.writeStartupFile("io-crafter")
@@ -46,16 +46,16 @@ local function craftFromBottomInventory(recipe)
     for item, slots in pairs(recipe.ingredients) do
         for _, recipeSlot in pairs(slots) do
             local turtleSlot = recipeSlot + math.ceil(recipeSlot / 3) - 1
-            Squirtle.select(turtleSlot)
+            TurtleApi.select(turtleSlot)
 
-            if not Squirtle.suckItem(inventory, item, recipe.timesUsed) then
+            if not TurtleApi.suckItem(inventory, item, recipe.timesUsed) then
                 error(string.format("item %s missing in chest", item))
             end
         end
     end
 
     workbench.craft()
-    Squirtle.dump(inventory)
+    TurtleApi.dump(inventory)
 end
 
 ---@param task CraftFromIngredientsTask
@@ -82,10 +82,10 @@ local function recover(task, storageService, taskService)
 
     local usedRecipe = task.usedRecipes[1]
     -- if crafted item is in turtle inventory, dump turtle inventory to stash
-    local turtleStock = Squirtle.getStock()
+    local turtleStock = TurtleApi.getStock()
 
     if turtleStock[usedRecipe.item] then
-        Squirtle.dump("bottom")
+        TurtleApi.dump("bottom")
     end
 
     local stashStock = InventoryPeripheral.getStock("bottom")
@@ -105,7 +105,7 @@ local function recover(task, storageService, taskService)
     end
 
     -- if not, we must have ingredients in either the turtle inventory or buffer, so we just dump and return
-    Squirtle.dump("bottom")
+    TurtleApi.dump("bottom")
 end
 
 EventLoop.run(function()
@@ -121,7 +121,7 @@ end, function()
 
         if not task.usedRecipes then
             local itemDetails = storageService.getItemDetails()
-            task.usedRecipes = CraftingApi.chunkUsedRecipes(task.craftingDetails.usedRecipes, Squirtle.size(), itemDetails)
+            task.usedRecipes = CraftingApi.chunkUsedRecipes(task.craftingDetails.usedRecipes, TurtleApi.size(), itemDetails)
             taskService.updateTask(task)
         end
 

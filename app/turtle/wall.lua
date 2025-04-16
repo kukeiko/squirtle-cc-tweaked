@@ -190,7 +190,7 @@ EventLoop.run(function()
 
     -- [todo] make this app resumable, however: in case of a crash, the player has to help the turtle orientate itself
     -- by providing a disk-drive and breaking a block at top or bottom for the turtle to place it.
-    -- should use SquirtleService to communicate that the turtle needs help from the player.
+    -- should use TurtleService to communicate that the turtle needs help from the player.
     state.patternMode = promptPatternMode()
     state.pattern = promptPattern(state.patternMode)
     state.exitDirection = promptExitDirection()

@@ -1,17 +1,12 @@
 local isCrops = require "farmer.is-crops"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 
-local cropsReadyAges = {
-    ["minecraft:wheat"] = 7,
-    ["minecraft:beetroots"] = 3,
-    ["minecraft:potatoes"] = 7,
-    ["minecraft:carrots"] = 7
-}
+local cropsReadyAges = {["minecraft:wheat"] = 7, ["minecraft:beetroots"] = 3, ["minecraft:potatoes"] = 7, ["minecraft:carrots"] = 7}
 
 ---@param side string
 ---@return integer
 local function getCropsRemainingAge(side)
-    local crops = Squirtle.probe(side)
+    local crops = TurtleApi.probe(side)
 
     if not crops or not isCrops(crops) then
         error(string.format("expected block at %s to be crops", side))
@@ -31,7 +26,7 @@ end
 ---@param time? integer maximum amount of time to wait
 ---@return boolean ready if crops are ready
 return function(side, max, time)
-    while getCropsRemainingAge(side) > 0 and Squirtle.selectItem("minecraft:bone_meal") and Squirtle.place(side) do
+    while getCropsRemainingAge(side) > 0 and TurtleApi.selectItem("minecraft:bone_meal") and TurtleApi.place(side) do
     end
 
     local remainingAge = getCropsRemainingAge(side)
