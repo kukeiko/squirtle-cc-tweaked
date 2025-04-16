@@ -83,7 +83,7 @@ local function promptExitDirection()
     term.clear()
     term.setCursorPos(1, 1)
 
-    print("[prompt] towards which direction can I move to place the last block?")
+    print("[prompt] towards which side of the wall is space for me to exit to so I can place the last block?")
     print(" (1) up")
     print(" (2) right")
     print(" (3) left")
@@ -156,7 +156,8 @@ local function sequence(state)
                     TurtleApi.move("back")
                     TurtleApi.put("front", item)
                 end
-                -- exit out without placing the last block so the turtle is easier to find for the player to pick up again
+
+                -- exit out as we're finished with building the wall
                 return
             else
                 TurtleApi.move("up")
