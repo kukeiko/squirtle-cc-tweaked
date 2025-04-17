@@ -217,7 +217,11 @@ EventLoop.run(function()
     state.patternMode = promptPatternMode()
     state.pattern = promptPattern(state.patternMode)
     state.exitDirection = promptExitDirection()
-    state.shouldReturnHome = promptShouldReturnHome()
+
+    if state.exitDirection ~= "up" then
+        state.shouldReturnHome = promptShouldReturnHome()
+    end
+
     state.shouldDigArea = promptShouldDigArea()
     state.depth = depth
     state.height = height
@@ -229,7 +233,6 @@ EventLoop.run(function()
     local home = TurtleApi.getPosition()
     local facing = TurtleApi.getFacing()
 
-    -- [todo] what delta to apply for exitDirection == "up"?
     if state.exitDirection == "left" then
         home = TurtleApi.getPositionTowards("left")
     elseif state.exitDirection == "right" then
