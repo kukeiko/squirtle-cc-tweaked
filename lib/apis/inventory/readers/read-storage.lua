@@ -34,15 +34,14 @@ return function(name, stacks)
     local items = {}
 
     if isMonoTypeStacks(stacks) then
-        local first = Utils.first(stacks)
+        local first = Utils.first(stacks) --[[@as ItemStack]]
         items[first.name] = 0
         ---@type ItemStack
         local template = {name = first.name, count = 0, displayName = first.displayName, maxCount = first.maxCount}
 
         for index = 1, InventoryPeripheral.getSize(name) do
             ---@type InventorySlot
-            -- [todo] remove clone once cc:tweaked is updated
-            local slot = {index = index, tags = Utils.clone(slotTags), permanent = true}
+            local slot = {index = index, tags = slotTags, permanent = true}
             slots[index] = slot
             local stack = stacks[index]
 
@@ -56,8 +55,7 @@ return function(name, stacks)
         end
     else
         for index, stack in pairs(stacks) do
-            -- [todo] remove clone once cc:tweaked is updated
-            slots[index] = {index = index, tags = Utils.clone(slotTags), permanent = true}
+            slots[index] = {index = index, tags = slotTags, permanent = true}
             stack.maxCount = stack.maxCount - 1
             stack.count = stack.count - 1
             items[stack.name] = (items[stack.name] or 0) + stack.count

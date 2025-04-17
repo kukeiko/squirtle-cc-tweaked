@@ -21,8 +21,7 @@ return function(name, type, stacks, nameTagSlot, slotTags, label, allowAllocate)
             slots[slot] = {index = slot, tags = {nameTag = true}}
         else
             tags = slotTags
-            -- [todo] remove clone once cc:tweaked is updated
-            slots[slot] = {index = slot, tags = Utils.clone(slotTags)}
+            slots[slot] = {index = slot, tags = slotTags}
         end
     end
 

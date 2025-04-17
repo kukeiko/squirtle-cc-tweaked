@@ -165,7 +165,6 @@ end
 print(string.format("[print3d %s]", version()))
 os.sleep(1)
 
--- [todo] add kill-switch - turtle should return home
 EventLoop.run(function()
     EventLoop.runUntil("print3d:stop", function()
         Rpc.host(TurtleService)

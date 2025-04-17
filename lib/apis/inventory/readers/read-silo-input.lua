@@ -26,8 +26,7 @@ return function(name, stacks, nameTagSlot)
         if index == nameTagSlot then
             slots[index] = {index = index, tags = {nameTag = true}}
         elseif template then
-            -- [todo] remove clone once cc:tweaked is updated
-            slots[index] = {index = index, tags = Utils.clone(inputTags)}
+            slots[index] = {index = index, tags = inputTags}
             local stack = stacks[index]
 
             if stack then

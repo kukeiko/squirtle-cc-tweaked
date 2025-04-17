@@ -1,4 +1,3 @@
-local Utils = require "lib.tools.utils"
 local Inventory = require "lib.models.inventory"
 
 ---@param name string
@@ -22,11 +21,9 @@ return function(name, stacks, nameTagSlot)
             items[stack.name] = (items[stack.name] or 0) + stack.count
 
             if slot < nameTagSlot then
-                -- [todo] remove clone once cc:tweaked is updated
-                slots[slot] = {index = slot, permanent = true, tags = Utils.clone(inputTags)}
+                slots[slot] = {index = slot, permanent = true, tags = inputTags}
             elseif slot > nameTagSlot then
-                -- [todo] remove clone once cc:tweaked is updated
-                slots[slot] = {index = slot, permanent = true, tags = Utils.clone(outputTags)}
+                slots[slot] = {index = slot, permanent = true, tags = outputTags}
             end
         else
             slots[slot] = {index = slot, tags = {nameTag = true}}
