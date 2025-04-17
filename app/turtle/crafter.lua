@@ -8,6 +8,7 @@ if not arg then
     return version
 end
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Peripheral = require "lib.apis.peripheral"
 
@@ -15,6 +16,22 @@ local function printUsage()
     print("Usage: crafter <source> <target> [trash]")
     print("- target must be one of: top, bottom, front")
     print("- needs a barrel at either: top, bottom, front")
+end
+
+local function promptForWorkbench()
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("No workbench equipped, please put one into my equipment slots.\n")
+    print("Make sure that the side the workbench is in is not also a side where the chest to take items from is.\n")
+    Utils.waitForUserToHitEnter("<hit enter to retry>")
+end
+
+local function printBarrelUsage()
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("No barrel found, I need one next to me (either top, front or bottom) that contains the recipe.\n")
+    print("Place the recipe into the rightmost slots of the barrel, just like you would in a crafting table.\n")
+    Utils.waitForUserToHitEnter("<hit enter to retry>")
 end
 
 ---@param side string
@@ -63,23 +80,6 @@ local function suckSide(side, quantity)
     else
         error(string.format("invalid suck side: %s", side))
     end
-end
-
--- [todo] why not just use peripheral.find("workbench")?
-local function wrapCraftingTable()
-    local left = peripheral.getType("left")
-
-    if left == "workbench" then
-        return peripheral.wrap("left")
-    end
-
-    local right = peripheral.getType("right")
-
-    if right == "workbench" then
-        return peripheral.wrap("right")
-    end
-
-    error("no workbench equipped :(")
 end
 
 ---@param barrel string
@@ -138,7 +138,7 @@ end
 ---@param source string
 ---@param target string
 ---@param barrel string
-local function moveNonRecipeItemsFromSourceToTarget(source, target, barrel)
+local function moveNonRecipeItems(source, target, barrel)
     while true do
         local recipeItems = getRecipeItems(barrel)
         ---@type table<integer, ItemStack>
@@ -157,7 +157,6 @@ end
 ---@param args string[]
 local function main(args)
     print(string.format("[crafter %s] booting...", version()))
-    local workbench = wrapCraftingTable()
     local source = args[1]
     local target = args[2]
     local trash = args[3]
@@ -168,9 +167,20 @@ local function main(args)
 
     local barrel = Peripheral.findSide("minecraft:barrel")
 
-    if not barrel then
-        error("no barrel found :(")
+    while not barrel do
+        printBarrelUsage()
+        barrel = Peripheral.findSide("minecraft:barrel")
     end
+
+    local workbench = peripheral.find("workbench")
+
+    while not peripheral.find("workbench") do
+        promptForWorkbench()
+        workbench = peripheral.find("workbench")
+    end
+
+    term.clear()
+    term.setCursorPos(1, 1)
 
     assertValidSide(barrel, "barrel")
     assertValidSide(target, "target")
@@ -179,6 +189,7 @@ local function main(args)
         error("barrel can not be the source, target or trash")
     end
 
+    print("[ok] ready for crafting!")
     local craftTargetSlot = 16
 
     EventLoop.run(function()
@@ -192,7 +203,7 @@ local function main(args)
             end
         end
     end, function()
-        moveNonRecipeItemsFromSourceToTarget(source, trash or target, barrel)
+        moveNonRecipeItems(source, trash or target, barrel)
     end)
 
 end
