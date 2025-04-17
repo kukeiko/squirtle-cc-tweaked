@@ -9,7 +9,9 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleService = require "lib.systems.turtle-service"
 
 local function readPattern()
     ---@type string[]
@@ -85,10 +87,10 @@ local function promptExitDirection()
 
     print("[prompt] towards which side of the wall is space for me to exit to so I can place the last block?")
     print(" (1) up")
-    print(" (2) right")
-    print(" (3) left")
+    print(" (2) left")
+    print(" (3) right")
 
-    local directions = {"up", "right", "left"}
+    local directions = {"up", "left", "right"}
     return directions[EventLoop.pullInteger(1, 3)]
 end
 
@@ -187,33 +189,39 @@ local function sequence(state)
     end
 end
 
-EventLoop.run(function()
+---@param args string[]
+---@return WallAppState?
+local function start(args)
     ---@class WallAppState
     ---@field patternMode integer
     ---@field pattern string[]
     ---@field exitDirection "up" | "left" | "right"
     ---@field shouldReturnHome boolean
     ---@field shouldDigArea boolean
-    local state = {depth = 0, height = 0, exitDirection = "up", shouldReturnHome = false, shouldDigArea = false}
+    ---@field home Vector
+    ---@field facing integer
+    local state = {
+        depth = 0,
+        height = 0,
+        exitDirection = "up",
+        shouldReturnHome = false,
+        shouldDigArea = false,
+        home = TurtleApi.getPosition(),
+        facing = TurtleApi.getFacing()
+    }
 
     local function printUsage()
         print("Usage:")
         print("wall <depth> <height>")
     end
 
-    term.clear()
-    term.setCursorPos(1, 1)
-    print(string.format("[wall %s] booting...", version()))
-    local depth = tonumber(arg[1])
-    local height = tonumber(arg[2])
+    local depth = tonumber(args[1])
+    local height = tonumber(args[2])
 
     if not depth or not height or depth < 1 or height < 1 then
         return printUsage()
     end
 
-    -- [todo] make this app resumable, however: in case of a crash, the player has to help the turtle orientate itself
-    -- by providing a disk-drive and breaking a block at top or bottom for the turtle to place it.
-    -- should use TurtleService to communicate that the turtle needs help from the player.
     state.patternMode = promptPatternMode()
     state.pattern = promptPattern(state.patternMode)
     state.exitDirection = promptExitDirection()
@@ -225,33 +233,70 @@ EventLoop.run(function()
     state.shouldDigArea = promptShouldDigArea()
     state.depth = depth
     state.height = height
-    TurtleApi.beginSimulation()
-    sequence(state)
-    local results = TurtleApi.endSimulation()
-    TurtleApi.requireItems(results.placed)
-    print("[ok] all good now! building...")
-    local home = TurtleApi.getPosition()
-    local facing = TurtleApi.getFacing()
 
     if state.exitDirection == "left" then
-        home = TurtleApi.getPositionTowards("left")
+        state.home = TurtleApi.getPositionTowards("left")
     elseif state.exitDirection == "right" then
-        home = TurtleApi.getPositionTowards("right")
+        state.home = TurtleApi.getPositionTowards("right")
     end
 
+    print("[ok] all good now! building...")
+
+    return state
+end
+
+---@param state WallAppState
+local function main(state)
     if state.shouldDigArea then
         -- adjusting home position/facing to optimize a bit - also it looks much better!
         TurtleApi.digArea(state.depth, 1, state.height, TurtleApi.getPositionTowards("forward"), TurtleApi.getFacingTowards("back"))
     end
 
     sequence(state)
+end
 
+---@param state WallAppState
+local function resume(state)
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("[help] I got unloaded while digging out the area or building the wall.\n")
+    print("Which direction relative to the direction I looked at when starting am I facing?\n")
+    print(" (1) forward")
+    print(" (2) left")
+    print(" (3) right")
+    print(" (4) back")
+
+    local directions = {"forward", "left", "right", "back"}
+    local choice = directions[EventLoop.pullInteger(1, 4)]
+    TurtleApi.setFacing(state.facing)
+    TurtleApi.setFacing(TurtleApi.getFacingTowards(choice))
+end
+
+---@param state WallAppState
+local function finish(state)
     if state.shouldReturnHome then
         print("[home] going home!")
-        TurtleApi.navigate(home)
-        TurtleApi.face(facing)
+        TurtleApi.navigate(state.home)
+        TurtleApi.face(state.facing)
     end
 
-    print("[done]")
+    print("[done] I hope you like what I built!")
+end
+
+print(string.format("[wall %s] booting...", version()))
+
+EventLoop.run(function()
+    EventLoop.runUntil("wall:stop", function()
+        Rpc.host(TurtleService)
+    end)
+end, function()
+    local success, message = TurtleApi.runResumable("app/turtle/wall", arg, start, main, resume, finish)
+
+    if success then
+        EventLoop.queue("wall:stop")
+    else
+        print(message)
+        TurtleService.error = message
+    end
 end)
 

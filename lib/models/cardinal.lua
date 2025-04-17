@@ -105,7 +105,7 @@ function Cardinal.rotate(cardinal, side, times)
         return Cardinal.rotateRight(cardinal, times)
     elseif side == Side.back or side == "back" then
         return Cardinal.rotateAround(cardinal, times)
-    elseif side == Side.front or side == "front" then
+    elseif side == Side.front or side == "front" or side == "forward" then
         return cardinal
     else
         error(string.format("rotate() doesn't support side %s", Side.getName(side)))

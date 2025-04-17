@@ -174,7 +174,7 @@ end, function()
         Rpc.host(Print3dService)
     end)
 end, function()
-    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish)
+    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish, nil, true)
 
     if success then
         EventLoop.queue("print3d:stop")

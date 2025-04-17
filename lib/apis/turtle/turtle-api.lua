@@ -268,8 +268,10 @@ end
 ---@return boolean
 local function checkResumeEnd()
     if TurtleApi.isResuming() and TurtleApi.simulationCurrentMatchesTarget() then
+        -- not all apps use gps position on resume(), so we need to set actual position based on what we simulated
+        TurtleApi.setPosition(State.simulation.current.position)
         State.simulation = nil
-        print("[simulate] end simulation: reached target state")
+        print("[simulate] end simulation")
         return true
     end
 
@@ -310,7 +312,6 @@ end
 
 ---@return boolean
 function TurtleApi.simulationCurrentMatchesTarget()
-    -- [todo] not checking position yet
     local facing = State.simulation.current.facing == State.simulation.target.facing
     local fuel = State.simulation.current.fuel == State.simulation.target.fuel
 
@@ -362,7 +363,6 @@ end
 ---If flipTurns is on, "left" will become "right" and vice versa.
 ---@param direction string
 function TurtleApi.turn(direction)
-    -- [todo] use TurtleApi
     if direction == "back" then
         TurtleApi.turn("left")
         TurtleApi.turn("left")
@@ -1925,7 +1925,8 @@ end
 ---@param resume fun(state: T) : unknown|nil
 ---@param finish fun(state: T) : unknown|nil
 ---@param additionalRequiredItems? ItemStock
-function TurtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems)
+---@param alwaysUseShulker? boolean
+function TurtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
     local success, message = pcall(function(...)
         local resumable = DatabaseApi.findSquirtleResumable(name)
 
@@ -1958,7 +1959,7 @@ function TurtleApi.runResumable(name, args, start, main, resume, finish, additio
                 required = ItemStock.add(required, additionalRequiredItems)
             end
 
-            TurtleApi.requireItems(required, true)
+            TurtleApi.requireItems(required, alwaysUseShulker)
             local home = TurtleApi.getPosition()
             DatabaseApi.createSquirtleResumable({
                 name = name,

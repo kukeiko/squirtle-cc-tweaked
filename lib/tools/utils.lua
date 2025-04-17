@@ -394,6 +394,11 @@ function Utils.writeStartupFile(...)
 end
 
 function Utils.deleteStartupFile()
+    if Utils.isDev() then
+        print("[skip] startup file deletion")
+        return
+    end
+
     local path = "startup"
 
     if fs.exists(path) then
