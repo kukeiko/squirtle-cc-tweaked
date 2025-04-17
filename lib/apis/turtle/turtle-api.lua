@@ -74,6 +74,11 @@ function TurtleApi.getFacing()
     return State.facing
 end
 
+---@param side string
+function TurtleApi.getFacingTowards(side)
+    return Cardinal.rotate(TurtleApi.getFacing(), side)
+end
+
 ---@param facing integer
 function TurtleApi.setFacing(facing)
     State.facing = facing
@@ -99,7 +104,7 @@ end
 
 ---@param direction string
 ---@return Vector
-function TurtleApi.getDeltaPosition(direction)
+function TurtleApi.getPositionTowards(direction)
     local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleApi.getFacing()))
 
     return Vector.plus(TurtleApi.getPosition(), delta)
@@ -380,13 +385,8 @@ function TurtleApi.turn(direction)
 end
 
 ---@param target integer
----@param current? integer
-function TurtleApi.face(target, current)
-    current = current or TurtleApi.getFacing()
-
-    if not current then
-        error("facing not available")
-    end
+function TurtleApi.face(target)
+    local current = TurtleApi.getFacing()
 
     if (current + 2) % 4 == target then
         TurtleApi.turn("back")
@@ -703,9 +703,16 @@ function TurtleApi.tryMoveToPoint(target)
     return true
 end
 
+---@param target Vector
+function TurtleApi.moveToPoint(target)
+    if not TurtleApi.tryMoveToPoint(target) then
+        error(string.format("failed to move to %d/%d/%d", target.x, target.y, target.z))
+    end
+end
+
 ---@param path Vector[]
 ---@return boolean, string?, integer?
-local function movePath(path)
+local function tryMovePath(path)
     for i, next in ipairs(path) do
         local success, failedSide = TurtleApi.tryMoveToPoint(next)
 
@@ -745,7 +752,7 @@ function TurtleApi.navigate(to, world, breakable)
 
         local distance = Vector.manhattan(from, to)
         TurtleApi.refuelTo(distance)
-        local success, failedSide = movePath(path)
+        local success, failedSide = tryMovePath(path)
 
         if success then
             restoreBreakable()
@@ -900,12 +907,13 @@ function TurtleApi.mine(direction)
     return success
 end
 
----work in progress
 ---@param depth integer
 ---@param width integer
 ---@param height integer
-function TurtleApi.digArea(depth, width, height)
-    return digArea(TurtleApi, depth, width, height)
+---@param homePosition? Vector
+---@param homeFacing? integer
+function TurtleApi.digArea(depth, width, height, homePosition, homeFacing)
+    return digArea(TurtleApi, depth, width, height, homePosition, homeFacing)
 end
 
 ---@param direction? string

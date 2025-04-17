@@ -10,7 +10,9 @@ end
 ---@param depth integer
 ---@param width integer
 ---@param height integer
-return function(TurtleApi, depth, width, height)
+---@param homePosition? Vector
+---@param homeFacing? integer
+return function(TurtleApi, depth, width, height, homePosition, homeFacing)
     assert(depth > 0, "depth must be greater than 0")
     assert(width ~= 0, "width can't be 0")
     assert(height ~= 0, "height can't be 0")
@@ -42,8 +44,8 @@ return function(TurtleApi, depth, width, height)
         return
     end
 
-    local home = TurtleApi.getPosition()
-    local facing = TurtleApi.getFacing()
+    homePosition = homePosition or TurtleApi.getPosition()
+    homeFacing = homeFacing or TurtleApi.getFacing()
 
     if math.abs(width) > depth then
         if width > 0 then
@@ -132,6 +134,6 @@ return function(TurtleApi, depth, width, height)
         end
     end
 
-    TurtleApi.navigate(home)
-    TurtleApi.face(facing)
+    TurtleApi.moveToPoint(homePosition)
+    TurtleApi.face(homeFacing)
 end

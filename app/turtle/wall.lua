@@ -120,7 +120,11 @@ end
 
 ---@param state WallAppState
 local function sequence(state)
-    TurtleApi.turn("back")
+    if not state.shouldDigArea then
+        -- only turn if we didn't dig, as the return to home from digging caused us to already have the correct facing
+        TurtleApi.turn("back")
+    end
+
     local patternIndex = 1
 
     for line = 1, state.height do
@@ -130,7 +134,11 @@ local function sequence(state)
             item = state.pattern[((patternIndex - 1) % #state.pattern) + 1]
 
             if column ~= state.depth then
-                TurtleApi.move("back")
+                if not (state.shouldDigArea and line == 1 and column == 1) then
+                    -- skip one step if we dug out the area as it positioned us to already be 1 step ahead 
+                    TurtleApi.move("back")
+                end
+
                 TurtleApi.put("front", item)
             elseif line == state.height then
                 -- last block: move based on configured exit direction
@@ -219,18 +227,18 @@ EventLoop.run(function()
     TurtleApi.requireItems(results.placed)
     print("[ok] all good now! building...")
     local home = TurtleApi.getPosition()
+    local facing = TurtleApi.getFacing()
 
     -- [todo] what delta to apply for exitDirection == "up"?
     if state.exitDirection == "left" then
-        home = TurtleApi.getDeltaPosition("left")
+        home = TurtleApi.getPositionTowards("left")
     elseif state.exitDirection == "right" then
-        home = TurtleApi.getDeltaPosition("right")
+        home = TurtleApi.getPositionTowards("right")
     end
 
     if state.shouldDigArea then
-        -- [todo] when I make this app resumable, I should consider that digArea() is using navigate(), which is not simulation safe yet.
-        -- either I make it simulation safe, or change digArea() to use simple way of moving back
-        TurtleApi.digArea(state.depth, 1, state.height)
+        -- adjusting home position/facing to optimize a bit - also it looks much better!
+        TurtleApi.digArea(state.depth, 1, state.height, TurtleApi.getPositionTowards("forward"), TurtleApi.getFacingTowards("back"))
     end
 
     sequence(state)
@@ -238,6 +246,7 @@ EventLoop.run(function()
     if state.shouldReturnHome then
         print("[home] going home!")
         TurtleApi.navigate(home)
+        TurtleApi.face(facing)
     end
 
     print("[done]")
