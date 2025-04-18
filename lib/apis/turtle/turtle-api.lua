@@ -1919,14 +1919,12 @@ end
 ---@generic T
 ---@param name string
 ---@param args string[]
----@param start fun(args:string[]) : T
+---@param start fun(args:string[], options?: TurtleResumableOptions) : T
 ---@param main fun(state: T) : unknown|nil
 ---@param resume fun(state: T) : unknown|nil
 ---@param finish fun(state: T) : unknown|nil
----@param additionalRequiredItems? ItemStock
----@param alwaysUseShulker? boolean
-function TurtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
-    return runResumable(TurtleApi, name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
+function TurtleApi.runResumable(name, args, start, main, resume, finish)
+    return runResumable(TurtleApi, name, args, start, main, resume, finish)
 end
 
 return TurtleApi

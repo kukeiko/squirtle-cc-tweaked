@@ -7,18 +7,18 @@ local DatabaseApi = require "lib.apis.database.database-api"
 ---@param TurtleApi TurtleApi
 ---@param name string
 ---@param args string[]
----@param start fun(args:string[]) : T
+---@param start fun(args:string[], options?: TurtleResumableOptions) : T
 ---@param main fun(state: T) : unknown|nil
 ---@param resume fun(state: T) : unknown|nil
 ---@param finish fun(state: T) : unknown|nil
----@param additionalRequiredItems? ItemStock
----@param alwaysUseShulker? boolean
-return function(TurtleApi, name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
+return function(TurtleApi, name, args, start, main, resume, finish)
     local success, message = pcall(function(...)
         local resumable = DatabaseApi.findSquirtleResumable(name)
 
         if not resumable then
-            local state = start(args)
+            ---@type TurtleResumableOptions
+            local options = {}
+            local state = start(args, options)
 
             if not state then
                 return
@@ -42,11 +42,11 @@ return function(TurtleApi, name, args, start, main, resume, finish, additionalRe
             TurtleApi.refuelTo(results.steps)
             local required = results.placed
 
-            if additionalRequiredItems then
-                required = ItemStock.add(required, additionalRequiredItems)
+            if options.additionalRequiredItems then
+                required = ItemStock.add(required, options.additionalRequiredItems)
             end
 
-            TurtleApi.requireItems(required, alwaysUseShulker)
+            TurtleApi.requireItems(required, options.requireShulkers)
             local home = TurtleApi.getPosition()
             DatabaseApi.createSquirtleResumable({
                 name = name,
@@ -54,7 +54,8 @@ return function(TurtleApi, name, args, start, main, resume, finish, additionalRe
                 randomSeed = randomSeed,
                 home = home,
                 args = args,
-                state = state
+                state = state,
+                options = options
             })
         else
             -- recover from shutdown

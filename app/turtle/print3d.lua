@@ -39,8 +39,9 @@ local function printUsage()
 end
 
 ---@param args string[]
+---@param options TurtleResumableOptions
 ---@return Print3DState?
-local function start(args)
+local function start(args, options)
     local filename = args[1]
 
     if not filename then
@@ -57,6 +58,7 @@ local function start(args)
     ---@type Blueprint3D
     local blueprint = textutils.unserializeJSON(file.readAll())
     file.close()
+    options.requireShulkers = true
     TurtleApi.configure({shulkerSides = {"top"}})
     TurtleApi.refuelTo(blueprint.fuel + 1000);
     local facing = TurtleApi.orientate("disk-drive", {"top"})
@@ -174,7 +176,7 @@ end, function()
         Rpc.host(Print3dService)
     end)
 end, function()
-    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish, nil, true)
+    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish)
 
     if success then
         EventLoop.queue("print3d:stop")

@@ -15,6 +15,11 @@
 ---@field initialState SimulationState
 ---@field args string[]
 ---@field state unknown
+---@field options TurtleResumableOptions
+---
+---@class TurtleResumableOptions
+---@field requireShulkers boolean?
+---@field additionalRequiredItems ItemStock?
 ---
 ---@class SimulationState
 ---@field fuel integer
