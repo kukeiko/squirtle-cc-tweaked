@@ -1,9 +1,7 @@
 local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
-local ItemStock = require "lib.models.item-stock"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local DatabaseApi = require "lib.apis.database.database-api"
@@ -11,6 +9,7 @@ local getNative = require "lib.apis.turtle.functions.get-native"
 local findPath = require "lib.apis.turtle.functions.find-path"
 local digArea = require "lib.apis.turtle.functions.dig-area"
 local requireItems = require "lib.apis.turtle.functions.require-items"
+local runResumable = require "lib.apis.turtle.functions.run-resumable"
 
 local bucket = "minecraft:bucket"
 local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
@@ -1927,85 +1926,7 @@ end
 ---@param additionalRequiredItems? ItemStock
 ---@param alwaysUseShulker? boolean
 function TurtleApi.runResumable(name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
-    local success, message = pcall(function(...)
-        local resumable = DatabaseApi.findSquirtleResumable(name)
-
-        if not resumable then
-            local state = start(args)
-
-            if not state then
-                return
-            end
-
-            Utils.writeStartupFile(name)
-            local randomSeed = os.epoch("utc")
-            math.randomseed(randomSeed)
-
-            -- set up initial state for potential later shutdown recovery
-            ---@type SimulationState
-            local initialState = {
-                facing = TurtleApi.getFacing(),
-                fuel = TurtleApi.getNonInfiniteFuelLevel(),
-                position = TurtleApi.getPosition()
-            }
-
-            TurtleApi.beginSimulation()
-            main(state)
-            local results = TurtleApi.endSimulation()
-            TurtleApi.refuelTo(results.steps)
-            local required = results.placed
-
-            if additionalRequiredItems then
-                required = ItemStock.add(required, additionalRequiredItems)
-            end
-
-            TurtleApi.requireItems(required, alwaysUseShulker)
-            local home = TurtleApi.getPosition()
-            DatabaseApi.createSquirtleResumable({
-                name = name,
-                initialState = initialState,
-                randomSeed = randomSeed,
-                home = home,
-                args = args,
-                state = state
-            })
-        else
-            -- recover from shutdown
-            print("[resume] ...")
-            resume(resumable.state)
-            math.randomseed(resumable.randomSeed)
-            TurtleApi.cleanup() -- replaces recover()
-
-            local initialState = resumable.initialState
-            ---@type SimulationState
-            local targetState = {
-                facing = TurtleApi.getFacing(),
-                fuel = TurtleApi.getNonInfiniteFuelLevel(),
-                position = TurtleApi.getPosition()
-            }
-
-            -- enable simulation so that the later call to main() gets simulated until
-            -- it reaches the state the turtle was in when it shut off
-            TurtleApi.beginSimulation(initialState, targetState)
-        end
-
-        resumable = DatabaseApi.getSquirtleResumable(name)
-
-        local aborted = EventLoop.runUntil(string.format("%s:abort", name), function()
-            main(resumable.state)
-        end)
-
-        if aborted then
-            -- [todo] it is possible that the cached position/facing is no longer valid due to abortion.
-            TurtleApi.cleanup()
-        end
-
-        finish(resumable.state)
-        DatabaseApi.deleteSquirtleResumable(name)
-        Utils.deleteStartupFile()
-    end)
-
-    return success, message
+    return runResumable(TurtleApi, name, args, start, main, resume, finish, additionalRequiredItems, alwaysUseShulker)
 end
 
 return TurtleApi
