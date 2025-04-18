@@ -10,6 +10,7 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local ItemApi = require "lib.apis.item-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local TurtleService = require "lib.systems.turtle-service"
 
@@ -20,7 +21,7 @@ local function readPattern()
     for slot = 1, TurtleApi.size() do
         local stack = TurtleApi.getStack(slot)
 
-        if stack then
+        if stack and stack.name ~= ItemApi.shulkerBox then
             for _ = 1, stack.count do
                 table.insert(pattern, stack.name)
             end
@@ -190,8 +191,9 @@ local function sequence(state)
 end
 
 ---@param args string[]
+---@param options TurtleResumableOptions
 ---@return WallAppState?
-local function start(args)
+local function start(args, options)
     ---@class WallAppState
     ---@field patternMode integer
     ---@field pattern string[]
@@ -230,7 +232,11 @@ local function start(args)
         state.shouldReturnHome = promptShouldReturnHome()
     end
 
-    state.shouldDigArea = promptShouldDigArea()
+    if promptShouldDigArea() then
+        state.shouldDigArea = true
+        options.requireShulkers = true
+    end
+
     state.depth = depth
     state.height = height
 

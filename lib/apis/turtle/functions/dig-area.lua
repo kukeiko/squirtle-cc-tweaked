@@ -77,6 +77,10 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
             TurtleApi.dig("down")
             TurtleApi.dig("up")
 
+            if TurtleApi.isFull() then
+                TurtleApi.tryLoadShulkers()
+            end
+
             if row ~= depth then
                 TurtleApi.move()
             end

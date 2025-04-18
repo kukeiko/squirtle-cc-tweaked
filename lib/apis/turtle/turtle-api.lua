@@ -2,6 +2,7 @@ local Utils = require "lib.tools.utils"
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
+local ItemApi = require "lib.apis.item-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
 local DatabaseApi = require "lib.apis.database.database-api"
@@ -11,8 +12,7 @@ local digArea = require "lib.apis.turtle.functions.dig-area"
 local requireItems = require "lib.apis.turtle.functions.require-items"
 local runResumable = require "lib.apis.turtle.functions.run-resumable"
 
-local bucket = "minecraft:bucket"
-local fuelItems = {["minecraft:lava_bucket"] = 1000, ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80, ["minecraft:coal_block"] = 800}
+local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
 
 ---@class Simulated
 ---@field steps integer
@@ -413,7 +413,7 @@ local function pickFuelStacks(stacks, fuel, allowLava)
     local openFuel = fuel
 
     for slot, stack in pairs(stacks) do
-        if fuelItems[stack.name] and (allowLava or stack.name ~= "minecraft:lava_bucket") then
+        if fuelItems[stack.name] and (allowLava or stack.name ~= ItemApi.lavaBucket) then
             local itemRefuelAmount = fuelItems[stack.name]
             local numItems = math.ceil(openFuel / itemRefuelAmount)
             stack = Utils.clone(stack)
@@ -435,7 +435,7 @@ end
 local function refuelFromBackpack(fuel, allowLava)
     fuel = fuel or TurtleApi.missingFuel()
     local fuelStacks = pickFuelStacks(TurtleApi.getStacks(), fuel, allowLava)
-    local emptyBucketSlot = TurtleApi.find(bucket)
+    local emptyBucketSlot = TurtleApi.find(ItemApi.bucket)
 
     for slot, stack in pairs(fuelStacks) do
         TurtleApi.select(slot)
@@ -443,7 +443,7 @@ local function refuelFromBackpack(fuel, allowLava)
 
         local remaining = TurtleApi.getStack(slot)
 
-        if remaining and remaining.name == bucket then
+        if remaining and remaining.name == ItemApi.bucket then
             if not emptyBucketSlot or not TurtleApi.transferTo(emptyBucketSlot) then
                 emptyBucketSlot = slot
             end
@@ -1529,22 +1529,22 @@ end
 ---@param alsoIgnoreSlot integer
 ---@return integer?
 local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
-    for slot = 1, 16 do
+    for slot = 1, TurtleApi.size() do
         if alsoIgnoreSlot ~= slot then
             local item = TurtleApi.getStack(slot)
 
-            if item and item.name ~= "minecraft:shulker_box" then
+            if item and item.name ~= ItemApi.shulkerBox then
                 return slot
             end
         end
     end
 end
 
----@param shulker integer
+---@param shulkerSlot integer
 ---@param item string
----@return boolean
-local function loadFromShulker(shulker, item)
-    TurtleApi.select(shulker)
+---@return integer?
+local function loadFromShulker(shulkerSlot, item)
+    TurtleApi.select(shulkerSlot)
     local placedSide = TurtleApi.placeShulker()
 
     while not peripheral.isPresent(placedSide) do
@@ -1559,7 +1559,7 @@ local function loadFromShulker(shulker, item)
             local emptySlot = TurtleApi.firstEmptySlot()
 
             if not emptySlot then
-                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulker)
+                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulkerSlot)
 
                 if not slotToPutIntoShulker then
                     error("i seem to be full with shulkers")
@@ -1567,18 +1567,16 @@ local function loadFromShulker(shulker, item)
 
                 TurtleApi.select(slotToPutIntoShulker)
                 TurtleApi.drop(placedSide)
-                TurtleApi.select(shulker)
+                TurtleApi.select(shulkerSlot)
             end
 
             TurtleApi.digShulker(placedSide)
 
-            return true
+            return shulkerSlot
         end
     end
 
     TurtleApi.digShulker(placedSide)
-
-    return false
 end
 
 ---@param name string
@@ -1591,23 +1589,16 @@ function TurtleApi.selectItem(name)
     local slot = TurtleApi.find(name, true)
 
     if not slot then
-        -- [todo] why not "for slot = 1, TurtleApi.size() do ..."?
-        local nextShulkerSlot = 1
+        for slot = 1, TurtleApi.size() do
+            local stack = TurtleApi.getStack(slot)
 
-        while true do
-            local shulker = TurtleApi.find("minecraft:shulker_box", true, nextShulkerSlot)
+            if stack and stack.name == ItemApi.shulkerBox then
+                local loadedSlot = loadFromShulker(slot, name)
 
-            if not shulker then
-                break
+                if loadedSlot then
+                    return loadedSlot
+                end
             end
-
-            if loadFromShulker(shulker, name) then
-                -- [note] we can return "shulker" here because the item loaded from the shulker box ends
-                -- up in the slot the shulker originally was
-                return shulker
-            end
-
-            nextShulkerSlot = nextShulkerSlot + 1
         end
 
         return false
@@ -1626,7 +1617,7 @@ local function loadIntoShulker(direction)
     for slot = 1, TurtleApi.size() do
         local stack = TurtleApi.getStack(slot)
 
-        if stack and not stack.name == "minecraft:shulker_box" and not stack.name == "computercraft:disk_drive" then
+        if stack and stack.name ~= ItemApi.shulkerBox and stack.name ~= ItemApi.diskDrive then
             TurtleApi.select(slot)
 
             if not TurtleApi.drop(direction) then
@@ -1646,7 +1637,7 @@ function TurtleApi.tryLoadShulkers()
     for slot = 1, TurtleApi.size() do
         local stack = TurtleApi.getStack(slot)
 
-        if stack and stack.name == "minecraft:shulker_box" then
+        if stack and stack.name == ItemApi.shulkerBox then
             TurtleApi.select(slot)
             placedSide = TurtleApi.placeShulker()
             local unloadedAll = loadIntoShulker(placedSide)
@@ -1842,13 +1833,13 @@ function TurtleApi.placeShulker()
     local diskState = DatabaseApi.getSquirtleDiskState()
     diskState.shulkerSides = TurtleApi.getShulkerSides()
     DatabaseApi.saveSquirtleDiskState(diskState)
-    local placedSide = TurtleApi.tryReplaceAtOneOf(TurtleApi.getShulkerSides(), "minecraft:shulker_box")
+    local placedSide = TurtleApi.tryReplaceAtOneOf(TurtleApi.getShulkerSides(), ItemApi.shulkerBox)
 
     if not placedSide then
         error("todo: need help from player")
     else
         diskState.shulkerSides = {}
-        diskState.cleanupSides[placedSide] = "minecraft:shulker_box"
+        diskState.cleanupSides[placedSide] = ItemApi.shulkerBox
         DatabaseApi.saveSquirtleDiskState(diskState)
     end
 
@@ -1894,7 +1885,7 @@ function TurtleApi.cleanup()
         local side = diskState.shulkerSides[i]
         TurtleApi.selectEmpty()
 
-        if TurtleApi.probe(side, "minecraft:shulker_box") then
+        if TurtleApi.probe(side, ItemApi.shulkerBox) then
             TurtleApi.dig(side)
             break
         end
@@ -1910,7 +1901,7 @@ function TurtleApi.recover()
     local shulkerDirections = {"top", "bottom", "front"}
 
     for _, direction in pairs(shulkerDirections) do
-        if TurtleApi.probe(direction, "minecraft:shulker_box") then
+        if TurtleApi.probe(direction, ItemApi.shulkerBox) then
             TurtleApi.dig(direction)
         end
     end

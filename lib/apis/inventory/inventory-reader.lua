@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local Inventory = require "lib.models.inventory"
+local ItemApi = require "lib.apis.item-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local readBuffer = require "lib.apis.inventory.readers.read-buffer"
 local readComposterConfiguration = require "lib.apis.inventory.readers.read-composter-configuration"
@@ -22,7 +23,7 @@ local readTurtleBuffer = require "lib.apis.inventory.readers.read-turtle-buffer"
 local baseTypeLookup = {
     ["minecraft:chest"] = "minecraft:chest",
     ["minecraft:furna"] = "minecraft:furnace",
-    ["minecraft:shulk"] = "minecraft:shulker_box",
+    ["minecraft:shulk"] = ItemApi.shulkerBox,
     ["minecraft:barre"] = "minecraft:barrel",
     ["minecraft:hoppe"] = "minecraft:hopper"
 }
@@ -94,7 +95,7 @@ function InventoryReader.read(name, expected)
 
         if baseType == "minecraft:furnace" then
             return readFurnace(name, stacks)
-        elseif baseType == "minecraft:shulker_box" then
+        elseif baseType == ItemApi.shulkerBox then
             local shulker = readStorage(name, stacks)
             shulker.type = "shulker"
 

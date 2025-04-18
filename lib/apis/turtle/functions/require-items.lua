@@ -1,4 +1,5 @@
 local Utils = require "lib.tools.utils"
+local ItemApi = require "lib.apis.item-api"
 
 -- [todo] add remaining
 -- [todo] or, alternatively: make connection to StorageService mandatory and use its StorageService.getRequiredSlotCount()
@@ -113,7 +114,7 @@ local function fillShulker(TurtleApi, items, shulker)
         for slot = 1, TurtleApi.size() do
             local item = TurtleApi.getStack(slot)
 
-            if item and item.name ~= "minecraft:shulker_box" then
+            if item and item.name ~= ItemApi.shulkerBox then
                 TurtleApi.select(slot)
                 TurtleApi.drop(shulker)
             end
@@ -185,7 +186,7 @@ local function requireItemsUsingShulker(TurtleApi, items)
         error(string.format("required items would need more than %d shulker boxes", maxShulkers))
     end
 
-    requireItemsNoShulker(TurtleApi, {["minecraft:shulker_box"] = numShulkers})
+    requireItemsNoShulker(TurtleApi, {[ItemApi.shulkerBox] = numShulkers})
     ---@type table<string, true>
     local fullShulkers = {}
     local openItems = Utils.copy(items)
@@ -194,7 +195,7 @@ local function requireItemsUsingShulker(TurtleApi, items)
         for slot = 1, 16 do
             local item = TurtleApi.getStack(slot, true)
 
-            if item and item.name == "minecraft:shulker_box" and not fullShulkers[item.nbt] then
+            if item and item.name == ItemApi.shulkerBox and not fullShulkers[item.nbt] then
                 TurtleApi.select(slot)
                 local placedSide = TurtleApi.placeShulker()
                 local itemsForShulker, leftOverFromSlice = sliceNumStacksFromItems(openItems, maxStacksPerShulker)
