@@ -251,4 +251,18 @@ function Inventory.nextToSlot(inventory, item, tag)
     end
 end
 
+---@param inventory Inventory
+---@param item string
+---@param tag InventorySlotTag
+---@return InventorySlot? slot, ItemStack? stack
+function Inventory.nextToStack(inventory, item, tag)
+    for index, slot in pairs(inventory.slots) do
+        local stack = inventory.stacks[index]
+
+        if Inventory.slotCanTakeItem(slot, stack, tag, inventory.allowAllocate, item) then
+            return slot, stack
+        end
+    end
+end
+
 return Inventory

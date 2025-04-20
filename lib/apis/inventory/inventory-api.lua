@@ -291,6 +291,7 @@ function InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, opt
     return transferItem(from, fromTag, to, toTag, item, quantity, options)
 end
 
+-- [todo] i've added fromTag & toTag to the TransferOptions, so should remove it from the function params as well
 ---@param from string[]
 ---@param fromTag InventorySlotTag
 ---@param to string[]

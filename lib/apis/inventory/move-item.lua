@@ -1,5 +1,4 @@
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local Inventory = require "lib.models.inventory"
 
@@ -62,9 +61,9 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
         local fromInventory = InventoryCollection.get(from)
         local toInventory = InventoryCollection.get(to)
         local fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
-        local toSlot = Inventory.nextToSlot(toInventory, item, toTag)
+        local toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
 
-        while transferredTotal < total and fromSlot and fromStack and fromStack.count > 0 and toSlot do
+        while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
             if fromInventory.type == "storage" then
                 -- refresh the inventory to prevent accidentally "deleting" storage stacks.
                 -- bit of a hack, but currently no other idea on how else to fix it.
@@ -79,8 +78,9 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
             end
 
             local open = total - transferredTotal
-            local quantity = math.min(open, rate, fromStack.count)
+            local quantity = math.min(open, rate, fromStack.count, (toStack.maxCount - toStack.count))
             local transferred = pushItems(from, to, fromSlot.index, quantity, toSlot.index)
+            transferredTotal = transferredTotal + transferred
 
             if transferred ~= quantity then
                 -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
@@ -88,25 +88,17 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
                 return
             end
 
-            transferredTotal = transferredTotal + transferred
             fromStack.count = fromStack.count - transferred
 
             if fromStack.count == 0 and not fromSlot.permanent then
                 fromInventory.stacks[fromSlot.index] = nil
             end
 
-            local toStack = toInventory.stacks[toSlot.index]
-
-            if toStack then
-                toStack.count = toStack.count + transferred
-            else
-                toInventory.stacks[toSlot.index] = InventoryPeripheral.getStack(to, toSlot.index)
-            end
-
+            toStack.count = toStack.count + transferred
             fromInventory.items[item] = fromInventory.items[item] - transferred
             toInventory.items[item] = (toInventory.items[item] or 0) + transferred
             fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
-            toSlot = Inventory.nextToSlot(toInventory, item, toTag)
+            toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
         end
 
         if transferredTotal > 0 then
