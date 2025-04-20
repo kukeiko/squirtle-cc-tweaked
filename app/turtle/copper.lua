@@ -89,7 +89,7 @@ end
 local function finish(home, facing)
     TurtleApi.navigate(home)
     TurtleApi.face(facing)
-    TurtleApi.dump("bottom")
+    TurtleApi.tryDump("bottom")
 end
 
 local home, facing = start()

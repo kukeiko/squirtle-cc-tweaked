@@ -103,7 +103,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueled to", TurtleApi.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not TurtleApi.dump(buffer) then
+    if not TurtleApi.tryDump(buffer) then
         error("buffer barrel full")
     end
 end
@@ -219,11 +219,11 @@ local function main(args)
             TurtleApi.navigate(state.home, nil, isBreakable)
 
             if args[1] == "io" then
-                if not TurtleApi.dump(buffer) then
+                if not TurtleApi.tryDump(buffer) then
                     error("buffer full")
                 end
             else
-                while not TurtleApi.dump(buffer) do
+                while not TurtleApi.tryDump(buffer) do
                     print("chest full, sleeping 7s...")
                     os.sleep(7)
                 end

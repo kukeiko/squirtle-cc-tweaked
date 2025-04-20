@@ -13,7 +13,7 @@ local DatabaseApi = require "lib.apis.database.database-api"
 ---@param finish fun(state: T) : unknown|nil
 return function(TurtleApi, name, args, start, main, resume, finish)
     local success, message = pcall(function(...)
-        local resumable = DatabaseApi.findSquirtleResumable(name)
+        local resumable = DatabaseApi.findTurtleResumable(name)
 
         if not resumable then
             ---@type TurtleResumableOptions
@@ -36,9 +36,10 @@ return function(TurtleApi, name, args, start, main, resume, finish)
                 position = TurtleApi.getPosition()
             }
 
-            TurtleApi.beginSimulation()
-            main(state)
-            local results = TurtleApi.endSimulation()
+            local results = TurtleApi.simulate(function()
+                main(state)
+            end)
+
             TurtleApi.refuelTo(results.steps)
             local required = results.placed
 
@@ -48,7 +49,7 @@ return function(TurtleApi, name, args, start, main, resume, finish)
 
             TurtleApi.requireItems(required, options.requireShulkers)
             local home = TurtleApi.getPosition()
-            DatabaseApi.createSquirtleResumable({
+            DatabaseApi.createTurtleResumable({
                 name = name,
                 initialState = initialState,
                 randomSeed = randomSeed,
@@ -65,19 +66,12 @@ return function(TurtleApi, name, args, start, main, resume, finish)
             TurtleApi.cleanup() -- replaces recover()
 
             local initialState = resumable.initialState
-            ---@type SimulationState
-            local targetState = {
-                facing = TurtleApi.getFacing(),
-                fuel = TurtleApi.getNonInfiniteFuelLevel(),
-                position = TurtleApi.getPosition()
-            }
-
             -- enable simulation so that the later call to main() gets simulated until
             -- it reaches the state the turtle was in when it shut off
-            TurtleApi.beginSimulation(initialState, targetState)
+            TurtleApi.resume(initialState.fuel, initialState.facing, initialState.position)
         end
 
-        resumable = DatabaseApi.getSquirtleResumable(name)
+        resumable = DatabaseApi.getTurtleResumable(name)
 
         local aborted = EventLoop.runUntil(string.format("%s:abort", name), function()
             main(resumable.state)
@@ -89,7 +83,7 @@ return function(TurtleApi, name, args, start, main, resume, finish)
         end
 
         finish(resumable.state)
-        DatabaseApi.deleteSquirtleResumable(name)
+        DatabaseApi.deleteTurtleResumable(name)
         Utils.deleteStartupFile()
     end)
 

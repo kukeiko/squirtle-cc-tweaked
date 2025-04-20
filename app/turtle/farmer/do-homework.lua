@@ -24,7 +24,7 @@ local function refuelFromBuffer(buffer, fuel)
     print("refueled to", TurtleApi.getFuelLevel())
 
     -- in case we reached fuel limit and now have charcoal in the inventory
-    if not TurtleApi.dump(buffer) then
+    if not TurtleApi.tryDump(buffer) then
         error("buffer barrel full")
     end
 end
@@ -66,7 +66,7 @@ return function()
     ioChest = "front"
     print("i am home! doing home stuff")
 
-    if not TurtleApi.dump(barrel) then
+    if not TurtleApi.tryDump(barrel) then
         error("buffer barrel full :(")
     end
 

@@ -8,8 +8,8 @@ local entityTypes = {
     allocatedBuffers = "allocated-buffers",
     craftingRecipes = "crafting-recipes",
     subwayStations = "subway-stations",
-    squirtleResumables = "squirtle-resumables",
-    squirtleDiskState = "squirtle-disk-state",
+    turtleResumables = "turtle-resumables",
+    turtleDiskState = "turtle-disk-state",
     tasks = "tasks"
 }
 
@@ -220,40 +220,41 @@ function DatabaseApi.deleteAllocatedBuffer(bufferId)
 end
 
 ---@return TurtleDiskState
-function DatabaseApi.getSquirtleDiskState()
+function DatabaseApi.getTurtleDiskState()
     ---@type TurtleDiskState
-    local state = readEntities(entityTypes.squirtleDiskState)
+    local state = readEntities(entityTypes.turtleDiskState) or {}
     state.cleanupSides = state.cleanupSides or {}
     state.diskDriveSides = state.diskDriveSides or {}
+    state.shulkerSides = state.shulkerSides or {}
 
     return state
 end
 
 ---@param state TurtleDiskState
-function DatabaseApi.saveSquirtleDiskState(state)
-    writeEntities(entityTypes.squirtleDiskState, state)
+function DatabaseApi.saveTurtleDiskState(state)
+    writeEntities(entityTypes.turtleDiskState, state)
 end
 
 ---@return TurtleResumable[]
-function DatabaseApi.getSquirtleResumables()
-    return readEntities(entityTypes.squirtleResumables)
+function DatabaseApi.getTurtleResumables()
+    return readEntities(entityTypes.turtleResumables)
 end
 
 ---@param name string
 ---@return TurtleResumable?
-function DatabaseApi.findSquirtleResumable(name)
-    return Utils.find(DatabaseApi.getSquirtleResumables(), function(item)
+function DatabaseApi.findTurtleResumable(name)
+    return Utils.find(DatabaseApi.getTurtleResumables(), function(item)
         return item.name == name
     end)
 end
 
 ---@param name string
 ---@return TurtleResumable
-function DatabaseApi.getSquirtleResumable(name)
-    local resumable = DatabaseApi.findSquirtleResumable(name)
+function DatabaseApi.getTurtleResumable(name)
+    local resumable = DatabaseApi.findTurtleResumable(name)
 
     if not resumable then
-        error(string.format("squirtle resumable %s doesn't exist", name))
+        error(string.format("TurtleResumable %s doesn't exist", name))
     end
 
     return resumable
@@ -261,19 +262,19 @@ end
 
 ---@param resumable TurtleResumable
 ---@return TurtleResumable
-function DatabaseApi.createSquirtleResumable(resumable)
-    pushEntity(entityTypes.squirtleResumables, resumable)
+function DatabaseApi.createTurtleResumable(resumable)
+    pushEntity(entityTypes.turtleResumables, resumable)
 
     return resumable
 end
 
 ---@param name string
-function DatabaseApi.deleteSquirtleResumable(name)
-    local resumables = Utils.filter(DatabaseApi.getSquirtleResumables(), function(item)
+function DatabaseApi.deleteTurtleResumable(name)
+    local resumables = Utils.filter(DatabaseApi.getTurtleResumables(), function(item)
         return item.name ~= name
     end)
 
-    writeEntities(entityTypes.squirtleResumables, resumables)
+    writeEntities(entityTypes.turtleResumables, resumables)
 end
 
 return DatabaseApi

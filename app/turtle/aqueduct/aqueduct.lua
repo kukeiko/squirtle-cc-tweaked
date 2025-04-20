@@ -315,9 +315,10 @@ local function main(args)
         end
     end
 
-    TurtleApi.beginSimulation()
-    sequence(state)
-    local results = TurtleApi.endSimulation()
+    local results = TurtleApi.simulate(function()
+        sequence(state)
+    end)
+
     local requiredFuel = results.steps
     local requiredItems = results.placed
 

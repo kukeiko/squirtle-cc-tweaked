@@ -17,7 +17,7 @@ local function dumpChestcartToBarrel()
     while TurtleApi.suck() do
     end
 
-    if not TurtleApi.dump("bottom") then
+    if not TurtleApi.tryDump("bottom") then
         error("buffer barrel full")
     end
 
@@ -30,7 +30,7 @@ local function dumpBarrelToChestcart()
     while TurtleApi.suck("bottom") do
     end
 
-    if not TurtleApi.dump("front") then
+    if not TurtleApi.tryDump("front") then
         -- [todo] recover from error. this should only happen when buffer already had items in it
         -- before chestcart arrived
         error("chestcart full")

@@ -17,7 +17,10 @@ local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.ch
 ---@class Simulated
 ---@field steps integer
 ---@field placed ItemStock
-local SimulationResults = {placed = {}, steps = 0}
+---@field fuel integer
+---@field facing integer
+---@field position Vector
+local SimulationResults = {placed = {}, steps = 0, fuel = 0, facing = 0, position = Vector.create(0, 0, 0)}
 ---
 ---@alias OrientationMethod "move"|"disk-drive"
 ---@alias DiskDriveOrientationSide "top" | "bottom"
@@ -36,13 +39,16 @@ local SimulationResults = {placed = {}, steps = 0}
 ---@field flipTurns boolean
 ---@field results Simulated
 ---@field simulation Simulation?
+---@field simulated SimulationState?
+---@field isResuming boolean
 local State = {
     facing = Cardinal.south,
     position = Vector.create(0, 0, 0),
     orientationMethod = "move",
     flipTurns = false,
     results = SimulationResults,
-    shulkerSides = {"front", "top", "bottom"}
+    shulkerSides = {"front", "top", "bottom"},
+    isResuming = false
 }
 
 ---@class Simulation
@@ -67,7 +73,8 @@ end
 ---@return integer
 function TurtleApi.getFacing()
     if TurtleApi.isSimulating() then
-        return State.simulation.current.facing
+        return State.simulated.facing
+        -- return State.simulation.current.facing
     end
 
     return State.facing
@@ -95,7 +102,8 @@ end
 ---@return Vector
 function TurtleApi.getPosition()
     if TurtleApi.isSimulating() then
-        return Vector.copy(State.simulation.current.position)
+        return Vector.copy(State.simulated.position)
+        -- return Vector.copy(State.simulation.current.position)
     end
 
     return Vector.copy(State.position)
@@ -218,7 +226,8 @@ end
 ---@return integer | "unlimited"
 function TurtleApi.getFuelLevel()
     if TurtleApi.isSimulating() then
-        return State.simulation.current.fuel
+        -- return State.simulation.current.fuel
+        return State.simulated.fuel
     end
 
     return turtle.getFuelLevel()
@@ -261,44 +270,18 @@ function TurtleApi.missingFuel(limit)
 end
 
 function TurtleApi.isSimulating()
-    return State.simulation ~= nil
+    return State.simulated ~= nil
+    -- return State.simulation ~= nil
 end
 
 ---@return boolean
-local function checkResumeEnd()
-    if TurtleApi.isResuming() and TurtleApi.simulationCurrentMatchesTarget() then
-        -- not all apps use gps position on resume(), so we need to set actual position based on what we simulated
-        TurtleApi.setPosition(State.simulation.current.position)
-        State.simulation = nil
-        print("[simulate] end simulation")
-        return true
-    end
-
-    return false
-end
-
----@param initialState? SimulationState
----@param targetState? SimulationState
-function TurtleApi.beginSimulation(initialState, targetState)
-    if TurtleApi.isSimulating() then
-        error("can't begin simulation: already simulating")
-    end
-
-    print("[simulate] enabling simulation...")
-
-    if not initialState then
-        initialState = {facing = TurtleApi.getFacing(), fuel = TurtleApi.getNonInfiniteFuelLevel(), position = TurtleApi.getPosition()}
-    end
-
-    State.simulation = {current = initialState, target = targetState}
-
-    if targetState then
-        checkResumeEnd()
-    end
+function TurtleApi.isResuming()
+    return State.isResuming
+    -- return TurtleApi.isSimulating() and State.simulation.target ~= nil
 end
 
 ---@return Simulated
-function TurtleApi.endSimulation()
+local function endSimulation()
     if not TurtleApi.isSimulating() then
         error("can't end simulation: not simulating")
     end
@@ -309,25 +292,59 @@ function TurtleApi.endSimulation()
     return State.results
 end
 
----@return boolean
-function TurtleApi.simulationCurrentMatchesTarget()
-    local facing = State.simulation.current.facing == State.simulation.target.facing
-    local fuel = State.simulation.current.fuel == State.simulation.target.fuel
-
-    return facing and fuel
+function fuelTargetReached()
+    return State.simulated.fuel == turtle.getFuelLevel()
 end
 
-function TurtleApi.fuelTargetReached()
-    return State.simulation.current.fuel == State.simulation.target.fuel
-end
-
-function TurtleApi.facingTargetReached()
-    return State.simulation.current.facing == State.simulation.target.facing
+function facingTargetReached()
+    return State.simulated.facing == State.facing
 end
 
 ---@return boolean
-function TurtleApi.isResuming()
-    return TurtleApi.isSimulating() and State.simulation.target ~= nil
+local function checkResumeEnd()
+    if TurtleApi.isResuming() and fuelTargetReached() and facingTargetReached() then
+        -- not all apps use gps position on resume(), so we need to set actual position based on what we simulated
+        TurtleApi.setPosition(State.simulated.position)
+        State.simulated = nil
+        State.isResuming = false
+        print("[simulate] end resume")
+        return true
+    end
+
+    return false
+end
+
+---@param fn fun() : nil
+---@return Simulated
+function TurtleApi.simulate(fn)
+    if TurtleApi.isSimulating() then
+        error("can't begin simulation: already simulating")
+    end
+
+    print("[simulate] enabling simulation...")
+
+    State.simulated = {facing = State.facing, fuel = turtle.getFuelLevel(), position = State.position}
+    fn()
+    State.results.facing = State.simulated.facing
+    State.results.fuel = State.simulated.fuel
+    State.results.position = State.simulated.position
+    State.simulated = nil
+
+    return State.results
+end
+
+---@param fuel integer
+---@param facing integer
+---@param position Vector
+function TurtleApi.resume(fuel, facing, position)
+    if TurtleApi.isSimulating() then
+        error("can't begin simulation: already simulating")
+    end
+
+    print("[simulate] enabling resume...")
+    State.isResuming = true
+    State.simulated = {facing = facing, fuel = fuel, position = position}
+    checkResumeEnd()
 end
 
 ---@param direction string
@@ -337,8 +354,8 @@ function TurtleApi.simulateMove(direction)
     end
 
     local delta = Cardinal.toVector(Cardinal.fromSide(direction, TurtleApi.getFacing()))
-    State.simulation.current.fuel = State.simulation.current.fuel - 1
-    State.simulation.current.position = Vector.plus(State.simulation.current.position, delta)
+    State.simulated.fuel = State.simulated.fuel - 1
+    State.simulated.position = Vector.plus(State.simulated.position, delta)
     checkResumeEnd()
 end
 
@@ -348,7 +365,7 @@ function TurtleApi.simulateTurn(direction)
         error("can't simulate turn: not simulating")
     end
 
-    State.simulation.current.facing = Cardinal.rotate(State.simulation.current.facing, direction)
+    State.simulated.facing = Cardinal.rotate(State.simulated.facing, direction)
     checkResumeEnd()
 end
 
@@ -555,14 +572,15 @@ local function tryMoveBack(steps)
     steps = steps or 1
     local native = getNative("go", "back")
     local didTurnBack = false
+    local direction = "back"
 
     for step = 1, steps do
-        if TurtleApi.isResuming() and TurtleApi.fuelTargetReached() and not TurtleApi.facingTargetReached() then
+        if TurtleApi.isResuming() and fuelTargetReached() and not facingTargetReached() then
             -- we seem to be in correct position but the facing is off, meaning that there must've been
             -- a block that caused us to turn to try and mine it. in order to resume, we'll just
             -- stop the simulation and orient the turtle so that the turning code gets run from the beginning.
             local facing = TurtleApi.getFacing()
-            TurtleApi.endSimulation()
+            endSimulation()
             TurtleApi.face(facing)
         end
 
@@ -573,15 +591,15 @@ local function tryMoveBack(steps)
                 if not didTurnBack then
                     TurtleApi.turn("right")
                     TurtleApi.turn("right")
-                    direction = "forward"
                     native = getNative("go", "forward")
                     didTurnBack = true
+                    direction = "forward"
                 end
 
-                while TurtleApi.tryMine(direction) do
+                while TurtleApi.tryMine() do
                 end
 
-                local block = TurtleApi.probe(direction)
+                local block = TurtleApi.probe()
 
                 if block and not TurtleApi.canBreak(block) then
                     TurtleApi.turn("left")
@@ -591,7 +609,7 @@ local function tryMoveBack(steps)
                 end
             end
 
-            TurtleApi.changePosition("back")
+            TurtleApi.changePosition(direction)
         end
     end
 
@@ -1346,7 +1364,7 @@ end
 
 ---@param side string
 ---@return boolean success if everything could be dumped
-function TurtleApi.dump(side)
+function TurtleApi.tryDump(side)
     local items = TurtleApi.getStacks()
 
     for slot in pairs(items) do
@@ -1355,6 +1373,13 @@ function TurtleApi.dump(side)
     end
 
     return TurtleApi.isEmpty()
+end
+
+---@param side string
+function TurtleApi.dump(side)
+    if not TurtleApi.tryDump(side) then
+        error("failed to empty out inventory")
+    end
 end
 
 ---@param direction? string
@@ -1473,7 +1498,7 @@ function TurtleApi.pushOutput(from, to, keep)
         end
     end
 
-    return InventoryApi.transfer({from}, {to}, stock, {fromTag = "buffer"})
+    return InventoryApi.transfer({from}, {to}, stock, {fromTag = "buffer", toTag = "output"})
 end
 
 ---@param from string
@@ -1483,6 +1508,7 @@ function TurtleApi.pushAllOutput(from, to)
 
     while not TurtleApi.pushOutput(from, to) do
         if not logged then
+            -- [todo] sometimes is logged even though all output got pushed?
             print("[busy] output full, waiting...")
             logged = true
         end
@@ -1732,9 +1758,9 @@ local function orientateUsingDiskDrive(directions)
 
     directions = directions or {"top", "bottom"}
 
-    local diskState = DatabaseApi.getSquirtleDiskState()
+    local diskState = DatabaseApi.getTurtleDiskState()
     diskState.diskDriveSides = directions
-    DatabaseApi.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveTurtleDiskState(diskState)
     local placedSide = TurtleApi.tryPutAtOneOf(directions, "computercraft:disk_drive")
 
     if not placedSide then
@@ -1742,7 +1768,7 @@ local function orientateUsingDiskDrive(directions)
     else
         diskState.diskDriveSides = {}
         diskState.cleanupSides[placedSide] = "computercraft:disk_drive"
-        DatabaseApi.saveSquirtleDiskState(diskState)
+        DatabaseApi.saveTurtleDiskState(diskState)
     end
 
     -- while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
@@ -1794,7 +1820,7 @@ local function orientateUsingDiskDrive(directions)
     TurtleApi.dig(placedSide)
 
     diskState.diskDriveSides[placedSide] = nil
-    DatabaseApi.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveTurtleDiskState(diskState)
 
     return facing
 end
@@ -1822,17 +1848,17 @@ end
 function TurtleApi.digShulker(side)
     -- [todo] assert that there is a shulker?
     TurtleApi.dig(side)
-    local diskState = DatabaseApi.getSquirtleDiskState()
+    local diskState = DatabaseApi.getTurtleDiskState()
     diskState.shulkerSides = {}
     diskState.cleanupSides[side] = nil
-    DatabaseApi.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveTurtleDiskState(diskState)
 end
 
 ---@return string
 function TurtleApi.placeShulker()
-    local diskState = DatabaseApi.getSquirtleDiskState()
+    local diskState = DatabaseApi.getTurtleDiskState()
     diskState.shulkerSides = TurtleApi.getShulkerSides()
-    DatabaseApi.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveTurtleDiskState(diskState)
     local placedSide = TurtleApi.tryReplaceAtOneOf(TurtleApi.getShulkerSides(), ItemApi.shulkerBox)
 
     if not placedSide then
@@ -1840,7 +1866,7 @@ function TurtleApi.placeShulker()
     else
         diskState.shulkerSides = {}
         diskState.cleanupSides[placedSide] = ItemApi.shulkerBox
-        DatabaseApi.saveSquirtleDiskState(diskState)
+        DatabaseApi.saveTurtleDiskState(diskState)
     end
 
     return placedSide
@@ -1861,7 +1887,7 @@ function TurtleApi.requireItem(item, quantity, alwaysUseShulker)
 end
 
 function TurtleApi.cleanup()
-    local diskState = DatabaseApi.getSquirtleDiskState()
+    local diskState = DatabaseApi.getTurtleDiskState()
 
     -- [todo] what is the difference between cleanupSides & diskDriveSides/shulkerSides?
     for side, block in pairs(diskState.cleanupSides) do
@@ -1894,7 +1920,7 @@ function TurtleApi.cleanup()
     diskState.cleanupSides = {}
     diskState.diskDriveSides = {}
     diskState.shulkerSides = {}
-    DatabaseApi.saveSquirtleDiskState(diskState)
+    DatabaseApi.saveTurtleDiskState(diskState)
 end
 
 function TurtleApi.recover()

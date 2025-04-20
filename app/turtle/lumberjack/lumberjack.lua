@@ -104,9 +104,7 @@ local function refuel(stash, io)
         end
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not TurtleApi.dump(stash) then
-            error("stash full")
-        end
+        TurtleApi.dump(stash)
     else
         print("[ready] have enough fuel:", turtle.getFuelLevel())
     end
@@ -170,7 +168,7 @@ end
 local function doHomework(stash, io, furnace)
     print("[reached] home! dumping to stash...")
 
-    if not TurtleApi.dump(stash) then
+    if not TurtleApi.tryDump(stash) then
         error("stash is full :(")
     end
 

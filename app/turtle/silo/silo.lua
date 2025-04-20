@@ -23,9 +23,10 @@ end
 -- [note] importante when making resumability easier to use:
 -- orientate() relies on Simulation being inactive - otherwise placing the disk drive would be simulated :D
 
-TurtleApi.beginSimulation()
-sequence(state)
-local results = TurtleApi.endSimulation()
+local results = TurtleApi.simulate(function()
+    sequence(state)
+end)
+
 TurtleApi.requireItems(results.placed)
 TurtleApi.refuelTo(results.steps)
 print("[ok] all good now! building...")

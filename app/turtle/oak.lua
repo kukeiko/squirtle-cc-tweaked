@@ -89,7 +89,7 @@ local function refuel(stash)
         print("refueled to", turtle.getFuelLevel())
 
         -- in case we reached fuel limit and now have charcoal in the inventory
-        if not TurtleApi.dump(stash) then
+        if not TurtleApi.tryDump(stash) then
             error("stash full")
         end
     else
@@ -198,7 +198,7 @@ EventLoop.run(function()
     Rpc.host(OakService)
 end, function()
     while true do
-        if not TurtleApi.dump(stash) then
+        if not TurtleApi.tryDump(stash) then
             error("stash is full :(")
         end
 

@@ -20,12 +20,13 @@ if not state then
     return nil
 end
 
-TurtleApi.beginSimulation()
-sequence(state)
-TurtleApi.recordPlacedBlock(state.blocks.waterBucket, 2)
-TurtleApi.recordPlacedBlock(state.blocks.lavaBucket, 1)
-TurtleApi.recordPlacedBlock(state.blocks.boneMeal, 64)
-local results = TurtleApi.endSimulation()
+local results = TurtleApi.simulate(function()
+    sequence(state)
+    TurtleApi.recordPlacedBlock(state.blocks.waterBucket, 2)
+    TurtleApi.recordPlacedBlock(state.blocks.lavaBucket, 1)
+    TurtleApi.recordPlacedBlock(state.blocks.boneMeal, 64)
+end)
+
 TurtleApi.refuelTo(results.steps)
 TurtleApi.requireItems(results.placed)
 print("[ok] all good now! building...")

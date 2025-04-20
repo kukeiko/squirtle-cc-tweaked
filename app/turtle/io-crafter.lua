@@ -55,7 +55,7 @@ local function craftFromBottomInventory(recipe)
     end
 
     workbench.craft()
-    TurtleApi.dump(inventory)
+    TurtleApi.tryDump(inventory)
 end
 
 ---@param task CraftFromIngredientsTask
@@ -85,7 +85,7 @@ local function recover(task, storageService, taskService)
     local turtleStock = TurtleApi.getStock()
 
     if turtleStock[usedRecipe.item] then
-        TurtleApi.dump("bottom")
+        TurtleApi.tryDump("bottom")
     end
 
     local stashStock = InventoryPeripheral.getStock("bottom")
@@ -105,7 +105,7 @@ local function recover(task, storageService, taskService)
     end
 
     -- if not, we must have ingredients in either the turtle inventory or buffer, so we just dump and return
-    TurtleApi.dump("bottom")
+    TurtleApi.tryDump("bottom")
 end
 
 EventLoop.run(function()
