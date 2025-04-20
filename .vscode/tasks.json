@@ -54,6 +54,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/lumberjack"
         },
         {
+            "label": "build turtle:nether-lumberjack",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/nether-lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/nether-lumberjack"
+        },
+        {
             "label": "build turtle:digger",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/digger"

@@ -5,12 +5,12 @@ package.path = package.path .. ";/?.lua"
 local Utils = require "lib.tools.utils"
 local Vector = require "lib.models.vector"
 local Cardinal = require "lib.models.cardinal"
-local Squirtle = require "lib.squirtle.squirtle-api"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local EventLoop = require "lib.tools.event-loop"
 local Inventory = require "lib.apis.inventory.inventory-api"
 local Rpc = require "lib.tools.rpc";
 local DatabaseService = require "lib.systems.database.database-service"
-local SquirtleService = require "lib.squirtle.squirtle-service"
+local TurtleService = require "lib.systems.turtle-service"
 local BoneMealService = require "lib.systems.farms.bone-meal-service"
 local StorageService = require "lib.systems.storage.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
@@ -21,6 +21,7 @@ local AppsService = require "lib.systems.runtime.apps-service"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local EditEntity = require "lib.ui.edit-entity"
 local Shell = require "lib.ui.shell"
+local ItemApi = require "lib.apis.item-api"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -133,8 +134,8 @@ end
 
 -- print(Cardinal.getName(facing))
 
--- SquirtleService.host = os.getComputerLabel()
--- Rpc.server(SquirtleService)
+-- TurtleService.host = os.getComputerLabel()
+-- Rpc.server(TurtleService)
 
 -- local occupiedSlots = 0
 
@@ -276,21 +277,21 @@ end
 
 function testMine()
     while true do
-        Squirtle.mine()
+        TurtleApi.mine()
     end
 end
 
 function testSimulateFuel()
-    local initialFuel = Squirtle.getNonInfiniteFuelLevel()
-    Squirtle.move("forward", 3)
-    os.sleep(1)
-    turtle.refuel(1)
-    local currentFuel = Squirtle.getNonInfiniteFuelLevel()
+    -- local initialFuel = Squirtle.getNonInfiniteFuelLevel()
+    -- Squirtle.move("forward", 3)
+    -- os.sleep(1)
+    -- turtle.refuel(1)
+    -- local currentFuel = Squirtle.getNonInfiniteFuelLevel()
 
-    Squirtle.simulate({facing = Cardinal.north, fuel = initialFuel, position = Vector.create(0, 0, 0)},
-                      {facing = Cardinal.north, fuel = currentFuel, position = Vector.create(0, 0, 0)})
+    -- Squirtle.simulate({facing = Cardinal.north, fuel = initialFuel, position = Vector.create(0, 0, 0)},
+    --                   {facing = Cardinal.north, fuel = currentFuel, position = Vector.create(0, 0, 0)})
 
-    Squirtle.move("forward", 4)
+    -- Squirtle.move("forward", 4)
 end
 
 function testPullInteger()
@@ -298,10 +299,10 @@ function testPullInteger()
 end
 
 function testTryPutAtOneOf()
-    Squirtle.setBreakable(function(block)
+    TurtleApi.setBreakable(function(block)
         return block.name == "minecraft:dirt"
     end)
-    local placedSide = Squirtle.tryPutAtOneOf(nil, "minecraft:dirt")
+    local placedSide = TurtleApi.tryPutAtOneOf(nil, "minecraft:dirt")
     print("[placed]", placedSide)
 end
 
@@ -573,7 +574,7 @@ end
 
 local function testSuckSlot()
     os.sleep(1)
-    print(Squirtle.suckItem("bottom", "minecraft:glass", 96))
+    print(TurtleApi.suckItem("bottom", "minecraft:glass", 96))
 end
 
 local function testEditEntity()
@@ -622,10 +623,26 @@ local function testShell()
     Shell:run()
 end
 
+---@param variant "crimson" | "warped"
+local function spamPlantFungus(variant)
+    while true do
+        TurtleApi.selectItem(ItemApi.getFungus(variant))
+        TurtleApi.place()
+
+        while not TurtleApi.probe("forward", ItemApi.getStem(variant)) do
+            TurtleApi.selectItem(ItemApi.boneMeal)
+            TurtleApi.place()
+        end
+
+        TurtleApi.dig()
+    end
+end
+
 local now = os.epoch("utc")
 
 for _ = 1, 1 do
-    testShell()
+    -- testShell()
+    TurtleApi.pushAllOutput("front", "bottom")
 end
 
--- print("[time]", (os.epoch("utc") - now) / 1000, "ms")
+print("[time]", (os.epoch("utc") - now) / 1000, "ms")
