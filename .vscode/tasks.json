@@ -59,6 +59,11 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/nether-lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/nether-lumberjack"
         },
         {
+            "label": "build computer:fungi-farm",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/fungi-farm.lua -p app/computer/?.lua -p ?.lua -o dist/computer/fungi-farm"
+        },
+        {
             "label": "build turtle:digger",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/digger"

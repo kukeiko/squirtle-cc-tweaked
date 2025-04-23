@@ -19,13 +19,15 @@ local readStash = require "lib.apis.inventory.readers.read-stash"
 local readStorage = require "lib.apis.inventory.readers.read-storage"
 local readTrash = require "lib.apis.inventory.readers.read-trash"
 local readTurtleBuffer = require "lib.apis.inventory.readers.read-turtle-buffer"
+local readDispenser = require "lib.apis.inventory.readers.read-dispenser"
 
 local baseTypeLookup = {
-    ["minecraft:chest"] = "minecraft:chest",
-    ["minecraft:furna"] = "minecraft:furnace",
+    ["minecraft:chest"] = ItemApi.chest,
+    ["minecraft:furna"] = ItemApi.furnace,
     ["minecraft:shulk"] = ItemApi.shulkerBox,
-    ["minecraft:barre"] = "minecraft:barrel",
-    ["minecraft:hoppe"] = "minecraft:hopper"
+    ["minecraft:barre"] = ItemApi.barrel,
+    ["minecraft:hoppe"] = ItemApi.hopper,
+    ["minecraft:dispe"] = ItemApi.dispenser
 }
 
 ---@class InventoryReader
@@ -51,7 +53,9 @@ local function findNameTag(name, stacks)
         if stack.name == "minecraft:name_tag" and stack.count == 1 and stack.nbt ~= nil then
             local stack = InventoryPeripheral.getStack(name, slot)
 
-            return slot, parseNameAndLabel(stack.displayName)
+            if stack then
+                return slot, parseNameAndLabel(stack.displayName)
+            end
         end
     end
 end
@@ -93,13 +97,15 @@ function InventoryReader.read(name, expected)
 
         local stacks = InventoryPeripheral.getStacks(name)
 
-        if baseType == "minecraft:furnace" then
+        if baseType == ItemApi.furnace then
             return readFurnace(name, stacks)
         elseif baseType == ItemApi.shulkerBox then
             local shulker = readStorage(name, stacks)
             shulker.type = "shulker"
 
             return shulker
+        elseif baseType == ItemApi.dispenser then
+            return readDispenser(name, stacks)
         else
             local nameTagSlot, nameTagName, nameTagLabel = findNameTag(name, stacks)
 
