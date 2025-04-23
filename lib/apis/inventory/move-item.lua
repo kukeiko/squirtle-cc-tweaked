@@ -1,6 +1,7 @@
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local Inventory = require "lib.models.inventory"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 local function getDefaultRate()
     return 8
@@ -63,7 +64,7 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
         local fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
         local toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
 
-        while transferredTotal < total and fromSlot and fromStack and toSlot and toStack do
+        while transferredTotal < total and fromSlot and fromStack and toSlot do
             if fromInventory.type == "storage" then
                 -- refresh the inventory to prevent accidentally "deleting" storage stacks.
                 -- bit of a hack, but currently no other idea on how else to fix it.
@@ -78,9 +79,25 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
             end
 
             local open = total - transferredTotal
-            local quantity = math.min(open, rate, fromStack.count, (toStack.maxCount - toStack.count))
+            local toStackOpenCount = fromStack.count
+
+            if toStack then
+                toStackOpenCount = toStack.maxCount - toStack.count
+            end
+
+            local quantity = math.min(open, rate, fromStack.count, toStackOpenCount)
             local transferred = pushItems(from, to, fromSlot.index, quantity, toSlot.index)
             transferredTotal = transferredTotal + transferred
+
+            if not toStack then
+                toStack = InventoryPeripheral.getStack(to, toSlot.index)
+
+                if not toStack then
+                    error(string.format("expected stack at %s[%d]", to, toSlot))
+                end
+
+                toInventory.stacks[toSlot.index] = toStack
+            end
 
             if transferred ~= quantity then
                 -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
