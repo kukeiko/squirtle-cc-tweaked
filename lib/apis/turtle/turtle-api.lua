@@ -485,17 +485,46 @@ local function refuelWithHelpFromPlayer(fuel)
 end
 
 ---@param fuel integer
-function TurtleApi.refuelTo(fuel)
+---@param barrel string?
+---@param ioChest string?
+function TurtleApi.refuelTo(fuel, barrel, ioChest)
     if TurtleApi.hasFuel(fuel) then
         return true
     elseif fuel > TurtleApi.getFuelLimit() then
         error(string.format("required fuel is %d more than the tank can hold", fuel - TurtleApi.getFuelLimit()))
     end
 
-    refuelFromBackpack(fuel)
+    if barrel and ioChest then
+        local function hasCharcoal()
+            return InventoryPeripheral.getItemCount(barrel, ItemApi.charcoal) > 0
+        end
 
-    if not TurtleApi.hasFuel(fuel) then
-        refuelWithHelpFromPlayer(fuel)
+        if not TurtleApi.hasFuel(fuel) and not hasCharcoal() then
+            print("[waiting] for more charcoal to arrive")
+        end
+
+        while not TurtleApi.hasFuel(fuel) do
+            TurtleApi.pullInput(ioChest, barrel)
+
+            while not hasCharcoal() do
+                TurtleApi.pullInput(ioChest, barrel)
+                os.sleep(3)
+            end
+
+            local requiredCharcoal = math.ceil((fuel - TurtleApi.getFuelLevel()) / ItemApi.getRefuelAmount(ItemApi.charcoal))
+            TurtleApi.selectEmpty(1)
+            -- [todo] hardcoded value 64
+            TurtleApi.suckItem(barrel, ItemApi.charcoal, math.min(requiredCharcoal, 64))
+            TurtleApi.refuel()
+        end
+
+        print("[ready] have enough fuel:", TurtleApi.getFuelLevel())
+    else
+        refuelFromBackpack(fuel)
+
+        if not TurtleApi.hasFuel(fuel) then
+            refuelWithHelpFromPlayer(fuel)
+        end
     end
 end
 
@@ -1550,6 +1579,48 @@ function TurtleApi.pullInput(from, to, transferredOutput, max)
     end
 
     return InventoryApi.transfer({from}, {to}, items, {fromTag = "input", toTag = "buffer"})
+end
+
+---@param barrel string
+---@param ioChest string
+---@param inputItems ItemStock
+function TurtleApi.transferOutputInput(barrel, ioChest, inputItems)
+    if not TurtleApi.probe("forward", ItemApi.barrel) then
+        error("expected barrel in front of me")
+    end
+
+    if not TurtleApi.probe("bottom", ItemApi.chest) then
+        error("expected chest below me")
+    end
+
+    print("[dump] items...")
+    TurtleApi.dump(barrel)
+    print("[push] output...")
+    TurtleApi.pushAllOutput(barrel, ioChest)
+    print("[pull] input...")
+    TurtleApi.pullInput(ioChest, barrel)
+
+    ---@return boolean
+    local function needsMoreInput()
+        for item, quantity in pairs(inputItems) do
+            if InventoryPeripheral.getItemCount(barrel, item) < quantity then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    if needsMoreInput() then
+        print("[waiting] for more input to arrive")
+
+        while needsMoreInput() do
+            os.sleep(3)
+            TurtleApi.pullInput(ioChest, barrel)
+        end
+    end
+
+    print("[ready] input looks good!")
 end
 
 ---@param alsoIgnoreSlot integer

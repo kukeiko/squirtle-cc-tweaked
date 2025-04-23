@@ -25,6 +25,8 @@ local ItemApi = {
     shroomlight = "minecraft:shroomlight"
 }
 
+local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
+
 ---@param variant "crimson" | "warped"
 function ItemApi.getNylium(variant)
     if variant == "crimson" then
@@ -89,6 +91,16 @@ function ItemApi.getVinesPlant(variant)
     else
         error(string.format("unknown vines plant variant %s", variant))
     end
+end
+
+---@param item string
+---@return integer
+function ItemApi.getRefuelAmount(item)
+    if not fuelItems[item] then
+        error(string.format("%s is not fuel", item))
+    end
+
+    return fuelItems[item]
 end
 
 return ItemApi

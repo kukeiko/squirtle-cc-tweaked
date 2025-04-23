@@ -14,87 +14,15 @@ local Vector = require "lib.models.vector"
 local DatabaseApi = require "lib.apis.database.database-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local ItemApi = require "lib.apis.item-api"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
-local minFuel = 6400
+-- [note] we want exactly 63 so that 1x stack of charcoal in the i/o chest is enough
+local minFuel = 63 * ItemApi.getRefuelAmount(ItemApi.charcoal)
 local minBoneMealForWork = 32
 local minFungiForWork = 1
 local barrel = "front"
 local chest = "bottom"
 local maxGrowthHeight = 27 -- have not seen a bigger one yet
 local harvestHeight = 9 -- have not seen more wart blocks vertically yet
-
--- [todo] candidate to be moved to TurtleApi
----@param variant "crimson" | "warped"
-local function transfer(variant)
-    if not TurtleApi.probe("forward", ItemApi.barrel) then
-        error("expected barrel in front of me")
-    end
-
-    if not TurtleApi.probe("bottom", ItemApi.chest) then
-        error("expected chest below me")
-    end
-
-    print("[dump] items...")
-    TurtleApi.dump(barrel)
-    print("[push] output...")
-    TurtleApi.pushAllOutput(barrel, chest)
-    print("[pull] input...")
-    TurtleApi.pullInput(chest, barrel)
-
-    ---@param item string
-    ---@param min integer
-    local function needsMoreInput(item, min)
-        return InventoryPeripheral.getItemCount(barrel, item) < min
-    end
-
-    local needsMoreBoneMeal = function()
-        return needsMoreInput(ItemApi.boneMeal, minBoneMealForWork)
-    end
-
-    local needsMoreFungi = function()
-        return needsMoreInput(ItemApi.getFungus(variant), minFungiForWork)
-    end
-
-    if needsMoreBoneMeal() or needsMoreFungi() then
-        print("[waiting] for more bone meal and/or fungi to arrive")
-
-        while needsMoreBoneMeal() or needsMoreFungi() do
-            os.sleep(3)
-            TurtleApi.pullInput(chest, barrel)
-        end
-    end
-
-    print("[ready] input looks good!")
-end
-
--- [todo] candidate to be moved to TurtleApi
-local function refuel()
-    local function hasCharcoal()
-        return InventoryPeripheral.getItemCount(barrel, ItemApi.charcoal) > 0
-    end
-
-    if not TurtleApi.hasFuel(minFuel) and not hasCharcoal() then
-        print("[waiting] for more charcoal to arrive")
-    end
-
-    while not TurtleApi.hasFuel(minFuel) do
-        TurtleApi.pullInput(chest, barrel)
-
-        while not hasCharcoal() do
-            TurtleApi.pullInput(chest, barrel)
-            os.sleep(3)
-        end
-
-        -- [todo] hardcoded values 80 & 64
-        local requiredCharcoal = math.ceil((minFuel - TurtleApi.getFuelLevel()) / 80)
-        TurtleApi.selectEmpty(1)
-        TurtleApi.suckItem(barrel, "minecraft:charcoal", math.min(requiredCharcoal, 64))
-        TurtleApi.refuel()
-    end
-
-    print("[ready] have enough fuel:", TurtleApi.getFuelLevel())
-end
 
 ---@param variant "crimson" | "warped"
 local function ensureNylium(variant)
@@ -217,6 +145,7 @@ local function resumableHarvest()
 end
 
 print(string.format("[nether-lumberjack %s] booting...", version()))
+
 EventLoop.run(function()
     ---@type "crimson" | "warped"
     local variant = arg[1]
@@ -225,6 +154,7 @@ EventLoop.run(function()
         return printUsage()
     end
 
+    -- by setting an explicit list of blocks allowed to break we can make sure the turtle doesn't unintentionally destroy its surroundings in case of a bug.
     TurtleApi.setBreakable(function(block)
         return Utils.indexOf({
             ItemApi.getStem(variant),
@@ -271,8 +201,10 @@ EventLoop.run(function()
     end
 
     while true do
-        transfer(variant)
-        refuel()
+        local inputItems = {[ItemApi.boneMeal] = minBoneMealForWork, [ItemApi.getFungus(variant)] = minFungiForWork}
+        TurtleApi.transferOutputInput(barrel, chest, inputItems)
+        TurtleApi.refuelTo(minFuel, barrel, chest)
+        -- [todo] I don't want the turtle to suck the charcoal
         TurtleApi.suckAll(barrel)
         TurtleApi.move("up")
         TurtleApi.move()
