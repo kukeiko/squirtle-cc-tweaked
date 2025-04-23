@@ -14,6 +14,7 @@ local Vector = require "lib.models.vector"
 local DatabaseApi = require "lib.apis.database.database-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local ItemApi = require "lib.apis.item-api"
+local RemoteService = require "lib.systems.runtime.remote-service"
 
 -- [note] we want exactly 63 so that 1x stack of charcoal in the i/o chest is enough
 local minFuel = 63 * ItemApi.getRefuelAmount(ItemApi.charcoal)
@@ -126,7 +127,8 @@ local function harvest()
     TurtleApi.move("forward", 3)
     TurtleApi.turn("right")
     -- [todo] limit harvestHeight based on current y position
-    TurtleApi.digArea(7, 7, -math.min(TurtleApi.getPosition().y - 1, harvestHeight), Vector.create(0, 1, 0), facing)
+    local adjustedHarvestHeight = -math.min(TurtleApi.getPosition().y - 1, harvestHeight)
+    TurtleApi.digArea(7, 7, adjustedHarvestHeight, Vector.create(0, 1, 0), facing)
     TurtleApi.move("down")
 end
 
@@ -147,6 +149,8 @@ end
 print(string.format("[nether-lumberjack %s] booting...", version()))
 
 EventLoop.run(function()
+    RemoteService.run({"nether-lumberjack"})
+end, function()
     ---@type "crimson" | "warped"
     local variant = arg[1]
 
@@ -204,7 +208,6 @@ EventLoop.run(function()
         local inputItems = {[ItemApi.boneMeal] = minBoneMealForWork, [ItemApi.getFungus(variant)] = minFungiForWork}
         TurtleApi.transferOutputInput(barrel, chest, inputItems)
         TurtleApi.refuelTo(minFuel, barrel, chest)
-        -- [todo] I don't want the turtle to suck the charcoal
         TurtleApi.suckAll(barrel)
         TurtleApi.move("up")
         TurtleApi.move()
