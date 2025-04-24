@@ -90,13 +90,12 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
             transferredTotal = transferredTotal + transferred
 
             if not toStack then
+                -- can be nil in case of hoppers
                 toStack = InventoryPeripheral.getStack(to, toSlot.index)
 
-                if not toStack then
-                    error(string.format("expected stack at %s[%d]", to, toSlot))
+                if toStack then
+                    toInventory.stacks[toSlot.index] = toStack
                 end
-
-                toInventory.stacks[toSlot.index] = toStack
             end
 
             if transferred ~= quantity then
@@ -111,9 +110,13 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
                 fromInventory.stacks[fromSlot.index] = nil
             end
 
-            toStack.count = toStack.count + transferred
             fromInventory.items[item] = fromInventory.items[item] - transferred
-            toInventory.items[item] = (toInventory.items[item] or 0) + transferred
+
+            if toStack then
+                toStack.count = toStack.count + transferred
+                toInventory.items[item] = (toInventory.items[item] or 0) + transferred
+            end
+
             fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
             toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
         end
