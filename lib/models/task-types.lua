@@ -12,7 +12,6 @@
 ---
 ---@alias TaskStatus "issued" | "accepted" | "finished" | "failed"
 ---
----[todo] not yet implemented. purpose: get items from storage and craft those that are missing.
 ---@class ProvideItemsTask : Task
 ---@field type "provide-items"
 ---@field bufferId? integer

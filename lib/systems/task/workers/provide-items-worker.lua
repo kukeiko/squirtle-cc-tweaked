@@ -28,6 +28,8 @@ local function work()
     end
 
     if task.craftMissing then
+        -- [todo] issues craftItems() task even though not necessary, meaning that providing items doesn't work
+        -- if no crafter is running
         local bufferStock = storageService.getBufferStock(task.bufferId)
         local open = ItemStock.subtract(task.items, bufferStock)
 

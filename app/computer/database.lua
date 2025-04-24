@@ -82,3 +82,6 @@ end, function()
         end
     end
 end)
+
+term.clear()
+term.setCursorPos(1, 1)
