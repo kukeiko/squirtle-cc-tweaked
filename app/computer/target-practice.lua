@@ -14,10 +14,12 @@ local Rpc = require "lib.tools.rpc"
 local Side = require "lib.apis.side"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
+local score = 0
 local maxScore = 10
 local hitSide = Side.getName(Side.left)
 local showTargetSide = Side.getName(Side.right)
 local scoreSide = Side.getName(Side.right)
+
 local cooldowns = {
     {5, 5, 5, 5, 4, 4, 4, 3, 3, 3}, -- easy
     {5, 4, 3, 3, 2, 2, 1, 1, 0, 0}, -- medium
@@ -29,6 +31,7 @@ local durations = {
     {2, 2, 2, 1, 1, 1, 1, 1, 1, 1} -- hard
 }
 
+-- [todo] move service to lib.systems.games
 ---@class TargetPracticeService : Service
 local TargetPracticeService = {name = "target-practice", maxDistance = 128}
 local isTogglingTarget = false
@@ -62,8 +65,6 @@ local function server()
     Utils.writeStartupFile("target-practice")
 
     EventLoop.run(function()
-        RemoteService.run({"target-practice"})
-    end, function()
         Rpc.host(TargetPracticeService)
     end, function()
         while true do
@@ -117,19 +118,17 @@ local function showWonAnimation()
     end
 end
 
+---@param nextScore integer
+local function setScore(nextScore)
+    score = math.max(0, math.min(nextScore, maxScore))
+    print("[score]", score)
+    redstone.setAnalogOutput(scoreSide, score)
+end
+
 ---@param playerCount integer
 ---@param difficulty integer
 local function game(playerCount, difficulty)
-    local score = 0
     local speaker = peripheral.find("speaker")
-
-    ---@param nextScore integer
-    local function setScore(nextScore)
-        score = math.max(0, math.min(nextScore, maxScore))
-        print("[score]", score)
-        redstone.setAnalogOutput(scoreSide, score)
-    end
-
     setScore(0)
 
     local targets = Rpc.all(TargetPracticeService)
@@ -200,34 +199,33 @@ end
 
 local function client()
     Utils.writeStartupFile("target-practice client")
+    setScore(0)
 
-    EventLoop.run(function()
-        RemoteService.run({"target-practice"})
-    end, function()
-        while true do
-            redstone.setOutput("bottom", false)
-            print("[prompt] how many players?")
-            local playerCount = EventLoop.pullInteger(0, 4)
+    while true do
+        redstone.setOutput("bottom", false)
+        print("[prompt] how many players?")
+        local playerCount = EventLoop.pullInteger(0, 4)
 
-            if playerCount == 0 then
-                print("[test] all targets")
-                testAllTargets()
-            else
-                print("[players]", playerCount)
-                print("[prompt] what difficulty?")
-                print(" (1) easy")
-                print(" (2) medium")
-                print(" (3) hard")
-                local difficulty = EventLoop.pullInteger(1, 3)
-                print("[start] get ready!")
-                game(playerCount, difficulty)
-                Utils.waitForUserToHitEnter("(hit enter to close door and restart)")
-            end
+        if playerCount == 0 then
+            print("[test] all targets")
+            testAllTargets()
+        else
+            print("[players]", playerCount)
+            print("[prompt] what difficulty?")
+            print(" (1) easy")
+            print(" (2) medium")
+            print(" (3) hard")
+            local difficulty = EventLoop.pullInteger(1, 3)
+            print("[start] get ready!")
+            game(playerCount, difficulty)
+            Utils.waitForUserToHitEnter("(hit enter to close door and restart)")
         end
-    end)
+    end
 end
 
 EventLoop.run(function()
+    RemoteService.run({"target-practice"})
+end, function()
     if isClient then
         client()
     else
