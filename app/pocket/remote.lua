@@ -13,6 +13,7 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local SearchableList = require "lib.ui.searchable-list"
 local RemoteService = require "lib.systems.runtime.remote-service"
+local Shell = require "lib.ui.shell"
 local readInteger = require "lib.ui.read-integer"
 
 print(string.format("[remote %s]", version()))
@@ -154,9 +155,54 @@ local function showRemotes(timeout)
     end
 end
 
+---@param timeout integer?
+local function showBatch(timeout)
+    while true do
+        ---@type SearchableListOption[]
+        local options = {
+            {id = "reboot", name = "Reboot"},
+            {id = "update", name = "Update"},
+            {id = "update-reboot", name = "Update & Reboot"}
+        }
+        local searchableList = SearchableList.new(options)
+        local selected = searchableList:run()
+
+        if selected then
+            local remotes = Rpc.all(RemoteService, timeout)
+            print(string.format("[%s] run on %d remotes", selected.id, #remotes))
+
+            for _, remote in pairs(remotes) do
+                local doUpdate = selected.id == "update" or selected.id == "update-reboot"
+                local doReboot = selected.id == "reboot" or selected.id == "update-reboot"
+
+                if doUpdate then
+                    print(string.format("[updating] %s...", remote.host))
+                    remote.update()
+                    print(string.format("[updated] %s", remote.host))
+                end
+
+                if doReboot then
+                    print(string.format("[rebooting] %s...", remote.host))
+                    remote.reboot()
+                    print(string.format("[rebooted] %s", remote.host))
+                end
+            end
+        end
+    end
+end
+
 EventLoop.run(function()
     local timeout = tonumber(arg[1]) or nil
-    showRemotes(timeout)
+
+    Shell:addWindow("Remotes", function()
+        showRemotes(timeout)
+    end)
+
+    Shell:addWindow("Batch", function()
+        showBatch(timeout)
+    end)
+
+    Shell:run()
 end)
 
 term.clear()
