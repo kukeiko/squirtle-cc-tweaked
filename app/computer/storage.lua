@@ -101,7 +101,8 @@ local function getActiveLockList()
     return options
 end
 
-local function activeLocks()
+---@param shellWindow ShellWindow
+local function activeLocks(shellWindow)
     local list = SearchableList.new(getActiveLockList(), "Active Locks")
 
     EventLoop.run(function()
@@ -111,7 +112,10 @@ local function activeLocks()
     end, function()
         while true do
             InventoryLocks.pullLockChange()
-            list:setOptions(getActiveLockList())
+
+            if shellWindow:isVisible() then
+                list:setOptions(getActiveLockList())
+            end
         end
     end)
 end

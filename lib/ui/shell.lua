@@ -7,8 +7,26 @@ local EventLoop = require "lib.tools.event-loop"
 
 ---@class ShellWindow
 ---@field title string
----@field fn fun(): any
+---@field fn fun(window: ShellWindow): any
 ---@field window table
+local ShellWindow = {}
+
+---@param title string
+---@param fn fun(): any
+---@param window table
+---@return ShellWindow
+function ShellWindow.new(title, fn, window)
+    ---@type ShellWindow|{}
+    local instance = {title = title, fn = fn, window = window}
+    setmetatable(instance, {__index = ShellWindow})
+
+    return instance
+end
+
+---@return boolean
+function ShellWindow:isVisible()
+    return self.window.isVisible()
+end
 
 ---@class Shell
 ---@field window table
@@ -94,7 +112,7 @@ local function createRunnableFromWindow(self, shellWindow)
             end
         })
         os.sleep(.1) -- [todo] figure out if actually needed
-        shellWindow.fn()
+        shellWindow.fn(shellWindow)
         -- [todo] this hack is needed in case the UI event was responsible for terminating the window,
         -- at which point the next window is the active one and also receives the UI event (i.e. it "bleeds" over)
         os.sleep(.1)
@@ -117,12 +135,12 @@ local function createRunnableFromWindow(self, shellWindow)
 end
 
 ---@param title string
----@param fn fun(): any
+---@param fn fun(onShow: fun(), onHide:fun()): any
 function Shell:addWindow(title, fn)
     local w, h = self.window.getSize()
 
     ---@type ShellWindow
-    local shellWindow = {title = title, fn = fn, window = window.create(self.window, 1, 1, w, h - 2, false)}
+    local shellWindow = ShellWindow.new(title, fn, window.create(self.window, 1, 1, w, h - 2, false))
     table.insert(self.windows, shellWindow)
 
     if isRunning then
