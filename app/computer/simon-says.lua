@@ -8,12 +8,14 @@ if not arg then
     return version
 end
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local Utils = require "lib.tools.utils"
+local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
 local sounds = {front = "entity.pig.ambient", back = "entity.cow.ambient", left = "entity.chicken.ambient", right = "entity.sheep.ambient"}
 
+-- [todo] move service to lib.systems.games
 ---@class SimonSaysService : Service
 local SimonSaysService = {name = "simon-says"}
 local playedSounds = {}
@@ -57,7 +59,7 @@ if not speaker then
 end
 
 local function client()
-    -- [todo] should run while look with timeout until it finds the service
+    Utils.writeStartupFile("simon-says client")
     local service = Rpc.nearest(SimonSaysService)
     local isPlaying = false
 
@@ -67,7 +69,7 @@ local function client()
         if redstone.getInput("top") and not isPlaying then
             service.playerStarted()
             isPlaying = true
-        elseif not redstone.getInput("top") then
+        elseif not redstone.getInput("top") and isPlaying then
             service.playerExited()
             isPlaying = false
         end
@@ -75,9 +77,12 @@ local function client()
         for side, sound in pairs(sounds) do
             if redstone.getInput(side) then
                 speaker.playSound(sound, 3)
+
                 if isPlaying then
                     service.playedSound(sound)
                 end
+
+                os.sleep(1)
                 break
             end
         end
@@ -95,7 +100,6 @@ local function game()
     local speaker = peripheral.find("speaker")
 
     while score < maxScore do
-        os.sleep(3)
         local sounds = Utils.toList(sounds)
         local rnd = math.random(#sounds)
         speaker.playSound(sounds[rnd], 3)
@@ -115,8 +119,14 @@ local function game()
             end
         else
             os.sleep(1)
+            -- [todo] setting to 0 is too harsh - maybe just reduce by 2-3
+            -- [idea] maybe the further you are the more you lose? could do the same in target-practice
             setScore(0)
             speaker.playSound("block.lava.extinguish", 1)
+        end
+
+        if score < maxScore then
+            os.sleep(3)
         end
 
         playedSounds = {}
@@ -146,12 +156,14 @@ local function win()
 end
 
 local function server()
+    Utils.writeStartupFile("simon-says")
     local monitor = peripheral.find("monitor")
 
     if monitor then
         term.redirect(monitor)
     end
 
+    setScore(0)
     print("[prompt] how many players?")
     requiredPlayers = EventLoop.pullInteger(1, 4)
     print("[players] set to", requiredPlayers)
@@ -182,6 +194,8 @@ local function server()
 end
 
 EventLoop.run(function()
+    RemoteService.run({"simon-says"})
+end, function()
     if isClient then
         client()
     else
