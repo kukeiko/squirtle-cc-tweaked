@@ -89,32 +89,31 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
             local transferred = pushItems(from, to, fromSlot.index, quantity, toSlot.index)
             transferredTotal = transferredTotal + transferred
 
-            if not toStack then
-                -- can be nil in case of hoppers
-                toStack = InventoryPeripheral.getStack(to, toSlot.index)
-
-                if toStack then
-                    toInventory.stacks[toSlot.index] = toStack
-                end
-            end
-
             if transferred ~= quantity then
                 -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
+                print(string.format("[cache] invalidated: expected %d, transferred %", quantity, transferred))
                 InventoryCollection.mount({from, to})
                 return
             end
 
+            fromInventory.items[item] = fromInventory.items[item] - transferred
             fromStack.count = fromStack.count - transferred
 
             if fromStack.count == 0 and not fromSlot.permanent then
                 fromInventory.stacks[fromSlot.index] = nil
             end
 
-            fromInventory.items[item] = fromInventory.items[item] - transferred
-
             if toStack then
                 toStack.count = toStack.count + transferred
                 toInventory.items[item] = (toInventory.items[item] or 0) + transferred
+            else
+                -- can be nil in case of hoppers
+                toStack = InventoryPeripheral.getStack(to, toSlot.index)
+
+                if toStack then
+                    toInventory.stacks[toSlot.index] = toStack
+                    toInventory.items[item] = (toInventory.items[item] or 0) + toStack.count
+                end
             end
 
             fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
