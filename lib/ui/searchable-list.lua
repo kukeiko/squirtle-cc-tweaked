@@ -1,5 +1,5 @@
-local EventLoop = require "lib.tools.event-loop"
 local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
 
 ---@class SearchableList
 ---@field options SearchableListOption[]
@@ -83,9 +83,12 @@ function SearchableList:run()
 
     local idleTimer, refreshTimer
 
-    if self.idleTimeout and self.refreshInterval and self.refresher then
-        idleTimer = os.startTimer(self.idleTimeout)
+    if self.refreshInterval and self.refresher then
         refreshTimer = os.startTimer(self.refreshInterval)
+
+        if self.idleTimeout then
+            idleTimer = os.startTimer(self.idleTimeout)
+        end
     end
 
     while (true) do
