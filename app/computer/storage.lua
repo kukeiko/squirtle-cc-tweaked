@@ -130,68 +130,49 @@ end
 
 term.clear()
 
-EventLoop.run(function()
-    RemoteService.run({"storage"})
-end, function()
-    local Shell = require "lib.ui.shell"
+local Shell = require "lib.ui.shell"
 
-    Shell:addWindow("Logs", main)
-    Shell:addWindow("Locks", activeLocks)
-    Shell:addWindow("Event Loop", function()
-        local start = os.epoch("utc")
+Shell:addWindow("Logs", main)
+Shell:addWindow("Locks", activeLocks)
+Shell:addWindow("Event Loop", function()
+    local start = os.epoch("utc")
 
-        ---@return SearchableListOption[]
-        local function getStatsList()
-            local stats = EventLoop.getPulledEventStats()
-            local duration = os.epoch("utc") - start
+    ---@return SearchableListOption[]
+    local function getStatsList()
+        local stats = EventLoop.getPulledEventStats()
+        local duration = os.epoch("utc") - start
 
-            local options = Utils.map(stats, function(quantity, event)
-                ---@type SearchableListOption
-                return {id = event, name = event, suffix = tostring(math.floor(quantity / (duration / 1000)))}
-            end)
+        local options = Utils.map(stats, function(quantity, event)
+            ---@type SearchableListOption
+            return {id = event, name = event, suffix = tostring(math.floor(quantity / (duration / 1000)))}
+        end)
 
-            start = os.epoch("utc")
+        start = os.epoch("utc")
 
-            for k in pairs(stats) do
-                stats[k] = 0
-            end
-
-            return options
+        for k in pairs(stats) do
+            stats[k] = 0
         end
 
-        local list = SearchableList.new(getStatsList(), "Pulled Events", nil, 1, getStatsList)
-        list:run()
-    end)
+        return options
+    end
 
-    Shell:addWindow("Modem Messages", function()
-        while true do
-            local event = {EventLoop.pull("modem_message")}
-            ---@type integer
-            local channel = event[3]
-            ---@type integer
-            local replyChannel = event[4]
-            ---@type RpcResponsePacket|RpcRequestPacket|RpcPingPacket|RpcPongPacket
-            local message = event[5]
-            ---@type number?
-            local distance = event[6]
+    local list = SearchableList.new(getStatsList(), "Pulled Events", nil, 1, getStatsList)
+    list:run()
+end)
 
-            if type(message) == "table" then
-                print(
-                    string.format("[%s] %s %s  %d/%d (%d)", message.type, message.method, message.service, channel, replyChannel, distance))
-            end
-        end
-    end)
-
-    Shell:addWindow("RPC", function()
+Shell:addWindow("RPC", function()
+    EventLoop.run(function()
+        RemoteService.run({"storage"})
+    end, function()
         Rpc.host(StorageService)
     end)
-
-    Shell:addWindow("Tasks (cc:tweaked)", function()
-        while true do
-            local event = {EventLoop.pull("task_complete")}
-            print(event[1], event[2], event[3], event[4])
-        end
-    end)
-
-    Shell:run()
 end)
+
+Shell:addWindow("Tasks (cc:tweaked)", function()
+    while true do
+        local event = {EventLoop.pull("task_complete")}
+        print(event[1], event[2], event[3], event[4])
+    end
+end)
+
+Shell:run()

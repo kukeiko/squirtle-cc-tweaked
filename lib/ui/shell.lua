@@ -135,7 +135,7 @@ local function createRunnableFromWindow(self, shellWindow)
 end
 
 ---@param title string
----@param fn fun(onShow: fun(), onHide:fun()): any
+---@param fn fun(shellWindow: ShellWindow): any
 function Shell:addWindow(title, fn)
     local w, h = self.window.getSize()
 

@@ -173,24 +173,24 @@ local function showItemList(storageService, taskService)
     end
 end
 
-EventLoop.run(function()
-    RemoteService.run({"dispenser"})
-end, function()
-    print(string.format("[dispenser %s] connecting to services...", version()))
-    local storageService = Rpc.nearest(StorageService)
-    local taskService = Rpc.nearest(TaskService)
+print(string.format("[dispenser %s] connecting to services...", version()))
+local storageService = Rpc.nearest(StorageService)
+local taskService = Rpc.nearest(TaskService)
 
-    Shell:addWindow("Items", function()
-        showItemList(storageService, taskService)
-    end)
-
-    Shell:addWindow("Transfers", function()
-        showTransfers(storageService, taskService)
-    end)
-
-    Shell:addWindow("Missing", function()
-        showMissing(storageService, taskService)
-    end)
-
-    Shell:run()
+Shell:addWindow("Items", function()
+    showItemList(storageService, taskService)
 end)
+
+Shell:addWindow("Transfers", function()
+    showTransfers(storageService, taskService)
+end)
+
+Shell:addWindow("Missing", function()
+    showMissing(storageService, taskService)
+end)
+
+Shell:addWindow("RPC", function()
+    RemoteService.run({"dispenser"})
+end)
+
+Shell:run()
