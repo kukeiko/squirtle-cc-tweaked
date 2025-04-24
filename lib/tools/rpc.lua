@@ -36,7 +36,7 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field maxDistance? integer
 
 local callId = 0
-local broadcastChannel = 64
+local pingChannel = 0
 local pingTimeout = 0.25
 
 ---@return string
@@ -77,9 +77,10 @@ local Rpc = {}
 ---@return { host: string, distance: number, channel: integer }[]
 local function findAllHosts(service, timeout)
     local modem = getModem()
-    local channel = broadcastChannel + os.getComputerID()
-    modem.open(broadcastChannel)
+    local channel = os.getComputerID()
+    modem.open(pingChannel)
     modem.open(channel)
+    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
 
     ---@type { host:string, distance:number, channel: integer }[]
     local hosts = {}
@@ -87,7 +88,8 @@ local function findAllHosts(service, timeout)
     EventLoop.runTimed(timeout or pingTimeout, function()
         ---@type RpcPingPacket
         local ping = {type = "ping", service = service.name}
-        modem.transmit(broadcastChannel, channel, ping)
+        modem.transmit(pingChannel, channel, ping)
+        modem.transmit(64, channel, ping) -- [todo] remove once all apps on server are updated to use new pingChannel
 
         while true do
             local event = table.pack(EventLoop.pull("modem_message"))
@@ -115,16 +117,16 @@ end
 ---@return T|RpcClient
 local function createClient(service, host, distance, serviceChannel)
     local modem = getWirelessModem()
-    -- [todo] consider using computer id instead (to prevent inspecting messages of other computers)
-    local clientChannel = (broadcastChannel + os.getComputerID())
-    modem.open(broadcastChannel)
+    local clientChannel = os.getComputerID()
+    modem.open(pingChannel)
     modem.open(clientChannel)
+    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
 
     ---@type RpcClient
     local client = {
         host = host,
         distance = distance,
-        channel = serviceChannel or broadcastChannel,
+        channel = serviceChannel or pingChannel,
         ping = function()
             return true
         end
@@ -279,9 +281,11 @@ function Rpc.host(service, modemName)
 
     service.host = label
     local modem = getModem(modemName)
-    local channel = broadcastChannel + os.getComputerID()
-    modem.open(broadcastChannel)
+    local channel = os.getComputerID()
+    modem.open(pingChannel)
     modem.open(channel)
+    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
+
     print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
 
     ---@param message RpcRequestPacket|RpcPingPacket
@@ -322,6 +326,8 @@ function Rpc.host(service, modemName)
                     local pong = {type = "pong", host = service.host, service = service.name}
                     peripheral.call(modem, "transmit", replyChannel, channel, pong)
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
+                    print(string.format("[rpc] got request %s", message.method))
+
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))
                     end)
@@ -329,6 +335,7 @@ function Rpc.host(service, modemName)
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response, success = success}
                     peripheral.call(modem, "transmit", replyChannel, channel, packet)
+                    print(string.format("[rpc] sent response %s %d/%d", message.method, replyChannel, channel))
                 end
             end)
         end
