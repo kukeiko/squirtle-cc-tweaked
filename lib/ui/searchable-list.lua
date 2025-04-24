@@ -91,8 +91,9 @@ function SearchableList:run()
         end
     end
 
+    self:draw()
+
     while (true) do
-        self:draw()
         local event, value = EventLoop.pull()
         local filterDirty = false
         local userInteracted = false
@@ -161,8 +162,12 @@ function SearchableList:run()
             end
         end
 
-        if (filterDirty) then
+        if filterDirty then
             self:filter()
+        end
+
+        if userInteracted then
+            self:draw()
         end
     end
 
