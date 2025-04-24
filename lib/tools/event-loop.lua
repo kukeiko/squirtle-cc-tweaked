@@ -255,6 +255,17 @@ function EventLoop.runTimed(timeout, ...)
     return not timeoutHit
 end
 
+---@param timerId integer
+function EventLoop.pullTimer(timerId)
+    while true do
+        local _, candidate = EventLoop.pull("timer")
+
+        if candidate == timerId then
+            return nil
+        end
+    end
+end
+
 ---@param key number
 function EventLoop.pullKey(key)
     while true do

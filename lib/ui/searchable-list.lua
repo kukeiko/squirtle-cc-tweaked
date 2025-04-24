@@ -98,14 +98,19 @@ function SearchableList:run()
         local filterDirty = false
         local userInteracted = false
 
-        if event == "timer" and value == idleTimer then
+        if event == "timer" and idleTimer and value == idleTimer then
             -- user did not interact for a while => cancel refreshing list options
             idleTimer = os.cancelTimer(idleTimer)
             refreshTimer = os.cancelTimer(refreshTimer)
-        elseif event == "timer" and value == refreshTimer then
+        elseif event == "timer" and refreshTimer and value == refreshTimer then
             -- refresh list options
-            self:setOptions(self.refresher())
-            refreshTimer = Utils.restartTimer(refreshTimer, self.refreshInterval)
+            EventLoop.waitForAny(function()
+                -- need to check for idleTimer as refresher() could take a while, potentially causing us to skip pulling it normally
+                EventLoop.pullTimer(idleTimer)
+            end, function()
+                self:setOptions(self.refresher())
+                refreshTimer = Utils.restartTimer(refreshTimer, self.refreshInterval)
+            end)
         elseif event == "key" then
             if (value == keys.f4) then
                 break
