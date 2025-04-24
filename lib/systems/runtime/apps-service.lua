@@ -18,8 +18,9 @@ local function initAppVersions()
         if fs.isDir(fs.combine(AppsService.folder, subFolder)) then
             for _, fileName in pairs(fs.list(fs.combine(AppsService.folder, subFolder))) do
                 local appPath = fs.combine(AppsService.folder, subFolder, fileName)
-                local version = dofile(appPath) --[[@as fun():string]]
-                versions[appPath] = version()
+                ---@type ApplicationMetadata
+                local metadata = dofile(appPath)
+                versions[appPath] = metadata.version
                 print(string.format("[%s] %s @ %s", subFolder, fileName, versions[appPath]))
             end
         end
@@ -66,14 +67,16 @@ end
 ---@param folder string
 ---@param apps Application[]
 local function setApps(folder, apps)
-    if Utils.isDev() then
+    if Utils.isDev() and os.getComputerLabel() ~= "Database" then
         return
     end
 
     for _, app in pairs(apps) do
-        local file = fs.open(fs.combine(folder, app.name), "w")
+        local path = fs.combine(folder, app.name)
+        local file = fs.open(path, "w")
         file.write(app.content or "")
         file.close()
+        AppsService.versions[path] = app.version
     end
 end
 

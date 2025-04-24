@@ -5,7 +5,8 @@ end
 local version = require "version"
 
 if not arg then
-    return version
+    ---@type ApplicationMetadata
+    return {version = version(), platform = "turtle"}
 end
 
 local EventLoop = require "lib.tools.event-loop"

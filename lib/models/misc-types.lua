@@ -1,3 +1,7 @@
+---@class ApplicationMetadata
+---@field version string
+---@field platform "computer" | "pocket" | "turtle"
+---
 ---@class Application
 ---@field name string
 ---@field version string

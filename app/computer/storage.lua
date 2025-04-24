@@ -5,7 +5,8 @@ end
 local version = require "version"
 
 if not arg then
-    return version
+    ---@type ApplicationMetadata
+    return {version = version(), platform = "computer"}
 end
 
 local Utils = require "lib.tools.utils"
@@ -132,8 +133,6 @@ term.clear()
 EventLoop.run(function()
     RemoteService.run({"storage"})
 end, function()
-    Rpc.host(StorageService)
-end, function()
     local Shell = require "lib.ui.shell"
 
     Shell:addWindow("Logs", main)
@@ -170,7 +169,7 @@ end, function()
             ---@type integer
             local channel = event[3]
             ---@type integer
-            local replyChannel = event[3]
+            local replyChannel = event[4]
             ---@type RpcResponsePacket|RpcRequestPacket|RpcPingPacket|RpcPongPacket
             local message = event[5]
             ---@type number?
@@ -181,6 +180,10 @@ end, function()
                     string.format("[%s] %s %s  %d/%d (%d)", message.type, message.method, message.service, channel, replyChannel, distance))
             end
         end
+    end)
+
+    Shell:addWindow("RPC", function()
+        Rpc.host(StorageService)
     end)
 
     Shell:addWindow("Tasks (cc:tweaked)", function()

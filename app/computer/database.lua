@@ -5,7 +5,8 @@ end
 local version = require "version"
 
 if not arg then
-    return version
+    ---@type ApplicationMetadata
+    return {version = version(), platform = "computer"}
 end
 
 local Utils = require "lib.tools.utils"
@@ -47,13 +48,9 @@ if monitor then
     term.redirect(monitor)
 end
 
-EventLoop.run(function()
-    AppsService.run()
-end, function()
-    Rpc.host(DatabaseService)
-end, function()
-    Rpc.host(TaskService)
-end, function()
+local Shell = require "lib.ui.shell"
+
+Shell:addWindow("Apps", function()
     while true do
         local apps = {
             ["computer"] = AppsService.getComputerApps(),
@@ -61,14 +58,23 @@ end, function()
             ["turtle"] = AppsService.getTurtleApps()
         }
 
-        ---@type SearchableListOption[]
-        local options = {
-            {id = "computer", name = "Computer", suffix = tostring(#apps["computer"])},
-            {id = "pocket", name = "Pocket", suffix = tostring(#apps["pocket"])},
-            {id = "turtle", name = "Turtle", suffix = tostring(#apps["turtle"])}
-        }
+        local function getListOptions()
+            local apps = {
+                ["computer"] = AppsService.getComputerApps(),
+                ["pocket"] = AppsService.getPocketApps(),
+                ["turtle"] = AppsService.getTurtleApps()
+            }
 
-        local list = SearchableList.new(options, "Platform")
+            ---@type SearchableListOption[]
+            local options = {
+                {id = "computer", name = "Computer", suffix = tostring(#apps["computer"])},
+                {id = "pocket", name = "Pocket", suffix = tostring(#apps["pocket"])},
+                {id = "turtle", name = "Turtle", suffix = tostring(#apps["turtle"])}
+            }
+            return options
+        end
+
+        local list = SearchableList.new(getListOptions(), "Platform", 10, 1, getListOptions)
         local selected = list:run()
 
         if selected then
@@ -81,6 +87,46 @@ end, function()
             end
         end
     end
+end)
+
+Shell:addWindow("Log", function()
+    EventLoop.run(function()
+        AppsService.run()
+    end, function()
+        Rpc.host(DatabaseService)
+    end, function()
+        Rpc.host(TaskService)
+    end, function()
+        while true do
+            local _, files = EventLoop.pull("file_transfer")
+            ---@type table<"computer" | "pocket" | "turtle", Application[]>
+            local apps = {computer = {}, pocket = {}, turtle = {}}
+
+            for _, file in pairs(files.getFiles()) do
+                local contents = file.readAll()
+                local fn, message = load(contents, "@/" .. file.getName(), nil, {})
+
+                if fn then
+                    ---@type ApplicationMetadata
+                    local metadata = fn()
+                    ---@type Application
+                    local application = {name = file.getName(), path = "", version = metadata.version, content = contents}
+                    table.insert(apps[metadata.platform], application)
+                    print(string.format("[uploaded] %s/%s %s", metadata.platform, application.name, application.version))
+                else
+                    print(message)
+                end
+            end
+
+            AppsService.setComputerApps(apps.computer)
+            AppsService.setPocketApps(apps.pocket)
+            AppsService.setTurleApps(apps.turtle)
+        end
+    end)
+end)
+
+EventLoop.run(function()
+    Shell:run()
 end)
 
 term.clear()

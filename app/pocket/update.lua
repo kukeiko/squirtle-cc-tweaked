@@ -5,7 +5,8 @@ end
 local version = require "version"
 
 if not arg then
-    return version
+    ---@type ApplicationMetadata
+    return {version = version(), platform = "pocket"}
 end
 
 local UpdateService = require "lib.systems.runtime.update-service"

@@ -4,9 +4,53 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "build all",
+            "dependsOn": [
+                "build computer:bone-meal",
+                "build computer:database",
+                "build computer:dispenser",
+                "build computer:fungi-farm",
+                "build computer:simon-says",
+                "build computer:storage",
+                "build computer:storage-workers",
+                "build computer:subway-switch",
+                "build computer:target-practice",
+                "build computer:teleport",
+                "build computer:xylophone",
+                "build pocket:aqueduct",
+                "build pocket:bone-meal",
+                "build pocket:oak",
+                "build pocket:print3d",
+                "build pocket:remote",
+                "build pocket:remote-control",
+                "build pocket:subway",
+                "build pocket:teleport",
+                "build pocket:turtle",
+                "build pocket:update",
+                "build turtle:aqueduct",
+                "build turtle:bone-meal",
+                "build turtle:build-platform",
+                "build turtle:copper",
+                "build turtle:crafter",
+                "build turtle:dig",
+                "build turtle:farmer",
+                "build turtle:io-crafter",
+                "build turtle:lumberjack",
+                "build turtle:nether-lumberjack",
+                "build turtle:oak",
+                "build turtle:print3d",
+                "build turtle:pyramid",
+                "build turtle:recipe-reader",
+                "build turtle:remote-control",
+                "build turtle:silo",
+                "build turtle:update",
+                "build turtle:wall",
+            ]
+        },
+        {
             "label": "build turtle:oak",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/oak.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/oak",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/oak.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/oak"
         },
         {
             "label": "build pocket:oak",
@@ -42,11 +86,6 @@
             "label": "build computer:dispenser:dev",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p ?.lua -o ../21/dispenser"
-        },
-        {
-            "label": "build pocket:craft",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/craft"
         },
         {
             "label": "build turtle:lumberjack",

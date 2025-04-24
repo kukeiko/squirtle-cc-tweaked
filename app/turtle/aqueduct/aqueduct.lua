@@ -5,7 +5,8 @@ end
 local version = require "version"
 
 if not arg then
-    return version
+    ---@type ApplicationMetadata
+    return {version = version(), platform = "turtle"}
 end
 
 local TurtleApi = require "lib.apis.turtle.turtle-api"
