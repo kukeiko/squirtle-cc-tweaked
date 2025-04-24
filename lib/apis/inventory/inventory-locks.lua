@@ -14,7 +14,7 @@ local nextId = 1
 local unlockQueue = {}
 ---@type table<string, LockedInventory>
 local locks = {}
-
+local pullingLockChangeCount = 0
 local InventoryLocks = {}
 
 local function getNextLockId()
@@ -34,7 +34,9 @@ local function addLocks(inventories, lockId)
         end
     end
 
-    EventLoop.queue("inventory-locks:lock")
+    if pullingLockChangeCount > 0 then
+        EventLoop.queue("inventory-locks:lock")
+    end
 end
 
 ---@param inventories string[]
@@ -157,11 +159,15 @@ function InventoryLocks.getLockedInventories()
 end
 
 function InventoryLocks.pullLockChange()
+    pullingLockChangeCount = pullingLockChangeCount + 1
+
     EventLoop.waitForAny(function()
         EventLoop.pull("inventory-locks:lock")
     end, function()
         EventLoop.pull("inventory-locks:unlock")
     end)
+
+    pullingLockChangeCount = pullingLockChangeCount - 1
 end
 
 function InventoryLocks.clear()
