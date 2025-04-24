@@ -12,6 +12,14 @@ local EventLoop = {}
 ---@type EventLoopThread?
 local currentThread
 
+---@type table<string, integer>
+local pulledEventStats = {}
+
+---@return table<string, integer>
+function EventLoop.getPulledEventStats()
+    return pulledEventStats
+end
+
 ---@param fn function
 ---@param event? string
 ---@return EventLoopThread
@@ -71,6 +79,11 @@ end
 local function runThreads(threads, event)
     if event[1] == "terminate" then
         return {}
+    end
+
+    if currentThread == nil then
+        -- only record events pulled from root
+        pulledEventStats[event[1] or "nil"] = (pulledEventStats[event[1] or "nil"] or 0) + 1
     end
 
     ---@type EventLoopThread[]

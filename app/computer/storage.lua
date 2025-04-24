@@ -35,10 +35,6 @@ local function main()
     EventLoop.runUntil("storage:stop", function()
         Inventory.start()
     end, function()
-        RemoteService.run({"storage"})
-    end, function()
-        Rpc.host(StorageService)
-    end, function()
         while true do
             processDumps()
             os.sleep(3)
@@ -111,10 +107,14 @@ local function activeLocks(shellWindow)
         end
     end, function()
         while true do
-            InventoryLocks.pullLockChange()
-
             if shellWindow:isVisible() then
-                list:setOptions(getActiveLockList())
+                InventoryLocks.pullLockChange()
+
+                if shellWindow:isVisible() then
+                    list:setOptions(getActiveLockList())
+                end
+            else
+                os.sleep(1)
             end
         end
     end)
@@ -129,8 +129,66 @@ end
 
 term.clear()
 
-local Shell = require "lib.ui.shell"
+EventLoop.run(function()
+    RemoteService.run({"storage"})
+end, function()
+    Rpc.host(StorageService)
+end, function()
+    local Shell = require "lib.ui.shell"
 
-Shell:addWindow("Logs", main)
-Shell:addWindow("Locks", activeLocks)
-Shell:run()
+    Shell:addWindow("Logs", main)
+    Shell:addWindow("Locks", activeLocks)
+    Shell:addWindow("Event Loop", function()
+        local start = os.epoch("utc")
+
+        ---@return SearchableListOption[]
+        local function getStatsList()
+            local stats = EventLoop.getPulledEventStats()
+            local duration = os.epoch("utc") - start
+
+            local options = Utils.map(stats, function(quantity, event)
+                ---@type SearchableListOption
+                return {id = event, name = event, suffix = tostring(math.floor(quantity / (duration / 1000)))}
+            end)
+
+            start = os.epoch("utc")
+
+            for k in pairs(stats) do
+                stats[k] = 0
+            end
+
+            return options
+        end
+
+        local list = SearchableList.new(getStatsList(), "Pulled Events", nil, 1, getStatsList)
+        list:run()
+    end)
+
+    Shell:addWindow("Modem Messages", function()
+        while true do
+            local event = {EventLoop.pull("modem_message")}
+            ---@type integer
+            local channel = event[3]
+            ---@type integer
+            local replyChannel = event[3]
+            ---@type RpcResponsePacket|RpcRequestPacket|RpcPingPacket|RpcPongPacket
+            local message = event[5]
+            ---@type number?
+            local distance = event[6]
+
+            if type(message) == "table" then
+                print(
+                    string.format("[%s] %s %s  %d/%d (%d)", message.type, message.method, message.service, channel, replyChannel, distance))
+            end
+        end
+    end)
+
+    Shell:addWindow("Tasks (cc:tweaked)", function()
+        while true do
+            local event = {EventLoop.pull("task_complete")}
+            print(event[1], event[2], event[3], event[4])
+        end
+    end)
+
+    Shell:run()
+end)
