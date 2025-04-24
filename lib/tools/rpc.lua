@@ -30,10 +30,15 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field channel integer
 ---@field ping fun() : boolean
 
+---@class DiscoveredServiceHost
+---@field host string
+---@field distance integer?
+---@field channel integer
+
 ---@class Service
 ---@field host string
 ---@field name string
----@field maxDistance? integer
+---@field maxDistance integer?
 
 local callId = 0
 local pingChannel = 0
@@ -74,22 +79,20 @@ local Rpc = {}
 
 ---@param service Service
 ---@param timeout number?
----@return { host: string, distance: number, channel: integer }[]
+---@return DiscoveredServiceHost[]
 local function findAllHosts(service, timeout)
     local modem = getModem()
     local channel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(channel)
-    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
 
-    ---@type { host:string, distance:number, channel: integer }[]
+    ---@type DiscoveredServiceHost[]
     local hosts = {}
 
     EventLoop.runTimed(timeout or pingTimeout, function()
         ---@type RpcPingPacket
         local ping = {type = "ping", service = service.name}
         modem.transmit(pingChannel, channel, ping)
-        modem.transmit(64, channel, ping) -- [todo] remove once all apps on server are updated to use new pingChannel
 
         while true do
             local event = table.pack(EventLoop.pull("modem_message"))
@@ -101,7 +104,9 @@ local function findAllHosts(service, timeout)
             local distance = event[6]
 
             if type(message) == "table" and message.type == "pong" and message.service == service.name then
-                table.insert(hosts, {host = message.host, distance = distance, channel = replyChannel})
+                ---@type DiscoveredServiceHost
+                local discovered = {host = message.host, distance = distance, channel = replyChannel}
+                table.insert(hosts, discovered)
             end
         end
     end)
@@ -113,20 +118,19 @@ end
 ---@param service T | Service
 ---@param host string
 ---@param distance number
----@param serviceChannel number?
+---@param channel number?
 ---@return T|RpcClient
-local function createClient(service, host, distance, serviceChannel)
+local function createClient(service, host, distance, channel)
     local modem = getWirelessModem()
     local clientChannel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(clientChannel)
-    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
 
     ---@type RpcClient
     local client = {
         host = host,
         distance = distance,
-        channel = serviceChannel or pingChannel,
+        channel = channel or pingChannel,
         ping = function()
             return true
         end
@@ -137,7 +141,6 @@ local function createClient(service, host, distance, serviceChannel)
             ---@type RpcPingPacket
             local ping = {type = "ping", service = service.name, host = host}
             modem.transmit(client.channel, clientChannel, ping)
-            modem.transmit(64, clientChannel, ping) -- [todo] remove once all apps on server are updated to use new pingChannel
 
             while true do
                 local event = table.pack(EventLoop.pull("modem_message"))
@@ -221,7 +224,7 @@ function Rpc.tryNearest(service, timeout)
         return createLocalHostClient(service)
     end
 
-    ---@type { host: string, distance: number, channel: integer }?
+    ---@type DiscoveredServiceHost?
     local best = nil
 
     EventLoop.runTimed(timeout, function()
@@ -285,7 +288,6 @@ function Rpc.host(service, modemName)
     local channel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(channel)
-    modem.open(64) -- [todo] remove once all apps on server are updated to use new pingChannel
 
     print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
 
@@ -315,9 +317,10 @@ function Rpc.host(service, modemName)
         while true do
             ---@param modem string
             ---@param message RpcRequestPacket|RpcPingPacket
+            ---@param receivedChannel integer
             ---@param replyChannel integer
             ---@param distance? number
-            EventLoop.pull("modem_message", function(_, modem, _, replyChannel, message, distance)
+            EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
                 if not shouldAcceptMessage(message, distance) then
                     return
                 end
@@ -326,8 +329,9 @@ function Rpc.host(service, modemName)
                     ---@type RpcPongPacket
                     local pong = {type = "pong", host = service.host, service = service.name}
                     peripheral.call(modem, "transmit", replyChannel, channel, pong)
+                    print(string.format("[ping] %d/%d [%d]", receivedChannel, replyChannel, distance or -1))
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
-                    print(string.format("[rpc] got request %s", message.method))
+                    print(string.format("[request] %s %d/%d [%d]", message.method, receivedChannel, replyChannel, distance or -1))
 
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))
@@ -336,7 +340,7 @@ function Rpc.host(service, modemName)
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response, success = success}
                     peripheral.call(modem, "transmit", replyChannel, channel, packet)
-                    print(string.format("[rpc] sent response %s %d/%d", message.method, replyChannel, channel))
+                    print(string.format("[response] %s %d/%d [%d]", message.method, replyChannel, channel, distance or -1))
                 end
             end)
         end
