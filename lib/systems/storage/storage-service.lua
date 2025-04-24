@@ -31,6 +31,12 @@ local function getCraftingRecipes(storedStock)
     return recipes
 end
 
+---@return CraftingRecipes
+function StorageService.getCraftingRecipes()
+    local storedStock = StorageService.getStock()
+    return getCraftingRecipes(storedStock)
+end
+
 ---@param type InventoryType
 ---@return string[]
 function StorageService.getByType(type)

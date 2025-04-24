@@ -108,6 +108,7 @@ function SearchableList:run()
                 -- need to check for idleTimer as refresher() could take a while, potentially causing us to skip pulling it normally
                 EventLoop.pullTimer(idleTimer)
             end, function()
+                -- [todo] some keystrokes get ignored, I'm guessing this here is the culprit
                 self:setOptions(self.refresher())
                 refreshTimer = Utils.restartTimer(refreshTimer, self.refreshInterval)
             end)

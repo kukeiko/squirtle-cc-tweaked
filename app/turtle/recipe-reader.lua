@@ -15,7 +15,10 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local DatabaseService = require "lib.systems.database.database-service"
+local StorageService = require "lib.systems.storage.storage-service"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
+local Shell = require "lib.ui.shell"
+local SearchableList = require "lib.ui.searchable-list"
 
 print(string.format("[recipe-reader %s] booting...", version()))
 Utils.writeStartupFile("recipe-reader")
@@ -88,12 +91,62 @@ local function readRecipe()
     end
 end
 
-EventLoop.run(function()
-    RemoteService.run({"recipe-reader"})
-end, function()
+---@param recipe CraftingRecipe
+local function showRecipeDetails(recipe)
+    print(string.format("Ingredients for %s:", recipe.item))
 
+    for ingredient, slots in pairs(recipe.ingredients) do
+        print(string.format(" - %dx %s", #slots, ingredient))
+    end
+
+    print("\n")
+    Utils.waitForUserToHitEnter("<hit enter to go back>")
+end
+
+local function browse()
+    local storageService = Rpc.nearest(StorageService)
+    local recipes = storageService.getCraftingRecipes()
+
+    ---@return SearchableListOption[]
+    local function getListOptions()
+        recipes = storageService.getCraftingRecipes()
+        local itemDetails = storageService.getItemDetails()
+
+        local options = Utils.map(recipes, function(recipe, item)
+            ---@type SearchableListOption
+            return {id = item, name = itemDetails[item].displayName}
+        end)
+
+        table.sort(options, function(a, b)
+            return a.name < b.name
+        end)
+
+        return options
+    end
+
+    local searchableList = SearchableList.new(getListOptions(), "Recipes", 10, 3, getListOptions)
+
+    while true do
+        local selected = searchableList:run()
+
+        if selected and recipes[selected.id] then
+            showRecipeDetails(recipes[selected.id])
+        end
+    end
+end
+
+Shell:addWindow("Add Recipe", function()
     while true do
         readRecipe()
     end
 end)
 
+Shell:addWindow("Browse Recipes", function()
+    browse()
+end)
+
+Shell:addWindow("RPC", function()
+    RemoteService.run({"recipe-reader"})
+end)
+
+Shell:run()
