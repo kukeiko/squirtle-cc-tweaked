@@ -13,7 +13,7 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local isClient = arg[1] == "client"
-local sounds = {front = "entity.pig.ambient", back = "entity.cow.ambient", left = "entity.chicken.ambient", right = "entity.sheep.ambient"}
+local sounds = {front = "entity.pig.ambient", back = "entity.cat.ambient", left = "entity.chicken.ambient", right = "entity.sheep.ambient"}
 
 -- [todo] move service to lib.systems.games
 ---@class SimonSaysService : Service
@@ -25,8 +25,13 @@ local score = 0
 local maxScore = 10
 local responseTime = 2
 local scoreSide = "right"
+local gameReady = false
 
 function SimonSaysService.playerStarted()
+    if not gameReady then
+        return nil
+    end
+
     activePlayers = math.min(requiredPlayers, activePlayers + 1)
     print(string.format("[player] started, active: %d/%d", activePlayers, requiredPlayers))
 
@@ -36,6 +41,10 @@ function SimonSaysService.playerStarted()
 end
 
 function SimonSaysService.playerExited()
+    if not gameReady then
+        return nil
+    end
+
     activePlayers = math.max(0, activePlayers - 1)
     print(string.format("[player] exited, active: %d/%d", activePlayers, requiredPlayers))
 
@@ -45,6 +54,10 @@ function SimonSaysService.playerExited()
 end
 
 function SimonSaysService.playedSound(sound)
+    if not gameReady then
+        return nil
+    end
+
     table.insert(playedSounds, sound)
 
     if #playedSounds == requiredPlayers then
@@ -163,21 +176,21 @@ local function server()
         term.redirect(monitor)
     end
 
-    setScore(0)
-    print("[prompt] how many players?")
-    requiredPlayers = EventLoop.pullInteger(1, 4)
-    print("[players] set to", requiredPlayers)
-
-    print("[prompt] how long to respond? (2 - 5)")
-    responseTime = EventLoop.pullInteger(2, 5)
-    print("[responseTime] set to", responseTime)
-
     EventLoop.run(function()
         Rpc.host(SimonSaysService)
     end, function()
+        setScore(0)
+        print("[prompt] how many players?")
+        requiredPlayers = EventLoop.pullInteger(1, 4)
+        print("[players] set to", requiredPlayers)
+        print("[prompt] how long to respond? (2 - 5)")
+        responseTime = EventLoop.pullInteger(2, 5)
+        print("[responseTime] set to", responseTime)
+
         while true do
             redstone.setOutput("bottom", false)
             print("[waiting] for players to start the game")
+            gameReady = true
             EventLoop.pull("simon-says:start")
             print("[start] get ready!")
             setScore(0)
@@ -189,8 +202,11 @@ local function server()
             else
                 win()
             end
+
+            gameReady = false
         end
     end)
+
 end
 
 EventLoop.run(function()
