@@ -137,6 +137,7 @@ local function createClient(service, host, distance, serviceChannel)
             ---@type RpcPingPacket
             local ping = {type = "ping", service = service.name, host = host}
             modem.transmit(client.channel, clientChannel, ping)
+            modem.transmit(64, clientChannel, ping) -- [todo] remove once all apps on server are updated to use new pingChannel
 
             while true do
                 local event = table.pack(EventLoop.pull("modem_message"))
