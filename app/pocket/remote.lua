@@ -128,9 +128,10 @@ local function showCommands(host)
     end
 end
 
-local function showRemotes()
+---@param timeout number?
+local function showRemotes(timeout)
     while true do
-        local remotes = Rpc.all(RemoteService)
+        local remotes = Rpc.all(RemoteService, timeout)
         local options = Utils.map(remotes, function(item)
             ---@type SearchableListOption
             local option = {id = item.host, name = item.host, suffix = item.getVersion()}
@@ -154,7 +155,8 @@ local function showRemotes()
 end
 
 EventLoop.run(function()
-    showRemotes()
+    local timeout = tonumber(arg[1]) or nil
+    showRemotes(timeout)
 end)
 
 term.clear()
