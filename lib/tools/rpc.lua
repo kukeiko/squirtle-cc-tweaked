@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 
 ---@class RpcPingPacket
@@ -329,9 +330,10 @@ function Rpc.host(service, modemName)
                     ---@type RpcPongPacket
                     local pong = {type = "pong", host = service.host, service = service.name}
                     peripheral.call(modem, "transmit", replyChannel, channel, pong)
-                    print(string.format("[ping] %d/%d [%d]", receivedChannel, replyChannel, distance or -1))
+                    print(string.format("%s [ping] %d/%d [%d]", Utils.getTime24(), receivedChannel, replyChannel, distance or -1))
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
-                    print(string.format("[request] %s %d/%d [%d]", message.method, receivedChannel, replyChannel, distance or -1))
+                    print(string.format("%s [in] %s %d/%d [%d]", Utils.getTime24(), message.method, receivedChannel, replyChannel,
+                                        distance or -1))
 
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))
@@ -340,7 +342,7 @@ function Rpc.host(service, modemName)
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response, success = success}
                     peripheral.call(modem, "transmit", replyChannel, channel, packet)
-                    print(string.format("[response] %s %d/%d [%d]", message.method, replyChannel, channel, distance or -1))
+                    print(string.format("%s [out] %s %d/%d [%d]", Utils.getTime24(), message.method, replyChannel, channel, distance or -1))
                 end
             end)
         end

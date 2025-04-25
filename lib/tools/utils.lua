@@ -450,7 +450,17 @@ end
 ---@param char string?
 ---@return string
 function Utils.pad(str, length, char)
-    return Utils.padLeft(Utils.padRight(str, (length / 2) + #str, char or " "), length, char or " ")
+    local open = length - #str
+
+    if open <= 0 then
+        return str
+    end
+
+    char = char or " "
+    local left = math.floor(open / 2)
+    local right = math.ceil(open / 2)
+
+    return string.rep(char, left) .. str .. string.rep(char, right)
 end
 
 ---@param str string
@@ -520,6 +530,28 @@ function Utils.restartTimer(timer, timeout)
     end
 
     return os.startTimer(timeout)
+end
+
+function Utils.getTime24()
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local time = os.time("local")
+    local hours = tostring(math.floor(time))
+    local minutes = tostring(math.floor((time % 1) * 60))
+    local seconds = tostring(math.floor((time * 100) % 1 * 60))
+
+    if #hours < 2 then
+        hours = "0" .. hours
+    end
+
+    if #minutes < 2 then
+        minutes = "0" .. minutes
+    end
+
+    if #seconds < 2 then
+        seconds = "0" .. seconds
+    end
+
+    return string.format("%s:%s:%s", hours, minutes, seconds)
 end
 
 return Utils

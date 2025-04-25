@@ -2,6 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 
 ---@class SearchableList
+---@field id integer
 ---@field options SearchableListOption[]
 ---@field list SearchableListOption[]
 ---@field searchText string
@@ -13,6 +14,7 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field refreshInterval? integer
 ---@field refresher? fun() : SearchableListOption[]
 local SearchableList = {}
+local nextId = 1
 
 ---@class SearchableListOption
 ---@field id string
@@ -32,6 +34,7 @@ function SearchableList.new(options, title, idleTimeout, refreshInterval, refres
 
     ---@type SearchableList | {}
     local instance = {
+        id = nextId,
         options = options,
         list = options,
         searchText = "",
@@ -44,6 +47,7 @@ function SearchableList.new(options, title, idleTimeout, refreshInterval, refres
         refresher = refresher
     }
 
+    nextId = nextId + 1
     setmetatable(instance, {__index = SearchableList})
 
     return instance
@@ -75,7 +79,7 @@ end
 ---@return SearchableListOption?
 function SearchableList:run()
     ---@type SearchableListOption?
-    local result = nil
+    local selected = nil
     self.window.setCursorBlink(false)
     self.isRunning = true
     self.searchText = ""
@@ -93,95 +97,136 @@ function SearchableList:run()
 
     self:draw()
 
-    while (true) do
-        local event, value = EventLoop.pull()
-        local filterDirty = false
-        local userInteracted = false
+    EventLoop.run(function()
+        while true do
+            local event, value = EventLoop.pull()
 
-        if event == "timer" and idleTimer and value == idleTimer then
-            -- user did not interact for a while => cancel refreshing list options
-            idleTimer = os.cancelTimer(idleTimer)
-            refreshTimer = os.cancelTimer(refreshTimer)
-        elseif event == "timer" and refreshTimer and value == refreshTimer then
-            -- refresh list options
-            EventLoop.waitForAny(function()
-                -- need to check for idleTimer as refresher() could take a while, potentially causing us to skip pulling it normally
-                EventLoop.pullTimer(idleTimer)
-            end, function()
-                -- [todo] some keystrokes get ignored, I'm guessing this here is the culprit
-                self:setOptions(self.refresher())
-                refreshTimer = Utils.restartTimer(refreshTimer, self.refreshInterval)
-            end)
-        elseif event == "key" then
-            if (value == keys.f4) then
+            if event == "searchable-list:selected" and value == self.id then
                 break
-            elseif value == keys.enter or value == keys.numPadEnter then
-                if (#self.list > 0) then
-                    result = self.list[self.index]
-                    break
-                end
-            elseif value == keys.backspace then
-                local len = #self.searchText
-                if (len ~= 0) then
-                    self.searchText = self.searchText:sub(1, len - 1)
-                    filterDirty = true
-                end
-            elseif value == keys.up then
-                self.index = self.index - 1
-                if (self.index < 1) then
-                    if (#self.list == 0) then
-                        self.index = 1
-                    else
-                        self.index = #self.list
+            elseif event == "timer" and value == idleTimer then
+                -- user did not interact for a while => cancel refreshing list options
+                refreshTimer = os.cancelTimer(refreshTimer)
+            elseif event == "timer" and value == refreshTimer then
+                EventLoop.queue("searchable-list:refresh", self.id)
+            end
+        end
+    end, function()
+        while true do
+            local event, value = EventLoop.pull()
+
+            if event == "searchable-list:selected" and value == self.id then
+                break
+            elseif event == "searchable-list:refresh" and value == self.id then
+                EventLoop.waitForAny(function()
+                    -- need to check for idleTimer as refresher() could take a while, potentially causing us to skip pulling it normally
+                    while true do
+                        local event, value = EventLoop.pull()
+
+                        if event == "timer" and value == idleTimer then
+                            break
+                        end
                     end
-                end
-            elseif value == keys.down then
-                self.index = self.index + 1
-                if (self.index > #self.list) then
+                end, function()
+                    local options = self.refresher()
+
+                    if selected then
+                        -- it is possible that user selected something during the refresh call
+                        return
+                    end
+
+                    self:setOptions(options)
+
+                    if refreshTimer then
+                        refreshTimer = os.startTimer(self.refreshInterval)
+                    end
+                end)
+            end
+        end
+    end, function()
+        while (true) do
+            local event, value = EventLoop.pull()
+            local filterDirty = false
+            local userInteracted = false
+
+            if event == "key" then
+                if (value == keys.f4) then
+                    break
+                elseif value == keys.enter or value == keys.numPadEnter then
+                    if (#self.list > 0) then
+                        selected = self.list[self.index]
+                        EventLoop.queue("searchable-list:selected", self.id)
+                        break
+                    end
+                elseif value == keys.backspace then
+                    local len = #self.searchText
+                    if (len ~= 0) then
+                        self.searchText = self.searchText:sub(1, len - 1)
+                        filterDirty = true
+                    end
+                elseif value == keys.up then
+                    self.index = self.index - 1
+                    if (self.index < 1) then
+                        if (#self.list == 0) then
+                            self.index = 1
+                        else
+                            self.index = #self.list
+                        end
+                    end
+                elseif value == keys.down then
+                    self.index = self.index + 1
+                    if (self.index > #self.list) then
+                        self.index = 1
+                    end
+                elseif value == keys.pageUp then
+                    self.index = math.max(1, self.index - 10)
+                elseif value == keys.pageDown then
+                    self.index = math.min(#self.list, self.index + 10)
+                elseif value == keys.home then
                     self.index = 1
+                elseif value == keys["end"] then
+                    self.index = #self.list
                 end
-            elseif value == keys.pageUp then
-                self.index = math.max(1, self.index - 10)
-            elseif value == keys.pageDown then
-                self.index = math.min(#self.list, self.index + 10)
-            elseif value == keys.home then
+
+                -- set flag to reset idle and start refresh if necessary
+                userInteracted = true
+            elseif event == "char" then
+                self.searchText = self.searchText .. value
+                filterDirty = true
                 self.index = 1
-            elseif value == keys["end"] then
-                self.index = #self.list
+                -- set flag to reset idle and start refresh if necessary
+                userInteracted = true
             end
 
-            -- set flag to reset idle and start refresh if necessary
-            userInteracted = true
-        elseif event == "char" then
-            self.searchText = self.searchText .. value
-            filterDirty = true
-            self.index = 1
-            -- set flag to reset idle and start refresh if necessary
-            userInteracted = true
-        end
+            if userInteracted and self.idleTimeout and self.refreshInterval and self.refresher then
+                idleTimer = Utils.restartTimer(idleTimer, self.idleTimeout)
 
-        if userInteracted and self.idleTimeout and self.refreshInterval and self.refresher then
-            idleTimer = Utils.restartTimer(idleTimer, self.idleTimeout)
+                if not refreshTimer then
+                    refreshTimer = os.startTimer(self.refreshInterval)
+                end
+            end
 
-            if not refreshTimer then
-                refreshTimer = os.startTimer(self.refreshInterval)
+            if filterDirty then
+                self:filter()
+            end
+
+            if userInteracted then
+                self:draw()
             end
         end
+    end)
 
-        if filterDirty then
-            self:filter()
-        end
-
-        if userInteracted then
-            self:draw()
-        end
+    if refreshTimer then
+        os.cancelTimer(refreshTimer)
     end
 
-    -- [todo] cancel timers
+    if idleTimer then
+        os.cancelTimer(idleTimer)
+    end
+
     self.window.clear()
     self.isRunning = false
 
-    return result
+    return selected
 end
 
 function SearchableList:filter()
@@ -210,20 +255,16 @@ function SearchableList:draw()
     local win = self.window
     local w, h = win.getSize()
 
-    win.clear()
     win.setCursorPos(1, 1)
-    win.clearLine()
 
     if (#self.searchText > 0) then
-        win.write(self.searchText)
+        win.write(Utils.padRight(self.searchText, w))
     else
-        win.write(self.title or "     <type to filter>     ")
+        win.write(Utils.pad("<type to filter>", w))
     end
 
-    for i = 1, w do
-        win.setCursorPos(i, 2)
-        win.write("-")
-    end
+    win.setCursorPos(1, 2)
+    win.write(string.rep("-", w))
 
     local listHeight = h - 2
     local list = self.list

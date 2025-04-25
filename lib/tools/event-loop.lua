@@ -261,7 +261,7 @@ function EventLoop.pullTimer(timerId)
         local _, candidate = EventLoop.pull("timer")
 
         if candidate == timerId then
-            return nil
+            return
         end
     end
 end
