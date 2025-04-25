@@ -196,6 +196,8 @@ function SearchableList:run()
                 self.index = 1
                 -- set flag to reset idle and start refresh if necessary
                 userInteracted = true
+            elseif event == "shell-window:visible" then
+                userInteracted = true
             end
 
             if userInteracted and self.idleTimeout and self.refreshInterval and self.refresher then

@@ -95,25 +95,41 @@ local function isUiEvent(event)
     return event == "char" or event == "key" or event == "key_up" or event == "paste"
 end
 
+---@param event string
+local function isShellWindowEvent(event)
+    return Utils.startsWith(event, "shell-window")
+end
+
 ---@param self Shell
 ---@param shellWindow ShellWindow
 ---@return function
 local function createRunnableFromWindow(self, shellWindow)
     return function()
-        -- [todo] add accept() handling
         EventLoop.configure({
             window = shellWindow.window,
-            accept = function(event)
+            accept = function(event, ...)
+                local args = {...}
+
                 if isUiEvent(event) then
                     return self.activeWindow == shellWindow
+                elseif isShellWindowEvent(event) then
+                    return args[1] == shellWindow
                 end
 
                 return true
             end
         })
-        os.sleep(.1) -- [todo] figure out if actually needed
+
+        -- [todo] this is needed, but investigate exactly why
+        os.sleep(.1)
+
+        if self.activeWindow == shellWindow then
+            EventLoop.queue("shell-window:visible", shellWindow)
+        end
+
         shellWindow.fn(shellWindow)
-        -- [todo] this hack is needed in case the UI event was responsible for terminating the window,
+
+        -- [note] this hack is needed in case the UI event was responsible for terminating the window,
         -- at which point the next window is the active one and also receives the UI event (i.e. it "bleeds" over)
         os.sleep(.1)
         shellWindow.window.clear()
@@ -186,6 +202,7 @@ function Shell:run()
                 self.activeWindow = self.windows[activeWindowIndex]
                 self.activeWindow.window.setVisible(true)
                 drawMenu(self)
+                EventLoop.queue("shell-window:visible", self.activeWindow)
             end
         end
     end)

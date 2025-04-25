@@ -463,6 +463,13 @@ function Utils.pad(str, length, char)
     return string.rep(char, left) .. str .. string.rep(char, right)
 end
 
+---@param subject string
+---@param str string
+---@return boolean
+function Utils.startsWith(subject, str)
+    return string.sub(subject, #str) == str
+end
+
 ---@param str string
 ---@param length integer
 ---@return string

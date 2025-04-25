@@ -3,7 +3,7 @@ local Utils = require "lib.tools.utils"
 ---@class EventLoopThread
 ---@field coroutine thread
 ---@field event? string
----@field accept? fun(event: string) : boolean
+---@field accept? fun(event: string, ...) : boolean
 ---@field callback? function
 ---@field window? table
 
@@ -90,7 +90,8 @@ local function runThreads(threads, event)
     local nextThreads = {}
 
     for _, thread in ipairs(Utils.copy(threads)) do
-        if (thread.event == nil or thread.event == event[1]) and (thread.accept == nil or thread.accept(event[1])) then
+        if (thread.event == nil or thread.event == event[1]) and
+            (thread.accept == nil or thread.accept(event[1], select(2, table.unpack(event)))) then
             if runThread(thread, event) then
                 table.insert(nextThreads, thread)
 
@@ -189,7 +190,7 @@ function EventLoop.createRun(...)
     return add, run
 end
 
----@param options { accept?: fun(event: string) : boolean; window?: table }
+---@param options { accept?: fun(event: string, ...) : boolean; window?: table }
 function EventLoop.configure(options)
     if currentThread == nil then
         error("no active thread")
