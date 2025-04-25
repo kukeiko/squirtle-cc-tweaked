@@ -36,6 +36,12 @@ local function doUpdateCommand(remote)
     os.sleep(1)
 end
 
+---@param remote RemoteService|RpcClient
+local function doUpdateRebootCommand(remote)
+    doUpdateCommand(remote)
+    doRebootCommand(remote)
+end
+
 ---@param command RemoteCommand
 ---@param remote RemoteService|RpcClient
 ---@return SearchableListOption
@@ -96,7 +102,11 @@ local function showCommands(host)
     while true do
         local remote = Rpc.connect(RemoteService, host)
         ---@type SearchableListOption[]
-        local options = {{id = "reboot", name = "Reboot"}, {id = "update", name = "Update"}}
+        local options = {
+            {id = "reboot", name = "Reboot"},
+            {id = "update", name = "Update"},
+            {id = "update-reboot", name = "Update & Reboot"}
+        }
         local commands = remote.getCommands()
 
         for _, command in pairs(commands) do
@@ -114,10 +124,11 @@ local function showCommands(host)
         term.setCursorPos(1, 1)
 
         if selected.id == "reboot" then
-            -- [todo] reboot on kunterbunt storage works but never returns back to the list
             doRebootCommand(remote)
         elseif selected.id == "update" then
             doUpdateCommand(remote)
+        elseif selected.id == "update-reboot" then
+            doUpdateRebootCommand(remote)
         else
             local command = Utils.find(commands, function(command)
                 return command.id == selected.id
