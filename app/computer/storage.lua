@@ -133,6 +133,15 @@ term.clear()
 local Shell = require "lib.ui.shell"
 
 Shell:addWindow("Logs", main)
+
+Shell:addWindow("RPC", function()
+    EventLoop.run(function()
+        RemoteService.run({"storage"})
+    end, function()
+        Rpc.host(StorageService)
+    end)
+end)
+
 Shell:addWindow("Locks", activeLocks)
 Shell:addWindow("Event Loop", function()
     local start = os.epoch("utc")
@@ -158,14 +167,6 @@ Shell:addWindow("Event Loop", function()
 
     local list = SearchableList.new(getStatsList(), "Pulled Events", nil, 1, getStatsList)
     list:run()
-end)
-
-Shell:addWindow("RPC", function()
-    EventLoop.run(function()
-        RemoteService.run({"storage"})
-    end, function()
-        Rpc.host(StorageService)
-    end)
 end)
 
 Shell:addWindow("Tasks (cc:tweaked)", function()

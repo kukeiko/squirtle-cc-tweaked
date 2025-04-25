@@ -11,7 +11,6 @@ end
 
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local EventLoop = require "lib.tools.event-loop"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local StorageService = require "lib.systems.storage.storage-service"
 local TaskService = require "lib.systems.task.task-service"
@@ -21,62 +20,6 @@ local readInteger = require "lib.ui.read-integer"
 
 local idleTimeout = 30
 local refreshInterval = 3
-
----@param storageService StorageService|RpcClient
----@return SearchableListOption[]
-local function getDispenseItemsListOptions(storageService)
-    local stock = storageService.getStock()
-    local craftableStock = storageService.getCraftableStock()
-    local itemDetails = storageService.getItemDetails()
-
-    local options = Utils.map(stock, function(quantity, item)
-        local suffix = tostring(quantity + (craftableStock[item] or 0))
-
-        ---@type SearchableListOption
-        return {id = item, name = itemDetails[item].displayName, suffix = suffix}
-    end)
-
-    table.sort(options, function(a, b)
-        return a.name < b.name
-    end)
-
-    return options
-end
-
-local function getDispenseItemsListTitle()
-    local commonTitle = "What item would you like transferred?"
-    local titles = {"What item ya be needin'?", "I've got the goods!", commonTitle, commonTitle, commonTitle}
-
-    return titles[math.random(#titles)]
-end
-
----@param storageService StorageService|RpcClient
----@param taskService TaskService|RpcClient
----@return SearchableListOption[]
-local function getTransfersListOptions(storageService, taskService)
-    local itemDetails = storageService.getItemDetails()
-    local report = taskService.getProvideItemsReport(os.getComputerLabel())
-    local options = Utils.map(report.wanted, function(quantity, item)
-        ---@type SearchableListOption
-        return {id = item, name = itemDetails[item].displayName, suffix = string.format("%d/%d", report.found[item] or 0, quantity)}
-    end)
-
-    return options
-end
-
----@param storageService StorageService|RpcClient
----@param taskService TaskService|RpcClient
----@return SearchableListOption[]
-local function getMissingListOptions(storageService, taskService)
-    local itemDetails = storageService.getItemDetails()
-    local report = taskService.getProvideItemsReport(os.getComputerLabel())
-    local options = Utils.map(report.missing, function(quantity, item)
-        ---@type SearchableListOption
-        return {id = item, name = itemDetails[item].displayName, suffix = string.format("%d", quantity)}
-    end)
-
-    return options
-end
 
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
@@ -129,11 +72,19 @@ end
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
 local function showMissing(storageService, taskService)
-    local options = getMissingListOptions(storageService, taskService)
-    local title = "Missing Ingredients"
-    local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
-        return getMissingListOptions(storageService, taskService)
-    end)
+    ---@return SearchableListOption[]
+    local function getOptions()
+        local itemDetails = storageService.getItemDetails()
+        local report = taskService.getProvideItemsReport(os.getComputerLabel())
+        local options = Utils.map(report.missing, function(quantity, item)
+            ---@type SearchableListOption
+            return {id = item, name = itemDetails[item].displayName, suffix = string.format("%d", quantity)}
+        end)
+
+        return options
+    end
+
+    local searchableList = SearchableList.new(getOptions(), "Missing Ingredients", idleTimeout, 1, getOptions)
 
     while true do
         searchableList:run()
@@ -143,26 +94,57 @@ end
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
 local function showTransfers(storageService, taskService)
-    local options = getTransfersListOptions(storageService, taskService)
-    local title = "Transfers"
-    local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
-        return getTransfersListOptions(storageService, taskService)
-    end)
+    ---@return SearchableListOption[]
+    local function getOptions()
+        local itemDetails = storageService.getItemDetails()
+        local report = taskService.getProvideItemsReport(os.getComputerLabel())
+        local options = Utils.map(report.wanted, function(quantity, item)
+            ---@type SearchableListOption
+            return {id = item, name = itemDetails[item].displayName, suffix = string.format("%d/%d", report.found[item] or 0, quantity)}
+        end)
+
+        return options
+    end
+
+    local searchableList = SearchableList.new(getOptions(), "Transfers", idleTimeout, 1, getOptions)
 
     while true do
         searchableList:run()
     end
 end
 
+local function getDispenseItemsListTitle()
+    local commonTitle = "What item would you like transferred?"
+    local titles = {"What item ya be needin'?", "I've got the goods!", commonTitle, commonTitle, commonTitle}
+
+    return titles[math.random(#titles)]
+end
+
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
 local function showItemList(storageService, taskService)
-    local options = getDispenseItemsListOptions(storageService)
-    local title = getDispenseItemsListTitle()
+    ---@return SearchableListOption[]
+    local function getOptions()
+        local stock = storageService.getStock()
+        local craftableStock = storageService.getCraftableStock()
+        local itemDetails = storageService.getItemDetails()
 
-    local searchableList = SearchableList.new(options, title, idleTimeout, refreshInterval, function()
-        return getDispenseItemsListOptions(storageService)
-    end)
+        local options = Utils.map(stock, function(quantity, item)
+            local suffix = tostring(quantity + (craftableStock[item] or 0))
+
+            ---@type SearchableListOption
+            return {id = item, name = itemDetails[item].displayName, suffix = suffix}
+        end)
+
+        table.sort(options, function(a, b)
+            return a.name < b.name
+        end)
+
+        return options
+    end
+
+    local title = getDispenseItemsListTitle()
+    local searchableList = SearchableList.new(getOptions(), title, idleTimeout, refreshInterval, getOptions)
 
     while true do
         local selection = searchableList:run()
