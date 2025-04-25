@@ -318,10 +318,10 @@ function Rpc.host(service, modemName)
         while true do
             ---@param modem string
             ---@param message RpcRequestPacket|RpcPingPacket
-            ---@param receivedChannel integer
-            ---@param replyChannel integer
+            ---@param channelIn integer
+            ---@param channelOut integer
             ---@param distance? number
-            EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
+            EventLoop.pull("modem_message", function(_, modem, channelIn, channelOut, message, distance)
                 if not shouldAcceptMessage(message, distance) then
                     return
                 end
@@ -329,11 +329,9 @@ function Rpc.host(service, modemName)
                 if message.type == "ping" then
                     ---@type RpcPongPacket
                     local pong = {type = "pong", host = service.host, service = service.name}
-                    peripheral.call(modem, "transmit", replyChannel, channel, pong)
-                    print(string.format("%s [ping] %d/%d [%d]", Utils.getTime24(), receivedChannel, replyChannel, distance or -1))
+                    peripheral.call(modem, "transmit", channelOut, channel, pong)
+                    print(string.format("%s [ping] %d/%d [%d]", Utils.getTime24(), channelIn, channelOut, distance or -1))
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
-                    print(string.format("%s [in] %s %d/%d [%d]", Utils.getTime24(), message.method, receivedChannel, replyChannel,
-                                        distance or -1))
 
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))
@@ -341,8 +339,15 @@ function Rpc.host(service, modemName)
 
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response, success = success}
-                    peripheral.call(modem, "transmit", replyChannel, channel, packet)
-                    print(string.format("%s [out] %s %d/%d [%d]", Utils.getTime24(), message.method, replyChannel, channel, distance or -1))
+                    peripheral.call(modem, "transmit", channelOut, channel, packet)
+                    local status = "[ok]"
+
+                    if not success then
+                        status = "[e]"
+                    end
+
+                    print(string.format("%s %s %s %d/%d [%d]", Utils.getTime24(), status, message.method, channelIn, channelOut,
+                                        distance or -1))
                 end
             end)
         end
