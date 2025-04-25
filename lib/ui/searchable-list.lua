@@ -150,6 +150,7 @@ function SearchableList:run()
 
             if event == "key" then
                 if (value == keys.f4) then
+                    EventLoop.queue("searchable-list:selected", self.id)
                     break
                 elseif value == keys.enter or value == keys.numPadEnter then
                     if (#self.list > 0) then
@@ -290,35 +291,36 @@ function SearchableList:draw()
 
     for i = 1, listHeight do
         local option = list[i + listOffset]
-
-        if (not option) then
-            break
-        end
-
         win.setCursorPos(1, i + headerHeight)
 
-        if (self.index - listOffset == i) then
-            win.setTextColor(colors.white)
+        if (not option) then
+            win.clearLine()
         else
-            win.setTextColor(colors.lightGray)
-        end
-
-        local suffix = option.suffix or ""
-        local labelMaxLength = w - (#suffix + 1) - scrollerWidth
-        local label = Utils.padRight(Utils.ellipsis(option.name, labelMaxLength), labelMaxLength) .. " " .. suffix
-        win.write(label)
-
-        if drawScroller then
-            win.setCursorPos(w - 1, i + headerHeight)
-
-            if i == scrollerIndex then
-                win.write("\140")
+            if (self.index - listOffset == i) then
+                win.setTextColor(colors.white)
             else
-                win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.gray))
+                win.setTextColor(colors.lightGray)
             end
-        end
 
-        win.setTextColor(colors.white)
+            local suffix = option.suffix or ""
+            local labelMaxLength = w - (#suffix + 1) - scrollerWidth
+            local label = Utils.padRight(Utils.ellipsis(option.name, labelMaxLength), labelMaxLength) .. " " .. suffix
+            win.write(label)
+
+            if drawScroller then
+                win.setCursorPos(w - 2, i + headerHeight)
+
+                if i == scrollerIndex then
+                    win.write(" \140 ")
+                else
+                    win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.black))
+                    win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.gray))
+                    win.blit(" ", colors.toBlit(colors.black), colors.toBlit(colors.black))
+                end
+            end
+
+            win.setTextColor(colors.white)
+        end
     end
 
     win.setCursorPos(1, 1)
