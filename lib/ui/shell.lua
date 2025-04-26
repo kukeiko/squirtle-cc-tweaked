@@ -71,22 +71,10 @@ end
 ---@param self Shell
 local function drawMenu(self)
     local activeWindowIndex = Utils.indexOf(self.windows, self.activeWindow)
+    local leftTitle = activeWindowIndex > 1 and string.format("< %s", self.windows[activeWindowIndex - 1].title) or nil
+    local rightTitle = activeWindowIndex < #self.windows and string.format("%s >", self.windows[activeWindowIndex + 1].title) or nil
 
-    ---@type string?
-    local left
-
-    if activeWindowIndex > 1 then
-        left = string.format("< %s", self.windows[activeWindowIndex - 1].title)
-    end
-
-    ---@type string?
-    local right
-
-    if activeWindowIndex < #self.windows then
-        right = string.format("%s >", self.windows[activeWindowIndex + 1].title)
-    end
-
-    drawNavBar(self.window, left, right)
+    drawNavBar(self.window, leftTitle, rightTitle)
 end
 
 ---@param event string
