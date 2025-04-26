@@ -164,12 +164,13 @@ local function connectToDatabase(useLocal)
     return databaseService
 end
 
-local function main(args)
+local useLocalDatabase = arg[1] == "local"
+local showAll = arg[1] == "all"
+
+EventLoop.run(function()
     print(string.format("[subway %s] booting...", version()))
 
     while true do
-        local useLocalDatabase = args[1] == "local"
-        local showAll = args[1] == "all"
         local databaseService = connectToDatabase(useLocalDatabase)
         local goal = promptUserToPickGoal(databaseService, showAll)
 
@@ -294,6 +295,7 @@ local function main(args)
             EventLoop.queue("subway:stop")
         end)
     end
-end
+end)
 
-main(arg)
+term.clear()
+term.setCursorPos(1, 1)
