@@ -321,6 +321,11 @@
             "label": "build computer:xylophone",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/xylophone.lua -p app/computer/?.lua -p ?.lua -o dist/computer/xylophone"
+        },
+        {
+            "label": "build turtle:password",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/password.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/password"
         }
     ]
 }
