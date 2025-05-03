@@ -14,6 +14,7 @@ local Rpc = require "lib.tools.rpc"
 local Utils = require "lib.tools.utils"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local XylophoneService = require "lib.systems.games.xylophone-service"
+local Shell = require "lib.ui.shell"
 
 local isClient = arg[1] == "client"
 
@@ -31,19 +32,17 @@ local function client(note)
     while true do
         EventLoop.pull("redstone")
 
-        if redstone.getInput("back") then
-            print("[played] note", note)
-            xylophone.notePlayed(note)
-        elseif redstone.getInput("left") or redstone.getInput("right") then
+        if redstone.getInput("left") or redstone.getInput("right") then
             print("[played] wrong note, resetting")
             xylophone.reset()
+        elseif redstone.getInput("back") then
+            print("[played] note", note)
+            xylophone.notePlayed(note)
         end
     end
 end
 
-EventLoop.run(function()
-    RemoteService.run({"xylophone"})
-end, function()
+Shell:addWindow("Game", function()
     if isClient then
         local note = tonumber(arg[2])
 
@@ -62,3 +61,9 @@ end, function()
         server(noteCount)
     end
 end)
+
+Shell:addWindow("RPC", function()
+    RemoteService.run({"xylophone"})
+end)
+
+Shell:run()
