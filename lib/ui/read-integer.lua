@@ -52,7 +52,7 @@ return function(value, options)
                 return value, key
             end
 
-            if key == keys.enter then
+            if key == keys.enter or key == keys.numPadEnter then
                 term.setCursorPos(x, y)
                 print(value)
                 return value, key
