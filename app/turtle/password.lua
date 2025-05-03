@@ -21,7 +21,7 @@ if not password or not signalSide then
     return
 end
 
-Utils.writeStartupFile(string.format("password %s", password))
+Utils.writeStartupFile(string.format("password %s %s", password, signalSide))
 
 EventLoop.run(function()
     redstone.setOutput(signalSide, false)
