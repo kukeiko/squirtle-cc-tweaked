@@ -26,6 +26,8 @@ local processTrash = require "lib.systems.storage.processors.process-trash"
 local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
 local SearchableList = require "lib.ui.searchable-list"
 
+local processors = {dumps = true, furnaces = true, io = true, quickAccess = true, shulkers = true, trash = true, siloOutputs = true}
+
 local function main()
     print(string.format("[storage %s] booting...", version()))
     Inventory.useCache(true)
@@ -37,37 +39,58 @@ local function main()
         Inventory.start()
     end, function()
         while true do
-            processDumps()
+            if processors.dumps then
+                processDumps()
+            end
+
             os.sleep(3)
         end
     end, function()
         while true do
-            processFurnaces()
+            if processors.furnaces then
+                processFurnaces()
+            end
+
             os.sleep(30)
         end
     end, function()
         while true do
-            processIo()
+            if processors.io then
+                processIo()
+            end
+
             os.sleep(3)
         end
     end, function()
         while true do
-            processQuickAccess()
+            if processors.quickAccess then
+                processQuickAccess()
+            end
+
             os.sleep(10)
         end
     end, function()
         while true do
-            processShulkers()
+            if processors.shulkers then
+                processShulkers()
+            end
+
             os.sleep(3)
         end
     end, function()
         while true do
-            processTrash()
+            if processors.trash then
+                processTrash()
+            end
+
             os.sleep(30)
         end
     end, function()
         while true do
-            processSiloOutputs()
+            if processors.siloOutputs then
+                processSiloOutputs()
+            end
+
             os.sleep(10)
         end
     end, function()
@@ -84,6 +107,28 @@ local function main()
         Inventory.stop()
         EventLoop.queue("storage:stop")
     end)
+end
+
+local function processorList()
+    local function getProcessorList()
+        return Utils.map(processors, function(isEnabled, processor)
+            ---@type SearchableListOption
+            local option = {id = processor, name = processor, suffix = isEnabled and "[on]" or ""}
+
+            return option
+        end)
+    end
+
+    local list = SearchableList.new(getProcessorList(), "Processors")
+
+    while true do
+        local selected = list:run()
+
+        if selected then
+            processors[selected.id] = not processors[selected.id]
+            list:setOptions(getProcessorList())
+        end
+    end
 end
 
 ---@return SearchableListOption[]
@@ -133,6 +178,7 @@ term.clear()
 local Shell = require "lib.ui.shell"
 
 Shell:addWindow("Logs", main)
+Shell:addWindow("Processors", processorList)
 
 Shell:addWindow("RPC", function()
     EventLoop.run(function()
