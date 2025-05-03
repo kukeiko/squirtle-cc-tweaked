@@ -135,7 +135,7 @@ local function game()
             os.sleep(1)
             -- [todo] setting to 0 is too harsh - maybe just reduce by 2-3
             -- [idea] maybe the further you are the more you lose? could do the same in target-practice
-            setScore(0)
+            setScore(score - 1)
             speaker.playSound("block.lava.extinguish", 1)
         end
 
