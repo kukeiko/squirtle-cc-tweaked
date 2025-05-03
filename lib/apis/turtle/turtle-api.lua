@@ -1379,6 +1379,12 @@ function TurtleApi.condense()
     end
 end
 
+---@param side? string
+---@return boolean
+function TurtleApi.compare(side)
+    return getNative("compare", side or "forward")()
+end
+
 ---@param direction? string
 ---@param count? integer
 ---@return boolean, string?

@@ -45,6 +45,14 @@ local natives = {
         forward = turtle.drop,
         bottom = turtle.dropDown,
         down = turtle.dropDown
+    },
+    compare = {
+        top = turtle.compareUp,
+        up = turtle.compareUp,
+        front = turtle.compare,
+        forward = turtle.compare,
+        bottom = turtle.compareDown,
+        down = turtle.compareDown
     }
 }
 
