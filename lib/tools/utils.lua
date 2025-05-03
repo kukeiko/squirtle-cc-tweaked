@@ -112,6 +112,22 @@ function Utils.map(list, mapper)
     return mapped
 end
 
+---@generic V, K, U
+---@param list table<K, V>
+---@param mapper fun(item: V, index: K): U[]
+---@return U[]
+function Utils.flatMap(list, mapper)
+    local mapped = {}
+
+    for key, value in pairs(list) do
+        for _, nestedValue in pairs(mapper(value, key)) do
+            table.insert(mapped, nestedValue)
+        end
+    end
+
+    return mapped
+end
+
 ---@generic K, V
 ---@param list table<K, V>
 ---@return K[]

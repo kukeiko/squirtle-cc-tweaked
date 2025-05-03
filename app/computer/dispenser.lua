@@ -19,7 +19,7 @@ local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 
 local idleTimeout = 30
-local refreshInterval = 3
+local refreshIntervals = {dispense = 3, transfers = 1, missing = 1}
 
 ---@param storageService StorageService|RpcClient
 ---@param taskService TaskService|RpcClient
@@ -84,7 +84,7 @@ local function showMissing(storageService, taskService)
         return options
     end
 
-    local searchableList = SearchableList.new(getOptions(), "Missing Ingredients", idleTimeout, 1, getOptions)
+    local searchableList = SearchableList.new(getOptions(), "Missing Ingredients", idleTimeout, refreshIntervals.missing, getOptions)
 
     while true do
         searchableList:run()
@@ -106,7 +106,7 @@ local function showTransfers(storageService, taskService)
         return options
     end
 
-    local searchableList = SearchableList.new(getOptions(), "Transfers", idleTimeout, 1, getOptions)
+    local searchableList = SearchableList.new(getOptions(), "Transfers", idleTimeout, refreshIntervals.transfers, getOptions)
 
     while true do
         searchableList:run()
@@ -144,7 +144,7 @@ local function showItemList(storageService, taskService)
     end
 
     local title = getDispenseItemsListTitle()
-    local searchableList = SearchableList.new(getOptions(), title, idleTimeout, refreshInterval, getOptions)
+    local searchableList = SearchableList.new(getOptions(), title, idleTimeout, refreshIntervals.dispense, getOptions)
 
     while true do
         local selection = searchableList:run()

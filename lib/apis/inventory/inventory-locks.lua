@@ -1,16 +1,16 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 
----@class InventoryLock
----@field id integer
+---@class QueuedInventoryUnlock
+---@field lockId integer
 ---@field inventories string[]
 ---
 ---@class LockedInventory
 ---@field lockId integer
 ---@field count integer
 
-local nextId = 1
----@type InventoryLock[]
+local nextLockId = 1
+---@type QueuedInventoryUnlock[]
 local unlockQueue = {}
 ---@type table<string, LockedInventory>
 local locks = {}
@@ -18,9 +18,10 @@ local pullingLockChangeCount = 0
 local InventoryLocks = {}
 
 local function getNextLockId()
-    local id = nextId
-    nextId = nextId + 1
-    return id
+    local lockId = nextLockId
+    nextLockId = nextLockId + 1
+
+    return lockId
 end
 
 ---@param inventories string[]
@@ -65,7 +66,8 @@ end
 ---@param inventories string[]
 ---@param lockId integer
 local function queue(inventories, lockId)
-    local lock = {id = lockId, inventories = inventories}
+    ---@type QueuedInventoryUnlock
+    local lock = {lockId = lockId, inventories = inventories}
     table.insert(unlockQueue, lock)
 end
 
@@ -75,31 +77,32 @@ local function dequeue()
     end)
 
     if unlockIndex then
-        local lockId = unlockQueue[unlockIndex].id
+        local lockId = unlockQueue[unlockIndex].lockId
         table.remove(unlockQueue, unlockIndex)
         EventLoop.queue("inventory-locks:unlock", lockId)
     end
 end
 
----@param id integer
-local function cancel(id)
+---@param lockId integer
+local function cancel(lockId)
     local index = Utils.findIndex(unlockQueue, function(item)
-        return item.id == id
+        return item.lockId == lockId
     end)
 
-    if not id then
-        error(string.format("id %d is not in queue", id))
+    if not lockId then
+        error(string.format("lockId %d is not in queue", lockId))
     end
 
     table.remove(unlockQueue, index)
+    EventLoop.queue("inventory-locks:cancel-unlock")
 end
 
----@param id integer
-local function awaitUnlock(id)
+---@param lockId integer
+local function awaitUnlock(lockId)
     while true do
         local _, pulledId = EventLoop.pull("inventory-locks:unlock")
 
-        if pulledId == id then
+        if pulledId == lockId then
             return
         end
     end
@@ -158,6 +161,13 @@ function InventoryLocks.getLockedInventories()
     return Utils.getKeys(locks)
 end
 
+---@return string[]
+function InventoryLocks.getInventoriesPendingUnlock()
+    return Utils.flatMap(unlockQueue, function(item)
+        return item.inventories
+    end)
+end
+
 function InventoryLocks.pullLockChange()
     pullingLockChangeCount = pullingLockChangeCount + 1
 
@@ -165,6 +175,8 @@ function InventoryLocks.pullLockChange()
         EventLoop.pull("inventory-locks:lock")
     end, function()
         EventLoop.pull("inventory-locks:unlock")
+    end, function()
+        EventLoop.pull("inventory-locks:cancel-unlock")
     end)
 
     pullingLockChangeCount = pullingLockChangeCount - 1
@@ -173,7 +185,7 @@ end
 function InventoryLocks.clear()
     locks = {}
     unlockQueue = {}
-    nextId = 1
+    nextLockId = 1
 end
 
 return InventoryLocks

@@ -131,20 +131,20 @@ local function processorList()
     end
 end
 
----@return SearchableListOption[]
-local function getActiveLockList()
-    local options = Utils.map(InventoryLocks.getLockedInventories(), function(inventory)
-        ---@type SearchableListOption
-        local option = {id = inventory, name = inventory, suffix = InventoryCollection.getType(inventory)}
-
-        return option
-    end)
-
-    return options
-end
-
 ---@param shellWindow ShellWindow
 local function activeLocks(shellWindow)
+    ---@return SearchableListOption[]
+    local function getActiveLockList()
+        local options = Utils.map(InventoryLocks.getLockedInventories(), function(inventory)
+            ---@type SearchableListOption
+            local option = {id = inventory, name = inventory, suffix = InventoryCollection.getType(inventory)}
+
+            return option
+        end)
+
+        return options
+    end
+
     local list = SearchableList.new(getActiveLockList(), "Active Locks")
 
     EventLoop.run(function()
@@ -158,6 +158,41 @@ local function activeLocks(shellWindow)
 
                 if shellWindow:isVisible() then
                     list:setOptions(getActiveLockList())
+                end
+            else
+                os.sleep(1)
+            end
+        end
+    end)
+end
+
+---@param shellWindow ShellWindow
+local function activeUnlocks(shellWindow)
+    ---@return SearchableListOption[]
+    local function getActiveUnlockList()
+        local options = Utils.map(InventoryLocks.getInventoriesPendingUnlock(), function(inventory)
+            ---@type SearchableListOption
+            local option = {id = inventory, name = inventory, suffix = InventoryCollection.getType(inventory)}
+
+            return option
+        end)
+
+        return options
+    end
+
+    local list = SearchableList.new(getActiveUnlockList(), "Active Unocks")
+
+    EventLoop.run(function()
+        while true do
+            list:run()
+        end
+    end, function()
+        while true do
+            if shellWindow:isVisible() then
+                InventoryLocks.pullLockChange()
+
+                if shellWindow:isVisible() then
+                    list:setOptions(getActiveUnlockList())
                 end
             else
                 os.sleep(1)
@@ -189,6 +224,7 @@ Shell:addWindow("RPC", function()
 end)
 
 Shell:addWindow("Locks", activeLocks)
+Shell:addWindow("Unlocks", activeUnlocks)
 Shell:addWindow("Event Loop", function()
     local start = os.epoch("utc")
 

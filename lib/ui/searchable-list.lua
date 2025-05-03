@@ -260,10 +260,10 @@ function SearchableList:draw()
 
     win.setCursorPos(1, 1)
 
-    if (#self.searchText > 0) then
+    if #self.searchText > 0 then
         win.write(Utils.padRight(self.searchText, w))
     else
-        win.write(Utils.pad("<type to filter>", w))
+        win.write(Utils.pad(self.title or "<type to filter>", w))
     end
 
     win.setCursorPos(1, 2)
