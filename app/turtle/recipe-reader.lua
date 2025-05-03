@@ -52,22 +52,22 @@ local function readRecipe()
         return os.sleep(1)
     end
 
-    local success, message = workbench.craft()
+    TurtleApi.select(16)
+    local success, message = workbench.craft(1)
 
     if not success then
         print(message)
         return os.sleep(3)
     end
 
-    local crafted = TurtleApi.getStock()
-    local item = next(crafted)
+    local crafted = TurtleApi.getStack(16, true)
 
-    if not item then
+    if not crafted then
         print("Didn't find a crafted item, weird.")
         return os.sleep(1)
     else
         ---@type CraftingRecipe
-        local recipe = {item = item, quantity = crafted[item], ingredients = {}}
+        local recipe = {item = crafted.name, quantity = crafted.count, ingredients = {}}
 
         for slot, stack in pairs(ingredients) do
             local recipeSlot = slot - (math.ceil(slot / 4) - 1)
@@ -82,7 +82,7 @@ local function readRecipe()
         databaseService.saveCraftingRecipe(recipe)
         term.clear()
         term.setCursorPos(1, 1)
-        print(string.format("Added recipe for %s!\n", item))
+        print(string.format("Added recipe for %s!\n", crafted.displayName))
         print("Please take out the crafted items")
 
         while not TurtleApi.isEmpty() do
