@@ -1,3 +1,3 @@
 return function()
-    return "7.0-r"
+    return "7.0-s"
 end
