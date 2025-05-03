@@ -91,7 +91,7 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
 
             if transferred ~= quantity then
                 -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
-                print(string.format("[cache] invalidated: expected %d, transferred %", quantity, transferred))
+                print(string.format("[cache] invalidated: expected %d, transferred %d", quantity, transferred))
                 InventoryCollection.mount({from, to})
                 return
             end
