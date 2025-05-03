@@ -16,7 +16,9 @@ local InventoryApi = require "lib.apis.inventory.inventory-api"
 local RemoteService = require "lib.systems.runtime.remote-service"
 
 print(string.format("[fungi-farm %s] booting...", version()))
-Utils.writeStartupFile("fungi-farm")
+local interval = math.max(2, tonumber(arg[1]) or 2)
+print("[interval]", interval)
+Utils.writeStartupFile(string.format("fungi-farm %d", interval))
 
 EventLoop.run(function()
     RemoteService.run({"fungi-farm"})
@@ -26,7 +28,7 @@ end, function()
             redstone.setOutput("back", true)
             os.sleep(2)
             redstone.setOutput("back", false)
-            os.sleep(2)
+            os.sleep(interval)
         end
     end
 end, function()
