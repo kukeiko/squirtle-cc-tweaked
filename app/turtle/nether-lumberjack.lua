@@ -59,7 +59,7 @@ local function plant(variant)
 end
 
 local function printUsage()
-    print("Usage: nether-lumberjack <height> <\"crimson\"|\"warped\">")
+    print("Usage: nether-lumberjack <\"crimson\"|\"warped\">")
 end
 
 local function recover()
@@ -158,6 +158,8 @@ end, function()
     if not (variant == "crimson" or variant == "warped") then
         return printUsage()
     end
+
+    Utils.writeStartupFile(string.format("nether-lumberjack %s", variant))
 
     -- by setting an explicit list of blocks allowed to break we can make sure the turtle doesn't unintentionally destroy its surroundings in case of a bug.
     TurtleApi.setBreakable(function(block)
