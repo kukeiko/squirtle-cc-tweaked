@@ -326,6 +326,16 @@
             "label": "build turtle:password",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/password.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/password"
+        },
+        {
+            "label": "build turtle:block-watcher",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/block-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/block-watcher"
+        },
+        {
+            "label": "build turtle:inspect-watcher",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/inspect-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/inspect-watcher"
         }
     ]
 }
