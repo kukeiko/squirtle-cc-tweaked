@@ -111,7 +111,8 @@ function SearchableList:run()
             end
         end
     end, function()
-        while true do
+        -- it is possible that user selected something during the refresh call
+        while not selected do
             local event, value = EventLoop.pull()
 
             if event == "searchable-list:selected" and value == self.id then
@@ -128,12 +129,6 @@ function SearchableList:run()
                     end
                 end, function()
                     local options = self.refresher()
-
-                    if selected then
-                        -- it is possible that user selected something during the refresh call
-                        return
-                    end
-
                     self:setOptions(options)
 
                     if refreshTimer then
