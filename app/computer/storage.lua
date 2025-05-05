@@ -106,6 +106,16 @@ local function main()
         print("[stop] storage")
         Inventory.stop()
         EventLoop.queue("storage:stop")
+    end, function()
+        EventLoop.pullKey(keys.f3)
+        print("[dump] cache to disk")
+        local cache = Utils.clone(InventoryCollection.getCache())
+
+        for _, inventory in pairs(cache) do
+            inventory.slots = nil
+        end
+
+        Utils.writeJson("storage-cache-dump.json", cache)
     end)
 end
 

@@ -16,6 +16,11 @@ function InventoryCollection.clear()
     cache = {}
 end
 
+---@return table<string, Inventory>
+function InventoryCollection.getCache()
+    return cache
+end
+
 ---@param inventory string
 ---@return Inventory
 function InventoryCollection.get(inventory)
