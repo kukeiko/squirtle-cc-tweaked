@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local Logger = require "lib.tools.logger"
 local nextId = require "lib.tools.next-id"
 
 ---@class RpcPingPacket
@@ -167,8 +168,7 @@ local function createClient(service, host, distance, channel)
 
                 ---@type RpcRequestPacket
                 local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
-                -- [todo] ❌ commented out until we have a logger as this prints into app UI 
-                -- print(string.format("%s [req] %s %d/%d", Utils.getTime24(), k, clientChannel, client.channel))
+                Logger.log(string.format("[req] %s %d/%d", k, clientChannel, client.channel), packet)
                 modem.transmit(client.channel, clientChannel, packet)
 
                 while true do
@@ -181,8 +181,7 @@ local function createClient(service, host, distance, channel)
                     local distance = event[6]
 
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
-                        -- [todo] ❌ commented out until we have a logger as this prints into app UI 
-                        -- print(string.format("%s [res] %s %d/%d", Utils.getTime24(), k, clientChannel, client.channel))
+                        Logger.log(string.format("[res] %s %d/%d", k, clientChannel, client.channel), message)
                         client.distance = distance or 0
                         client.channel = replyChannel
 

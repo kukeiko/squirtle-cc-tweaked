@@ -43,6 +43,7 @@ end
 ---@param shellApplication ShellApplication
 local function switchToApplication(shellApplication)
     Shell.current.window.setVisible(false)
+    EventLoop.queue("shell-window:invisible", Shell.current.windows[Shell.current.windowIndex]:getId())
     Shell.current = shellApplication
     Shell.current.window.setVisible(true)
     EventLoop.queue("shell-window:visible", Shell.current.windows[Shell.current.windowIndex]:getId())
@@ -120,8 +121,6 @@ local function createWindowFunction(application, shellWindow)
         os.sleep(.1)
         shellWindow.window.clear()
         application:removeWindow(shellWindow)
-        -- local removedIndex = Utils.indexOf(application.windows, shellWindow) --[[@as integer]]
-        -- table.remove(application.windows, removedIndex)
 
         if #application.windows == 0 then
             -- end the application

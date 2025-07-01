@@ -17,6 +17,7 @@ local TaskService = require "lib.systems.task.task-service"
 local Shell = require "lib.ui.shell"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
+local showLogs = require "lib.ui.windows.show-logs"
 
 local idleTimeout = 30
 local refreshIntervals = {dispense = 3, transfers = 1, missing = 1}
@@ -170,6 +171,8 @@ end)
 Shell:addWindow("Missing", function()
     showMissing(storageService, taskService)
 end)
+
+Shell:addWindow("Logs", showLogs)
 
 Shell:addWindow("RPC", function()
     RemoteService.run({"dispenser"})

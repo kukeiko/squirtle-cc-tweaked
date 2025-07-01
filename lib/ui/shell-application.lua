@@ -74,6 +74,7 @@ end
 function ShellApplication:switchToWindowIndex(index)
     if self.windows[self.windowIndex] then
         self.windows[self.windowIndex]:setVisible(false)
+        EventLoop.queue("shell-window:invisible", self.windows[self.windowIndex]:getId())
     end
 
     self.windowIndex = index

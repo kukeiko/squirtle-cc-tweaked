@@ -11,7 +11,6 @@ end
 
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local CraftingApi = require "lib.apis.crafting-api"
 local StorageService = require "lib.systems.storage.storage-service"
@@ -19,6 +18,8 @@ local RemoteService = require "lib.systems.runtime.remote-service"
 local TaskService = require "lib.systems.task.task-service"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
+local Shell = require "lib.ui.shell"
+local showLogs = require "lib.ui.windows.show-logs"
 
 print(string.format("[io-crafter %s] booting...", version()))
 Utils.writeStartupFile("io-crafter")
@@ -109,9 +110,7 @@ local function recover(task, storageService, taskService)
     TurtleApi.tryDump("bottom")
 end
 
-EventLoop.run(function()
-    RemoteService.run({"io-crafter"})
-end, function()
+Shell:addWindow("Main", function()
     while true do
         local taskService = Rpc.nearest(TaskService)
         local storageService = Rpc.nearest(StorageService)
@@ -140,6 +139,8 @@ end, function()
             -- craft items
             craftFromBottomInventory(recipe)
             -- manual refresh required due to turtle manipulating the stash
+            -- [todo] suspecting this to not work correctly, as I crafted on MP and it worked, then crafting something else and it didn't.
+            -- 1st craft was 128x observers, 2nd craft was 64x redstone lamps
             storageService.refresh(stash)
 
             -- move crafted items from stash to buffer
@@ -156,4 +157,12 @@ end, function()
         print(string.format("[finish] %s %d", task.type, task.id))
     end
 end)
+
+Shell:addWindow("Logs", showLogs)
+
+Shell:addWindow("Remote", function()
+    RemoteService.run({"io-crafter"})
+end)
+
+Shell:run()
 

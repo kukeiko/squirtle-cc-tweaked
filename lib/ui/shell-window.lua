@@ -25,6 +25,8 @@ end
 
 ---@return boolean
 function ShellWindow:isVisible()
+    -- [todo] ❌ applications like storage use this to figure out if they can do spammy UI stuff, but there is an issue:
+    -- a window might be visible, but its application might not be the current one.
     return self.window.isVisible()
 end
 
