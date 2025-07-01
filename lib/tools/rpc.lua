@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local nextId = require "lib.tools.next-id"
 
 ---@class RpcPingPacket
 ---@field type "ping"
@@ -41,15 +42,13 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field name string
 ---@field maxDistance integer?
 
-local callId = 0
 local pingChannel = 0
 local pingTimeout = 0.25
 
 ---@return string
 local function nextCallId()
-    callId = callId + 1
 
-    return tostring(string.format("%s:%d", os.getComputerLabel(), callId))
+    return tostring(string.format("%s:%d", os.getComputerLabel(), nextId()))
 end
 
 ---@return table
@@ -168,6 +167,8 @@ local function createClient(service, host, distance, channel)
 
                 ---@type RpcRequestPacket
                 local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
+                -- [todo] ❌ commented out until we have a logger as this prints into app UI 
+                -- print(string.format("%s [req] %s %d/%d", Utils.getTime24(), k, clientChannel, client.channel))
                 modem.transmit(client.channel, clientChannel, packet)
 
                 while true do
@@ -180,6 +181,8 @@ local function createClient(service, host, distance, channel)
                     local distance = event[6]
 
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
+                        -- [todo] ❌ commented out until we have a logger as this prints into app UI 
+                        -- print(string.format("%s [res] %s %d/%d", Utils.getTime24(), k, clientChannel, client.channel))
                         client.distance = distance or 0
                         client.channel = replyChannel
 
@@ -332,6 +335,7 @@ function Rpc.host(service, modemName)
                     peripheral.call(modem, "transmit", channelOut, channel, pong)
                     print(string.format("%s [ping] %d/%d [%d]", Utils.getTime24(), channelIn, channelOut, distance or -1))
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
+                    print(string.format("%s [in] %s %d/%d [%d]", Utils.getTime24(), message.method, channelIn, channelOut, distance or -1))
 
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))

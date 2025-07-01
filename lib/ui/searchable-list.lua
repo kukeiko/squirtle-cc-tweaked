@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local nextId = require "lib.tools.next-id"
 
 ---@class SearchableList
 ---@field id integer
@@ -14,7 +15,6 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field refreshInterval? integer
 ---@field refresher? fun() : SearchableListOption[]
 local SearchableList = {}
-local nextId = 1
 
 ---@class SearchableListOption
 ---@field id string
@@ -34,7 +34,7 @@ function SearchableList.new(options, title, idleTimeout, refreshInterval, refres
 
     ---@type SearchableList | {}
     local instance = {
-        id = nextId,
+        id = nextId(),
         options = options,
         list = options,
         searchText = "",
@@ -47,7 +47,6 @@ function SearchableList.new(options, title, idleTimeout, refreshInterval, refres
         refresher = refresher
     }
 
-    nextId = nextId + 1
     setmetatable(instance, {__index = SearchableList})
 
     return instance
@@ -138,7 +137,7 @@ function SearchableList:run()
             end
         end
     end, function()
-        while (true) do
+        while true do
             local event, value = EventLoop.pull()
             local filterDirty = false
             local userInteracted = false
