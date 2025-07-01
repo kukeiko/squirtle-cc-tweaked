@@ -5,32 +5,32 @@ local nextId = require "lib.tools.next-id"
 ---@field title string
 ---@field fn fun(window: ShellWindow): any
 ---@field window table
-local ShellWindowV3 = {}
+local ShellWindow = {}
 
 ---@param title string
 ---@param fn fun(): any
 ---@param window table
 ---@return ShellWindow
-function ShellWindowV3.new(title, fn, window)
+function ShellWindow.new(title, fn, window)
     ---@type ShellWindow|{}
     local instance = {id = nextId(), title = title, fn = fn, window = window}
-    setmetatable(instance, {__index = ShellWindowV3})
+    setmetatable(instance, {__index = ShellWindow})
 
     return instance
 end
 
-function ShellWindowV3:getId()
+function ShellWindow:getId()
     return self.id
 end
 
 ---@return boolean
-function ShellWindowV3:isVisible()
+function ShellWindow:isVisible()
     return self.window.isVisible()
 end
 
 ---@param isVisible boolean
-function ShellWindowV3:setVisible(isVisible)
+function ShellWindow:setVisible(isVisible)
     self.window.setVisible(isVisible)
 end
 
-return ShellWindowV3
+return ShellWindow

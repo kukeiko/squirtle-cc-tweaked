@@ -4,61 +4,9 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ShellWindowV3 = require "lib.ui.shell-window"
-local ApplicationApi = require "lib.apis.application-api"
 local nextId = require "lib.tools.next-id"
-local version = require "version"
-
----@class ShellApplication
----@field metadata Application
----@field window table
----@field windowIndex integer
----@field windows ShellWindow[]
----@field addWindowToShell fun(window: ShellWindow) : nil
----@field runSelf fun() : nil
----@field launchApp fun(path: string) : nil
-local ShellApplication = {}
-
----@param metadata Application
----@param window table
----@param runSelf fun() : nil
----@return ShellApplication
-local function constructApplication(metadata, window, runSelf)
-    ---@type ShellApplication
-    local instance = {
-        metadata = metadata,
-        window = window,
-        windows = {},
-        windowIndex = 1,
-        addWindowToShell = function()
-        end,
-        runSelf = runSelf,
-        launchApp = function()
-        end
-    }
-    setmetatable(instance, {__index = ShellApplication})
-
-    return instance
-end
-
----@param title string
----@param fn fun(shellWindow: ShellWindow): any
-function ShellApplication:addWindow(title, fn)
-    local w, h = self.window.getSize()
-    ---@type ShellWindow
-    local shellWindow = ShellWindowV3.new(title, fn, window.create(self.window, 1, 1, w, h, false))
-    table.insert(self.windows, shellWindow)
-    self.addWindowToShell(shellWindow)
-end
-
----@param path string
-function ShellApplication:launch(path)
-    self.launchApp(path)
-end
-
-function ShellApplication:run()
-    self.runSelf()
-end
+local ApplicationApi = require "lib.apis.application-api"
+local ShellApplication = require "lib.ui.shell-application"
 
 local width, height = term.getSize()
 
@@ -122,6 +70,16 @@ end
 ---@return boolean
 local function isActiveApplicationWindow(application, window)
     return Shell.current == application and Shell.current.windows[Shell.current.windowIndex] == window
+end
+
+---@param shellApplication ShellApplication
+---@return table
+local function createApplicationEnvironment(shellApplication)
+    return setmetatable({
+        arg = {}, -- [todo] ❌ implement & pass along program arguments
+        nextId = nextId, -- making sure to have globally unique ids
+        Shell = shellApplication -- funnel Shell calls through the application instance instead
+    }, {__index = _ENV})
 end
 
 ---@param application ShellApplication
@@ -272,14 +230,13 @@ local function launchApp(hostApplication, path)
     local metadata = ApplicationApi.getApplication(path, true)
     local appWindow = window.create(Shell.window, 1, 1, width, height - 2, false)
     -- [todo] ❌ run() should be blocking, just like run() for the root app does
-    local shellApplication = constructApplication(metadata, appWindow, run)
+    local shellApplication = ShellApplication.new(metadata, appWindow, run)
     shellApplication.launchApp = function(path)
         launchApp(shellApplication, path)
     end
 
     shellApplication.addWindowToShell = function(shellWindow)
         Shell.addThreadToMainLoop(createWindowFunction(shellApplication, shellWindow))
-        -- createWindowFunction(shellApplication, shellWindow)
     end
 
     table.insert(Shell.applications, shellApplication)
@@ -293,10 +250,10 @@ local function launchApp(hostApplication, path)
     Shell.addThreadToMainLoop(function()
         -- [todo] ❌ add accept handling
         EventLoop.configure({window = appWindow})
+        -- [todo] ❓ can we just move this into EventLoop.configure()?
         os.sleep(.1)
 
-        local environment = setmetatable({arg = {}, Shell = shellApplication, nextId = nextId}, {__index = _ENV})
-        local fn, message = load(metadata.content, "@/" .. metadata.path, nil, environment)
+        local fn, message = load(metadata.content, "@/" .. metadata.path, nil, createApplicationEnvironment(shellApplication))
 
         if not fn then
             print("error", message)
@@ -325,7 +282,7 @@ end
 ---@type Application
 local metadata = {name = "foo", path = "bar/foo", version = "xyz"} -- [todo] replace with arg[0]
 local appWindow = window.create(Shell.window, 1, 1, width, height - 2, false)
-local app = constructApplication(metadata, appWindow, run)
+local app = ShellApplication.new(metadata, appWindow, run)
 
 app.launchApp = function(path)
     launchApp(app, path)
