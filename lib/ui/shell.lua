@@ -40,10 +40,13 @@ local function drawMenu()
     end
 end
 
-local function showCurrentWindow()
-    Shell.current.windows[Shell.current.windowIndex]:setVisible(true)
-    drawMenu()
+---@param shellApplication ShellApplication
+local function switchToApplication(shellApplication)
+    Shell.current.window.setVisible(false)
+    Shell.current = shellApplication
+    Shell.current.window.setVisible(true)
     EventLoop.queue("shell-window:visible", Shell.current.windows[Shell.current.windowIndex]:getId())
+    drawMenu()
 end
 
 ---@param event string
@@ -116,8 +119,9 @@ local function createWindowFunction(application, shellWindow)
         -- at which point the next window is the active one and also receives the UI event (i.e. it "bleeds" over)
         os.sleep(.1)
         shellWindow.window.clear()
-        local index = Utils.indexOf(application.windows, shellWindow)
-        table.remove(application.windows, index)
+        application:removeWindow(shellWindow)
+        -- local removedIndex = Utils.indexOf(application.windows, shellWindow) --[[@as integer]]
+        -- table.remove(application.windows, removedIndex)
 
         if #application.windows == 0 then
             -- end the application
@@ -126,22 +130,7 @@ local function createWindowFunction(application, shellWindow)
 
             -- if an app other than root was ended, show root app
             if application == Shell.current and Shell.current ~= Shell.root then
-                Shell.current = Shell.root
-                Shell.current.window.setVisible(true)
-                showCurrentWindow()
-            end
-        else
-            -- show next suitable application window
-            if index and index < application.windowIndex then
-                application.windowIndex = application.windowIndex - 1
-            end
-
-            if application.windowIndex > #application.windows then
-                application.windowIndex = #application.windows
-            end
-
-            if application == Shell.current then
-                showCurrentWindow()
+                switchToApplication(Shell.root)
             end
         end
     end
@@ -178,10 +167,7 @@ local function run()
             EventLoop.pullKey(keys.tab)
 
             if Shell.current ~= Shell.root then
-                Shell.current.window.setVisible(false)
-                Shell.current = Shell.root
-                Shell.current.window.setVisible(true)
-                showCurrentWindow()
+                switchToApplication(Shell.root)
             end
         end
     end, function()
@@ -189,8 +175,7 @@ local function run()
 
         while true do
             local key = EventLoop.pullKeys({keys.left, keys.right})
-            local previousIndex = Shell.current.windowIndex
-            local nextIndex = previousIndex
+            local nextIndex = Shell.current.windowIndex
 
             if key == keys.left then
                 nextIndex = math.max(1, nextIndex - 1)
@@ -198,10 +183,8 @@ local function run()
                 nextIndex = math.min(#Shell.current.windows, nextIndex + 1)
             end
 
-            if nextIndex ~= previousIndex then
-                Shell.current.windows[previousIndex]:setVisible(false)
-                Shell.current.windowIndex = nextIndex
-                showCurrentWindow()
+            if nextIndex ~= Shell.current.windowIndex then
+                Shell.current:switchToWindowIndex(nextIndex)
             end
         end
     end)
@@ -220,10 +203,7 @@ local function launchApp(hostApplication, path)
     end)
 
     if alreadyRunning then
-        Shell.current.window.setVisible(false)
-        Shell.current = alreadyRunning
-        Shell.current.window.setVisible(true)
-        drawMenu()
+        switchToApplication(alreadyRunning)
         return
     end
 
@@ -237,6 +217,12 @@ local function launchApp(hostApplication, path)
 
     shellApplication.addWindowToShell = function(shellWindow)
         Shell.addThreadToMainLoop(createWindowFunction(shellApplication, shellWindow))
+    end
+
+    shellApplication.drawMenu = function()
+        if Shell.current == shellApplication then
+            drawMenu()
+        end
     end
 
     table.insert(Shell.applications, shellApplication)
@@ -291,6 +277,12 @@ end
 app.addWindowToShell = function(shellWindow)
     if Shell.isRunning then
         Shell.addThreadToMainLoop(createWindowFunction(Shell.root, shellWindow))
+    end
+end
+
+app.drawMenu = function()
+    if Shell.current == app then
+        drawMenu()
     end
 end
 
