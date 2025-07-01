@@ -1,80 +1,109 @@
 if _ENV["Shell"] then
-    return _ENV["Shell"] --[[@as Shell]]
+    return _ENV["Shell"] --[[@as ShellApplication]]
 end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local ShellWindowV3 = require "lib.ui.shell-window"
+local ApplicationApi = require "lib.apis.application-api"
+local nextId = require "lib.tools.next-id"
+local version = require "version"
 
----@class ShellWindow
----@field title string
----@field fn fun(window: ShellWindow): any
+---@class ShellApplication
+---@field metadata Application
 ---@field window table
-local ShellWindow = {}
+---@field windowIndex integer
+---@field windows ShellWindow[]
+---@field addWindowToShell fun(window: ShellWindow) : nil
+---@field runSelf fun() : nil
+---@field launchApp fun(path: string) : nil
+local ShellApplication = {}
 
----@param title string
----@param fn fun(): any
+---@param metadata Application
 ---@param window table
----@return ShellWindow
-function ShellWindow.new(title, fn, window)
-    ---@type ShellWindow|{}
-    local instance = {title = title, fn = fn, window = window}
-    setmetatable(instance, {__index = ShellWindow})
+---@param runSelf fun() : nil
+---@return ShellApplication
+local function constructApplication(metadata, window, runSelf)
+    ---@type ShellApplication
+    local instance = {
+        metadata = metadata,
+        window = window,
+        windows = {},
+        windowIndex = 1,
+        addWindowToShell = function()
+        end,
+        runSelf = runSelf,
+        launchApp = function()
+        end
+    }
+    setmetatable(instance, {__index = ShellApplication})
 
     return instance
 end
 
----@return boolean
-function ShellWindow:isVisible()
-    return self.window.isVisible()
+---@param title string
+---@param fn fun(shellWindow: ShellWindow): any
+function ShellApplication:addWindow(title, fn)
+    local w, h = self.window.getSize()
+    ---@type ShellWindow
+    local shellWindow = ShellWindowV3.new(title, fn, window.create(self.window, 1, 1, w, h, false))
+    table.insert(self.windows, shellWindow)
+    self.addWindowToShell(shellWindow)
 end
+
+---@param path string
+function ShellApplication:launch(path)
+    self.launchApp(path)
+end
+
+function ShellApplication:run()
+    self.runSelf()
+end
+
+local width, height = term.getSize()
 
 ---@class Shell
 ---@field window table
----@field windows ShellWindow[]
----@field activeWindow? ShellWindow
-local Shell = {}
+---@field root ShellApplication
+---@field current ShellApplication
+---@field applications ShellApplication[]
+---@field isRunning boolean
+---@field addThreadToMainLoop fun(...: function)
+local Shell = {window = window.create(term.current(), 1, 1, width, height, false), applications = {}, isRunning = false}
 
----@type fun(...: function)
-local addThreadToEventLoop
-local isRunning = false
-
-local function new()
-    local width, height = term.getSize()
-    ---@type Shell | {}
-    local instance = {window = window.create(term.current(), 1, 1, width, height, false), windows = {}}
-    setmetatable(instance, {__index = Shell})
-
-    return instance
-end
-
----@param window table
----@param left? string
----@param right? string
-local function drawNavBar(window, left, right)
-    local width, height = window.getSize()
-    window.setCursorPos(1, height - 1)
-    window.write(string.rep("-", width))
-    window.setCursorPos(1, height)
-    window.clearLine()
+local function drawMenu()
+    local index = Shell.current.windowIndex
+    local left = index > 1 and string.format("< %s", Shell.current.windows[index - 1].title) or nil
+    local right = index < #Shell.current.windows and string.format("%s >", Shell.current.windows[index + 1].title) or nil
+    local width, height = Shell.window.getSize()
+    Shell.window.setCursorPos(1, height - 1)
+    Shell.window.write(string.rep("-", width))
+    Shell.window.setCursorPos(1, height)
+    Shell.window.clearLine()
 
     if left then
-        window.setCursorPos(1, height)
-        window.write(left)
+        Shell.window.setCursorPos(1, height)
+        Shell.window.write(left)
     end
 
     if right then
-        window.setCursorPos(width - #right, height)
-        window.write(right)
+        Shell.window.setCursorPos(width - #right, height)
+        Shell.window.write(right)
     end
 end
 
----@param self Shell
-local function drawMenu(self)
-    local activeWindowIndex = Utils.indexOf(self.windows, self.activeWindow)
-    local leftTitle = activeWindowIndex > 1 and string.format("< %s", self.windows[activeWindowIndex - 1].title) or nil
-    local rightTitle = activeWindowIndex < #self.windows and string.format("%s >", self.windows[activeWindowIndex + 1].title) or nil
+local function showCurrentWindow()
+    Shell.current.windows[Shell.current.windowIndex]:setVisible(true)
+    drawMenu()
+    EventLoop.queue("shell-window:visible", Shell.current.windows[Shell.current.windowIndex]:getId())
+end
 
-    drawNavBar(self.window, leftTitle, rightTitle)
+---@param event string
+---@param value any
+local function isShellEvent(event, value)
+    if event == "key_up" and value == keys.tab then
+        return true
+    end
 end
 
 ---@param event string
@@ -88,31 +117,39 @@ local function isShellWindowEvent(event)
     return Utils.startsWith(event, "shell-window")
 end
 
----@param self Shell
+---@param application ShellApplication
+---@param window ShellWindow
+---@return boolean
+local function isActiveApplicationWindow(application, window)
+    return Shell.current == application and Shell.current.windows[Shell.current.windowIndex] == window
+end
+
+---@param application ShellApplication
 ---@param shellWindow ShellWindow
 ---@return function
-local function createRunnableFromWindow(self, shellWindow)
+local function createWindowFunction(application, shellWindow)
     return function()
         EventLoop.configure({
-            window = shellWindow.window,
-            accept = function(event, ...)
+            window = shellWindow.window, -- redirects term to this
+            accept = function(event, ...) -- predicate for passing through events
                 local args = {...}
 
-                if isUiEvent(event) then
-                    return self.activeWindow == shellWindow
+                if isShellEvent(event, args[1]) then
+                    return false
+                elseif isUiEvent(event) then
+                    return isActiveApplicationWindow(application, shellWindow)
                 elseif isShellWindowEvent(event) then
-                    return args[1] == shellWindow
+                    return args[1] == shellWindow:getId()
                 end
 
                 return true
             end
         })
 
-        -- [todo] this is needed, but investigate exactly why
         os.sleep(.1)
 
-        if self.activeWindow == shellWindow then
-            EventLoop.queue("shell-window:visible", shellWindow)
+        if isActiveApplicationWindow(application, shellWindow) then
+            EventLoop.queue("shell-window:visible", shellWindow:getId())
         end
 
         shellWindow.fn(shellWindow)
@@ -121,83 +158,186 @@ local function createRunnableFromWindow(self, shellWindow)
         -- at which point the next window is the active one and also receives the UI event (i.e. it "bleeds" over)
         os.sleep(.1)
         shellWindow.window.clear()
-        local index = Utils.indexOf(self.windows, shellWindow)
-        table.remove(self.windows, index)
+        local index = Utils.indexOf(application.windows, shellWindow)
+        table.remove(application.windows, index)
 
-        if index > #self.windows then
-            index = #self.windows
-        end
+        if #application.windows == 0 then
+            -- end the application
+            local applicationIndex = Utils.indexOf(Shell.applications, Shell.current) --[[@as integer]]
+            table.remove(Shell.applications, applicationIndex)
 
-        if index > 0 then
-            self.activeWindow = self.windows[index]
-            self.activeWindow.window.setVisible(true)
-            drawMenu(self)
+            -- if an app other than root was ended, show root app
+            if application == Shell.current and Shell.current ~= Shell.root then
+                Shell.current = Shell.root
+                Shell.current.window.setVisible(true)
+                showCurrentWindow()
+            end
         else
-            self.activeWindow = nil
+            -- show next suitable application window
+            if index and index < application.windowIndex then
+                application.windowIndex = application.windowIndex - 1
+            end
+
+            if application.windowIndex > #application.windows then
+                application.windowIndex = #application.windows
+            end
+
+            if application == Shell.current then
+                showCurrentWindow()
+            end
         end
     end
 end
 
----@param title string
----@param fn fun(shellWindow: ShellWindow): any
-function Shell:addWindow(title, fn)
-    local w, h = self.window.getSize()
-
-    ---@type ShellWindow
-    local shellWindow = ShellWindow.new(title, fn, window.create(self.window, 1, 1, w, h - 2, false))
-    table.insert(self.windows, shellWindow)
-
-    if isRunning then
-        addThreadToEventLoop(createRunnableFromWindow(self, shellWindow))
-        drawMenu(self)
+local function run()
+    if Shell.isRunning then
+        return
     end
-end
 
-function Shell:run()
-    self.window.clear()
-    self.window.setCursorPos(1, 1)
-    self.window.setVisible(true)
+    Shell.window.clear()
+    Shell.window.setCursorPos(1, 1)
+    Shell.window.setVisible(true)
 
-    local addThread, run = EventLoop.createRun(table.unpack(Utils.map(self.windows, function(shellWindow)
-        return createRunnableFromWindow(self, shellWindow)
-    end)))
+    local initialWindowFunctions = Utils.map(Shell.root.windows, function(shellWindow)
+        return createWindowFunction(Shell.root, shellWindow)
+    end)
 
-    addThreadToEventLoop = addThread
-    isRunning = true
+    local addThreadToMainLoop, run = EventLoop.createRun(table.unpack(initialWindowFunctions))
+    Shell.addThreadToMainLoop = addThreadToMainLoop
+    Shell.isRunning = true
 
-    if self.windows[1] then
-        self.activeWindow = self.windows[1]
-        self.windows[1].window.setVisible(true)
+    if Shell.root.windows[1] then
+        Shell.root.windowIndex = 1
+        Shell.root.window.setVisible(true)
+        Shell.root.windows[1]:setVisible(true)
     end
 
     EventLoop.waitForAny(function()
         run()
     end, function()
-        drawMenu(self)
+        while true do
+            -- on tab, goto root application
+            EventLoop.pullKey(keys.tab)
+
+            if Shell.current ~= Shell.root then
+                Shell.current.window.setVisible(false)
+                Shell.current = Shell.root
+                Shell.current.window.setVisible(true)
+                showCurrentWindow()
+            end
+        end
+    end, function()
+        drawMenu()
 
         while true do
             local key = EventLoop.pullKeys({keys.left, keys.right})
-            local activeWindowIndex = Utils.indexOf(self.windows, self.activeWindow)
+            local previousIndex = Shell.current.windowIndex
+            local nextIndex = previousIndex
 
             if key == keys.left then
-                activeWindowIndex = math.max(1, activeWindowIndex - 1)
+                nextIndex = math.max(1, nextIndex - 1)
             else
-                activeWindowIndex = math.min(#self.windows, activeWindowIndex + 1)
+                nextIndex = math.min(#Shell.current.windows, nextIndex + 1)
             end
 
-            if self.activeWindow ~= self.windows[activeWindowIndex] then
-                self.activeWindow.window.setVisible(false)
-                self.activeWindow = self.windows[activeWindowIndex]
-                self.activeWindow.window.setVisible(true)
-                drawMenu(self)
-                EventLoop.queue("shell-window:visible", self.activeWindow)
+            if nextIndex ~= previousIndex then
+                Shell.current.windows[previousIndex]:setVisible(false)
+                Shell.current.windowIndex = nextIndex
+                showCurrentWindow()
             end
         end
     end)
-    isRunning = false
-    self.window.clear()
-    self.window.setCursorPos(1, 1)
-    self.window.setVisible(false)
+
+    Shell.isRunning = false
+    Shell.window.clear()
+    Shell.window.setCursorPos(1, 1)
+    Shell.window.setVisible(false)
 end
 
-return new()
+---@param hostApplication ShellApplication
+---@param path string
+local function launchApp(hostApplication, path)
+    local alreadyRunning = Utils.find(Shell.applications, function(item)
+        return item.metadata.path == path
+    end)
+
+    if alreadyRunning then
+        Shell.current.window.setVisible(false)
+        Shell.current = alreadyRunning
+        Shell.current.window.setVisible(true)
+        drawMenu()
+        return
+    end
+
+    local metadata = ApplicationApi.getApplication(path, true)
+    local appWindow = window.create(Shell.window, 1, 1, width, height - 2, false)
+    -- [todo] ❌ run() should be blocking, just like run() for the root app does
+    local shellApplication = constructApplication(metadata, appWindow, run)
+    shellApplication.launchApp = function(path)
+        launchApp(shellApplication, path)
+    end
+
+    shellApplication.addWindowToShell = function(shellWindow)
+        Shell.addThreadToMainLoop(createWindowFunction(shellApplication, shellWindow))
+        -- createWindowFunction(shellApplication, shellWindow)
+    end
+
+    table.insert(Shell.applications, shellApplication)
+
+    if Shell.current == hostApplication then
+        Shell.current.window.setVisible(false)
+        Shell.current = shellApplication
+        Shell.current.window.setVisible(true)
+    end
+
+    Shell.addThreadToMainLoop(function()
+        -- [todo] ❌ add accept handling
+        EventLoop.configure({window = appWindow})
+        os.sleep(.1)
+
+        local environment = setmetatable({arg = {}, Shell = shellApplication, nextId = nextId}, {__index = _ENV})
+        local fn, message = load(metadata.content, "@/" .. metadata.path, nil, environment)
+
+        if not fn then
+            print("error", message)
+            Utils.waitForUserToHitEnter("<hit enter to continue>")
+        else
+            -- [todo] ❌ think about what happens to added windows, how to clean up app, etc.
+            -- [todo] ❌ during the fn call, windows get added immediately to the main loop. that causes a difference in behavior between running the app directly
+            -- vs. running it via launch(). I want the same behavior: add the windows to main loop once the app has called Shell:run()
+            local success, message = pcall(fn)
+
+            if shellApplication.windows[shellApplication.windowIndex] then
+                -- [todo] ❌ hack
+                shellApplication.windows[shellApplication.windowIndex]:setVisible(true)
+            end
+
+            drawMenu()
+
+            if not success then
+                print(message)
+                Utils.waitForUserToHitEnter("<hit enter to continue>")
+            end
+        end
+    end)
+end
+
+---@type Application
+local metadata = {name = "foo", path = "bar/foo", version = "xyz"} -- [todo] replace with arg[0]
+local appWindow = window.create(Shell.window, 1, 1, width, height - 2, false)
+local app = constructApplication(metadata, appWindow, run)
+
+app.launchApp = function(path)
+    launchApp(app, path)
+end
+
+app.addWindowToShell = function(shellWindow)
+    if Shell.isRunning then
+        Shell.addThreadToMainLoop(createWindowFunction(Shell.root, shellWindow))
+    end
+end
+
+Shell.root = app
+Shell.current = app
+
+return app
