@@ -302,7 +302,9 @@ function Utils.concat(...)
     return concatenated
 end
 
----@param tbl table
+---@generic T
+---@param tbl T[]
+---@return T[]
 function Utils.reverse(tbl)
     local reversed = {}
 
@@ -312,6 +314,7 @@ function Utils.reverse(tbl)
 
     return reversed
 end
+
 
 function Utils.prettyPrint(value)
     Pretty.print(Pretty.pretty(value))
@@ -575,6 +578,11 @@ function Utils.getTime24()
     end
 
     return string.format("%s:%s:%s", hours, minutes, seconds)
+end
+
+---@param str string
+function Utils.escapePpattern(str)
+    return str:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
 end
 
 return Utils

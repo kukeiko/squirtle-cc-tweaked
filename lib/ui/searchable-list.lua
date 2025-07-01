@@ -20,6 +20,7 @@ local SearchableList = {}
 ---@field id string
 ---@field name string
 ---@field suffix? string
+---@field data? unknown
 
 ---@param options SearchableListOption[]
 ---@param title? string
@@ -56,6 +57,7 @@ end
 function SearchableList:setOptions(options)
     local selectedId = (self.options[self.index] or {}).id
     self.options = options
+    -- [todo] ❌ completely borked if there is an active filter
     local newIndex = Utils.findIndex(options, function(item)
         return item.id == selectedId
     end)
@@ -229,7 +231,7 @@ end
 function SearchableList:filter()
     ---@type SearchableListOption[]
     local filtered = {}
-    local search = self.searchText
+    local search = Utils.escapePpattern(self.searchText)
     local unfiltered = self.options
 
     if (#self.searchText == 0) then
