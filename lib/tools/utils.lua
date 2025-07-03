@@ -510,6 +510,17 @@ function Utils.ellipsis(str, length)
     end
 end
 
+---@param str string
+---@param length integer
+---@return string
+function Utils.ellipsisLeft(str, length)
+    if #str > length then
+        return "..." .. string.sub(str, #str - (length - 4))
+    else
+        return str
+    end
+end
+
 ---@param current number
 ---@param total number
 ---@param x integer|nil
