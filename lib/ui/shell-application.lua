@@ -65,7 +65,10 @@ function ShellApplication:addWindow(title, fn)
             window = shellWindow.window,
             accept = function(event, ...)
                 local args = {...}
-                if self.shell:isShellWindowEvent(event) then
+
+                if self.shell:isUiEvent(event) then
+                    return shellWindow == self.windows[self.windowIndex]
+                elseif self.shell:isShellWindowEvent(event) then
                     return args[1] == shellWindow:getId()
                 end
 
@@ -178,6 +181,7 @@ end
 
 function ShellApplication:run()
     self:drawMenu()
+
     EventLoop.run(function()
         self.shell:run(self, self.runLoopFn)
     end, function()
@@ -196,6 +200,9 @@ function ShellApplication:run()
             end
         end
     end)
+
+    term.clear()
+    term.setCursorPos(1, 1)
 end
 
 ---@param path string

@@ -50,5 +50,4 @@ Shell:addWindow("Apps", function()
 end)
 
 Shell:run()
-term.clear()
-term.setCursorPos(1, 1)
+

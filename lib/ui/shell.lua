@@ -53,6 +53,11 @@ local function isShellWindowEvent(event)
 end
 
 ---@param event string
+function Shell:isUiEvent(event)
+    return isUiEvent(event)
+end
+
+---@param event string
 function Shell:isShellWindowEvent(event)
     return isShellWindowEvent(event)
 end
