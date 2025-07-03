@@ -9,9 +9,20 @@ local Utils = {}
 ---@return integer?
 function Utils.indexOf(list, item)
     for i = 1, #list do
-        if (list[i] == item) then
+        if list[i] == item then
             return i
         end
+    end
+end
+
+---@generic K, V
+---@param list table<K, V>
+---@param item V
+function Utils.remove(list, item)
+    local index = Utils.indexOf(list, item)
+
+    if index then
+        table.remove(list, index)
     end
 end
 
@@ -314,7 +325,6 @@ function Utils.reverse(tbl)
 
     return reversed
 end
-
 
 function Utils.prettyPrint(value)
     Pretty.print(Pretty.pretty(value))

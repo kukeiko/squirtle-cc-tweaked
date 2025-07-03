@@ -170,20 +170,17 @@ function EventLoop.createRun(...)
         end
     end
 
+    -- [todo] ❌ prevent run() being called twice
     local function run()
-        -- [todo] should also already run the addedThreads
+        threads = Utils.concat(threads, addedThreads)
+        addedThreads = {}
         threads = runThreads(threads, {})
+        threads = Utils.concat(threads, addedThreads)
 
         while #threads > 0 do
             threads = runThreads(threads, table.pack(EventLoop.pull()))
-
-            if #addedThreads > 0 then
-                for _, thread in pairs(runThreads(addedThreads, {})) do
-                    table.insert(threads, thread)
-                end
-
-                addedThreads = {}
-            end
+            threads = Utils.concat(threads, addedThreads)
+            addedThreads = {}
         end
     end
 
