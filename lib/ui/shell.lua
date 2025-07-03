@@ -181,6 +181,12 @@ function Shell:launch(hostApplication, path)
         end
 
         fn()
+
+        Utils.remove(Shell.applications, shellApplication)
+
+        if Shell.current == shellApplication then
+            switchToApplication(hostApplication)
+        end
     end)
 
     addThreadToMainLoop(fn)
