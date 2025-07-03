@@ -22,6 +22,8 @@ local SearchableList = {}
 ---@field suffix? string
 ---@field data? unknown
 
+---@alias SearchableListAction "select" | "delete"
+
 ---@param options SearchableListOption[]
 ---@param title? string
 ---@param idleTimeout? integer
@@ -77,10 +79,12 @@ function SearchableList:setOptions(options)
     end
 end
 
----@return SearchableListOption?
+---@return SearchableListOption?, SearchableListAction?
 function SearchableList:run()
     ---@type SearchableListOption?
     local selected = nil
+    ---@type SearchableListAction?
+    local action = nil
     self.window.setCursorBlink(false)
     self.isRunning = true
     self.searchText = ""
@@ -148,9 +152,10 @@ function SearchableList:run()
                 if (value == keys.f4) then
                     EventLoop.queue("searchable-list:selected", self.id)
                     break
-                elseif value == keys.enter or value == keys.numPadEnter then
+                elseif value == keys.enter or value == keys.numPadEnter or value == keys.delete then
                     if (#self.list > 0) then
                         selected = self.list[self.index]
+                        action = value == keys.enter and "select" or "delete"
                         EventLoop.queue("searchable-list:selected", self.id)
                         break
                     end
@@ -225,7 +230,7 @@ function SearchableList:run()
     self.window.clear()
     self.isRunning = false
 
-    return selected
+    return selected, action
 end
 
 function SearchableList:filter()

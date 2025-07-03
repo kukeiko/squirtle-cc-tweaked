@@ -20,7 +20,6 @@ function ApplicationApi.initAppVersions()
                 ---@type ApplicationMetadata
                 local metadata = dofile(appPath)
                 versions[appPath] = metadata.version
-                print(string.format("[%s] %s @ %s", subFolder, fileName, versions[appPath]))
             end
         end
     end

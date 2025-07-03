@@ -1,8 +1,10 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ShellWindow = require "lib.ui.shell-window"
+local nextId = require "lib.tools.next-id"
 
 ---@class ShellApplication
+---@field id number
 ---@field metadata Application
 ---@field window table
 ---@field windowIndex integer
@@ -21,6 +23,7 @@ function ShellApplication.new(metadata, window, shell)
 
     ---@type ShellApplication
     local instance = {
+        id = nextId(),
         metadata = metadata,
         window = window,
         windows = {},
@@ -32,6 +35,11 @@ function ShellApplication.new(metadata, window, shell)
     setmetatable(instance, {__index = ShellApplication})
 
     return instance
+end
+
+---@return integer
+function ShellApplication:getId()
+    return self.id
 end
 
 ---@param fn function
@@ -163,6 +171,11 @@ function ShellApplication:launch(path)
     self.shell:launch(self, path)
 end
 
+---@param path string
+function ShellApplication:terminate(path)
+    self.shell:terminate(self, path)
+end
+
 function ShellApplication:run()
     self:drawMenu()
     EventLoop.run(function()
@@ -183,6 +196,16 @@ function ShellApplication:run()
             end
         end
     end)
+end
+
+---@param path string
+---@return boolean
+function ShellApplication:isRunning(path)
+    return self.shell:isRunning(path)
+end
+
+function ShellApplication:pullApplicationStateChange()
+    return self.shell:pullApplicationStateChange()
 end
 
 return ShellApplication

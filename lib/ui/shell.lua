@@ -164,15 +164,25 @@ function Shell:launch(hostApplication, path)
     table.insert(Shell.applications, shellApplication)
 
     local fn = wrapRun(shellApplication, function()
+        EventLoop.queue("shell:start")
         local fn, message = load(metadata.content, "@/" .. metadata.path, nil, createApplicationEnvironment(shellApplication))
 
         if not fn then
             error(message)
         end
 
-        fn()
+        EventLoop.waitForAny(function()
+            while true do
+                local _, id = EventLoop.pull("shell:terminate")
+
+                if id == shellApplication:getId() then
+                    break
+                end
+            end
+        end, fn)
 
         Utils.remove(Shell.applications, shellApplication)
+        EventLoop.queue("shell:stop")
 
         if Shell.current == shellApplication then
             switchToApplication(hostApplication)
@@ -180,6 +190,40 @@ function Shell:launch(hostApplication, path)
     end)
 
     addThreadToMainLoop(fn)
+end
+
+---@param hostApplication ShellApplication
+---@param path string
+function Shell:terminate(hostApplication, path)
+    local shellApplication = Utils.find(Shell.applications, function(item)
+        return item.metadata.path == path
+    end)
+
+    if not shellApplication then
+        return
+    end
+
+    EventLoop.queue("shell:terminate", shellApplication:getId())
+
+    if Shell.current == shellApplication then
+        switchToApplication(hostApplication)
+    end
+end
+
+---@param path string
+---@return boolean
+function Shell:isRunning(path)
+    return Utils.find(Shell.applications, function(item)
+        return item.metadata.path == path
+    end) ~= nil
+end
+
+function Shell:pullApplicationStateChange()
+    EventLoop.waitForAny(function()
+        EventLoop.pull("shell:start")
+    end, function()
+        EventLoop.pull("shell:stop")
+    end)
 end
 
 ---@type Application
