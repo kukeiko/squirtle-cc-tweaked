@@ -15,8 +15,7 @@ local width, height = term.getSize()
 ---@field root ShellApplication
 ---@field current ShellApplication
 ---@field applications ShellApplication[]
----@field isRunning boolean
-local Shell = {window = window.create(term.current(), 1, 1, width, height, false), applications = {}, isRunning = false}
+local Shell = {window = window.create(term.current(), 1, 1, width, height, false), applications = {}}
 
 ---@param shellApplication ShellApplication
 local function switchToApplication(shellApplication)
@@ -106,8 +105,7 @@ local function bootstrap(shellApplication, fn)
     Shell.window.clear()
     Shell.window.setCursorPos(1, 1)
     Shell.window.setVisible(true)
-
-    Shell.isRunning = true
+    Shell.root = shellApplication
     Shell.current = shellApplication
     Shell.current.window.setVisible(true)
 
@@ -126,18 +124,10 @@ local function bootstrap(shellApplication, fn)
         end
     end)
 
-    Shell.isRunning = false
     Shell.window.clear()
     Shell.window.setCursorPos(1, 1)
     Shell.window.setVisible(false)
 end
-
----@type Application
-local metadata = {name = fs.getName(arg[0]), path = arg[0], version = "N/A"}
-local appWindow = window.create(Shell.window, 1, 1, width, height, false)
-local app = ShellApplication.new(metadata, appWindow, Shell)
-
-Shell.root = app
 
 ---@param shellApplication ShellApplication
 ---@param fn function
@@ -192,4 +182,8 @@ function Shell:launch(hostApplication, path)
     addThreadToMainLoop(fn)
 end
 
-return app
+---@type Application
+local metadata = {name = fs.getName(arg[0]), path = arg[0], version = "N/A"}
+local appWindow = window.create(Shell.window, 1, 1, width, height, false)
+
+return ShellApplication.new(metadata, appWindow, Shell)
