@@ -38,7 +38,6 @@ local SimulationResults = {placed = {}, steps = 0, fuel = 0, facing = 0, positio
 ---If right turns should be left turns and vice versa, useful for mirroring builds.
 ---@field flipTurns boolean
 ---@field results Simulated
----@field simulation Simulation?
 ---@field simulated SimulationState?
 ---@field isResuming boolean
 local State = {
@@ -74,7 +73,6 @@ end
 function TurtleApi.getFacing()
     if TurtleApi.isSimulating() then
         return State.simulated.facing
-        -- return State.simulation.current.facing
     end
 
     return State.facing
@@ -103,7 +101,6 @@ end
 function TurtleApi.getPosition()
     if TurtleApi.isSimulating() then
         return Vector.copy(State.simulated.position)
-        -- return Vector.copy(State.simulation.current.position)
     end
 
     return Vector.copy(State.position)
@@ -226,7 +223,6 @@ end
 ---@return integer | "unlimited"
 function TurtleApi.getFuelLevel()
     if TurtleApi.isSimulating() then
-        -- return State.simulation.current.fuel
         return State.simulated.fuel
     end
 
@@ -271,25 +267,11 @@ end
 
 function TurtleApi.isSimulating()
     return State.simulated ~= nil
-    -- return State.simulation ~= nil
 end
 
 ---@return boolean
 function TurtleApi.isResuming()
     return State.isResuming
-    -- return TurtleApi.isSimulating() and State.simulation.target ~= nil
-end
-
----@return Simulated
-local function endSimulation()
-    if not TurtleApi.isSimulating() then
-        error("can't end simulation: not simulating")
-    end
-
-    print("[simulate] simulation ended")
-    State.simulation = nil
-
-    return State.results
 end
 
 function fuelTargetReached()
@@ -300,14 +282,18 @@ function facingTargetReached()
     return State.simulated.facing == State.facing
 end
 
+local function endResume()
+    -- not all apps use gps position on resume(), so we need to set actual position based on what we simulated
+    TurtleApi.setPosition(State.simulated.position)
+    State.simulated = nil
+    State.isResuming = false
+    print("[simulate] end resume")
+end
+
 ---@return boolean
 local function checkResumeEnd()
     if TurtleApi.isResuming() and fuelTargetReached() and facingTargetReached() then
-        -- not all apps use gps position on resume(), so we need to set actual position based on what we simulated
-        TurtleApi.setPosition(State.simulated.position)
-        State.simulated = nil
-        State.isResuming = false
-        print("[simulate] end resume")
+        endResume()
         return true
     end
 
@@ -348,7 +334,7 @@ function TurtleApi.resume(fuel, facing, position)
 end
 
 ---@param direction string
-function TurtleApi.simulateMove(direction)
+local function simulateMove(direction)
     if not TurtleApi.isSimulating() then
         error("can't simulate move: not simulating")
     end
@@ -360,7 +346,7 @@ function TurtleApi.simulateMove(direction)
 end
 
 ---@param direction string
-function TurtleApi.simulateTurn(direction)
+function simulateTurn(direction)
     if not TurtleApi.isSimulating() then
         error("can't simulate turn: not simulating")
     end
@@ -392,7 +378,7 @@ function TurtleApi.turn(direction)
         end
 
         if TurtleApi.isSimulating() then
-            TurtleApi.simulateTurn(direction)
+            simulateTurn(direction)
         else
             getNative("turn", direction)()
             TurtleApi.changeFacing(direction)
@@ -609,12 +595,12 @@ local function tryMoveBack(steps)
             -- a block that caused us to turn to try and mine it. in order to resume, we'll just
             -- stop the simulation and orient the turtle so that the turning code gets run from the beginning.
             local facing = TurtleApi.getFacing()
-            endSimulation()
+            endResume()
             TurtleApi.face(facing)
         end
 
         if TurtleApi.isSimulating() then
-            TurtleApi.simulateMove("back")
+            simulateMove("back")
         else
             while not native() do
                 if not didTurnBack then
@@ -671,7 +657,7 @@ function TurtleApi.tryMove(direction, steps)
 
     for step = 1, steps do
         if TurtleApi.isSimulating() then
-            TurtleApi.simulateMove(direction)
+            simulateMove(direction)
         else
             while not native() do
                 while TurtleApi.tryMine(direction) do
@@ -1894,7 +1880,10 @@ local function orientateUsingDiskDrive(directions)
     end
 
     local facing = Cardinal.rotateAround(Cardinal.fromName(diskDrive.state.facing))
-    TurtleApi.dig(placedSide)
+
+    if not TurtleApi.dig(placedSide) then
+        error("failed to dig disk drive")
+    end
 
     diskState.diskDriveSides[placedSide] = nil
     DatabaseApi.saveTurtleDiskState(diskState)
