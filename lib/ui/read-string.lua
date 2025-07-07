@@ -40,7 +40,7 @@ return function(value, options)
                 return value, key
             end
 
-            if key == keys.enter then
+            if key == keys.enter or key == keys.numPadEnter then
                 return value, key
             elseif key == keys.backspace then
                 value = value:sub(1, #value - 1)
