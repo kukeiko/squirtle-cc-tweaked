@@ -268,6 +268,21 @@ function DatabaseApi.createTurtleResumable(resumable)
     return resumable
 end
 
+---@param resumable TurtleResumable
+function DatabaseApi.updateTurtleResumable(resumable)
+    local resumables = DatabaseApi.getTurtleResumables()
+    local index = Utils.findIndex(resumables, function(candidate)
+        return candidate.name == resumable.name
+    end)
+
+    if not index then
+        error(string.format("can't update turtle resumable: %s doesn't exist", resumable.name))
+    end
+
+    resumables[index] = resumable
+    writeEntities(entityTypes.turtleResumables, resumables)
+end
+
 ---@param name string
 function DatabaseApi.deleteTurtleResumable(name)
     local resumables = Utils.filter(DatabaseApi.getTurtleResumables(), function(item)

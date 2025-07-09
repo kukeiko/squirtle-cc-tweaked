@@ -16,8 +16,11 @@
 ---@field args string[]
 ---@field state unknown
 ---@field options TurtleResumableOptions
+---@field fnName string?
 ---
 ---@class TurtleResumableOptions
+---@field requireItems boolean?
+---@field requireFuel boolean?
 ---@field requireShulkers boolean?
 ---@field additionalRequiredItems ItemStock?
 ---

@@ -16,6 +16,7 @@ local DatabaseApi = require "lib.apis.database.database-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local ItemApi = require "lib.apis.item-api"
 local RemoteService = require "lib.systems.runtime.remote-service"
+local Resumable = require "lib.apis.turtle.resumable"
 
 -- [note] we want exactly 63 so that 1x stack of charcoal in the i/o chest is enough
 local minFuel = 63 * ItemApi.getRefuelAmount(ItemApi.charcoal)
@@ -121,14 +122,14 @@ local function resumableClimb(variant)
     DatabaseApi.deleteTurtleResumable("nether-lumberjack:climb")
 end
 
-local function harvest()
+---@param state NetherLumberjackAppState
+local function harvest(state)
     local facing = TurtleApi.getFacing()
     TurtleApi.move("back", 3)
     TurtleApi.turn("left")
     TurtleApi.move("forward", 3)
     TurtleApi.turn("right")
-    -- [todo] limit harvestHeight based on current y position
-    local adjustedHarvestHeight = -math.min(TurtleApi.getPosition().y - 1, harvestHeight)
+    local adjustedHarvestHeight = -math.min(TurtleApi.getPosition().y - 1, state.harvestHeight)
     TurtleApi.digArea(7, 7, adjustedHarvestHeight, Vector.create(0, 1, 0), facing)
     TurtleApi.move("down")
 end
@@ -147,20 +148,8 @@ local function resumableHarvest()
     DatabaseApi.deleteTurtleResumable("nether-lumberjack:harvest")
 end
 
-print(string.format("[nether-lumberjack %s] booting...", version()))
-
-EventLoop.run(function()
-    RemoteService.run({"nether-lumberjack"})
-end, function()
-    ---@type "crimson" | "warped"
-    local variant = arg[1]
-
-    if not (variant == "crimson" or variant == "warped") then
-        return printUsage()
-    end
-
-    Utils.writeStartupFile(string.format("nether-lumberjack %s", variant))
-
+---@param variant "crimson" | "warped"
+local function configureBreakable(variant)
     -- by setting an explicit list of blocks allowed to break we can make sure the turtle doesn't unintentionally destroy its surroundings in case of a bug.
     TurtleApi.setBreakable(function(block)
         return Utils.indexOf({
@@ -172,58 +161,93 @@ end, function()
             ItemApi.shroomlight
         }, block.name) ~= nil
     end)
+end
 
-    local climbResumable = DatabaseApi.findTurtleResumable("nether-lumberjack:climb")
-    local harvestResumable = DatabaseApi.findTurtleResumable("nether-lumberjack:harvest")
+print(string.format("[nether-lumberjack %s] booting...", version()))
 
-    if (climbResumable or harvestResumable) and TurtleApi.probe(chest, ItemApi.chest) then
-        -- [note] turtle was reset by player, don't resume
-        DatabaseApi.deleteTurtleResumable("nether-lumberjack:climb")
-        DatabaseApi.deleteTurtleResumable("nether-lumberjack:harvest")
-        climbResumable = nil
-        harvestResumable = nil
-    end
+EventLoop.run(function()
+    RemoteService.run({"nether-lumberjack"})
+end, function()
 
-    if climbResumable or harvestResumable then
-        while not TurtleApi.selectItem(ItemApi.diskDrive) do
-            TurtleApi.requireItem(ItemApi.diskDrive)
+    local resumable = Resumable.new("nether-lumberjack")
+
+    resumable:setStart(function(args, options)
+        ---@type "crimson" | "warped"
+        local variant = args[1]
+
+        if not (variant == "crimson" or variant == "warped") then
+            return printUsage()
         end
 
-        TurtleApi.orientate("disk-drive")
-        local resumable = climbResumable or harvestResumable --[[@as TurtleResumable]]
-        TurtleApi.resume(resumable.initialState.fuel, resumable.initialState.facing, resumable.initialState.position)
-    end
+        ---@class NetherLumberjackAppState
+        local state = {
+            minFuel = 63 * ItemApi.getRefuelAmount(ItemApi.charcoal),
+            minBoneMealForWork = 32,
+            minFungiForWork = 1,
+            maxGrowthHeight = 27, -- have not seen a bigger one yet
+            harvestHeight = 9, -- have not seen more wart blocks vertically yet
+            variant = variant
+        }
 
-    if climbResumable then
-        climb(variant)
-        DatabaseApi.deleteTurtleResumable("nether-lumberjack:climb")
-        -- [todo] tiny chance when switching from climbing to harvest that we can't resume if chunk unload
-        -- happened between deleting climb resumable file and creating harvest resumable file
-        resumableHarvest()
-    elseif harvestResumable then
-        harvest()
-        DatabaseApi.deleteTurtleResumable("nether-lumberjack:harvest")
-    else
-        recover()
-    end
+        configureBreakable(variant)
+        Utils.writeStartupFile(string.format("nether-lumberjack %s", variant))
 
-    while true do
-        local inputItems = {[ItemApi.boneMeal] = minBoneMealForWork, [ItemApi.getFungus(variant)] = minFungiForWork}
-        TurtleApi.transferOutputInput(barrel, chest, inputItems)
-        TurtleApi.refuelTo(minFuel, barrel, chest)
-        TurtleApi.suckAll(barrel)
+        return state
+    end)
+
+    ---@param state NetherLumberjackAppState
+    resumable:setResume(function(state, resumed)
+        if resumed == "homework" then
+            recover()
+        elseif TurtleApi.probe("bottom", ItemApi.chest) then
+            -- [todo] ❌ turtle was reset by player, don't resume
+            error("manual turtle reset by player not yet implemented")
+        else
+            TurtleApi.orientate("disk-drive")
+        end
+    end)
+
+    ---@param state NetherLumberjackAppState
+    resumable:addMain("homework", function(state)
+        local inputItems = {[ItemApi.boneMeal] = state.minBoneMealForWork, [ItemApi.getFungus(state.variant)] = state.minFungiForWork}
+        TurtleApi.transferOutputInput("front", "bottom", inputItems)
+        TurtleApi.refuelTo(state.minFuel, "front", "bottom")
+        TurtleApi.suckAll("front")
         TurtleApi.move("up")
         TurtleApi.move()
 
-        if not TurtleApi.probe("forward", ItemApi.getStem(variant)) then
-            ensureNylium(variant)
-            plant(variant)
+        if not TurtleApi.probe("forward", ItemApi.getStem(state.variant)) then
+            ensureNylium(state.variant)
+            plant(state.variant)
         end
 
         TurtleApi.move()
-        resumableClimb(variant)
-        -- [todo] tiny chance when switching from climbing to harvest that we can't resume if chunk unload
-        -- happened between deleting climb resumable file and creating harvest resumable file
-        resumableHarvest()
-    end
+    end)
+
+    ---@param state NetherLumberjackAppState
+    resumable:addSimulatableMain("climb", function(state)
+        for _ = 1, maxGrowthHeight do
+            if not TurtleApi.isSimulating() and not TurtleApi.probe("top", ItemApi.getStem(state.variant)) then
+                TurtleApi.mine("top")
+                TurtleApi.move("up")
+                break
+            end
+
+            TurtleApi.mine("top")
+            TurtleApi.move("up")
+        end
+    end)
+
+    resumable:addSimulatableMain("harvest", function(state)
+        local facing = TurtleApi.getFacing()
+        TurtleApi.move("back", 3)
+        TurtleApi.turn("left")
+        TurtleApi.move("forward", 3)
+        TurtleApi.turn("right")
+        local adjustedHarvestHeight = -math.min(TurtleApi.getPosition().y - 1, state.harvestHeight)
+        TurtleApi.digArea(7, 7, adjustedHarvestHeight, Vector.create(0, 1, 0), facing)
+        TurtleApi.move("down")
+    end)
+
+    resumable:run(arg, true)
 end)
