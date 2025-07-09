@@ -12,20 +12,10 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Vector = require "lib.models.vector"
-local DatabaseApi = require "lib.apis.database.database-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local ItemApi = require "lib.apis.item-api"
 local RemoteService = require "lib.systems.runtime.remote-service"
 local Resumable = require "lib.apis.turtle.resumable"
-
--- [note] we want exactly 63 so that 1x stack of charcoal in the i/o chest is enough
-local minFuel = 63 * ItemApi.getRefuelAmount(ItemApi.charcoal)
-local minBoneMealForWork = 32
-local minFungiForWork = 1
-local barrel = "front"
-local chest = "bottom"
-local maxGrowthHeight = 27 -- have not seen a bigger one yet
-local harvestHeight = 9 -- have not seen more wart blocks vertically yet
 
 ---@param variant "crimson" | "warped"
 local function ensureNylium(variant)
@@ -34,7 +24,7 @@ local function ensureNylium(variant)
     if TurtleApi.probe("bottom", ItemApi.getNylium(variant)) then
         TurtleApi.move("back")
     else
-        -- [todo] I'm thinking of adding "trySelectItem()" and "tryPlace()" to TurtleApi and make "selectItem()" and "place()" error
+        -- [todo] ❌ I'm thinking of adding "trySelectItem()" and "tryPlace()" to TurtleApi and make "selectItem()" and "place()" error
         -- on failure so I don't need to do it here
         if not TurtleApi.selectItem(ItemApi.boneMeal) then
             error("expected to have bone meal")
@@ -84,68 +74,13 @@ local function recover()
     end
 
     while not TurtleApi.selectItem(ItemApi.diskDrive) do
-        if not TurtleApi.suckItem(barrel, ItemApi.diskDrive, 1) then
+        if not TurtleApi.suckItem("front", ItemApi.diskDrive, 1) then
             TurtleApi.requireItem(ItemApi.diskDrive)
         end
     end
 
     TurtleApi.orientate("disk-drive", {"top"})
     TurtleApi.setPosition(Vector.create(0, 0, 0))
-end
-
----@param variant "crimson" | "warped"
-local function climb(variant)
-    for _ = 1, maxGrowthHeight do
-        if not TurtleApi.isSimulating() and not TurtleApi.probe("top", ItemApi.getStem(variant)) then
-            TurtleApi.mine("top")
-            TurtleApi.move("up")
-            break
-        end
-
-        TurtleApi.mine("top")
-        TurtleApi.move("up")
-    end
-end
-
----@param variant "crimson" | "warped"
-local function resumableClimb(variant)
-    DatabaseApi.createTurtleResumable({
-        args = {}, -- [note] not used
-        home = Vector.create(0, 0, 0), -- [note] not used
-        initialState = {facing = TurtleApi.getFacing(), fuel = TurtleApi.getNonInfiniteFuelLevel(), position = TurtleApi.getPosition()},
-        name = "nether-lumberjack:climb",
-        options = {}, -- [note] not used
-        randomSeed = 0, -- [note] not used
-        state = {} -- [note] not used
-    })
-    climb(variant)
-    DatabaseApi.deleteTurtleResumable("nether-lumberjack:climb")
-end
-
----@param state NetherLumberjackAppState
-local function harvest(state)
-    local facing = TurtleApi.getFacing()
-    TurtleApi.move("back", 3)
-    TurtleApi.turn("left")
-    TurtleApi.move("forward", 3)
-    TurtleApi.turn("right")
-    local adjustedHarvestHeight = -math.min(TurtleApi.getPosition().y - 1, state.harvestHeight)
-    TurtleApi.digArea(7, 7, adjustedHarvestHeight, Vector.create(0, 1, 0), facing)
-    TurtleApi.move("down")
-end
-
-local function resumableHarvest()
-    DatabaseApi.createTurtleResumable({
-        args = {}, -- [note] not used
-        home = Vector.create(0, 0, 0), -- [note] not used
-        initialState = {facing = TurtleApi.getFacing(), fuel = TurtleApi.getNonInfiniteFuelLevel(), position = TurtleApi.getPosition()},
-        name = "nether-lumberjack:harvest",
-        options = {}, -- [note] not used
-        randomSeed = 0, -- [note] not used
-        state = {} -- [note] not used
-    })
-    harvest()
-    DatabaseApi.deleteTurtleResumable("nether-lumberjack:harvest")
 end
 
 ---@param variant "crimson" | "warped"
@@ -197,6 +132,8 @@ end, function()
 
     ---@param state NetherLumberjackAppState
     resumable:setResume(function(state, resumed)
+        configureBreakable(state.variant)
+
         if resumed == "homework" then
             recover()
         elseif TurtleApi.probe("bottom", ItemApi.chest) then
@@ -226,7 +163,7 @@ end, function()
 
     ---@param state NetherLumberjackAppState
     resumable:addSimulatableMain("climb", function(state)
-        for _ = 1, maxGrowthHeight do
+        for _ = 1, state.maxGrowthHeight do
             if not TurtleApi.isSimulating() and not TurtleApi.probe("top", ItemApi.getStem(state.variant)) then
                 TurtleApi.mine("top")
                 TurtleApi.move("up")
