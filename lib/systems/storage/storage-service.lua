@@ -81,6 +81,14 @@ function StorageService.fulfill(from, to, stock)
     return InventoryApi.fulfill(from, to, stock)
 end
 
+---@param from InventoryHandle
+---@param to InventoryHandle
+---@param stock ItemStock
+---@return boolean success, ItemStock transferred, ItemStock open
+function StorageService.keep(from, to, stock)
+    return InventoryApi.keep(from, to, stock)
+end
+
 ---@param item string
 ---@return integer
 function StorageService.getItemCount(item)

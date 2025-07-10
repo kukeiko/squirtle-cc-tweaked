@@ -13,7 +13,6 @@ local function work()
     local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
     print(string.format("[accepted] %s #%d", task.type, task.id))
 
-    -- print("[busy] allocating ingredients...")
     local allocateIngredientsTask = taskService.allocateIngredients({issuedBy = name, items = task.items, partOfTaskId = task.id})
 
     if allocateIngredientsTask.status == "failed" then
@@ -21,11 +20,11 @@ local function work()
         return taskService.failTask(task.id)
     end
 
-    -- print("[busy] crafting from ingredients...")
+    local bufferId = allocateIngredientsTask.bufferId --[[@as integer]]
     local craftFromIngredientsTask = taskService.craftFromIngredients({
         issuedBy = name,
         partOfTaskId = task.id,
-        bufferId = allocateIngredientsTask.bufferId,
+        bufferId = bufferId,
         craftingDetails = allocateIngredientsTask.craftingDetails
     })
 
@@ -34,19 +33,17 @@ local function work()
         return taskService.failTask(task.id)
     end
 
-    local spillover = ItemStock.subtract(storageService.getBufferStock(allocateIngredientsTask.bufferId), task.items)
+    local craftedSpillover = ItemStock.subtract(storageService.getBufferStock(bufferId), task.items)
 
-    while not Utils.isEmpty(spillover) do
-        -- [todo] might transfer too much if worker crashes
-        -- add a new transfer method .keep() that works similarly to .fulfill()
-        storageService.transfer(allocateIngredientsTask.bufferId, storageService.getByType("storage"), spillover)
-        spillover = ItemStock.subtract(storageService.getBufferStock(allocateIngredientsTask.bufferId), task.items)
-        os.sleep(5)
+    if not Utils.isEmpty(craftedSpillover) then
+        while not storageService.keep(bufferId, storageService.getByType("storage"), task.items) do
+            os.sleep(5)
+        end
     end
 
     task.crafted = craftFromIngredientsTask.crafted
     taskService.updateTask(task)
-    storageService.flushAndFreeBuffer(allocateIngredientsTask.bufferId, task.to)
+    storageService.flushAndFreeBuffer(bufferId, task.to)
     print(string.format("[finish] %s %d", task.type, task.id))
     taskService.finishTask(task.id)
 end

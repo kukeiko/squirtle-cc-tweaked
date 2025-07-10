@@ -256,7 +256,7 @@ local function transferItem(from, fromTag, to, toTag, item, quantity, options)
             transferPerInput = math.max(1, math.floor(transferPerOutput / #to))
         end
 
-        --- [todo] in regards to locking/unlocking:
+        --- [todo] ❌ in regards to locking/unlocking:
         --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
         --- we really should have that functionality again to make sure the system is not super slow in some cases
         for _, fromName in ipairs(from) do
@@ -287,11 +287,11 @@ end
 ---@param options? TransferOptions
 ---@return integer transferredTotal
 function InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, options)
-    -- [todo] rework to accept InventoryHandle
+    -- [todo] ❌ rework to accept InventoryHandle
     return transferItem(from, fromTag, to, toTag, item, quantity, options)
 end
 
--- [todo] i've added fromTag & toTag to the TransferOptions, so should remove it from the function params as well
+-- [todo] ❌ i've added fromTag & toTag to the TransferOptions, so should remove it from the function params as well
 ---@param from string[]
 ---@param fromTag InventorySlotTag
 ---@param to string[]
@@ -345,7 +345,7 @@ end
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.restock(from, fromTag, to, toTag, options)
-    -- [todo] rework to accept InventoryHandle
+    -- [todo] ❌ rework to accept InventoryHandle
     local fromStock = InventoryApi.getStock(from, fromTag)
     local openStock = InventoryApi.getOpenStock(to, toTag)
     ---@type ItemStock
@@ -404,16 +404,46 @@ function InventoryApi.fulfill(from, to, stock, options)
     end
 
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
+    -- [todo] ❓ why are we locking "fromInventories" - I would've imagined we'd lock "toInventories" instead?
     local lockSuccess, unlock, lockId = InventoryLocks.lock(fromInventories, options.lockId)
-    options.lockId = lockId
 
     if not lockSuccess then
-        -- [todo] it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect"
-        -- and "there were not enough items"
+        -- [todo] ❌ it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect" and "there were not enough items"
         return false, {}, {}
     end
 
+    options.lockId = lockId
+
     local open = ItemStock.subtract(stock, InventoryApi.getStock(toInventories, options.toTag))
+    local transferSuccess, transferred, open = transfer(fromInventories, options.fromTag, toInventories, options.toTag, open, options)
+    unlock()
+
+    return transferSuccess, transferred, open
+end
+
+---@param from InventoryHandle
+---@param to InventoryHandle
+---@param stock ItemStock
+---@param options? TransferOptions
+---@return boolean success, ItemStock transferred, ItemStock open
+function InventoryApi.keep(from, to, stock, options)
+    local fromInventories, toInventories, options = getTransferArguments(from, to, options)
+    local lockSuccess, unlock, lockId = InventoryLocks.lock(fromInventories, options.lockId)
+
+    if not lockSuccess then
+        -- [todo] ❌ it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect" and "there were not enough items"
+        return false, {}, {}
+    end
+
+    options.lockId = lockId
+    local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
+    local open = ItemStock.subtract(fromStock, stock)
+
+    if isBufferHandle(to) then
+        local bufferId = to --[[@as integer]]
+        InventoryApi.resizeBufferByStock(bufferId, open)
+    end
+
     local transferSuccess, transferred, open = transfer(fromInventories, options.fromTag, toInventories, options.toTag, open, options)
     unlock()
 
@@ -597,6 +627,7 @@ function InventoryApi.getBufferStock(bufferId)
     return InventoryApi.getStock(buffer.inventories, "buffer")
 end
 
+-- [todo] ❌ should throw if called twice
 ---@param bufferId integer
 ---@param to? InventoryHandle
 function InventoryApi.flushAndFreeBuffer(bufferId, to)
