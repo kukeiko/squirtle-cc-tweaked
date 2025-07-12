@@ -52,26 +52,34 @@ local function nextCallId()
     return tostring(string.format("%s:%d", os.getComputerLabel(), nextId()))
 end
 
----@return table
+---@return table?
 local function getWirelessModem()
     return peripheral.find("modem", function(_, modem)
         return modem.isWireless()
-    end) or error("no wireless modem equipped")
+    end)
 end
 
----@param name? string
----@return table
-local function getModem(name)
-    if not name then
-        return getWirelessModem()
-    else
-        local modem = peripheral.wrap(name)
+local function getWiredModem()
+    return peripheral.find("modem", function(_, modem)
+        return not modem.isWireless()
+    end)
+end
 
-        if not modem then
-            error(string.format("peripheral %s not found", name))
+---@param modemType? "wired" | "wireless"
+---@return table
+local function getModem(modemType)
+    if not modemType then
+        local wirelessModem = getWirelessModem()
+
+        if not wirelessModem then
+            return peripheral.find("modem") or error("no modem found")
         end
 
-        return modem
+        return wirelessModem
+    elseif modemType == "wireless" then
+        return getWirelessModem() or error("no wireless modem found")
+    else
+        return getWiredModem() or error("no wired modem found")
     end
 end
 
@@ -80,9 +88,10 @@ local Rpc = {}
 
 ---@param service Service
 ---@param timeout number?
+---@param modemType? "wired" | "wireless"
 ---@return DiscoveredServiceHost[]
-local function findAllHosts(service, timeout)
-    local modem = getModem()
+local function findAllHosts(service, timeout, modemType)
+    local modem = getModem(modemType)
     local channel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(channel)
@@ -119,10 +128,11 @@ end
 ---@param service T | Service
 ---@param host string
 ---@param distance number
----@param channel number?
+---@param channel? number
+---@param modemType? "wired" | "wireless"
 ---@return T|RpcClient
-local function createClient(service, host, distance, channel)
-    local modem = getWirelessModem()
+local function createClient(service, host, distance, channel, modemType)
+    local modem = getModem(modemType)
     local clientChannel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(clientChannel)
@@ -221,8 +231,9 @@ end
 ---@generic T
 ---@param service T | Service
 ---@param timeout? number
+---@param modemType? "wired" | "wireless"
 ---@return (T|RpcClient)?
-function Rpc.tryNearest(service, timeout)
+function Rpc.tryNearest(service, timeout, modemType)
     if os.getComputerLabel() ~= nil and service.host == os.getComputerLabel() then
         return createLocalHostClient(service)
     end
@@ -232,7 +243,7 @@ function Rpc.tryNearest(service, timeout)
 
     EventLoop.runTimed(timeout, function()
         while not best do
-            local hosts = findAllHosts(service)
+            local hosts = findAllHosts(service, nil, modemType)
 
             for i = 1, #hosts do
                 if best == nil or hosts[i].distance < best.distance then
@@ -243,16 +254,17 @@ function Rpc.tryNearest(service, timeout)
     end)
 
     if best then
-        return createClient(service, best.host, best.distance, best.channel)
+        return createClient(service, best.host, best.distance, best.channel, modemType)
     end
 end
 
 ---@generic T
 ---@param service T | Service
 ---@param timeout? number
+---@param modemType? "wired" | "wireless"
 ---@return (T|RpcClient)
-function Rpc.nearest(service, timeout)
-    local nearest = Rpc.tryNearest(service, timeout)
+function Rpc.nearest(service, timeout, modemType)
+    local nearest = Rpc.tryNearest(service, timeout, modemType)
 
     if not nearest then
         error(string.format("no %s service found", service.name))
@@ -278,16 +290,16 @@ function Rpc.all(service, timeout)
 end
 
 ---@param service Service
----@param modemName? string
-function Rpc.host(service, modemName)
+---@param modemType? "wired" | "wireless"
+function Rpc.host(service, modemType)
     local label = os.getComputerLabel()
 
     if not label then
         error("can't host a service without a label")
     end
 
-    service.host = label
-    local modem = getModem(modemName)
+    local modem = getModem(modemType)
+    service.host = modem.isWireless() and label or modem.getNameLocal()
     local channel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(channel)
@@ -361,9 +373,10 @@ end
 ---@param service T | Service
 ---@param host string
 ---@param timeout? number
+---@param modemType? "wired" | "wireless"
 ---@return T|RpcClient
-function Rpc.connect(service, host, timeout)
-    local client = createClient(service, host, 0)
+function Rpc.connect(service, host, timeout, modemType)
+    local client = createClient(service, host, 0, nil, modemType)
 
     if not EventLoop.runTimed(timeout, function()
         while not client.ping() do
