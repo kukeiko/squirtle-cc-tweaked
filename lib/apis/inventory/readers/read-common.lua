@@ -1,7 +1,6 @@
 local ItemStock = require "lib.models.item-stock"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Inventory = require "lib.models.inventory"
-local Utils = require "lib.tools.utils"
 
 ---@param name string
 ---@param type InventoryType

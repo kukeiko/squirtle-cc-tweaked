@@ -1,10 +1,20 @@
 local ItemStock = require "lib.models.item-stock"
+local Utils = require "lib.tools.utils"
 
 ---@class InventoryPeripheral
-local InventoryPeripheral = {}
+---@field adapters InventoryAdapter[]
+local InventoryPeripheral = {adapters = {}}
 
 ---@type ItemDetails
 local itemDetails = {}
+
+---@class InventoryAdapter
+---@field accept fun(inventory: string): boolean
+---@field getSize fun(inventory: string): integer
+---@field getStack fun(inventory: string, slot: integer): ItemStack?
+---@field getStacks fun(inventory: string, detailed?: boolean): ItemStacks
+---@field transfer fun(from: string, to: string, fromSlot: integer, limit?: integer, toSlot?: integer): integer
+---
 
 ---@param item string
 ---@param chest string
@@ -20,6 +30,21 @@ local function readItemMaxCount(item, chest, slot)
     end
 
     return itemDetails[item].maxCount
+end
+
+---@param inventory string
+---@return InventoryAdapter?
+local function getAdapter(inventory)
+    for _, adapter in pairs(InventoryPeripheral.adapters) do
+        if adapter.accept(inventory) then
+            return adapter
+        end
+    end
+end
+
+---@param adapter InventoryAdapter
+function InventoryPeripheral.addAdapter(adapter)
+    table.insert(InventoryPeripheral.adapters, adapter)
 end
 
 ---@param item string
@@ -64,56 +89,66 @@ end
 ---@param inventory string
 ---@return integer
 function InventoryPeripheral.getSize(inventory)
-    return peripheral.call(inventory, "size")
+    local adapter = getAdapter(inventory)
+
+    return adapter and adapter.getSize(inventory) or peripheral.call(inventory, "size")
 end
 
----@param side string
+---@param inventory string
 ---@param slot integer
 ---@return ItemStack?
-function InventoryPeripheral.getStack(side, slot)
-    return peripheral.call(side, "getItemDetail", slot)
+function InventoryPeripheral.getStack(inventory, slot)
+    local adapter = getAdapter(inventory)
+
+    return adapter and adapter.getStack(inventory, slot) or peripheral.call(inventory, "getItemDetail", slot)
 end
 
----@param name string
+---@param inventory string
 ---@param detailed? boolean
 ---@return ItemStacks
-function InventoryPeripheral.getStacks(name, detailed)
+function InventoryPeripheral.getStacks(inventory, detailed)
+    local adapter = getAdapter(inventory)
+
+    if adapter then
+        return adapter.getStacks(inventory, detailed)
+    end
+
     if not detailed then
         ---@type ItemStacks
-        local stacks = peripheral.call(name, "list")
+        local stacks = peripheral.call(inventory, "list")
 
         for slot, stack in pairs(stacks) do
-            stack.maxCount = readItemMaxCount(stack.name, name, slot)
+            stack.maxCount = readItemMaxCount(stack.name, inventory, slot)
         end
 
         return stacks
     else
-        local stacks = peripheral.call(name, "list")
+        local stacks = peripheral.call(inventory, "list")
         ---@type ItemStacks
         local detailedStacks = {}
 
         for slot, _ in pairs(stacks) do
-            detailedStacks[slot] = InventoryPeripheral.getStack(name, slot)
+            detailedStacks[slot] = InventoryPeripheral.getStack(inventory, slot)
         end
 
         return detailedStacks
     end
 end
 
----@param name string
+---@param inventory string
 ---@return ItemStock
-function InventoryPeripheral.getStock(name)
-    local stacks = InventoryPeripheral.getStacks(name)
+function InventoryPeripheral.getStock(inventory)
+    local stacks = InventoryPeripheral.getStacks(inventory)
     return ItemStock.fromStacks(stacks)
 end
 
----@param name string
+---@param inventory string
 ---@param item string
 ---@return integer
-function InventoryPeripheral.getItemCount(name, item)
+function InventoryPeripheral.getItemCount(inventory, item)
     local count = 0
 
-    for _, stack in pairs(InventoryPeripheral.getStacks(name)) do
+    for _, stack in pairs(InventoryPeripheral.getStacks(inventory)) do
         if stack.name == item then
             count = count + stack.count
         end
@@ -139,8 +174,14 @@ end
 ---@param limit? integer
 ---@param toSlot? integer
 ---@return integer
-function InventoryPeripheral.pushItems(from, to, fromSlot, limit, toSlot)
-    os.sleep(.25)
+function InventoryPeripheral.transfer(from, to, fromSlot, limit, toSlot)
+    local adapter = getAdapter(from)
+    os.sleep(.25) -- [note] intentional nerf to the whole inventory system
+
+    if adapter then
+        return adapter.transfer(from, to, fromSlot, limit, toSlot)
+    end
+
     return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
 end
 
@@ -150,8 +191,7 @@ end
 ---@param quantity? integer
 ---@return integer
 function InventoryPeripheral.move(inventory, fromSlot, toSlot, quantity)
-    os.sleep(.25) -- [note] exists on purpose, as I don't want turtles to move items too quickly in suckSlot()
-    return InventoryPeripheral.pushItems(inventory, inventory, fromSlot, quantity, toSlot)
+    return InventoryPeripheral.transfer(inventory, inventory, fromSlot, quantity, toSlot)
 end
 
 return InventoryPeripheral

@@ -1247,12 +1247,13 @@ function TurtleApi.isEmpty()
     return true
 end
 
+---@param detailed? boolean
 ---@return ItemStack[]
-function TurtleApi.getStacks()
+function TurtleApi.getStacks(detailed)
     local stacks = {}
 
     for slot = 1, TurtleApi.size() do
-        local item = TurtleApi.getStack(slot)
+        local item = TurtleApi.getStack(slot, detailed)
 
         if item then
             stacks[slot] = item

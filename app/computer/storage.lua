@@ -12,6 +12,7 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local Inventory = require "lib.apis.inventory.inventory-api"
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
@@ -24,12 +25,14 @@ local processQuickAccess = require "lib.systems.storage.processors.process-quick
 local processShulkers = require "lib.systems.storage.processors.process-shulkers"
 local processTrash = require "lib.systems.storage.processors.process-trash"
 local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
+local TurtleInventoryAdapter = require "lib.systems.storage.turtle-inventory-adapter"
 local SearchableList = require "lib.ui.searchable-list"
 
 local processors = {dumps = true, furnaces = true, io = true, quickAccess = true, shulkers = true, trash = true, siloOutputs = true}
 
 local function main()
     print(string.format("[storage %s] booting...", version()))
+    InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
     Inventory.discover()
     print("[storage] ready!")
@@ -107,15 +110,17 @@ local function main()
         Inventory.stop()
         EventLoop.queue("storage:stop")
     end, function()
-        EventLoop.pullKey(keys.f3)
-        print("[dump] cache to disk")
-        local cache = Utils.clone(InventoryCollection.getCache())
+        while true do
+            EventLoop.pullKey(keys.f3)
+            print("[dump] cache to disk")
+            local cache = Utils.clone(InventoryCollection.getCache())
 
-        for _, inventory in pairs(cache) do
-            inventory.slots = nil
+            for _, inventory in pairs(cache) do
+                inventory.slots = nil
+            end
+
+            Utils.writeJson("storage-cache-dump.json", cache)
         end
-
-        Utils.writeJson("storage-cache-dump.json", cache)
     end)
 end
 

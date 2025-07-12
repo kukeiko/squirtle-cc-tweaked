@@ -20,6 +20,7 @@ local readStorage = require "lib.apis.inventory.readers.read-storage"
 local readTrash = require "lib.apis.inventory.readers.read-trash"
 local readTurtleBuffer = require "lib.apis.inventory.readers.read-turtle-buffer"
 local readDispenser = require "lib.apis.inventory.readers.read-dispenser"
+local readTurtle = require "lib.apis.inventory.readers.read-turtle"
 
 local baseTypeLookup = {
     ["minecraft:chest"] = ItemApi.chest,
@@ -27,7 +28,8 @@ local baseTypeLookup = {
     ["minecraft:shulk"] = ItemApi.shulkerBox,
     ["minecraft:barre"] = ItemApi.barrel,
     ["minecraft:hoppe"] = ItemApi.hopper,
-    ["minecraft:dispe"] = ItemApi.dispenser
+    ["minecraft:dispe"] = ItemApi.dispenser,
+    ["turtle"] = "turtle"
 }
 
 ---@class InventoryReader
@@ -106,6 +108,8 @@ function InventoryReader.read(name, expected)
             return shulker
         elseif baseType == ItemApi.dispenser then
             return readDispenser(name, stacks)
+        elseif baseType == "turtle" then
+            return readTurtle(name, stacks)
         else
             local nameTagSlot, nameTagName, nameTagLabel = findNameTag(name, stacks)
 

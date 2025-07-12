@@ -22,6 +22,8 @@ local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local EditEntity = require "lib.ui.edit-entity"
 local Shell = require "lib.ui.shell"
 local ItemApi = require "lib.apis.item-api"
+local readOption = require "lib.ui.read-option"
+local TurtleInventoryService = require "lib.systems.storage.turtle-inventory-service"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -588,9 +590,40 @@ local function testEditEntity()
     editEntity:addField("string", "id", "Id")
     editEntity:addField("string", "name", "Name")
     editEntity:addField("string", "type", "Type", {values = types})
+    editEntity:addField("integer", "foo", "Foo")
 
     local result = editEntity:run(subwayStation)
     Utils.prettyPrint(result)
+end
+
+local function testEditEntityWithShell()
+    Shell:addWindow("Foo", function()
+        ---@type SubwayStation
+        local subwayStation = {id = "foo", name = "Foo Bahnhof", type = "hub", tracks = {}}
+        local editEntity = EditEntity.new("Edit Subway")
+
+        ---@type SubwayStationType[]
+        local types = {"hub", "endpoint", "platform", "switch"}
+
+        editEntity:addField("string", "id", "Id")
+        editEntity:addField("string", "name", "Name")
+        editEntity:addField("string", "type", "Type", {values = types})
+        editEntity:addField("integer", "foo", "Foo")
+
+        local result = editEntity:run(subwayStation)
+        Utils.prettyPrint(result)
+        Utils.waitForUserToHitEnter("<hit enter to continue>")
+    end)
+    Shell:addWindow("Bar", function()
+        print("hello, this is Bar!")
+        EventLoop.pullKey(keys.enter)
+
+        Shell:addWindow("Baz", function()
+            print("hello, this is Baz!")
+            EventLoop.pullKey(keys.enter)
+        end)
+    end)
+    Shell:run()
 
 end
 
@@ -609,7 +642,8 @@ end
 local function testShell()
     Shell:addWindow("Foo", function()
         print("hello, this is Foo!")
-        EventLoop.pullKey(keys.enter)
+        os.sleep(1)
+        -- EventLoop.pullKey(keys.enter)
     end)
     Shell:addWindow("Bar", function()
         print("hello, this is Bar!")
@@ -638,11 +672,44 @@ local function spamPlantFungus(variant)
     end
 end
 
+local function testFlatMap()
+    local list = {a = {1, 2, 3}, b = {4, 5, 6}}
+    Utils.prettyPrint(Utils.flatMap(list, function(item, index)
+        return item
+    end))
+end
+
+local function testQueueTable()
+    EventLoop.run(function()
+        local a, b = EventLoop.pull("foo")
+        print(a, b)
+    end, function()
+        local tbl = {}
+        print("queueing", tbl)
+        EventLoop.queue("foo", tbl)
+    end)
+end
+
+local function testStorageUsingTurtleInventory()
+    EventLoop.run(function()
+        Rpc.host(TurtleInventoryService, "wired")
+    end, function()
+        Utils.waitForUserToHitEnter("<hit enter to transfer>")
+        local storage = Rpc.nearest(StorageService)
+        local storages = storage.getByType("storage")
+        storage.fulfill(storages, {TurtleInventoryService.host}, {[ItemApi.diskDrive] = 1})
+        Utils.waitForUserToHitEnter("<hit enter to transfer back>")
+        storage.empty({TurtleInventoryService.host}, storages)
+    end)
+end
+
 local now = os.epoch("utc")
 
-for _ = 1, 1 do
-    -- testShell()
-    TurtleApi.pushAllOutput("front", "bottom")
-end
+EventLoop.run(function()
+    testStorageUsingTurtleInventory()
+    -- testEditEntityWithShell()
+    -- term.blit("\147", colors.toBlit(colors.black), colors.toBlit(colors.white))
+    -- readOption("foo", {"foo", "bar", "baz"})
+end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

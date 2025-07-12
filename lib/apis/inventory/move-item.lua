@@ -24,19 +24,6 @@ end
 
 ---@param from string
 ---@param to string
----@param fromSlot integer
----@param limit? integer
----@param toSlot? integer
----@return integer
-local function pushItems(from, to, fromSlot, limit, toSlot)
-    local transferred = peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
-    os.sleep(.25)
-
-    return transferred
-end
-
----@param from string
----@param to string
 ---@param item string
 ---@param fromTag InventorySlotTag
 ---@param toTag InventorySlotTag
@@ -86,7 +73,7 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
             end
 
             local quantity = math.min(open, rate, fromStack.count, toStackOpenCount)
-            local transferred = pushItems(from, to, fromSlot.index, quantity, toSlot.index)
+            local transferred = InventoryPeripheral.transfer(from, to, fromSlot.index, quantity, toSlot.index)
             transferredTotal = transferredTotal + transferred
 
             if transferred ~= quantity then

@@ -662,9 +662,11 @@ end
 local function onPeripheralEventMountInventory()
     while true do
         EventLoop.pull("peripheral", function(_, name)
-            if InventoryReader.isInventoryType(name) then
-                InventoryCollection.mount({name})
-            end
+            pcall(function(...)
+                if InventoryReader.isInventoryType(name) then
+                    InventoryCollection.mount({name})
+                end
+            end)
         end)
     end
 end
@@ -681,9 +683,11 @@ function InventoryApi.discover()
 
     local mountFns = Utils.map(names, function(name)
         return function()
-            if InventoryReader.isInventoryType(name) then
-                InventoryCollection.mount({name})
-            end
+            pcall(function(...)
+                if InventoryReader.isInventoryType(name) then
+                    InventoryCollection.mount({name})
+                end
+            end)
         end
     end)
 
