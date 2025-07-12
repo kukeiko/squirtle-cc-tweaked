@@ -496,7 +496,7 @@ end
 ---@param str string
 ---@return boolean
 function Utils.startsWith(subject, str)
-    return string.sub(subject, #str) == str
+    return string.sub(subject, 1, #str) == str
 end
 
 ---@param str string
