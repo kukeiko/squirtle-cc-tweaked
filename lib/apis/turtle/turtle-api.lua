@@ -386,6 +386,22 @@ function TurtleApi.turn(direction)
     end
 end
 
+function TurtleApi.left()
+    TurtleApi.turn("left")
+end
+
+function TurtleApi.right()
+    TurtleApi.turn("right")
+end
+
+---@param direction "left" | "right"
+function TurtleApi.strafe(direction)
+    TurtleApi.turn(direction)
+    TurtleApi.move()
+    local inverse = direction == "left" and "right" or "left"
+    TurtleApi.turn(inverse)
+end
+
 ---@param target integer
 function TurtleApi.face(target)
     local current = TurtleApi.getFacing()
@@ -689,6 +705,26 @@ function TurtleApi.move(direction, steps)
     end
 
     error(getGoErrorMessage("move", direction, steps, stepsTaken, message))
+end
+
+---@param steps? integer
+function TurtleApi.up(steps)
+    TurtleApi.move("up", steps)
+end
+
+---@param steps? integer
+function TurtleApi.forward(steps)
+    TurtleApi.move("forward", steps)
+end
+
+---@param steps? integer
+function TurtleApi.down(steps)
+    TurtleApi.move("down", steps)
+end
+
+---@param steps? integer
+function TurtleApi.back(steps)
+    TurtleApi.move("back", steps)
 end
 
 ---@param target Vector
@@ -1075,6 +1111,21 @@ function TurtleApi.put(side, block)
     if not TurtleApi.tryPut(side, block) then
         error("failed to place")
     end
+end
+
+---@param block? string
+function TurtleApi.above(block)
+    TurtleApi.put("top", block)
+end
+
+---@param block? string
+function TurtleApi.ahead(block)
+    TurtleApi.put("front", block)
+end
+
+---@param block? string
+function TurtleApi.below(block)
+    TurtleApi.put("bottom", block)
 end
 
 ---@param sides? PlaceSide[]

@@ -25,7 +25,11 @@ local ItemApi = {
     weepingVinesPlant = "minecraft:weeping_vines_plant",
     twistingVines = "minecraft:twisting_vines",
     twistingVinesPlant = "minecraft:twisting_vines_plant",
-    shroomlight = "minecraft:shroomlight"
+    shroomlight = "minecraft:shroomlight",
+    smoothStone = "minecraft:smooth_stone",
+    wiredModem = "computercraft:wired_modem_full",
+    networkCable = "computercraft:cable",
+    computer = "computercraft:computer_normal"
 }
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
