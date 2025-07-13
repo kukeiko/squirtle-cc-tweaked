@@ -115,7 +115,7 @@
         {
             "label": "build turtle:bone-meal",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/bone-meal/bone-meal.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/bone-meal"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/bone-meal.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/bone-meal"
         },
         {
             "label": "build computer:bone-meal",

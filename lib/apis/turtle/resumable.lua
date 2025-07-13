@@ -45,6 +45,7 @@ end
 ---@param name string
 ---@param fn fun(state: table) : table?
 function Resumable:addMain(name, fn)
+    -- [todo] ❌ throw if duplicate name
     ---@type ResumableFn
     local resumableFn = {name = name, isSimulatable = false, fn = fn}
     table.insert(self.resumableFns, resumableFn)
@@ -53,6 +54,7 @@ end
 ---@param name string
 ---@param fn fun(state: table) : table?
 function Resumable:addSimulatableMain(name, fn)
+    -- [todo] ❌ throw if duplicate name
     ---@type ResumableFn
     local resumableFn = {name = name, isSimulatable = true, fn = fn}
     table.insert(self.resumableFns, resumableFn)

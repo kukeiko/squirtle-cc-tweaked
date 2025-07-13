@@ -313,6 +313,7 @@ function TurtleApi.simulate(fn)
     fn()
     State.results.facing = State.simulated.facing
     State.results.fuel = State.simulated.fuel
+    State.results.steps = turtle.getFuelLevel() - State.simulated.fuel
     State.results.position = State.simulated.position
     State.simulated = nil
 
