@@ -57,22 +57,8 @@ end
 
 ---@param options SearchableListOption[]
 function SearchableList:setOptions(options)
-    local selectedId = (self.options[self.index] or {}).id
     self.options = options
-    -- [todo] ❌ completely borked if there is an active filter
-    local newIndex = Utils.findIndex(options, function(item)
-        return item.id == selectedId
-    end)
-
     self:filter()
-
-    if newIndex then
-        self.index = newIndex
-
-        if self.index > #self.list then
-            self.index = 1
-        end
-    end
 
     if self.isRunning then
         self:draw()
@@ -194,7 +180,6 @@ function SearchableList:run()
             elseif event == "char" then
                 self.searchText = self.searchText .. value
                 filterDirty = true
-                self.index = 1
                 -- set flag to reset idle and start refresh if necessary
                 userInteracted = true
             elseif event == "shell-window:visible" then
@@ -238,21 +223,27 @@ function SearchableList:filter()
     local filtered = {}
     local search = Utils.escapePpattern(self.searchText)
     local unfiltered = self.options
+    local selectedId = (self.list[self.index] or {}).id
 
     if (#self.searchText == 0) then
         self.list = unfiltered
-        return
-    end
+    else
+        for i = 1, #unfiltered do
+            local optionName = unfiltered[i].name
 
-    for i = 1, #unfiltered do
-        local optionName = unfiltered[i].name
-
-        if (optionName:lower():match(search)) then
-            table.insert(filtered, unfiltered[i])
+            if (optionName:lower():match(search)) then
+                table.insert(filtered, unfiltered[i])
+            end
         end
+
+        self.list = filtered
     end
 
-    self.list = filtered
+    local newIndex = Utils.findIndex(self.list, function(item)
+        return item.id == selectedId
+    end)
+
+    self.index = newIndex or 1
 end
 
 function SearchableList:draw()
