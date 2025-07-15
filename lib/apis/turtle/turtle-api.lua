@@ -2,6 +2,8 @@ local Utils = require "lib.tools.utils"
 local Cardinal = require "lib.models.cardinal"
 local Vector = require "lib.models.vector"
 local World = require "lib.models.world"
+local ItemStock = require "lib.models.item-stock"
+local SimulationState = require "lib.models.simulation-state"
 local ItemApi = require "lib.apis.item-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
@@ -14,15 +16,7 @@ local runResumable = require "lib.apis.turtle.functions.run-resumable"
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
 
----@class Simulated
----@field steps integer
----@field placed ItemStock
----@field fuel integer
----@field facing integer
----@field position Vector
-local SimulationResults = {placed = {}, steps = 0, fuel = 0, facing = 0, position = Vector.create(0, 0, 0)}
----
----@alias OrientationMethod "move"|"disk-drive"
+---@alias OrientationMethod "move" | "disk-drive"
 ---@alias DiskDriveOrientationSide "top" | "bottom"
 ---@alias MoveOrientationSide "front" | "back" | "left" | "right"
 ---@alias OrientationSide DiskDriveOrientationSide | MoveOrientationSide
@@ -33,11 +27,8 @@ local SimulationResults = {placed = {}, steps = 0, fuel = 0, facing = 0, positio
 ---@field position Vector
 ---@field orientationMethod OrientationMethod
 ---@field shulkerSides PlaceSide[]
----In which direction the turtle is allowed to try to break a block in order to place a shulker that could not be placed at front, top or bottom.
----@field breakDirection? "top"|"front"|"bottom"
 ---If right turns should be left turns and vice versa, useful for mirroring builds.
 ---@field flipTurns boolean
----@field results Simulated
 ---@field simulated SimulationState?
 ---@field isResuming boolean
 local State = {
@@ -45,14 +36,9 @@ local State = {
     position = Vector.create(0, 0, 0),
     orientationMethod = "move",
     flipTurns = false,
-    results = SimulationResults,
     shulkerSides = {"front", "top", "bottom"},
     isResuming = false
 }
-
----@class Simulation
----@field current SimulationState
----@field target SimulationState?
 
 ---@class TurtleApi
 local TurtleApi = {}
@@ -120,7 +106,7 @@ function TurtleApi.setPosition(position)
 end
 
 ---@param direction MoveDirection
-function TurtleApi.changePosition(direction)
+local function changePosition(direction)
     if TurtleApi.isSimulating() then
         error("can't change position: simulation active")
     end
@@ -130,17 +116,12 @@ function TurtleApi.changePosition(direction)
 end
 
 ---@class TurtleConfigurationOptions
----@field orientate? "move"|"disk-drive"
----@field breakDirection? "top"|"front"|"bottom"
----@field shulkerSides? PlaceSide[]
+---@field orientate OrientationMethod?
+---@field shulkerSides PlaceSide[]?
 ---@param options TurtleConfigurationOptions
 function TurtleApi.configure(options)
     if options.orientate then
         TurtleApi.setOrientationMethod(options.orientate)
-    end
-
-    if options.breakDirection then
-        TurtleApi.setBreakDirection(options.breakDirection)
     end
 
     if options.shulkerSides then
@@ -209,15 +190,6 @@ end
 ---@return PlaceSide[]
 function TurtleApi.getShulkerSides()
     return State.shulkerSides
-end
----@param breakDirection "top"|"front"|"bottom"|nil
-function TurtleApi.setBreakDirection(breakDirection)
-    State.breakDirection = breakDirection
-end
-
----@return "top"|"front"|"bottom"|nil
-function TurtleApi.getBreakDirection()
-    return State.breakDirection
 end
 
 ---@return integer | "unlimited"
@@ -301,23 +273,19 @@ local function checkResumeEnd()
 end
 
 ---@param fn fun() : nil
----@return Simulated
+---@return SimulationResults
 function TurtleApi.simulate(fn)
     if TurtleApi.isSimulating() then
         error("can't begin simulation: already simulating")
     end
 
     print("[simulate] enabling simulation...")
-
-    State.simulated = {facing = State.facing, fuel = turtle.getFuelLevel(), position = State.position}
+    State.simulated = SimulationState.construct(TurtleApi.getNonInfiniteFuelLevel(), State.facing, State.position)
     fn()
-    State.results.facing = State.simulated.facing
-    State.results.fuel = State.simulated.fuel
-    State.results.steps = turtle.getFuelLevel() - State.simulated.fuel
-    State.results.position = State.simulated.position
+    local results = SimulationState.getResults(State.simulated, TurtleApi.getNonInfiniteFuelLevel())
     State.simulated = nil
 
-    return State.results
+    return results
 end
 
 ---@param fuel integer
@@ -330,7 +298,7 @@ function TurtleApi.resume(fuel, facing, position)
 
     print("[simulate] enabling resume...")
     State.isResuming = true
-    State.simulated = {facing = facing, fuel = fuel, position = position}
+    State.simulated = SimulationState.construct(fuel, facing, position)
     checkResumeEnd()
 end
 
@@ -359,7 +327,7 @@ end
 ---@param block string
 ---@param quantity? integer
 function TurtleApi.recordPlacedBlock(block, quantity)
-    State.results.placed[block] = (State.results.placed[block] or 0) + (quantity or 1)
+    SimulationState.recordPlacedBlock(State.simulated, block, quantity)
 end
 
 ---Turns 1x time towards direction "back", "left" or "right".
@@ -571,7 +539,7 @@ function TurtleApi.tryWalk(direction, steps)
         local success, message = native()
 
         if success then
-            TurtleApi.changePosition(direction)
+            changePosition(direction)
         else
             return false, step - 1, message
         end
@@ -641,7 +609,7 @@ local function tryMoveBack(steps)
                 end
             end
 
-            TurtleApi.changePosition(direction)
+            changePosition(direction)
         end
     end
 
@@ -687,7 +655,7 @@ function TurtleApi.tryMove(direction, steps)
                 end
             end
 
-            TurtleApi.changePosition(direction)
+            changePosition(direction)
         end
     end
 
@@ -1065,11 +1033,6 @@ local function simulateTryPut(block)
     return true
 end
 
----@param block? string
-local function simulatePut(block)
-    simulateTryPut(block)
-end
-
 ---@param side? string
 ---@param block? string
 ---@return boolean
@@ -1083,7 +1046,7 @@ function TurtleApi.tryPut(side, block)
 
     if block then
         while not TurtleApi.selectItem(block) do
-            TurtleApi.requireItems({[block] = 1})
+            TurtleApi.requireItem(block, 1)
         end
     end
 
@@ -1106,10 +1069,8 @@ end
 ---@param block? string
 function TurtleApi.put(side, block)
     if TurtleApi.isSimulating() then
-        return simulatePut(block)
-    end
-
-    if not TurtleApi.tryPut(side, block) then
+        simulateTryPut(block)
+    elseif not TurtleApi.tryPut(side, block) then
         error("failed to place")
     end
 end
@@ -1135,7 +1096,8 @@ end
 function TurtleApi.tryPutAtOneOf(sides, block)
     if TurtleApi.isSimulating() then
         -- [todo] reconsider if this method should really be simulatable, as its outcome depends on world state
-        return simulatePut(block)
+        simulateTryPut(block)
+        return
     end
 
     sides = sides or {"top", "front", "bottom"}
@@ -1164,6 +1126,72 @@ function TurtleApi.tryPutAtOneOf(sides, block)
         if native() then
             return sides[i]
         end
+    end
+end
+
+---@param side PlaceSide?
+function TurtleApi.placeWater(side)
+    if TurtleApi.isSimulating() then
+        SimulationState.placeWater(State.simulated)
+        return
+    elseif TurtleApi.probe(side, "minecraft:water") then
+        return
+    end
+
+    if not TurtleApi.selectItem(ItemApi.waterBucket) or not TurtleApi.place(side) then
+        error("failed to place water")
+    end
+end
+
+---@param side PlaceSide?
+function TurtleApi.tryTakeWater(side)
+    if TurtleApi.isSimulating() then
+        SimulationState.takeWater(State.simulated)
+        return true
+    elseif not TurtleApi.selectItem(ItemApi.bucket) then
+        return false
+    end
+
+    return TurtleApi.place(side)
+end
+
+---@param side PlaceSide?
+function TurtleApi.takeWater(side)
+    if not TurtleApi.tryTakeWater(side) then
+        error("failed to take water")
+    end
+end
+
+---@param side PlaceSide?
+function TurtleApi.placeLava(side)
+    if TurtleApi.isSimulating() then
+        SimulationState.placeLava(State.simulated)
+        return
+    elseif TurtleApi.probe(side, "minecraft:lava") then
+        return
+    end
+
+    if not TurtleApi.selectItem(ItemApi.lavaBucket) or not TurtleApi.place(side) then
+        error("failed to place lava")
+    end
+end
+
+---@param side PlaceSide?
+function TurtleApi.tryTakeLava(side)
+    if TurtleApi.isSimulating() then
+        SimulationState.takeLava(State.simulated)
+        return true
+    elseif not TurtleApi.selectItem(ItemApi.bucket) then
+        return false
+    end
+
+    return TurtleApi.place(side)
+end
+
+---@param side PlaceSide?
+function TurtleApi.takeLava(side)
+    if not TurtleApi.tryTakeLava(side) then
+        error("failed to take Lava")
     end
 end
 

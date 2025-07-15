@@ -45,7 +45,6 @@ EventLoop.run(function()
     resumable:setFinish(function(state)
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)
-
     end)
 
     resumable:run()

@@ -5,23 +5,10 @@ local move = TurtleApi.move
 local turn = TurtleApi.turn
 local put = TurtleApi.put
 local strafe = TurtleApi.strafe
-
--- [todo] ❌ make dedicated methods in TurtleApi for place/take water/lava which also records it as a used item, adding used quantity when placing, removing when taking
--- [todo] ❌ make placing/taking water/lava resumable
-local placeWater = function()
-    TurtleApi.selectItem(ItemApi.waterBucket)
-    TurtleApi.place("down")
-end
-
-local takeWater = function()
-    TurtleApi.selectItem(ItemApi.bucket)
-    return TurtleApi.place("down")
-end
-
-local placeLava = function()
-    TurtleApi.selectItem(ItemApi.lavaBucket)
-    TurtleApi.place("down")
-end
+local placeWater = TurtleApi.placeWater
+local placeLava = TurtleApi.placeLava
+local takeWater = TurtleApi.takeWater
+local tryTakeWater = TurtleApi.tryTakeWater
 
 ---@param length integer
 ---@param block? string
@@ -234,22 +221,22 @@ local function placeWaterReservoir()
     -- place water
 
     turn("left")
-    placeWater()
+    placeWater("bottom")
     move("forward", 2)
-    placeWater()
+    placeWater("bottom")
 
     for _ = 1, 2 do
         move("back")
-        takeWater()
+        takeWater("bottom")
         move("forward", 3)
-        placeWater()
+        placeWater("bottom")
     end
 
     -- collect 2x water buckets for item collection water
     move("back")
-    takeWater()
+    takeWater("bottom")
 
-    while not takeWater() do
+    while not tryTakeWater("bottom") do
         os.sleep(.5)
     end
 
@@ -343,14 +330,14 @@ local function placeWaterItemCollection()
     turn("left")
     move("forward", 2)
     strafe("right")
-    placeWater()
+    placeWater("bottom")
     move("forward", 2)
-    placeWater()
-    takeWater()
+    placeWater("bottom")
+    takeWater("bottom")
     move("back")
-    takeWater()
+    takeWater("bottom")
     move("forward", 5)
-    placeWater()
+    placeWater("bottom")
 end
 
 local function placeFloor()
@@ -482,11 +469,11 @@ local function buildPistonFluidsWall()
     turn("left")
     move("forward", 4)
     move("down", 2)
-    placeWater()
+    placeWater("bottom")
     move("up")
     put("bottom", ItemApi.smoothStone)
     move("up")
-    placeLava()
+    placeLava("bottom")
 end
 
 local function buildStoneFloor()
@@ -607,8 +594,6 @@ end
 
 return function()
     if TurtleApi.isSimulating() then
-        TurtleApi.recordPlacedBlock(ItemApi.waterBucket, 2)
-        TurtleApi.recordPlacedBlock(ItemApi.lavaBucket, 1)
         TurtleApi.recordPlacedBlock(ItemApi.boneMeal, 64)
     end
 
