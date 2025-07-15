@@ -20,18 +20,6 @@ end
 local function showLogMessage(message)
     local viewer = TableViewer.new(message, "Log Message")
     viewer:run()
-    -- print(message.timestamp)
-    -- print(message.message)
-
-    -- EventLoop.waitForAny(function()
-    --     if message.data then
-    --         Utils.prettyPrint(message.data)
-    --     end
-
-    --     Utils.waitForUserToHitEnter("<hit enter to go back>")
-    -- end, function()
-    --     EventLoop.pullKey(keys.f4)
-    -- end)
 end
 
 ---@param shellWindow ShellWindow
@@ -40,7 +28,6 @@ return function(shellWindow)
 
     EventLoop.run(function()
         while true do
-            -- [todo] ❌ on select, show detailed scrollable message
             local selected = list:run()
 
             if selected then

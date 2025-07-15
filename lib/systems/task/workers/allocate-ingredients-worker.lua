@@ -1,4 +1,3 @@
-local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local ItemStock = require "lib.models.item-stock"
 local CraftingApi = require "lib.apis.crafting-api"

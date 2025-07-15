@@ -103,7 +103,6 @@ print(string.format("[nether-lumberjack %s] booting...", version()))
 EventLoop.run(function()
     RemoteService.run({"nether-lumberjack"})
 end, function()
-
     local resumable = Resumable.new("nether-lumberjack")
 
     resumable:setStart(function(args, options)

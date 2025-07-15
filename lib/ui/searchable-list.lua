@@ -175,12 +175,10 @@ function SearchableList:run()
                     self.index = #self.list
                 end
 
-                -- set flag to reset idle and start refresh if necessary
                 userInteracted = true
             elseif event == "char" then
                 self.searchText = self.searchText .. value
                 filterDirty = true
-                -- set flag to reset idle and start refresh if necessary
                 userInteracted = true
             elseif event == "shell-window:visible" then
                 userInteracted = true

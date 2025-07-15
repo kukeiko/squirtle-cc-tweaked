@@ -77,6 +77,7 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
             TurtleApi.dig("down")
             TurtleApi.dig("up")
 
+            -- [todo] ❓ should wrap in "if not TurtleApi.isSimulating()"?
             if TurtleApi.isFull() then
                 TurtleApi.tryLoadShulkers()
             end

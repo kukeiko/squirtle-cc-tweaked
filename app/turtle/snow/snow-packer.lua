@@ -1,11 +1,7 @@
-local function isFull()
-    return turtle.getItemCount(16) == 16
-end
-
 local function main()
     turtle.select(1)
-
     local firstItem = turtle.getItemDetail(1)
+
     if firstItem and firstItem.name == "minecraft:snow_block" then
         turtle.dropDown()
     end

@@ -194,6 +194,7 @@ elseif TurtleApi.probe("front", "minecraft:chest") then
 end
 
 Utils.writeStartupFile("oak")
+-- [todo] ❌ add RemoteService & test turtles
 
 EventLoop.run(function()
     Rpc.host(OakService)
