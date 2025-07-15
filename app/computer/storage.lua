@@ -27,6 +27,7 @@ local processTrash = require "lib.systems.storage.processors.process-trash"
 local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
 local TurtleInventoryAdapter = require "lib.systems.storage.turtle-inventory-adapter"
 local SearchableList = require "lib.ui.searchable-list"
+local showLogs = require "lib.ui.windows.show-logs"
 
 local processors = {dumps = true, furnaces = true, io = true, quickAccess = true, shulkers = true, trash = true, siloOutputs = true}
 
@@ -128,7 +129,7 @@ local function processorList()
     local function getProcessorList()
         return Utils.map(processors, function(isEnabled, processor)
             ---@type SearchableListOption
-            local option = {id = processor, name = processor, suffix = isEnabled and "[on]" or ""}
+            local option = {id = processor, name = processor, suffix = isEnabled and "\07" or ""}
 
             return option
         end)
@@ -175,6 +176,7 @@ local function activeLocks(shellWindow)
                     list:setOptions(getActiveLockList())
                 end
             else
+                -- [todo] ❌ can we change this to pull shell-window:visible event instead?
                 os.sleep(1)
             end
         end
@@ -227,8 +229,8 @@ term.clear()
 
 local Shell = require "lib.ui.shell"
 
-Shell:addWindow("Logs", main)
-Shell:addWindow("Processors", processorList)
+Shell:addWindow("Main", main)
+Shell:addWindow("Logs", showLogs)
 
 Shell:addWindow("RPC", function()
     EventLoop.run(function()
@@ -238,6 +240,7 @@ Shell:addWindow("RPC", function()
     end)
 end)
 
+Shell:addWindow("Processors", processorList)
 Shell:addWindow("Locks", activeLocks)
 Shell:addWindow("Unlocks", activeUnlocks)
 Shell:addWindow("Event Loop", function()
