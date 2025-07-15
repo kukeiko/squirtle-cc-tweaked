@@ -39,8 +39,8 @@ local nextId = require "lib.tools.next-id"
 ---@field channel integer
 
 ---@class Service
----@field host string
 ---@field name string
+---@field host string?
 ---@field maxDistance integer?
 
 local pingChannel = 0
@@ -48,7 +48,6 @@ local pingTimeout = 0.25
 
 ---@return string
 local function nextCallId()
-
     return tostring(string.format("%s:%d", os.getComputerLabel(), nextId()))
 end
 
@@ -81,6 +80,42 @@ local function getModem(modemType)
     else
         return getWiredModem() or error("no wired modem found")
     end
+end
+
+---@param method string
+---@param clientChannel integer
+---@param serverChannel integer
+---@param request? table
+local function logClientRequest(method, clientChannel, serverChannel, request)
+    local message = string.format("[c:req] %s %d/%d", method, clientChannel, serverChannel)
+    Logger.log(message, request)
+end
+
+---@param method string
+---@param clientChannel integer
+---@param serverChannel integer
+---@param response? table
+local function logClientResponse(method, clientChannel, serverChannel, response)
+    local message = string.format("[c:res] %s %d/%d", method, clientChannel, serverChannel)
+    Logger.log(message, response)
+end
+
+---@param method string
+---@param clientChannel integer
+---@param serverChannel integer
+---@param request? table
+local function logServerRequest(method, clientChannel, serverChannel, request)
+    local message = string.format("[s:req] %s, %d/%d", method, clientChannel, serverChannel)
+    Logger.log(message, request)
+end
+
+---@param method string
+---@param clientChannel integer
+---@param serverChannel integer
+---@param response? table
+local function logServerResponse(method, clientChannel, serverChannel, response)
+    local message = string.format("[s:res] %s, %d/%d", method, clientChannel, serverChannel)
+    Logger.log(message, response)
 end
 
 ---@class Rpc
@@ -178,7 +213,7 @@ local function createClient(service, host, distance, channel, modemType)
 
                 ---@type RpcRequestPacket
                 local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
-                Logger.log(string.format("[req] %s %d/%d", k, clientChannel, client.channel), packet)
+                logClientRequest(k, clientChannel, client.channel, packet)
                 modem.transmit(client.channel, clientChannel, packet)
 
                 while true do
@@ -191,7 +226,7 @@ local function createClient(service, host, distance, channel, modemType)
                     local distance = event[6]
 
                     if type(message) == "table" and message.callId == callId and message.type == "response" then
-                        Logger.log(string.format("[res] %s %d/%d", k, clientChannel, client.channel), message)
+                        logClientResponse(k, clientChannel, client.channel, message)
                         client.distance = distance or 0
                         client.channel = replyChannel
 
@@ -300,9 +335,9 @@ function Rpc.host(service, modemType)
 
     local modem = getModem(modemType)
     service.host = modem.isWireless() and label or modem.getNameLocal()
-    local channel = os.getComputerID()
+    local listenChannel = os.getComputerID()
     modem.open(pingChannel)
-    modem.open(channel)
+    modem.open(listenChannel)
 
     print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
 
@@ -332,21 +367,22 @@ function Rpc.host(service, modemType)
         while true do
             ---@param modem string
             ---@param message RpcRequestPacket|RpcPingPacket
-            ---@param channelIn integer
-            ---@param channelOut integer
+            ---@param receivedChannel integer
+            ---@param replyChannel integer
             ---@param distance? number
-            EventLoop.pull("modem_message", function(_, modem, channelIn, channelOut, message, distance)
+            EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
                 if not shouldAcceptMessage(message, distance) then
                     return
                 end
 
                 if message.type == "ping" then
+                    logServerRequest("ping", replyChannel, receivedChannel, message)
                     ---@type RpcPongPacket
                     local pong = {type = "pong", host = service.host, service = service.name}
-                    peripheral.call(modem, "transmit", channelOut, channel, pong)
-                    print(string.format("%s [ping] %d/%d [%d]", Utils.getTime24(), channelIn, channelOut, distance or -1))
+                    peripheral.call(modem, "transmit", replyChannel, listenChannel, pong)
+                    logServerResponse("pong", replyChannel, listenChannel, pong)
                 elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
-                    print(string.format("%s [in] %s %d/%d [%d]", Utils.getTime24(), message.method, channelIn, channelOut, distance or -1))
+                    logServerRequest(message.method, replyChannel, receivedChannel, message)
 
                     local success, response = pcall(function()
                         return table.pack(service[message.method](table.unpack(message.arguments)))
@@ -354,15 +390,8 @@ function Rpc.host(service, modemType)
 
                     ---@type RpcResponsePacket
                     local packet = {callId = message.callId, type = "response", response = response, success = success}
-                    peripheral.call(modem, "transmit", channelOut, channel, packet)
-                    local status = "[ok]"
-
-                    if not success then
-                        status = "[e]"
-                    end
-
-                    print(string.format("%s %s %s %d/%d [%d]", Utils.getTime24(), status, message.method, channelIn, channelOut,
-                                        distance or -1))
+                    peripheral.call(modem, "transmit", replyChannel, listenChannel, packet)
+                    logServerResponse(message.method, replyChannel, receivedChannel, packet)
                 end
             end)
         end
