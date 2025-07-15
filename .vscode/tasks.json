@@ -33,6 +33,7 @@
                 "build turtle:copper",
                 "build turtle:crafter",
                 "build turtle:dig",
+                "build turtle:dig-area",
                 "build turtle:farmer",
                 "build turtle:io-crafter",
                 "build turtle:lumberjack",
@@ -111,6 +112,11 @@
             "label": "build turtle:dig",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig"
+        },
+        {
+            "label": "build turtle:dig-area",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig-area.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig-area"
         },
         {
             "label": "build turtle:bone-meal",
