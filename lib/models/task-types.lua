@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients"
+---@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage"
 ---
 ---@class Task
 ---@field id integer
@@ -48,3 +48,7 @@
 ---@field usedRecipes? UsedCraftingRecipe[]
 ---@field crafted ItemStock
 ---
+---@class BuildChunkStorageTask : Task
+---@field type "build-chunk-storage"
+---@field chunkX integer
+---@field chunkY integer

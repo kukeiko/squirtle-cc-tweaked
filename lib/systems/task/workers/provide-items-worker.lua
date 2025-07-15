@@ -51,6 +51,7 @@ local function work()
         end
     end
 
+    -- [todo] ❌ support "task.to" being nil, in which case another task will take over the buffer
     storageService.flushAndFreeBuffer(task.bufferId, task.to)
     print(string.format("[finish] %s %d", task.type, task.id))
     taskService.finishTask(task.id)
