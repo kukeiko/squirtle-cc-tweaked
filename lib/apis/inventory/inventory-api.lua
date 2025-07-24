@@ -2,12 +2,12 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local DatabaseApi = require "lib.apis.database.database-api"
 local moveItem = require "lib.apis.inventory.move-item"
+local ItemApi = require "lib.apis.item-api"
 
 ---@class InventoryApi
 local InventoryApi = {}
@@ -603,7 +603,7 @@ function InventoryApi.resizeBufferByStock(bufferId, additionalStock)
     local unlock = lock(bufferId)
     local bufferStock = InventoryApi.getBufferStock(bufferId)
     local totalStock = ItemStock.merge({bufferStock, additionalStock})
-    local requiredSlots = InventoryPeripheral.getRequiredSlotCount(totalStock)
+    local requiredSlots = ItemApi.getRequiredSlotCount(totalStock)
     resize(bufferId, requiredSlots)
     unlock()
 end

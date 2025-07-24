@@ -1,12 +1,9 @@
 local ItemStock = require "lib.models.item-stock"
-local Utils = require "lib.tools.utils"
+local ItemApi = require "lib.apis.item-api"
 
 ---@class InventoryPeripheral
 ---@field adapters InventoryAdapter[]
 local InventoryPeripheral = {adapters = {}}
-
----@type ItemDetails
-local itemDetails = {}
 
 ---@class InventoryAdapter
 ---@field accept fun(inventory: string): boolean
@@ -20,16 +17,16 @@ local itemDetails = {}
 ---@param chest string
 ---@param slot integer
 local function readItemMaxCount(item, chest, slot)
-    if not itemDetails[item] then
+    if not ItemApi.hasItemDetail(item) then
         ---@type ItemStack|nil
         local detailedStack = InventoryPeripheral.getStack(chest, slot)
 
         if detailedStack then
-            itemDetails[item] = {name = item, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount}
+            ItemApi.addItemDetail({name = item, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount})
         end
     end
 
-    return itemDetails[item].maxCount
+    return ItemApi.getItemMaxCount(item)
 end
 
 ---@param inventory string
@@ -45,33 +42,6 @@ end
 ---@param adapter InventoryAdapter
 function InventoryPeripheral.addAdapter(adapter)
     table.insert(InventoryPeripheral.adapters, adapter)
-end
-
----@param item string
----@return integer
-function InventoryPeripheral.getItemMaxCount(item)
-    if not itemDetails[item] then
-        error(string.format("no max count available for item %s", item))
-    end
-
-    return itemDetails[item].maxCount
-end
-
----@return ItemDetails
-function InventoryPeripheral.getItemDetails()
-    return itemDetails
-end
-
----@param stock ItemStock
----@return integer
-function InventoryPeripheral.getRequiredSlotCount(stock)
-    local slotCount = 0
-
-    for item, quantity in pairs(stock) do
-        slotCount = slotCount + math.ceil(quantity / InventoryPeripheral.getItemMaxCount(item))
-    end
-
-    return slotCount
 end
 
 ---@param inventory string
@@ -99,8 +69,13 @@ end
 ---@return ItemStack?
 function InventoryPeripheral.getStack(inventory, slot)
     local adapter = getAdapter(inventory)
+    local detailedStack = adapter and adapter.getStack(inventory, slot) or peripheral.call(inventory, "getItemDetail", slot)
 
-    return adapter and adapter.getStack(inventory, slot) or peripheral.call(inventory, "getItemDetail", slot)
+    if detailedStack then
+        ItemApi.addItemDetail({name = detailedStack.name, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount})
+    end
+
+    return detailedStack
 end
 
 ---@param inventory string
@@ -140,6 +115,18 @@ end
 function InventoryPeripheral.getStock(inventory)
     local stacks = InventoryPeripheral.getStacks(inventory)
     return ItemStock.fromStacks(stacks)
+end
+
+---@param inventory string
+---@return integer
+function InventoryPeripheral.numEmptySlots(inventory)
+    local size = InventoryPeripheral.getSize(inventory)
+
+    for _, item in pairs(InventoryPeripheral.getStacks(inventory)) do
+        size = size - 1
+    end
+
+    return size
 end
 
 ---@param inventory string

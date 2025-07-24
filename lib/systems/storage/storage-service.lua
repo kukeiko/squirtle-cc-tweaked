@@ -1,9 +1,9 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local DatabaseService = require "lib.systems.database.database-service"
+local ItemApi = require "lib.apis.item-api"
 local CraftingApi = require "lib.apis.crafting-api"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 
 ---@class StorageService : Service
 local StorageService = {name = "storage"}
@@ -143,14 +143,15 @@ function StorageService.getCraftableStock()
     return craftableStock
 end
 
+---@return ItemDetails
 function StorageService.getItemDetails()
-    return InventoryPeripheral.getItemDetails()
+    return ItemApi.getItemDetails()
 end
 
 ---@param stock ItemStock
 ---@return integer
 function StorageService.getRequiredSlotCount(stock)
-    return InventoryPeripheral.getRequiredSlotCount(stock)
+    return ItemApi.getRequiredSlotCount(stock)
 end
 
 ---@param taskId integer

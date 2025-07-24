@@ -49,6 +49,48 @@ local ItemApi = {
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
 
+---@type ItemDetails
+local itemDetails = {}
+
+---@param detail ItemDetail
+function ItemApi.addItemDetail(detail)
+    itemDetails[detail.name] = detail
+end
+
+---@param item string
+function ItemApi.hasItemDetail(item)
+    return itemDetails[item] ~= nil
+end
+
+---@return ItemDetails
+function ItemApi.getItemDetails()
+    return itemDetails
+end
+
+---@param item string
+---@param default? integer
+---@return integer
+function ItemApi.getItemMaxCount(item, default)
+    if not itemDetails[item] and not default then
+        error(string.format("no max count available for item %s", item))
+    end
+
+    return itemDetails[item] and itemDetails[item].maxCount or default
+end
+
+---@param stock ItemStock
+---@param defaultMaxCount? integer
+---@return integer
+function ItemApi.getRequiredSlotCount(stock, defaultMaxCount)
+    local slotCount = 0
+
+    for item, quantity in pairs(stock) do
+        slotCount = slotCount + math.ceil(quantity / ItemApi.getItemMaxCount(item, defaultMaxCount))
+    end
+
+    return slotCount
+end
+
 ---@param variant "crimson" | "warped"
 function ItemApi.getNylium(variant)
     if variant == "crimson" then
