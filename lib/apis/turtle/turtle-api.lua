@@ -7,6 +7,7 @@ local SimulationState = require "lib.models.simulation-state"
 local ItemApi = require "lib.apis.item-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryApi = require "lib.apis.inventory.inventory-api"
+local TurtleShulkerApi = require "lib.apis.turtle.api-parts.turtle-shulker-api"
 local DatabaseApi = require "lib.apis.database.database-api"
 local getNative = require "lib.apis.turtle.functions.get-native"
 local findPath = require "lib.apis.turtle.functions.find-path"
@@ -31,13 +32,15 @@ local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.ch
 ---@field flipTurns boolean
 ---@field simulated SimulationState?
 ---@field isResuming boolean
+---@field shulkers Inventory[]
 local State = {
     facing = Cardinal.south,
     position = Vector.create(0, 0, 0),
     orientationMethod = "move",
     flipTurns = false,
     shulkerSides = {"front", "top", "bottom"},
-    isResuming = false
+    isResuming = false,
+    shulkers = {}
 }
 
 ---@class TurtleApi
@@ -53,6 +56,11 @@ end
 ---@return boolean
 local breakableSafeguard = function(block)
     return block.name ~= "minecraft:bedrock"
+end
+
+---@return State
+function TurtleApi.getState()
+    return State
 end
 
 ---@return integer
@@ -1227,11 +1235,11 @@ function TurtleApi.getSelectedSlot()
     return turtle.getSelectedSlot()
 end
 
----@param slot integer
+---@param slot? integer
 ---@param detailed? boolean
 ---@return ItemStack?
 function TurtleApi.getStack(slot, detailed)
-    return turtle.getItemDetail(slot, detailed)
+    return turtle.getItemDetail(slot or TurtleApi.getSelectedSlot(), detailed)
 end
 
 ---@param slot integer
@@ -1821,6 +1829,19 @@ function TurtleApi.tryLoadShulkers()
     end
 
     return false
+end
+
+--- Returns the items contained in carried and already placed shulkers.
+--- This function is using a cache which might be refreshed during the call:
+---
+--- - carried shulker boxes are placed and their cache is refreshed only if the nbt tag changed
+--- 
+--- - the cache of already placed shulker boxes is always refreshed
+--- 
+--- During this process, carried shulker boxes might be placed and already placed shulker boxes might be removed.
+---@return Inventory[]
+function TurtleApi.readShulkers()
+    return TurtleShulkerApi.readShulkers(TurtleApi)
 end
 
 function TurtleApi.locate()

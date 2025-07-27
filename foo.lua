@@ -24,6 +24,7 @@ local Shell = require "lib.ui.shell"
 local ItemApi = require "lib.apis.item-api"
 local readOption = require "lib.ui.read-option"
 local TurtleInventoryService = require "lib.systems.storage.turtle-inventory-service"
+local buildChunkStorage = require "lib.systems.builders.build-chunk-storage"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -489,7 +490,7 @@ end
 local function testGetRequiredSlotCount()
     local storageService = Rpc.nearest(StorageService)
 
-    print(storageService.getRequiredSlotCount({["minecraft:stick2"] = 129}))
+    print(storageService.getRequiredSlotCount({["minecraft:stick"] = 129}))
 end
 
 local function testCompactBuffer()
@@ -703,10 +704,25 @@ local function testStorageUsingTurtleInventory()
     end)
 end
 
+local function testReadShulkers()
+    -- TurtleApi.requireItems({[ItemApi.smoothStone] = 3}, true)
+    Utils.waitForUserToHitEnter("read #1")
+    TurtleApi.readShulkers()
+    Utils.waitForUserToHitEnter("read #2")
+    local shulkers = TurtleApi.readShulkers()
+    Utils.writeJson("foo.json", shulkers)
+end
+
+local function testBuildChunkStorage()
+    buildChunkStorage(3)
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    testStorageUsingTurtleInventory()
+    testReadShulkers()
+    -- testReadShulkers()
+    -- testStorageUsingTurtleInventory()
     -- testEditEntityWithShell()
     -- term.blit("\147", colors.toBlit(colors.black), colors.toBlit(colors.white))
     -- readOption("foo", {"foo", "bar", "baz"})
