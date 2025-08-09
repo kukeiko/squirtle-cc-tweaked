@@ -105,7 +105,7 @@ end
 ---@param serverChannel integer
 ---@param request? table
 local function logServerRequest(method, clientChannel, serverChannel, request)
-    local message = string.format("[s:req] %s, %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("[s:req] %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, request)
 end
 
@@ -114,7 +114,7 @@ end
 ---@param serverChannel integer
 ---@param response? table
 local function logServerResponse(method, clientChannel, serverChannel, response)
-    local message = string.format("[s:res] %s, %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("[s:res] %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, response)
 end
 
