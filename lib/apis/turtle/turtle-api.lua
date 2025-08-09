@@ -338,6 +338,12 @@ function TurtleApi.recordPlacedBlock(block, quantity)
     SimulationState.recordPlacedBlock(State.simulated, block, quantity)
 end
 
+---@param block string
+---@param quantity? integer
+function TurtleApi.recordTakenBlock(block, quantity)
+    SimulationState.recordTakenBlock(State.simulated, block, quantity)
+end
+
 ---Turns 1x time towards direction "back", "left" or "right".
 ---If flipTurns is on, "left" will become "right" and vice versa.
 ---@param direction string
@@ -369,6 +375,10 @@ end
 
 function TurtleApi.right()
     TurtleApi.turn("right")
+end
+
+function TurtleApi.around()
+    TurtleApi.turn("back")
 end
 
 ---@param direction "left" | "right"

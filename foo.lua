@@ -25,6 +25,7 @@ local ItemApi = require "lib.apis.item-api"
 local readOption = require "lib.ui.read-option"
 local TurtleInventoryService = require "lib.systems.storage.turtle-inventory-service"
 local buildChunkStorage = require "lib.systems.builders.build-chunk-storage"
+local buildSmallHouse = require "lib.systems.builders.build-small-house"
 
 ---@param width number
 local function countLineBlocks(width)
@@ -704,6 +705,10 @@ local function testStorageUsingTurtleInventory()
     end)
 end
 
+local function testBuildChunkStorage()
+    buildChunkStorage(3)
+end
+
 local function testReadShulkers()
     -- TurtleApi.requireItems({[ItemApi.smoothStone] = 3}, true)
     Utils.waitForUserToHitEnter("read #1")
@@ -713,19 +718,19 @@ local function testReadShulkers()
     Utils.writeJson("foo.json", shulkers)
 end
 
-local function testBuildChunkStorage()
-    buildChunkStorage(3)
+local function testLoadFromShulker()
+    TurtleApi.loadFromShulker(ItemApi.smoothStone)
+    TurtleApi.loadFromShulker(ItemApi.stone)
+end
+
+local function testBuildSmallHouse()
+    buildSmallHouse()
 end
 
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    testReadShulkers()
-    -- testReadShulkers()
-    -- testStorageUsingTurtleInventory()
-    -- testEditEntityWithShell()
-    -- term.blit("\147", colors.toBlit(colors.black), colors.toBlit(colors.white))
-    -- readOption("foo", {"foo", "bar", "baz"})
+    testBuildSmallHouse()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

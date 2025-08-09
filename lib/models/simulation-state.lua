@@ -84,6 +84,14 @@ function SimulationState.recordPlacedBlock(state, block, quantity)
     state.placed[block] = (state.placed[block] or 0) + (quantity or 1)
 end
 
+
+---@param state SimulationState
+---@param block string
+---@param quantity? integer
+function SimulationState.recordTakenBlock(state, block, quantity)
+    state.placed[block] = (state.placed[block] or 0) - (quantity or 1)
+end
+
 ---@param state SimulationState
 function SimulationState.placeWater(state)
     state.water.balance = state.water.balance - 1
