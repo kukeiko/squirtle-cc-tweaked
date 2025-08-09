@@ -136,7 +136,7 @@ end
 function InventoryLocks.lock(inventories, lockId)
     lockId = lockId or getNextLockId()
 
-    if isLocked(inventories, lockId) then
+    while isLocked(inventories, lockId) do
         queue(inventories, lockId)
         local disconnected = false
 
