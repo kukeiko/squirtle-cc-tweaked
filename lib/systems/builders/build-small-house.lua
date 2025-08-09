@@ -30,9 +30,12 @@ end
 local function digHelperBlock(direction, item)
     dig(direction)
 
-    if TurtleApi.isSimulating() then
-        TurtleApi.recordTakenBlock(item or ItemApi.dirt)
-    end
+    -- [todo] ❌ doesn't actually work the way I need it - would need similar logic like we have it for water & lava.
+    -- so for now we just ignore recording taken blocks and the turtle will just end up with a few more items in its inventory
+    -- after it has finished building the house.
+    -- if TurtleApi.isSimulating() then
+    --     TurtleApi.recordTakenBlock(item or ItemApi.dirt)
+    -- end
 end
 
 local function buildFoundation()

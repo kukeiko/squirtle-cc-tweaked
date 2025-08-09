@@ -46,6 +46,7 @@
                 "build turtle:silo",
                 "build turtle:update",
                 "build turtle:wall",
+                "build turtle:small-house",
             ]
         },
         {
@@ -342,6 +343,11 @@
             "label": "build turtle:inspect-watcher",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/inspect-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/inspect-watcher"
-        }
+        },
+        {
+            "label": "build turtle:small-house",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/small-house.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/small-house"
+        },
     ]
 }
