@@ -1,0 +1,10 @@
+{
+  "values": [
+    "minecraft:lever",
+    "#minecraft:buttons",
+    "#minecraft:trapdoors",
+    "minecraft:repeater",
+    "minecraft:comparator",
+    "computercraft:wired_modem_full"
+  ]
+}

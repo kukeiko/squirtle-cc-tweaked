@@ -1,0 +1,7 @@
+{
+  "type": "computercraft:tool",
+  "item": "diamond_axe",
+  "adjective": "upgrade.minecraft.diamond_axe.adjective",
+  "allowEnchantments": true,
+  "consumeDurability": "never"
+}
