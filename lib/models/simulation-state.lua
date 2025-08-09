@@ -72,7 +72,7 @@ function SimulationState.getResults(state, fuel)
     end
 
     ---@type SimulationResults
-    local results = {placed = placed, steps = fuel - state.fuel, lava = state.lavaBalance, water = state.waterBalance}
+    local results = {placed = placed, steps = math.abs(fuel - state.fuel), lava = state.lavaBalance, water = state.waterBalance}
 
     return results
 end
@@ -83,7 +83,6 @@ end
 function SimulationState.recordPlacedBlock(state, block, quantity)
     state.placed[block] = (state.placed[block] or 0) + (quantity or 1)
 end
-
 
 ---@param state SimulationState
 ---@param block string

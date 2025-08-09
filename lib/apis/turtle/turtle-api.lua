@@ -288,9 +288,10 @@ function TurtleApi.simulate(fn)
     end
 
     print("[simulate] enabling simulation...")
-    State.simulated = SimulationState.construct(TurtleApi.getNonInfiniteFuelLevel(), State.facing, State.position)
+    local actualFuel = TurtleApi.getNonInfiniteFuelLevel()
+    State.simulated = SimulationState.construct(actualFuel, State.facing, State.position)
     fn()
-    local results = SimulationState.getResults(State.simulated, TurtleApi.getNonInfiniteFuelLevel())
+    local results = SimulationState.getResults(State.simulated, actualFuel)
     State.simulated = nil
 
     return results
