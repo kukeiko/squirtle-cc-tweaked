@@ -1399,18 +1399,15 @@ function TurtleApi.getStock()
 end
 
 ---@param name string
----@param exact? boolean
----@param startAtSlot? integer
+---@param nbt? string
 ---@return integer?
-function TurtleApi.find(name, exact, startAtSlot)
+function TurtleApi.find(name, nbt)
     startAtSlot = startAtSlot or 1
 
-    for slot = startAtSlot, TurtleApi.size() do
+    for slot = 1, TurtleApi.size() do
         local item = TurtleApi.getStack(slot)
 
-        if item and exact and item.name == name then
-            return slot
-        elseif item and not exact and string.find(item.name, name) then
+        if item and item.name == name and (nbt == nil or item.nbt == nbt) then
             return slot
         end
     end
@@ -1775,7 +1772,7 @@ function TurtleApi.selectItem(name)
         return false
     end
 
-    local slot = TurtleApi.find(name, true)
+    local slot = TurtleApi.find(name)
 
     if not slot then
         for slot = 1, TurtleApi.size() do
@@ -1918,9 +1915,6 @@ local function orientateSameLayer(position, directions)
     return false
 end
 
-local function addCleanupPlaceDirections(directions)
-end
-
 ---@param directions? DiskDriveOrientationSide[]
 ---@return integer
 local function orientateUsingDiskDrive(directions)
@@ -1946,37 +1940,6 @@ local function orientateUsingDiskDrive(directions)
         diskState.cleanupSides[placedSide] = "computercraft:disk_drive"
         DatabaseApi.saveTurtleDiskState(diskState)
     end
-
-    -- while not SquirtleComplexApi.selectItem("computercraft:disk_drive") do
-    --     SquirtleComplexApi.requireItems({["computercraft:disk_drive"] = 1})
-    -- end
-
-    -- -- [todo] should use tryPut() instead (which will also call requireItems())
-    -- -- problem with that though is that tryPut() also mines, but I'd like to first
-    -- -- try placing in all directions.
-    -- local placedSide = Elemental.placeAtOneOf(directions)
-
-    -- if not placedSide then
-    --     -- [todo] should use (try?)mine() instead
-    --     local dugSide = Elemental.digAtOneOf(directions)
-
-    --     if not dugSide then
-    --         error("todo: need help from player")
-    --     end
-
-    --     -- if not State.breakDirection or State.breakDirection == "front" then
-    --     --     error("no space to put the disk drive")
-    --     -- end
-
-    --     -- -- [todo] should use put() instead - for that, put() needs to be pulled into at least this layer
-    --     -- SquirtleComplexApi.mine(State.breakDirection)
-
-    --     if not Basic.place(dugSide) then
-    --         error("no space to put the disk drive")
-    --     end
-
-    --     placedSide = dugSide
-    -- end
 
     while not peripheral.isPresent(placedSide) do
         os.sleep(.1)
@@ -2068,7 +2031,7 @@ end
 function TurtleApi.cleanup()
     local diskState = DatabaseApi.getTurtleDiskState()
 
-    -- [todo] what is the difference between cleanupSides & diskDriveSides/shulkerSides?
+    -- [todo] ❓ what is the difference between cleanupSides & diskDriveSides/shulkerSides?
     for side, block in pairs(diskState.cleanupSides) do
         if TurtleApi.probe(side, block) then
             TurtleApi.selectEmpty()

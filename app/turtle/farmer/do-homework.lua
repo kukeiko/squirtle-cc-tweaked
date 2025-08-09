@@ -30,7 +30,7 @@ local function refuelFromBuffer(buffer, fuel)
 end
 
 local function compostSeeds()
-    while TurtleApi.selectItem("seeds") do
+    while TurtleApi.selectItem("minecraft:wheat_seeds") or TurtleApi.selectItem("minecraft:beetroot_seeds") do
         TurtleApi.drop("bottom")
     end
 end
