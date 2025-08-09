@@ -31,6 +31,10 @@ local function addLocks(inventories, lockId)
         if not locks[inventory] then
             locks[inventory] = {lockId = lockId, count = 1}
         else
+            if locks[inventory].lockId ~= lockId then
+                error("trying to increase lock count using a different lockId")
+            end
+
             locks[inventory].count = locks[inventory].count + 1
         end
     end
@@ -45,14 +49,18 @@ local function removeLocks(inventories)
     for _, inventory in pairs(inventories) do
         locks[inventory].count = locks[inventory].count - 1
 
-        if locks[inventory].count == 0 then
+        if locks[inventory].count <= 0 then
+            if locks[inventory].count < 0 then
+                error("inventory lock count below zero")
+            end
+
             locks[inventory] = nil
         end
     end
 end
 
----@param lockId? integer
 ---@param inventories string[]
+---@param lockId integer
 local function isLocked(inventories, lockId)
     for _, inventory in pairs(inventories) do
         if locks[inventory] and locks[inventory].lockId ~= lockId then
@@ -73,7 +81,7 @@ end
 
 local function dequeue()
     local unlockIndex = Utils.findIndex(unlockQueue, function(item)
-        return not isLocked(item.inventories)
+        return not isLocked(item.inventories, item.lockId)
     end)
 
     if unlockIndex then

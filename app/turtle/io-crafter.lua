@@ -139,8 +139,6 @@ Shell:addWindow("Main", function()
             -- craft items
             craftFromBottomInventory(recipe)
             -- manual refresh required due to turtle manipulating the stash
-            -- [todo] suspecting this to not work correctly, as I crafted on MP and it worked, then crafting something else and it didn't.
-            -- 1st craft was 128x observers, 2nd craft was 64x redstone lamps
             storageService.refresh(stash)
 
             -- move crafted items from stash to buffer
