@@ -71,14 +71,15 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
     ---@param y integer
     local function digColumn(y)
         for row = 1, depth do
-            -- [todo] there are cases where we don't need to dig up/down:
-            -- 1) if on last layer and remainder > 0
-            -- 2) if just switched layer
-            TurtleApi.dig("down")
-            TurtleApi.dig("up")
+            if y ~= 1 then
+                TurtleApi.dig(vertical == "up" and "down" or "up")
+            end
 
-            -- [todo] ❓ should wrap in "if not TurtleApi.isSimulating()"?
-            if TurtleApi.isFull() then
+            if y ~= height then
+                TurtleApi.dig(vertical == "up" and "up" or "down")
+            end
+
+            if not TurtleApi.isSimulating() and TurtleApi.isFull() then
                 TurtleApi.tryLoadShulkers()
             end
 
