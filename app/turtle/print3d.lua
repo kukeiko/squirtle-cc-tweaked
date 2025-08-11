@@ -17,6 +17,7 @@ local Cardinal = require "lib.models.cardinal"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Print3dService = require "lib.systems.builders.print3d-service"
 local TurtleService = require "lib.systems.turtle-service"
+local Resumable = require "lib.apis.turtle.resumable"
 
 ---@class ColoredPoint
 ---@field vector Vector
@@ -60,6 +61,8 @@ local function start(args, options)
     local blueprint = textutils.unserializeJSON(file.readAll())
     file.close()
     options.requireShulkers = true
+    options.requireFuel = true
+    options.requireItems = true
     TurtleApi.configure({shulkerSides = {"top"}})
     TurtleApi.refuelTo(blueprint.fuel + 1000);
     local facing = TurtleApi.orientate("disk-drive", {"top"})
@@ -121,6 +124,8 @@ local function start(args, options)
         offset = Vector.rotateClockwise(offset, 3)
     end
 
+    Utils.writeStartupFile("print3d")
+
     ---@type Print3DState
     local state = {home = home, homeFacing = facing, points = points, offset = offset}
 
@@ -161,6 +166,8 @@ local function finish(state)
     end)
 
     TurtleApi.face(state.homeFacing)
+    Utils.deleteStartupFile()
+    print("[done] I hope you like what I built!")
 end
 
 -- https://3dviewer.net/ for rotating
@@ -177,11 +184,18 @@ end, function()
         Rpc.host(Print3dService)
     end)
 end, function()
-    local success, message = TurtleApi.runResumable("print3d", arg, start, main, resume, finish)
+    local resumable = Resumable.new("print3d")
+    resumable:setStart(start)
+    resumable:setResume(resume)
+    resumable:setFinish(finish)
+    resumable:addSimulatableMain("main", main)
+
+    local success, message = pcall(function(...)
+        resumable:run(arg)
+    end)
 
     if success then
         EventLoop.queue("print3d:stop")
-        print("[done] I hope you like what I built!")
     else
         print(message)
         TurtleService.error = message
