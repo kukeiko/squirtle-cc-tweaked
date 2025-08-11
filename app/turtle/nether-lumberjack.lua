@@ -136,8 +136,7 @@ end, function()
         if resumed == "homework" then
             recover()
         elseif TurtleApi.probe("bottom", ItemApi.chest) then
-            -- [todo] ❌ turtle was reset by player, don't resume
-            error("manual turtle reset by player not yet implemented")
+            return "homework"
         else
             TurtleApi.orientate("disk-drive")
         end

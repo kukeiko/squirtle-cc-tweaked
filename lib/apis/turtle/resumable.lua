@@ -12,7 +12,7 @@ local TurtleApi = require "lib.apis.turtle.turtle-api"
 ---@class Resumable
 ---@field name string
 ---@field startFn? fun(args: string[], options: TurtleResumableOptions) : table
----@field resumeFn? fun(state: table, resumed: string) : nil
+---@field resumeFn? fun(state: table, resumed: string) : string?
 ---@field finishFn? fun(state: table, aborted: boolean) : nil
 ---@field resumableFns ResumableFn[]
 local Resumable = {}
@@ -32,7 +32,7 @@ function Resumable:setStart(fn)
     self.startFn = fn
 end
 
----@param fn fun(state: table, resumed: string) : table?
+---@param fn fun(state: table, resumed: string) : string?
 function Resumable:setResume(fn)
     self.resumeFn = fn
 end
@@ -125,7 +125,7 @@ local function resume(self, resumable)
     TurtleApi.cleanup()
 
     if self.resumeFn and resumable.fnName then
-        self.resumeFn(resumable.state, resumable.fnName)
+        resumable.fnName = self.resumeFn(resumable.state, resumable.fnName) or resumable.fnName
     end
 
     math.randomseed(resumable.randomSeed)
