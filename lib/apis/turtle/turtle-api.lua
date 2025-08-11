@@ -13,7 +13,6 @@ local getNative = require "lib.apis.turtle.functions.get-native"
 local findPath = require "lib.apis.turtle.functions.find-path"
 local digArea = require "lib.apis.turtle.functions.dig-area"
 local requireItems = require "lib.apis.turtle.functions.require-items"
-local runResumable = require "lib.apis.turtle.functions.run-resumable"
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
 
@@ -2018,17 +2017,6 @@ function TurtleApi.recover()
             TurtleApi.dig(direction)
         end
     end
-end
-
----@generic T
----@param name string
----@param args string[]
----@param start fun(args:string[], options?: TurtleResumableOptions) : T
----@param main fun(state: T) : unknown|nil
----@param resume fun(state: T) : unknown|nil
----@param finish fun(state: T) : unknown|nil
-function TurtleApi.runResumable(name, args, start, main, resume, finish)
-    return runResumable(TurtleApi, name, args, start, main, resume, finish)
 end
 
 return TurtleApi
