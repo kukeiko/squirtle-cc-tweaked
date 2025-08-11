@@ -10,9 +10,11 @@ if not arg then
 end
 
 local EventLoop = require "lib.tools.event-loop"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Rpc = require "lib.tools.rpc"
+local Utils = require "lib.tools.utils"
+local TurtleApi = require "lib.apis.turtle.turtle-api"
 local TurtleService = require "lib.systems.turtle-service"
+local Resumable = require "lib.apis.turtle.resumable"
 
 ---@class PyramidAppState
 ---@field width integer
@@ -31,8 +33,9 @@ local function printUsage()
 end
 
 ---@param args string[]
+---@param options TurtleResumableOptions
 ---@return PyramidAppState?
-local function start(args)
+local function start(args, options)
     local width = tonumber(args[1])
 
     if not width or width % 2 == 0 then
@@ -54,6 +57,10 @@ local function start(args)
         home = home,
         returnHome = args[2] == "home" or args[3] == "home"
     }
+
+    options.requireFuel = true
+    options.requireItems = true
+    Utils.writeStartupFile("pyramid")
 
     return state
 end
@@ -127,11 +134,14 @@ end
 
 ---@param state PyramidAppState
 local function finish(state)
-    -- [todo] home is actually blocked by a block this program placed - either pick the one above as a goal or the one in front of it.
+    -- [todo] ❌ home is actually blocked by a block this program placed - either pick the one above as a goal or the one in front of it.
     if state.returnHome then
         print("[return] home")
         TurtleApi.navigate(state.home)
     end
+
+    Utils.deleteStartupFile()
+    print("[done] I hope you like what I built!")
 end
 
 print(string.format("[pyramid %s] booting...", version()))
@@ -141,7 +151,15 @@ EventLoop.run(function()
         Rpc.host(TurtleService)
     end)
 end, function()
-    local success, message = TurtleApi.runResumable("app/turtle/pyramid", arg, start, main, resume, finish)
+    local resumable = Resumable.new("pyramid")
+    resumable:setStart(start)
+    resumable:setResume(resume)
+    resumable:setFinish(finish)
+    resumable:addSimulatableMain("main", main)
+
+    local success, message = pcall(function(...)
+        resumable:run(arg)
+    end)
 
     if success then
         EventLoop.queue("pyramid:stop")

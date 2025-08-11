@@ -293,6 +293,7 @@ function TurtleApi.simulate(fn)
     fn()
     local results = SimulationState.getResults(State.simulated, actualFuel)
     State.simulated = nil
+    print("[simulate] ending simulation")
 
     return results
 end
@@ -1742,6 +1743,10 @@ end
 
 ---@return boolean
 function TurtleApi.tryLoadShulkers()
+    if TurtleApi.isSimulating() then
+        return true
+    end
+
     local unloadedAll = true
 
     for slot, stack in pairs(TurtleApi.getStacks()) do

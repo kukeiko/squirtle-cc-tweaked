@@ -215,7 +215,7 @@ local function placeShulkerTakingItem(TurtleApi, item)
         end
     end
 
-    error(string.format("no shulker available to take item %s", item))
+    return nil, string.format("no shulker available to take item %s", item)
 end
 
 ---@param TurtleApi TurtleApi
