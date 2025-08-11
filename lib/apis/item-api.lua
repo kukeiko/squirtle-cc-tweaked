@@ -1,3 +1,5 @@
+local Utils = require "lib.tools.utils"
+
 ---@class ItemApi
 local ItemApi = {
     barrel = "minecraft:barrel",
@@ -175,6 +177,11 @@ function ItemApi.getVinesPlant(variant)
     else
         error(string.format("unknown vines plant variant %s", variant))
     end
+end
+
+---@return table<string, integer>
+function ItemApi.getFuelItems()
+    return Utils.copy(fuelItems)
 end
 
 ---@param item string
