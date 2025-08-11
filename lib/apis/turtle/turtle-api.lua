@@ -1386,8 +1386,9 @@ function TurtleApi.getItemStock(predicate)
     return stock
 end
 
+---@param includeShulkers? boolean
 ---@return table<string, integer>
-function TurtleApi.getStock()
+function TurtleApi.getStock(includeShulkers)
     ---@type table<string, integer>
     local stock = {}
 
@@ -1395,7 +1396,16 @@ function TurtleApi.getStock()
         stock[stack.name] = (stock[stack.name] or 0) + stack.count
     end
 
+    if includeShulkers then
+        stock = ItemStock.merge({stock, TurtleApi.getShulkerStock()})
+    end
+
     return stock
+end
+
+---@return ItemStock
+function TurtleApi.getShulkerStock()
+    return TurtleShulkerApi.getShulkerStock(TurtleApi)
 end
 
 ---@param name string
@@ -1712,82 +1722,17 @@ function TurtleApi.transferOutputInput(barrel, ioChest, inputItems)
     print("[ready] input looks good!")
 end
 
----@param alsoIgnoreSlot integer
----@return integer?
-local function nextSlotThatIsNotShulker(alsoIgnoreSlot)
-    for slot = 1, TurtleApi.size() do
-        if alsoIgnoreSlot ~= slot then
-            local item = TurtleApi.getStack(slot)
-
-            if item and item.name ~= ItemApi.shulkerBox then
-                return slot
-            end
-        end
-    end
-end
-
----@param shulkerSlot integer
 ---@param item string
 ---@return integer?
-local function loadFromShulker(shulkerSlot, item)
-    TurtleApi.select(shulkerSlot)
-    local placedSide = TurtleApi.placeShulker()
-
-    while not peripheral.isPresent(placedSide) do
-        os.sleep(.1)
-    end
-
-    local stacks = InventoryPeripheral.getStacks(placedSide)
-
-    for stackSlot, stack in pairs(stacks) do
-        if stack.name == item then
-            TurtleApi.suckSlot(placedSide, stackSlot)
-            local emptySlot = TurtleApi.firstEmptySlot()
-
-            if not emptySlot then
-                local slotToPutIntoShulker = nextSlotThatIsNotShulker(shulkerSlot)
-
-                if not slotToPutIntoShulker then
-                    error("i seem to be full with shulkers")
-                end
-
-                TurtleApi.select(slotToPutIntoShulker)
-                TurtleApi.drop(placedSide)
-                TurtleApi.select(shulkerSlot)
-            end
-
-            TurtleApi.digShulker(placedSide)
-
-            return shulkerSlot
-        end
-    end
-
-    TurtleApi.digShulker(placedSide)
-end
-
----@param name string
----@return false|integer
-function TurtleApi.selectItem(name)
+function TurtleApi.selectItem(item)
     if TurtleApi.isSimulating() then
-        return false
+        return
     end
 
-    local slot = TurtleApi.find(name)
+    local slot = TurtleApi.find(item) or TurtleApi.loadFromShulker(item)
 
     if not slot then
-        for slot = 1, TurtleApi.size() do
-            local stack = TurtleApi.getStack(slot)
-
-            if stack and stack.name == ItemApi.shulkerBox then
-                local loadedSlot = loadFromShulker(slot, name)
-
-                if loadedSlot then
-                    return loadedSlot
-                end
-            end
-        end
-
-        return false
+        return
     end
 
     TurtleApi.select(slot)
@@ -1795,48 +1740,20 @@ function TurtleApi.selectItem(name)
     return slot
 end
 
----@param direction string
----@return boolean unloadedAll
-local function loadIntoShulker(direction)
+---@return boolean
+function TurtleApi.tryLoadShulkers()
     local unloadedAll = true
 
-    for slot = 1, TurtleApi.size() do
-        local stack = TurtleApi.getStack(slot)
-
-        if stack and stack.name ~= ItemApi.shulkerBox and stack.name ~= ItemApi.diskDrive then
-            TurtleApi.select(slot)
-
-            if not TurtleApi.drop(direction) then
+    for slot, stack in pairs(TurtleApi.getStacks()) do
+        if stack.name ~= ItemApi.shulkerBox then
+            if not TurtleApi.loadIntoShulker(slot) then
                 unloadedAll = false
             end
         end
     end
 
+    TurtleApi.digShulkers()
     return unloadedAll
-end
-
----@return boolean unloadedAll
-function TurtleApi.tryLoadShulkers()
-    ---@type string?
-    local placedSide = nil
-
-    for slot = 1, TurtleApi.size() do
-        local stack = TurtleApi.getStack(slot)
-
-        if stack and stack.name == ItemApi.shulkerBox then
-            TurtleApi.select(slot)
-            placedSide = TurtleApi.placeShulker()
-            local unloadedAll = loadIntoShulker(placedSide)
-            TurtleApi.select(slot)
-            TurtleApi.digShulker(placedSide)
-
-            if unloadedAll then
-                return true
-            end
-        end
-    end
-
-    return false
 end
 
 --- Returns the items contained in carried and already placed shulkers.
@@ -1850,6 +1767,29 @@ end
 ---@return Inventory[]
 function TurtleApi.readShulkers()
     return TurtleShulkerApi.readShulkers(TurtleApi)
+end
+
+--- Returns how many more shulkers would be needed to carry the given items.
+---@param items ItemStock
+---@return integer
+function TurtleApi.getRequiredAdditionalShulkers(items)
+    return TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
+end
+
+---@param item string
+---@return integer?
+function TurtleApi.loadFromShulker(item)
+    return TurtleShulkerApi.loadFromShulker(TurtleApi, item)
+end
+
+---@param slot integer
+---@return boolean success, string? message
+function TurtleApi.loadIntoShulker(slot)
+    return TurtleShulkerApi.loadIntoShulker(TurtleApi, slot)
+end
+
+function TurtleApi.digShulkers()
+    TurtleShulkerApi.digShulkers(TurtleApi)
 end
 
 function TurtleApi.locate()
@@ -2014,7 +1954,7 @@ function TurtleApi.placeShulker()
     return placedSide
 end
 
----@param items table<string, integer>
+---@param items ItemStock
 ---@param alwaysUseShulker boolean?
 function TurtleApi.requireItems(items, alwaysUseShulker)
     return requireItems(TurtleApi, items, alwaysUseShulker)

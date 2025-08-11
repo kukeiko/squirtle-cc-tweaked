@@ -20,12 +20,12 @@ local function tryPlantAnything()
 end
 
 ---@param crops string
----@return false|integer
+---@return integer?
 local function selectSlotWithSeedsOfCrop(crops)
     local seeds = cropsToSeedsMap[crops]
 
     if not seeds then
-        return false
+        return
     end
 
     return TurtleApi.selectItem(seeds)

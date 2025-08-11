@@ -47,11 +47,46 @@ local function merge(stocks)
     return merged
 end
 
+---@param what ItemStock
+---@param with ItemStock
+---@return ItemStock
+local function intersect(what, with)
+    ---@type ItemStock
+    local intersected = {}
+
+    for item, quantity in pairs(what) do
+        if with[item] then
+            intersected[item] = quantity
+        end
+    end
+
+    return intersected
+end
+
 ---@param stock ItemStock
 ---@return boolean
 local function isEmpty(stock)
     for _, quantity in pairs(stock) do
         if quantity > 0 then
+            return false
+        end
+    end
+
+    return true
+end
+
+---@param a ItemStock
+---@param b ItemStock
+---@return boolean
+local function isEqual(a, b)
+    for item, quantity in pairs(a) do
+        if b[item] ~= quantity then
+            return false
+        end
+    end
+
+    for item, quantity in pairs(b) do
+        if a[item] ~= quantity then
             return false
         end
     end
@@ -75,4 +110,4 @@ local function fromStacks(stacks, ignoredSlots)
     return stock
 end
 
-return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty, fromStacks = fromStacks}
+return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty, fromStacks = fromStacks, isEqual = isEqual, intersect = intersect}
