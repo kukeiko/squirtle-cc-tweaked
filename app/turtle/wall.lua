@@ -11,9 +11,11 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local Utils = require "lib.tools.utils"
 local ItemApi = require "lib.apis.item-api"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local TurtleService = require "lib.systems.turtle-service"
+local Resumable = require "lib.apis.turtle.resumable"
 
 local function readPattern()
     ---@type string[]
@@ -238,6 +240,9 @@ local function start(args, options)
         options.requireShulkers = true
     end
 
+    options.requireFuel = true
+    options.requireItems = true
+
     state.depth = depth
     state.height = height
 
@@ -247,6 +252,7 @@ local function start(args, options)
         state.home = TurtleApi.getPositionTowards("right")
     end
 
+    Utils.writeStartupFile("wall")
     print("[ok] all good now! building...")
 
     return state
@@ -287,6 +293,7 @@ local function finish(state)
         TurtleApi.face(state.facing)
     end
 
+    Utils.deleteStartupFile()
     print("[done] I hope you like what I built!")
 end
 
@@ -297,7 +304,15 @@ EventLoop.run(function()
         Rpc.host(TurtleService)
     end)
 end, function()
-    local success, message = TurtleApi.runResumable("app/turtle/wall", arg, start, main, resume, finish)
+    local resumable = Resumable.new("wall")
+    resumable:setStart(start)
+    resumable:setResume(resume)
+    resumable:addSimulatableMain("main", main)
+    resumable:setFinish(finish)
+
+    local success, message = pcall(function(...)
+        resumable:run(arg)
+    end)
 
     if success then
         EventLoop.queue("wall:stop")
