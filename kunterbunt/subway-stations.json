@@ -159,6 +159,12 @@
         "tracks": []
     },
     {
+        "id": "nether:end",
+        "type": "endpoint",
+        "name": "Nether: End Portal",
+        "tracks": []
+    },
+    {
         "id": "nether:squids:switch",
         "type": "switch",
         "name": "Nether: Squid Switch",
@@ -166,6 +172,10 @@
             {
                 "to": "nether:snow-base:switch",
                 "signal": 0
+            },
+            {
+                "to": "nether:end",
+                "signal": 1
             },
             {
                 "to": "nether:squids",
