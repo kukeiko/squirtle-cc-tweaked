@@ -2,6 +2,7 @@ local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local Inventory = require "lib.models.inventory"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
+local ItemApi = require "lib.apis.item-api"
 
 local function getDefaultRate()
     return 8
@@ -42,73 +43,49 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
         return 0
     end
 
-    local transferredTotal = 0
+    local alreadyTransferred = 0
     rate = rate or getDefaultRate()
 
     local success, e = pcall(function()
         local fromInventory = InventoryCollection.get(from)
         local toInventory = InventoryCollection.get(to)
-        local fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
-        local toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
+        local fromSlot, fromCount = Inventory.nextFromSlot(fromInventory, item, fromTag)
+        local toSlot, toOpen = Inventory.nextToSlot(toInventory, item, toTag)
 
-        while transferredTotal < total and fromSlot and fromStack and toSlot do
+        while alreadyTransferred < total and fromSlot and fromCount and toSlot do
             if fromInventory.type == "storage" then
                 -- refresh the inventory to prevent accidentally "deleting" storage stacks.
                 -- bit of a hack, but currently no other idea on how else to fix it.
                 -- this doesn't even completely fix it if a player manages to take out items after refresh and before pushItems()
                 InventoryCollection.refresh({from}, lockId)
                 fromInventory = InventoryCollection.get(from)
-                fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
+                fromSlot, fromCount = Inventory.nextFromSlot(fromInventory, item, fromTag)
 
-                if not fromSlot or not fromStack or fromStack.count == 0 then
+                if not fromSlot or not fromCount then
                     break
                 end
             end
 
-            local open = total - transferredTotal
-            local toStackOpenCount = fromStack.count
-
-            if toStack then
-                toStackOpenCount = toStack.maxCount - toStack.count
-            end
-
-            local quantity = math.min(open, rate, fromStack.count, toStackOpenCount)
+            local open = total - alreadyTransferred
+            local quantity = math.min(open, rate, fromCount, toOpen or fromCount)
             local transferred = InventoryPeripheral.transfer(from, to, fromSlot.index, quantity, toSlot.index)
-            transferredTotal = transferredTotal + transferred
+            alreadyTransferred = alreadyTransferred + transferred
 
             if transferred ~= quantity then
-                -- either the "from" or the "to" inventory cache is no longer valid. refreshing both so that distributeItem() doesn't run in an endless loop
+                -- "from" and/or "to" inventory cache is no longer valid, refreshing both so that distributeItem() doesn't run in an endless loop
                 print(string.format("[cache] invalidated: expected %d, transferred %d", quantity, transferred))
                 InventoryCollection.mount({from, to})
                 return
             end
 
-            fromInventory.items[item] = fromInventory.items[item] - transferred
-            fromStack.count = fromStack.count - transferred
-
-            if fromStack.count == 0 and not fromSlot.permanent then
-                fromInventory.stacks[fromSlot.index] = nil
-            end
-
-            if toStack then
-                toStack.count = toStack.count + transferred
-                toInventory.items[item] = (toInventory.items[item] or 0) + transferred
-            else
-                -- can be nil in case of hoppers
-                toStack = InventoryPeripheral.getStack(to, toSlot.index)
-
-                if toStack then
-                    toInventory.stacks[toSlot.index] = toStack
-                    toInventory.items[item] = (toInventory.items[item] or 0) + toStack.count
-                end
-            end
-
-            fromSlot, fromStack = Inventory.nextFromStack(fromInventory, item, fromTag)
-            toSlot, toStack = Inventory.nextToStack(toInventory, item, toTag)
+            Inventory.removeItem(fromInventory, fromSlot.index, item, transferred)
+            Inventory.addItem(toInventory, toSlot.index, item, transferred, ItemApi.getItemMaxCount(item, 64))
+            fromSlot, fromCount = Inventory.nextFromSlot(fromInventory, item, fromTag)
+            toSlot, toOpen = Inventory.nextToSlot(toInventory, item, toTag)
         end
 
-        if transferredTotal > 0 then
-            print(toPrintTransferString(from, to, item, transferredTotal))
+        if alreadyTransferred > 0 then
+            print(toPrintTransferString(from, to, item, alreadyTransferred))
         end
     end)
 
@@ -118,5 +95,5 @@ return function(from, to, item, fromTag, toTag, total, rate, lockId)
 
     unlock()
 
-    return transferredTotal
+    return alreadyTransferred
 end

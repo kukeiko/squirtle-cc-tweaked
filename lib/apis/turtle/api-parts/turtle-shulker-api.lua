@@ -441,42 +441,16 @@ end
 ---@param shulker Inventory
 ---@return integer
 local function fakeMoveItem(item, quantity, shulker)
-    local nextSlot, nextStack = Inventory.nextToStack(shulker, item, "buffer")
-
-    if not nextSlot then
-        return 0
-    elseif not nextStack then
-        nextStack = {count = 0, name = item, maxCount = ItemApi.getItemMaxCount(item, defaultItemMaxCount)}
-        shulker.stacks[nextSlot.index] = nextStack
-    end
-
-    -- [todo] ❌ similar/duplicate logic as in moveItem()
-    local moved = math.min(nextStack.maxCount - nextStack.count, quantity)
-    nextStack.count = nextStack.count + moved
-
-    if not shulker.items[item] then
-        shulker.items[item] = 0
-    end
-
-    shulker.items[item] = shulker.items[item] + moved
-
-    return moved
-end
-
----@param item string
----@param quantity integer
----@param shulker Inventory
----@return integer
-local function fakeMoveItemFully(item, quantity, shulker)
     local open = quantity
 
     while open > 0 do
-        local moved = fakeMoveItem(item, open, shulker)
+        local nextSlot = Inventory.nextToSlot(shulker, item, "buffer")
 
-        if moved == 0 then
+        if not nextSlot then
             break
         end
 
+        local moved = Inventory.addItem(shulker, nextSlot.index, item, quantity, ItemApi.getItemMaxCount(item, defaultItemMaxCount))
         open = open - moved
     end
 
@@ -493,7 +467,7 @@ function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
     for _, shulker in pairs(shulkers) do
         for item in pairs(shulker.items) do
             if open[item] then
-                open[item] = open[item] - fakeMoveItemFully(item, open[item], shulker)
+                open[item] = open[item] - fakeMoveItem(item, open[item], shulker)
 
                 if open[item] == 0 then
                     open[item] = nil
@@ -504,7 +478,7 @@ function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
 
     for _, item in pairs(Utils.getKeys(open)) do
         for _, shulker in pairs(shulkers) do
-            open[item] = open[item] - fakeMoveItemFully(item, open[item], shulker)
+            open[item] = open[item] - fakeMoveItem(item, open[item], shulker)
 
             if open[item] == 0 then
                 open[item] = nil

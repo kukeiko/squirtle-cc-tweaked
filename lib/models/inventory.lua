@@ -228,13 +228,13 @@ end
 ---@param inventory Inventory
 ---@param item string
 ---@param tag InventorySlotTag
----@return InventorySlot? slot, ItemStack? stack
-function Inventory.nextFromStack(inventory, item, tag)
+---@return InventorySlot? slot, integer? available
+function Inventory.nextFromSlot(inventory, item, tag)
     for index, slot in pairs(inventory.slots) do
         local stack = inventory.stacks[index]
 
         if Inventory.slotCanProvideItem(slot, stack, tag, item) then
-            return slot, stack
+            return slot, stack and stack.count or nil
         end
     end
 end
@@ -242,26 +242,51 @@ end
 ---@param inventory Inventory
 ---@param item string
 ---@param tag InventorySlotTag
----@return InventorySlot? slot
+---@return InventorySlot? slot, integer? open
 function Inventory.nextToSlot(inventory, item, tag)
     for index, slot in pairs(inventory.slots) do
         if Inventory.slotCanTakeItem(slot, inventory.stacks[index], tag, inventory.allowAllocate, item) then
-            return slot
+            local stack = inventory.stacks[index]
+
+            return slot, stack and (stack.maxCount - stack.count) or nil
         end
     end
 end
 
 ---@param inventory Inventory
+---@param slotIndex integer
 ---@param item string
----@param tag InventorySlotTag
----@return InventorySlot? slot, ItemStack? stack
-function Inventory.nextToStack(inventory, item, tag)
-    for index, slot in pairs(inventory.slots) do
-        local stack = inventory.stacks[index]
+---@param quantity integer
+---@param maxCount integer
+---@return integer
+function Inventory.addItem(inventory, slotIndex, item, quantity, maxCount)
+    local stack = inventory.stacks[slotIndex]
 
-        if Inventory.slotCanTakeItem(slot, stack, tag, inventory.allowAllocate, item) then
-            return slot, stack
-        end
+    if not inventory.stacks[slotIndex] then
+        inventory.stacks[slotIndex] = {name = item, count = 0, maxCount = maxCount}
+        stack = inventory.stacks[slotIndex]
+    end
+
+    local transferred = math.min(quantity, stack.maxCount - stack.count)
+    stack.count = stack.count + transferred
+    inventory.items[item] = (inventory.items[item] or 0) + quantity
+
+    return transferred
+end
+
+---@param inventory Inventory
+---@param slotIndex integer
+---@param item string
+---@param quantity integer
+function Inventory.removeItem(inventory, slotIndex, item, quantity)
+    local stack = inventory.stacks[slotIndex]
+    local slot = inventory.slots[slotIndex]
+
+    inventory.items[item] = inventory.items[item] - quantity
+    stack.count = stack.count - quantity
+
+    if stack.count == 0 and not slot.permanent then
+        inventory.stacks[slot.index] = nil
     end
 end
 
