@@ -93,7 +93,7 @@ end
 ---@param slot? integer
 ---@return integer transferred
 function FurnacePeripheral.pullInput(furnace, from, slot, limit)
-    return peripheral.call(furnace, "pullItems", from, slot, limit, inputSlot)
+    return peripheral.call(furnace, "pullItems", from, slot, limit, inputSlot) or 0
 end
 
 ---@param furnace string

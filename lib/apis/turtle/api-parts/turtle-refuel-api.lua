@@ -73,6 +73,38 @@ end
 
 ---@param TurtleApi TurtleApi
 ---@param fuel integer
+---@param barrel string
+---@param ioChest string
+local function refuelViaInputOutput(TurtleApi, fuel, barrel, ioChest)
+    local function hasCharcoal()
+        return InventoryPeripheral.getItemCount(barrel, ItemApi.charcoal) > 0
+    end
+
+    if not TurtleApi.hasFuel(fuel) and not hasCharcoal() then
+        print(string.format("[fuel] need %d more fuel", TurtleApi.missingFuel(fuel)))
+    end
+
+    while not TurtleApi.hasFuel(fuel) do
+        local requiredCharcoal = math.ceil((fuel - TurtleApi.getFuelLevel()) / ItemApi.getRefuelAmount(ItemApi.charcoal))
+
+        while not hasCharcoal() do
+            TurtleApi.pullInput(ioChest, barrel, nil, {[ItemApi.charcoal] = requiredCharcoal})
+
+            if not not hasCharcoal() then
+                os.sleep(3)
+            end
+        end
+
+        TurtleApi.selectEmpty(1)
+        TurtleApi.suckItem(barrel, ItemApi.charcoal, requiredCharcoal)
+        TurtleApi.refuel()
+    end
+
+    print("[ready] have enough fuel:", TurtleApi.getFuelLevel())
+end
+
+---@param TurtleApi TurtleApi
+---@param fuel integer
 ---@param barrel string?
 ---@param ioChest string?
 function TurtleRefuelApi.refuelTo(TurtleApi, fuel, barrel, ioChest)
@@ -83,30 +115,7 @@ function TurtleRefuelApi.refuelTo(TurtleApi, fuel, barrel, ioChest)
     end
 
     if barrel and ioChest then
-        local function hasCharcoal()
-            return InventoryPeripheral.getItemCount(barrel, ItemApi.charcoal) > 0
-        end
-
-        if not TurtleApi.hasFuel(fuel) and not hasCharcoal() then
-            print("[waiting] for more charcoal to arrive")
-        end
-
-        while not TurtleApi.hasFuel(fuel) do
-            TurtleApi.pullInput(ioChest, barrel)
-
-            while not hasCharcoal() do
-                TurtleApi.pullInput(ioChest, barrel)
-                os.sleep(3)
-            end
-
-            local requiredCharcoal = math.ceil((fuel - TurtleApi.getFuelLevel()) / ItemApi.getRefuelAmount(ItemApi.charcoal))
-            TurtleApi.selectEmpty(1)
-            -- [todo] hardcoded value 64
-            TurtleApi.suckItem(barrel, ItemApi.charcoal, math.min(requiredCharcoal, 64))
-            TurtleApi.refuel()
-        end
-
-        print("[ready] have enough fuel:", TurtleApi.getFuelLevel())
+        refuelViaInputOutput(TurtleApi, fuel, barrel, ioChest)
     else
         refuelFromBackpack(TurtleApi, fuel)
 

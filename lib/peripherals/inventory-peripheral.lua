@@ -122,7 +122,7 @@ end
 function InventoryPeripheral.numEmptySlots(inventory)
     local size = InventoryPeripheral.getSize(inventory)
 
-    for _, item in pairs(InventoryPeripheral.getStacks(inventory)) do
+    for _ in pairs(InventoryPeripheral.getStacks(inventory)) do
         size = size - 1
     end
 

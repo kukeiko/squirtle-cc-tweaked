@@ -144,10 +144,13 @@ end, function()
 
     ---@param state NetherLumberjackAppState
     resumable:addMain("homework", function(state)
-        local inputItems = {[ItemApi.boneMeal] = state.minBoneMealForWork, [ItemApi.getFungus(state.variant)] = state.minFungiForWork}
-        TurtleApi.transferOutputInput("front", "bottom", inputItems)
-        TurtleApi.refuelTo(state.minFuel, "front", "bottom")
-        TurtleApi.suckAll("front")
+        TurtleApi.doHomework({
+            barrel = "front",
+            ioChest = "bottom",
+            minFuel = state.minFuel,
+            input = {required = {[ItemApi.boneMeal] = state.minBoneMealForWork, [ItemApi.getFungus(state.variant)] = state.minFungiForWork}}
+        })
+
         TurtleApi.move("up")
         TurtleApi.move()
 

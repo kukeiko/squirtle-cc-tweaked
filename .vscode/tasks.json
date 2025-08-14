@@ -92,7 +92,7 @@
         {
             "label": "build turtle:lumberjack",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/lumberjack"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/lumberjack"
         },
         {
             "label": "build turtle:nether-lumberjack",
@@ -162,7 +162,7 @@
         {
             "label": "build turtle:farmer",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farmer/farmer.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/farmer"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farmer.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/farmer"
         },
         {
             "label": "build pocket:turtle:dev",

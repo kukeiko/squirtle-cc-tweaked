@@ -13,6 +13,7 @@ local DatabaseApi = require "lib.apis.database.database-api"
 local getNative = require "lib.apis.turtle.functions.get-native"
 local findPath = require "lib.apis.turtle.functions.find-path"
 local digArea = require "lib.apis.turtle.functions.dig-area"
+local harvestBirchTree = require "lib.apis.turtle.functions.harvest-birch-tree"
 local requireItems = require "lib.apis.turtle.functions.require-items"
 
 ---@alias OrientationMethod "move" | "disk-drive"
@@ -871,6 +872,11 @@ function TurtleApi.digArea(depth, width, height, homePosition, homeFacing)
     return digArea(TurtleApi, depth, width, height, homePosition, homeFacing)
 end
 
+---@param minSaplings? integer
+function TurtleApi.harvestBirchTree(minSaplings)
+    harvestBirchTree(TurtleApi, minSaplings)
+end
+
 ---@param direction? string
 ---@param text? string
 ---@return boolean, string?
@@ -1390,23 +1396,49 @@ function TurtleApi.drop(direction, count)
 end
 
 ---@param side string
+---@param items? string[]
 ---@return boolean success if everything could be dumped
-function TurtleApi.tryDump(side)
-    local items = TurtleApi.getStacks()
+function TurtleApi.tryDump(side, items)
+    local stacks = TurtleApi.getStacks()
 
-    for slot in pairs(items) do
-        TurtleApi.select(slot)
-        TurtleApi.drop(side)
+    for slot, stack in pairs(stacks) do
+        if not items or Utils.contains(items, stack.name) then
+            TurtleApi.select(slot)
+            TurtleApi.drop(side)
+        end
     end
 
-    return TurtleApi.isEmpty()
+    if items then
+        local stock = TurtleApi.getStock()
+
+        for item in pairs(items) do
+            if stock[item] then
+                return false
+            end
+        end
+
+        return true
+    else
+        return TurtleApi.isEmpty()
+    end
 end
 
 ---@param side string
-function TurtleApi.dump(side)
-    if not TurtleApi.tryDump(side) then
+---@param items? string[]
+function TurtleApi.dump(side, items)
+    if not TurtleApi.tryDump(side, items) then
         error("failed to empty out inventory")
     end
+end
+
+---@param stash string
+function TurtleApi.drainStashDropper(stash)
+    repeat
+        local totalItemStock = InventoryApi.getTotalItemCount({stash}, "buffer")
+        redstone.setOutput("bottom", true)
+        os.sleep(.25)
+        redstone.setOutput("bottom", false)
+    until InventoryApi.getTotalItemCount({stash}, "buffer") == totalItemStock
 end
 
 ---@param direction? string
@@ -1511,11 +1543,13 @@ end
 ---@param from string
 ---@param to string
 ---@param keep? ItemStock
+---@param ignoreIfFull? string[]
 ---@return boolean success, ItemStock transferred, ItemStock open
-function TurtleApi.pushOutput(from, to, keep)
+function TurtleApi.pushOutput(from, to, keep, ignoreIfFull)
     keep = keep or {}
     local bufferStock = InventoryApi.getStock({from}, "buffer")
     local outputStock = InventoryApi.getStock({to}, "output")
+
     ---@type ItemStock
     local stock = {}
 
@@ -1525,15 +1559,29 @@ function TurtleApi.pushOutput(from, to, keep)
         end
     end
 
-    return InventoryApi.transfer({from}, {to}, stock, {fromTag = "buffer", toTag = "output"})
+    local transferredAll, transferred, open = InventoryApi.transfer({from}, {to}, stock, {fromTag = "buffer", toTag = "output"})
+
+    if transferredAll or not ignoreIfFull then
+        return transferredAll, transferred, open
+    else
+        local openIgnored = Utils.copy(open)
+
+        for _, item in pairs(ignoreIfFull) do
+            openIgnored[item] = nil
+        end
+
+        return Utils.isEmpty(openIgnored), transferred, open
+    end
 end
 
 ---@param from string
 ---@param to string
-function TurtleApi.pushAllOutput(from, to)
+---@param keep? ItemStock
+---@param ignoreIfFull? string[]
+function TurtleApi.pushAllOutput(from, to, keep, ignoreIfFull)
     local logged = false
 
-    while not TurtleApi.pushOutput(from, to) do
+    while not TurtleApi.pushOutput(from, to, keep, ignoreIfFull) do
         if not logged then
             -- [todo] sometimes is logged even though all output got pushed?
             print("[busy] output full, waiting...")
@@ -1579,46 +1627,98 @@ function TurtleApi.pullInput(from, to, transferredOutput, max)
     return InventoryApi.transfer({from}, {to}, items, {fromTag = "input", toTag = "buffer"})
 end
 
----@param barrel string
----@param ioChest string
----@param inputItems ItemStock
-function TurtleApi.transferOutputInput(barrel, ioChest, inputItems)
-    if not TurtleApi.probe("forward", ItemApi.barrel) then
-        error("expected barrel in front of me")
+---@class TurtleDoHomeworkOptions
+---@field barrel string
+---@field ioChest string
+---@field minFuel integer
+---@field drainDropper string?
+---@field input TurtleDoHomeworkInputOptions?
+---@field output TurtleDoHomeworkOutputOptions?
+---@class TurtleDoHomeworkInputOptions
+---@field required ItemStock?
+---@field max ItemStock?
+---@class TurtleDoHomeworkOutputOptions
+---@field kept ItemStock?
+---@field ignoreIfFull string[]?
+---@param options TurtleDoHomeworkOptions
+function TurtleApi.doHomework(options)
+    local required = options.input and options.input.required or {}
+    local maxPulled = options.input and options.input.max or {}
+    local keptOutput = options.output and options.output.kept or {}
+    local ignoreIfFull = options.output and options.output.ignoreIfFull or {}
+
+    if not TurtleApi.probe(options.barrel, ItemApi.barrel) then
+        error(string.format("expected barrel @ %s", options.barrel))
     end
 
-    if not TurtleApi.probe("bottom", ItemApi.chest) then
-        error("expected chest below me")
+    if not TurtleApi.probe(options.ioChest, ItemApi.chest) then
+        error(string.format("expected chest @ %s", options.ioChest))
     end
 
     print("[dump] items...")
-    TurtleApi.dump(barrel)
-    print("[push] output...")
-    TurtleApi.pushAllOutput(barrel, ioChest)
-    print("[pull] input...")
-    TurtleApi.pullInput(ioChest, barrel)
+    TurtleApi.dump(options.barrel)
 
-    ---@return boolean
-    local function needsMoreInput()
-        for item, quantity in pairs(inputItems) do
-            if InventoryPeripheral.getItemCount(barrel, item) < quantity then
-                return true
+    if options.drainDropper then
+        print("[drain] dropper...")
+        TurtleApi.drainStashDropper(options.drainDropper)
+    end
+
+    print("[push] output...")
+    TurtleApi.pushAllOutput(options.barrel, options.ioChest, keptOutput, ignoreIfFull)
+    print("[pull] input...")
+
+    maxPulled[ItemApi.charcoal] = 0
+    TurtleApi.pullInput(options.ioChest, options.barrel, nil, maxPulled)
+
+    ---@return ItemStock
+    local function getMissingInputStock()
+        ---@type ItemStock
+        local missing = {}
+
+        for item, quantity in pairs(required) do
+            if InventoryPeripheral.getItemCount(options.barrel, item) < quantity then
+                missing[item] = quantity - InventoryPeripheral.getItemCount(options.barrel, item)
             end
         end
 
-        return false
+        return missing
     end
 
-    if needsMoreInput() then
+    ---@return boolean
+    local function needsMoreInput()
+        return not Utils.isEmpty(getMissingInputStock())
+    end
+
+    ---@param missing ItemStock
+    local function printWaitingForMissingInputStock(missing)
         print("[waiting] for more input to arrive")
 
-        while needsMoreInput() do
-            os.sleep(3)
-            TurtleApi.pullInput(ioChest, barrel)
+        for item, quantity in pairs(missing) do
+            print(string.format(" - %dx %s", quantity, item))
         end
     end
 
-    print("[ready] input looks good!")
+    if needsMoreInput() then
+        local missing = getMissingInputStock()
+        printWaitingForMissingInputStock(missing)
+
+        while needsMoreInput() do
+            os.sleep(3)
+            TurtleApi.pullInput(options.ioChest, options.barrel, nil, maxPulled)
+            local updatedMissing = getMissingInputStock()
+
+            if not ItemStock.isEqual(missing, updatedMissing) then
+                missing = updatedMissing
+                printWaitingForMissingInputStock(missing)
+            end
+        end
+    end
+
+    print("[input] looks good!")
+    print("[fuel] checking for fuel...")
+    TurtleApi.refuelTo(options.minFuel, options.barrel, options.ioChest)
+    print("[stash] loading up...")
+    TurtleApi.suckAll(options.barrel)
 end
 
 ---@param item string

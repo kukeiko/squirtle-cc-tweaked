@@ -4,6 +4,10 @@ local Utils = require "lib.tools.utils"
 local ItemApi = {
     barrel = "minecraft:barrel",
     beehive = "minecraft:beehive",
+    beetrootSeeds = "minecraft:beetroot_seeds",
+    birchLeaves = "minecraft:birch_leaves",
+    birchLog = "minecraft:birch_log",
+    birchSapling = "minecraft:birch_sapling",
     boneMeal = "minecraft:bone_meal",
     bucket = "minecraft:bucket",
     charcoal = "minecraft:charcoal",
@@ -36,8 +40,16 @@ local ItemApi = {
     moss = "minecraft:moss_block",
     netherWartBlock = "minecraft:nether_wart_block",
     networkCable = "computercraft:cable",
+    oakDoor = "minecraft:oak_door",
+    oakFence = "minecraft:oak_fence",
     oakLeaves = "minecraft:oak_leaves",
+    oakLog = "minecraft:oak_log",
+    oakPlanks = "minecraft:oak_planks",
+    oakSapling = "minecraft:oak_sapling",
+    oakStairs = "minecraft:oak_stairs",
+    oakTrapdoor = "minecraft:oak_trapdoor",
     observer = "minecraft:observer",
+    poisonousPotato = "minecraft:poisonous_potato",
     piston = "minecraft:piston",
     poppy = "minecraft:poppy",
     redCarpet = "minecraft:red_carpet",
@@ -49,11 +61,14 @@ local ItemApi = {
     shulkerBox = "minecraft:shulker_box",
     smoothStone = "minecraft:smooth_stone",
     spruceDoor = "minecraft:spruce_door",
+    spruceFence = "minecraft:spruce_fence",
+    sprucePlanks = "minecraft:spruce_planks",
     spruceStairs = "minecraft:spruce_stairs",
     spruceTrapdoor = "minecraft:spruce_trapdoor",
-    sprucePlanks = "minecraft:spruce_planks",
+    stick = "minecraft:stick",
     stickyPiston = "minecraft:sticky_piston",
     stone = "minecraft:stone",
+    stoneBrickWall = "minecraft:stone_brick_wall",
     stoneStairs = "minecraft:stone_stairs",
     strippedSpruceLog = "minecraft:stripped_spruce_log",
     trapdoor = "minecraft:spruce_trapdoor",
@@ -66,10 +81,20 @@ local ItemApi = {
     waterBucket = "minecraft:water_bucket",
     weepingVines = "minecraft:weeping_vines",
     weepingVinesPlant = "minecraft:weeping_vines_plant",
+    wheatSeeds = "minecraft:wheat_seeds",
     wiredModem = "computercraft:wired_modem_full"
 }
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}
+
+local cropsReadyAges = {["minecraft:wheat"] = 7, ["minecraft:beetroots"] = 3, ["minecraft:potatoes"] = 7, ["minecraft:carrots"] = 7}
+
+local cropsToSeedsMap = {
+    ["minecraft:wheat"] = "minecraft:wheat_seeds",
+    ["minecraft:beetroots"] = "minecraft:beetroot_seeds",
+    ["minecraft:potatoes"] = "minecraft:potato",
+    ["minecraft:carrots"] = "minecraft:carrot"
+}
 
 ---@type ItemDetails
 local itemDetails = {}
@@ -192,6 +217,38 @@ function ItemApi.getRefuelAmount(item)
     end
 
     return fuelItems[item]
+end
+
+---@param item string
+---@return string
+function ItemApi.getSeedsOfCrop(item)
+    if not cropsToSeedsMap[item] then
+        error(string.format("%s is not a crop", item))
+    end
+
+    return cropsToSeedsMap[item]
+end
+
+---@param crops Block
+---@return integer
+function ItemApi.getCropsRemainingAge(crops)
+    if not ItemApi.isCropsBlock(crops) then
+        error(string.format("block is not crops"))
+    end
+
+    local readyAge = cropsReadyAges[crops.name]
+
+    if not readyAge then
+        error(string.format("no ready age known for %s", crops.name))
+    end
+
+    return readyAge - crops.state.age
+end
+
+---@param block Block
+---@return boolean
+function ItemApi.isCropsBlock(block)
+    return block.tags["minecraft:crops"]
 end
 
 return ItemApi

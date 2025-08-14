@@ -298,7 +298,7 @@ end
 ---@param toTag InventorySlotTag
 ---@param items ItemStock
 ---@param options? TransferOptions
----@return boolean success, ItemStock transferred, ItemStock open
+---@return boolean transferredAll, ItemStock transferred, ItemStock open
 local function transfer(from, fromTag, to, toTag, items, options)
     ---@type ItemStock
     local transferredTotal = {}
@@ -314,7 +314,7 @@ local function transfer(from, fromTag, to, toTag, items, options)
             if transferred < quantity then
                 open[item] = quantity - transferred
             end
-        else
+        elseif quantity > 0 then
             open[item] = quantity
         end
     end
@@ -326,7 +326,7 @@ end
 ---@param to InventoryHandle
 ---@param stock ItemStock
 ---@param options? TransferOptions
----@return boolean success, ItemStock transferred, ItemStock open
+---@return boolean transferredAll, ItemStock transferred, ItemStock open
 function InventoryApi.transfer(from, to, stock, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
 
