@@ -404,8 +404,8 @@ function InventoryApi.fulfill(from, to, stock, options)
     end
 
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
-    -- [todo] ❓ why are we locking "fromInventories" - I would've imagined we'd lock "toInventories" instead?
-    local lockSuccess, unlock, lockId = InventoryLocks.lock(fromInventories, options.lockId)
+    -- we're locking the toInventories to correctly read the open stock
+    local lockSuccess, unlock, lockId = InventoryLocks.lock(toInventories, options.lockId)
 
     if not lockSuccess then
         -- [todo] ❌ it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect" and "there were not enough items"
