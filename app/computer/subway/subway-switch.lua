@@ -17,6 +17,12 @@ local RemoteService = require "lib.systems.runtime.remote-service"
 
 print(string.format("[subway-switch %s] booting...", version()))
 
+-- fixes a bug where we can't set a signal of 0 if chunk unloaded
+local currentSignal = redstone.getAnalogInput("bottom")
+redstone.setAnalogOutput("bottom", 15)
+os.sleep(1)
+redstone.setAnalogOutput("bottom", currentSignal)
+
 local maxDistance = tonumber(arg[1])
 
 if maxDistance then
