@@ -2,6 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
+local DatabaseApi = require "lib.apis.database.database-api"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 
@@ -39,6 +40,24 @@ function InventoryCollection.resolve(inventories)
     return Utils.map(inventories, function(inventory)
         return InventoryCollection.get(inventory)
     end)
+end
+
+---@param bufferId integer
+---@return string[]
+function InventoryCollection.resolveBuffer(bufferId)
+    return DatabaseApi.getAllocatedBuffer(bufferId).inventories
+end
+
+---@param handle InventoryHandle
+---@return string[]
+function InventoryCollection.resolveHandle(handle)
+    if type(handle) == "number" then
+        return InventoryCollection.resolveBuffer(handle)
+    elseif type(handle) == "string" then
+        return {InventoryCollection.getByTypeAndLabel("stash", handle).name}
+    else
+        return handle --[[@as table<string>]]
+    end
 end
 
 ---@return Inventory[]
@@ -130,6 +149,19 @@ function InventoryCollection.refresh(inventories, lockId)
             os.sleep(1)
         end
     end
+end
+
+---@param bufferId integer
+function InventoryCollection.freeBuffer(bufferId)
+    DatabaseApi.deleteAllocatedBuffer(bufferId)
+end
+
+---@param bufferId integer
+---@return ItemStock
+function InventoryCollection.getBufferStock(bufferId)
+    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
+
+    return InventoryCollection.getStock(buffer.inventories, "buffer")
 end
 
 ---@param inventories string[]

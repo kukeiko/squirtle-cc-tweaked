@@ -167,7 +167,7 @@ function StorageService.allocateTaskBufferForStock(taskId, stock)
     return InventoryApi.allocateTaskBuffer(taskId, slotCount)
 end
 
----[todo] to be replaced by a more generic method that accepts InventoryHandle
+---[todo] ❌ to be replaced by a more generic method that accepts InventoryHandle
 ---@param bufferId integer
 ---@return ItemStock
 function StorageService.getBufferStock(bufferId)

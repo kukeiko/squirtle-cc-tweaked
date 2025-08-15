@@ -8,21 +8,10 @@ local InventoryLocks = require "lib.apis.inventory.inventory-locks"
 local DatabaseApi = require "lib.apis.database.database-api"
 local moveItem = require "lib.apis.inventory.move-item"
 local ItemApi = require "lib.apis.item-api"
+local getTransferArguments = require "lib.apis.inventory.get-transfer-arguments"
 
 ---@class InventoryApi
 local InventoryApi = {}
-
----@param handle InventoryHandle
----@return string[]
-local function resolveHandle(handle)
-    if type(handle) == "number" then
-        return InventoryApi.resolveBuffer(handle)
-    elseif type(handle) == "string" then
-        return {InventoryApi.getByTypeAndLabel("stash", handle)}
-    else
-        return handle --[[@as table<string>]]
-    end
-end
 
 ---@param names string[]
 ---@param item string
@@ -52,7 +41,7 @@ end
 
 ---@param inventories InventoryHandle
 function InventoryApi.refreshInventories(inventories)
-    InventoryCollection.refresh(resolveHandle(inventories))
+    InventoryCollection.refresh(InventoryCollection.resolveHandle(inventories))
 end
 
 ---@return string[]
@@ -149,78 +138,6 @@ end
 ---@return boolean
 local function isBufferHandle(handle)
     return type(handle) == "number"
-end
-
----@param handle InventoryHandle
----@return InventoryType?
-local function getTypeByHandle(handle)
-    if type(handle) == "number" then
-        return "buffer"
-    elseif type(handle) == "string" then
-        return "stash"
-    end
-
-    return nil
-end
-
----@param type InventoryType?
----@param options TransferOptions
----@return TransferOptions
-local function getDefaultFromOptions(type, options)
-    if type == "buffer" and options.fromSequential == nil then
-        options.fromSequential = true
-    end
-
-    if options.fromTag == nil then
-        if type == "buffer" or type == "stash" then
-            options.fromTag = "buffer"
-        else
-            options.fromTag = "output"
-        end
-    end
-
-    return options
-end
-
----@param type InventoryType?
----@param options TransferOptions
----@return TransferOptions
-local function getDefaultToOptions(type, options)
-    if type == "buffer" and options.toSequential == nil then
-        options.toSequential = true
-    end
-
-    if options.toTag == nil then
-        if type == "buffer" or type == "stash" then
-            options.toTag = "buffer"
-        else
-            options.toTag = "input"
-        end
-    end
-
-    return options
-end
-
----@param handle InventoryHandle
----@param options? TransferOptions
----@return string[] inventories, TransferOptions options
-local function getToHandleTransferArguments(handle, options)
-    local type = getTypeByHandle(handle)
-
-    return resolveHandle(handle), getDefaultToOptions(type, options or {})
-end
-
----@param from InventoryHandle
----@param to InventoryHandle
----@param options? TransferOptions
----@return string[] from, string[] to, TransferOptions options
-local function getTransferArguments(from, to, options)
-    local fromType = getTypeByHandle(from)
-    local toType = getTypeByHandle(to)
-    local options = getDefaultFromOptions(fromType, options or {})
-    options = getDefaultToOptions(toType, options)
-
-    return resolveHandle(from), resolveHandle(to), options
 end
 
 ---@param from InventoryHandle
@@ -445,7 +362,7 @@ local bufferLocks = {}
 
 ---@param bufferId integer
 ---@return fun() : nil
-local function lock(bufferId)
+local function lockBuffer(bufferId)
     while bufferLocks[bufferId] do
         os.sleep(1)
     end
@@ -579,19 +496,14 @@ function InventoryApi.allocateTaskBuffer(taskId, slotCount)
     return allocatedBuffer.id
 end
 
----@param bufferId integer
----@param targetSlotCount integer
-function InventoryApi.resize(bufferId, targetSlotCount)
-    local unlock = lock(bufferId)
-    resize(bufferId, targetSlotCount)
-    unlock()
-end
-
+-- [todo] ❌ would like to move some core buffer logic out of the InventoryApi, but it uses InventoryApi.empty(),
+-- so I'll need some time to rework it. Probably should tackle it when I'm implementing the ability to await
+-- buffers (i.e. if there are not enough buffers => don't throw, just wait until there are enough)
 ---@param bufferId integer
 ---@param additionalStock ItemStock
 function InventoryApi.resizeBufferByStock(bufferId, additionalStock)
-    local unlock = lock(bufferId)
-    local bufferStock = InventoryApi.getBufferStock(bufferId)
+    local unlock = lockBuffer(bufferId)
+    local bufferStock = InventoryCollection.getBufferStock(bufferId)
     local totalStock = ItemStock.merge({bufferStock, additionalStock})
     local requiredSlots = ItemApi.getRequiredSlotCount(totalStock)
     resize(bufferId, requiredSlots)
@@ -599,40 +511,17 @@ function InventoryApi.resizeBufferByStock(bufferId, additionalStock)
 end
 
 ---@param bufferId integer
-function InventoryApi.freeBuffer(bufferId)
-    DatabaseApi.deleteAllocatedBuffer(bufferId)
-end
-
----@param bufferId integer
----@return string[]
-function InventoryApi.resolveBuffer(bufferId)
-    return DatabaseApi.getAllocatedBuffer(bufferId).inventories
-end
-
----@param bufferId integer
 ---@return ItemStock
 function InventoryApi.getBufferStock(bufferId)
-    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
-
-    return InventoryApi.getStock(buffer.inventories, "buffer")
+    return InventoryCollection.getBufferStock(bufferId)
 end
 
 -- [todo] ❌ should throw if called twice
 ---@param bufferId integer
 ---@param to? InventoryHandle
 function InventoryApi.flushAndFreeBuffer(bufferId, to)
-    ---@type TransferOptions
-    local options = {fromSequential = true, fromTag = "buffer"}
-    ---@type string[]
-    local toInventories = {}
-
-    if not to then
-        toInventories = InventoryApi.getByType("storage")
-        options.toTag = "input"
-    else
-        toInventories, options = getToHandleTransferArguments(to, options)
-    end
-
+    to = to or InventoryApi.getByType("storage")
+    local _, toInventories, options = getTransferArguments(bufferId, to)
     local buffer = InventoryApi.getBuffer(bufferId)
 
     if to and isBufferHandle(to) then
@@ -646,7 +535,7 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
         os.sleep(7)
     end
 
-    InventoryApi.freeBuffer(bufferId)
+    InventoryCollection.freeBuffer(bufferId)
 end
 
 local function onPeripheralEventMountInventory()
