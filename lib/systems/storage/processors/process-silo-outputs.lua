@@ -4,7 +4,7 @@ return function()
     local success, e = pcall(function()
         local siloOutputs = InventoryApi.getRefreshedByType("silo:output")
         local storages = InventoryApi.getByType("storage")
-        InventoryApi.restock(siloOutputs, "output", storages, "input")
+        InventoryApi.restock(siloOutputs, storages)
     end)
 
     if not success then

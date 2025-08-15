@@ -33,20 +33,20 @@ return function()
         local furnaces = InventoryApi.getRefreshedByType("furnace")
         local storages = InventoryApi.getByType("storage")
         local siloInputs = InventoryApi.getByType("silo:input")
-        -- [todo] I'm pretty sure we can combine the next 3x .empty() calls by using the "toSequential = true" option,
+        -- [todo] ❌ I'm pretty sure we can combine the next 3x .empty() calls by using the "toSequential = true" option,
         -- and also the same with the 2x .empty() calls after
         InventoryApi.empty(furnaces, storages)
         InventoryApi.empty(furnaces, outputs)
         InventoryApi.empty(furnaces, siloInputs)
         InventoryApi.empty(outputs, storages)
         InventoryApi.empty(outputs, siloInputs)
-        InventoryApi.transferItem(furnaces, "fuel", storages, "input", "minecraft:bucket")
+        InventoryApi.transferItem(furnaces, storages, "minecraft:bucket", nil, {fromTag = "fuel"})
 
         print("[move] fuel from input")
         local inputs = InventoryApi.getRefreshedByType("furnace-input")
 
         for _, fuelItem in ipairs(fuelItems) do
-            InventoryApi.transferItem(inputs, "output", furnaces, "fuel", fuelItem)
+            InventoryApi.transferItem(inputs, furnaces, fuelItem, nil, {toTag = "fuel"})
         end
 
         local configurations = InventoryApi.getRefreshedByType("furnace-config")
@@ -58,7 +58,7 @@ return function()
             for smeltableItem, maxFurnaces in pairs(config) do
                 local targetFurnaces = getFurnacesForSmelting(furnaces, smeltableItem, maxFurnaces)
                 print(string.format("[config] %dx %s, %dx available", maxFurnaces, smeltableItem, #targetFurnaces))
-                InventoryApi.transferItem(inputs, "output", targetFurnaces, "input", smeltableItem)
+                InventoryApi.transferItem(inputs, targetFurnaces, smeltableItem)
             end
         else
             print("[info] no furnace configuration found")

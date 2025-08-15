@@ -4,9 +4,9 @@ return function()
     local success, e = pcall(function(...)
         local shulkers = InventoryApi.getRefreshedByType("shulker")
         local siloOutputs = InventoryApi.getByType("silo:output")
-        InventoryApi.restock(siloOutputs, "output", shulkers, "input")
+        InventoryApi.restock(siloOutputs, shulkers)
         local storages = InventoryApi.getByType("storage")
-        InventoryApi.restock(storages, "output", shulkers, "input")
+        InventoryApi.restock(storages, shulkers)
     end)
 
     if not success then

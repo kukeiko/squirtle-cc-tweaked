@@ -3,9 +3,9 @@ local InventoryApi = require "lib.apis.inventory.inventory-api"
 return function()
     local success, e = pcall(function()
         local io = InventoryApi.getRefreshedByType("io")
-        InventoryApi.restock(io, "output", io, "input")
+        InventoryApi.restock(io, io)
         local storages = InventoryApi.getByType("storage")
-        InventoryApi.restock(io, "output", storages, "input")
+        InventoryApi.restock(io, storages)
 
         local composterConfigs = InventoryApi.getRefreshedByType("composter-config")
 
@@ -14,7 +14,7 @@ return function()
             local configured = InventoryApi.getStock(composterConfigs, "configuration")
 
             for compostableItem in pairs(configured) do
-                InventoryApi.transferItem(io, "output", composterInputs, "input", compostableItem)
+                InventoryApi.transferItem(io, composterInputs, compostableItem)
             end
         end
     end)

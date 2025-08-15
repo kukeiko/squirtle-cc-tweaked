@@ -22,8 +22,8 @@ return function()
             local composterInputs = InventoryApi.getRefreshedByType("composter-input")
             local configured = InventoryApi.getStock(composterConfigs, "configuration")
 
-            for compostableItem, _ in pairs(configured) do
-                InventoryApi.transferItem(dumps, "output", composterInputs, "input", compostableItem)
+            for compostableItem in pairs(configured) do
+                InventoryApi.transferItem(dumps, composterInputs, compostableItem)
             end
         end
 
@@ -36,7 +36,7 @@ return function()
 
         for dumpedItem, dumpedCount in pairs(dumpedStock) do
             if not storedStock[dumpedItem] and not composterConfiguredStock[dumpedItem] and not quickAccessStock[dumpedItem] then
-                InventoryApi.transferItem(dumps, "output", trash, "input", dumpedItem, dumpedCount)
+                InventoryApi.transferItem(dumps, trash, dumpedItem, dumpedCount)
             end
         end
     end)

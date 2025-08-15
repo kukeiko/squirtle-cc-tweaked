@@ -223,44 +223,42 @@ local function getTransferArguments(from, to, options)
     return resolveHandle(from), resolveHandle(to), options
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param item string
 ---@param quantity? integer
 ---@param options? TransferOptions
 ---@return integer transferredTotal
-local function transferItem(from, fromTag, to, toTag, item, quantity, options)
-    from = getFromCandidates(from, item, fromTag)
-    to = getToCandidates(to, item, toTag)
-
-    options = options or {}
-    local total = quantity or InventoryCollection.getItemCount(from, item, fromTag)
+local function transferItem(from, to, item, quantity, options)
+    local fromInventories, toInventories, options = getTransferArguments(from, to, options)
+    local fromTag, toTag = options.fromTag --[[@as InventorySlotTag]] , options.toTag --[[@as InventorySlotTag]]
+    fromInventories = getFromCandidates(fromInventories, item, fromTag)
+    toInventories = getToCandidates(toInventories, item, toTag)
+    local total = quantity or InventoryCollection.getItemCount(fromInventories, item, fromTag)
     local totalTransferred = 0
 
-    while totalTransferred < total and #from > 0 and #to > 0 do
-        if #from == 1 and #to == 1 and from[1] == to[1] then
+    while totalTransferred < total and #fromInventories > 0 and #toInventories > 0 do
+        if #fromInventories == 1 and #toInventories == 1 and fromInventories[1] == toInventories[1] then
             break
         end
 
         local transferPerOutput = (total - totalTransferred)
 
         if not options.fromSequential then
-            transferPerOutput = transferPerOutput / #from
+            transferPerOutput = transferPerOutput / #fromInventories
         end
 
         local transferPerInput = math.max(1, math.floor(transferPerOutput))
 
         if not options.toSequential then
-            transferPerInput = math.max(1, math.floor(transferPerOutput / #to))
+            transferPerInput = math.max(1, math.floor(transferPerOutput / #toInventories))
         end
 
         --- [todo] ❌ in regards to locking/unlocking:
         --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
         --- we really should have that functionality again to make sure the system is not super slow in some cases
-        for _, fromName in ipairs(from) do
-            for _, toName in ipairs(to) do
+        for _, fromName in ipairs(fromInventories) do
+            for _, toName in ipairs(toInventories) do
                 if fromName ~= toName then
                     local transferred = moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate, options.lockId)
                     totalTransferred = totalTransferred + transferred
@@ -272,41 +270,36 @@ local function transferItem(from, fromTag, to, toTag, item, quantity, options)
             end
         end
 
-        from = getFromCandidates(from, item, fromTag)
-        to = getToCandidates(to, item, toTag)
+        fromInventories = getFromCandidates(fromInventories, item, fromTag)
+        toInventories = getToCandidates(toInventories, item, toTag)
     end
 
     return totalTransferred
 end
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param item string
 ---@param quantity? integer
 ---@param options? TransferOptions
 ---@return integer transferredTotal
-function InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, options)
-    -- [todo] ❌ rework to accept InventoryHandle
-    return transferItem(from, fromTag, to, toTag, item, quantity, options)
+function InventoryApi.transferItem(from, to, item, quantity, options)
+    return transferItem(from, to, item, quantity, options)
 end
 
--- [todo] ❌ i've added fromTag & toTag to the TransferOptions, so should remove it from the function params as well
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param items ItemStock
 ---@param options? TransferOptions
 ---@return boolean transferredAll, ItemStock transferred, ItemStock open
-local function transfer(from, fromTag, to, toTag, items, options)
+local function transferStock(from, to, items, options)
     ---@type ItemStock
     local transferredTotal = {}
     ---@type ItemStock
     local open = {}
 
     for item, quantity in pairs(items) do
-        local transferred = InventoryApi.transferItem(from, fromTag, to, toTag, item, quantity, options)
+        local transferred = transferItem(from, to, item, quantity, options)
 
         if transferred > 0 then
             transferredTotal[item] = transferred
@@ -328,26 +321,23 @@ end
 ---@param options? TransferOptions
 ---@return boolean transferredAll, ItemStock transferred, ItemStock open
 function InventoryApi.transfer(from, to, stock, options)
-    local fromInventories, toInventories, options = getTransferArguments(from, to, options)
-
     if isBufferHandle(to) then
         local bufferId = to --[[@as integer]]
         InventoryApi.resizeBufferByStock(bufferId, stock)
     end
 
-    return transfer(fromInventories, options.fromTag, toInventories, options.toTag, stock, options)
+    return transferStock(from, to, stock, options)
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
-function InventoryApi.restock(from, fromTag, to, toTag, options)
-    -- [todo] ❌ rework to accept InventoryHandle
-    local fromStock = InventoryApi.getStock(from, fromTag)
-    local openStock = InventoryApi.getOpenStock(to, toTag)
+function InventoryApi.restock(from, to, options)
+    local fromInventories, toInventories, options = getTransferArguments(from, to, options)
+    local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
+    local openStock = InventoryApi.getOpenStock(toInventories, options.toTag)
+
     ---@type ItemStock
     local filteredOpenStock = {}
 
@@ -355,7 +345,7 @@ function InventoryApi.restock(from, fromTag, to, toTag, options)
         filteredOpenStock[item] = openStock[item]
     end
 
-    return transfer(from, fromTag, to, toTag, filteredOpenStock, options)
+    return transferStock(fromInventories, toInventories, filteredOpenStock, options)
 end
 
 ---@param from InventoryHandle
@@ -389,7 +379,7 @@ function InventoryApi.empty(from, to, options)
         return false
     end)
 
-    return transfer(fromInventories, options.fromTag, toInventories, options.toTag, fromStock, options)
+    return transferStock(fromInventories, toInventories, fromStock, options)
 end
 
 ---@param from InventoryHandle
@@ -415,7 +405,7 @@ function InventoryApi.fulfill(from, to, stock, options)
     options.lockId = lockId
 
     local open = ItemStock.subtract(stock, InventoryApi.getStock(toInventories, options.toTag))
-    local transferSuccess, transferred, open = transfer(fromInventories, options.fromTag, toInventories, options.toTag, open, options)
+    local transferSuccess, transferred, open = transferStock(fromInventories, toInventories, open, options)
     unlock()
 
     return transferSuccess, transferred, open
@@ -444,7 +434,7 @@ function InventoryApi.keep(from, to, stock, options)
         InventoryApi.resizeBufferByStock(bufferId, open)
     end
 
-    local transferSuccess, transferred, open = transfer(fromInventories, options.fromTag, toInventories, options.toTag, open, options)
+    local transferSuccess, transferred, open = transferStock(fromInventories, toInventories, open, options)
     unlock()
 
     return transferSuccess, transferred, open
@@ -552,7 +542,7 @@ local function resize(bufferId, targetSlotCount)
             end
         end
 
-        -- [todo] what if the "removed" inventories still contain items?
+        -- [todo] ❌ what if the "removed" inventories still contain items?
         buffer.inventories = resizedInventories
     else
         local newlyAllocated = getAllocationCandidates(targetSlotCount - currentSlotCount)
@@ -579,7 +569,7 @@ function InventoryApi.allocateTaskBuffer(taskId, slotCount)
     local allocatedBuffer = DatabaseApi.findAllocatedBuffer(taskId)
 
     if allocatedBuffer then
-        -- [todo] check if slotCount can still be fulfilled
+        -- [todo] ❌ check if slotCount can still be fulfilled
         return allocatedBuffer.id
     end
 
@@ -646,7 +636,7 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
     local buffer = InventoryApi.getBuffer(bufferId)
 
     if to and isBufferHandle(to) then
-        -- [todo] duplicated from InventoryApi.empty()
+        -- [todo] ❌ duplicated from InventoryApi.empty()
         local fromStock = InventoryApi.getStock(buffer.inventories, "buffer")
         local bufferId = to --[[@as integer]]
         InventoryApi.resizeBufferByStock(bufferId, fromStock)

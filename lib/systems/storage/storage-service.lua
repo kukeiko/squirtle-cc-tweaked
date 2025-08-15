@@ -56,14 +56,12 @@ function StorageService.transfer(from, to, stock)
     return InventoryApi.transfer(from, to, stock)
 end
 
----@param from string[]
----@param fromTag InventorySlotTag
----@param to string[]
----@param toTag InventorySlotTag
+---@param from InventoryHandle
+---@param to InventoryHandle
 ---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
-function StorageService.restock(from, fromTag, to, toTag, options)
-    return InventoryApi.restock(from, fromTag, to, toTag, options)
+function StorageService.restock(from, to, options)
+    return InventoryApi.restock(from, to, options)
 end
 
 ---@param from InventoryHandle
