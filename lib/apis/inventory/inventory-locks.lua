@@ -61,18 +61,6 @@ end
 
 ---@param inventories string[]
 ---@param lockId integer
-local function isLocked(inventories, lockId)
-    for _, inventory in pairs(inventories) do
-        if locks[inventory] and locks[inventory].lockId ~= lockId then
-            return true
-        end
-    end
-
-    return false
-end
-
----@param inventories string[]
----@param lockId integer
 local function queue(inventories, lockId)
     ---@type QueuedInventoryUnlock
     local lock = {lockId = lockId, inventories = inventories}
@@ -81,7 +69,7 @@ end
 
 local function dequeue()
     local unlockIndex = Utils.findIndex(unlockQueue, function(item)
-        return not isLocked(item.inventories, item.lockId)
+        return not InventoryLocks.isLocked(item.inventories, item.lockId)
     end)
 
     if unlockIndex then
@@ -127,6 +115,18 @@ local function awaitDisconnect(inventories)
     end
 end
 
+---@param inventories string[]
+---@param lockId? integer
+function InventoryLocks.isLocked(inventories, lockId)
+    for _, inventory in pairs(inventories) do
+        if locks[inventory] and locks[inventory].lockId ~= lockId then
+            return true
+        end
+    end
+
+    return false
+end
+
 ---Suspends current coroutine until all given inventories could be locked. Inventories can only be locked if they are unlocked,
 ---or if their lock matches by the given lockId. Returns false if during waiting for unlock one or more inventories got detached.
 ---Unlock again by calling the returned unlock function. Share the lockId with other functions that might operate on the same inventories.
@@ -136,7 +136,7 @@ end
 function InventoryLocks.lock(inventories, lockId)
     lockId = lockId or getNextLockId()
 
-    while isLocked(inventories, lockId) do
+    while InventoryLocks.isLocked(inventories, lockId) do
         queue(inventories, lockId)
         local disconnected = false
 

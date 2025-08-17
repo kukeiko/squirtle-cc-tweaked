@@ -2,36 +2,17 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
+local DatabaseApi = require "lib.apis.database.database-api"
+local ItemApi = require "lib.apis.item-api"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
-local DatabaseApi = require "lib.apis.database.database-api"
-local moveItem = require "lib.apis.inventory.move-item"
-local ItemApi = require "lib.apis.item-api"
+local transferStock = require "lib.apis.inventory.transfer-stock"
+local transferItem = require "lib.apis.inventory.transfer-item"
 local getTransferArguments = require "lib.apis.inventory.get-transfer-arguments"
 
 ---@class InventoryApi
 local InventoryApi = {}
-
----@param names string[]
----@param item string
----@param tag InventorySlotTag
----@return string[] candidates
-local function getFromCandidates(names, item, tag)
-    return Utils.filter(names, function(name)
-        return InventoryCollection.isMounted(name) and Inventory.canProvideItem(InventoryCollection.get(name), item, tag)
-    end)
-end
-
----@param names string[]
----@param item string
----@param tag InventorySlotTag
----@return string[] candidates
-local function getToCandidates(names, item, tag)
-    return Utils.filter(names, function(name)
-        return InventoryCollection.isMounted(name) and Inventory.canTakeItem(InventoryCollection.get(name), item, tag)
-    end)
-end
 
 ---@param type InventoryType
 function InventoryApi.refresh(type)
@@ -146,90 +127,8 @@ end
 ---@param quantity? integer
 ---@param options? TransferOptions
 ---@return integer transferredTotal
-local function transferItem(from, to, item, quantity, options)
-    local fromInventories, toInventories, options = getTransferArguments(from, to, options)
-    local fromTag, toTag = options.fromTag --[[@as InventorySlotTag]] , options.toTag --[[@as InventorySlotTag]]
-    fromInventories = getFromCandidates(fromInventories, item, fromTag)
-    toInventories = getToCandidates(toInventories, item, toTag)
-    local total = quantity or InventoryCollection.getItemCount(fromInventories, item, fromTag)
-    local totalTransferred = 0
-
-    while totalTransferred < total and #fromInventories > 0 and #toInventories > 0 do
-        if #fromInventories == 1 and #toInventories == 1 and fromInventories[1] == toInventories[1] then
-            break
-        end
-
-        local transferPerOutput = (total - totalTransferred)
-
-        if not options.fromSequential then
-            transferPerOutput = transferPerOutput / #fromInventories
-        end
-
-        local transferPerInput = math.max(1, math.floor(transferPerOutput))
-
-        if not options.toSequential then
-            transferPerInput = math.max(1, math.floor(transferPerOutput / #toInventories))
-        end
-
-        --- [todo] ❌ in regards to locking/unlocking:
-        --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
-        --- we really should have that functionality again to make sure the system is not super slow in some cases
-        for _, fromName in ipairs(fromInventories) do
-            for _, toName in ipairs(toInventories) do
-                if fromName ~= toName then
-                    local transferred = moveItem(fromName, toName, item, fromTag, toTag, transferPerInput, options.rate, options.lockId)
-                    totalTransferred = totalTransferred + transferred
-
-                    if totalTransferred == total then
-                        return totalTransferred
-                    end
-                end
-            end
-        end
-
-        fromInventories = getFromCandidates(fromInventories, item, fromTag)
-        toInventories = getToCandidates(toInventories, item, toTag)
-    end
-
-    return totalTransferred
-end
-
----@param from InventoryHandle
----@param to InventoryHandle
----@param item string
----@param quantity? integer
----@param options? TransferOptions
----@return integer transferredTotal
 function InventoryApi.transferItem(from, to, item, quantity, options)
     return transferItem(from, to, item, quantity, options)
-end
-
----@param from InventoryHandle
----@param to InventoryHandle
----@param items ItemStock
----@param options? TransferOptions
----@return boolean transferredAll, ItemStock transferred, ItemStock open
-local function transferStock(from, to, items, options)
-    ---@type ItemStock
-    local transferredTotal = {}
-    ---@type ItemStock
-    local open = {}
-
-    for item, quantity in pairs(items) do
-        local transferred = transferItem(from, to, item, quantity, options)
-
-        if transferred > 0 then
-            transferredTotal[item] = transferred
-
-            if transferred < quantity then
-                open[item] = quantity - transferred
-            end
-        elseif quantity > 0 then
-            open[item] = quantity
-        end
-    end
-
-    return Utils.isEmpty(open), transferredTotal, open
 end
 
 ---@param from InventoryHandle

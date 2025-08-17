@@ -26,25 +26,23 @@ end
 ---@param from string
 ---@param to string
 ---@param item string
----@param fromTag InventorySlotTag
----@param toTag InventorySlotTag
 ---@param total integer
----@param rate? integer
----@param lockId? integer
+---@param options? TransferOptions
 ---@return integer transferredTotal
-return function(from, to, item, fromTag, toTag, total, rate, lockId)
+return function(from, to, item, total, options)
     if total <= 0 then
         return 0
     end
 
-    local lockSuccess, unlock, lockId = InventoryLocks.lock({from, to}, lockId)
+    options = options or {}
+    local fromTag, toTag, rate = options.fromTag or "output", options.toTag or "input", options.rate or getDefaultRate()
+    local lockSuccess, unlock, lockId = InventoryLocks.lock({from, to}, options.lockId)
 
     if not lockSuccess then
         return 0
     end
 
     local alreadyTransferred = 0
-    rate = rate or getDefaultRate()
 
     local success, e = pcall(function()
         local fromInventory = InventoryCollection.get(from)
