@@ -16,6 +16,10 @@ local TurtleService = require "lib.systems.turtle-service"
 local Resumable = require "lib.apis.turtle.resumable"
 local buildSmallHouse = require "lib.systems.builders.build-small-house"
 
+local function printUsage()
+    print("Usage: small-house <spruce|oak>")
+end
+
 EventLoop.run(function()
     EventLoop.runUntil("small-house:stop", function()
         Rpc.host(TurtleService)
@@ -24,8 +28,13 @@ end, function()
     local resumable = Resumable.new("small-house")
 
     resumable:setStart(function(args, options)
+        if args[1] ~= "spruce" and args[1] ~= "oak" then
+            return printUsage()
+        end
+
         ---@class SmallHouseAppState
-        local state = {}
+        ---@field theme BuildSmallHouseTheme
+        local state = {theme = args[1]}
 
         TurtleApi.orientate("disk-drive")
         options.requireFuel = true
@@ -41,7 +50,7 @@ end, function()
 
     ---@param state SmallHouseAppState
     resumable:addSimulatableMain("small-house", function(state)
-        buildSmallHouse()
+        buildSmallHouse(state.theme)
     end)
 
     local success, message = pcall(function(...)

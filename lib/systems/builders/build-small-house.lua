@@ -14,6 +14,10 @@ local strafe = TurtleApi.strafe
 local around = TurtleApi.around
 local dig = TurtleApi.dig
 
+---
+---@alias BuildSmallHouseTheme "spruce" | "oak"
+---
+
 ---@param direction? string
 local function clickTrapdoor(direction)
     if not TurtleApi.isSimulating() then
@@ -38,7 +42,62 @@ local function digHelperBlock(direction, item)
     -- end
 end
 
-local function buildFoundation()
+---@param theme BuildSmallHouseTheme
+local function log(theme)
+    if theme == "spruce" then
+        return ItemApi.strippedSpruceLog
+    else
+        return ItemApi.strippedOakLog
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function planks(theme)
+    if theme == "spruce" then
+        return ItemApi.sprucePlanks
+    else
+        return ItemApi.oakPlanks
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function fence(theme)
+    if theme == "spruce" then
+        return ItemApi.darkOakFence
+    else
+        return ItemApi.spruceFence
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function slab(theme)
+    if theme == "spruce" then
+        return ItemApi.darkOakSlab
+    else
+        return ItemApi.spruceSlab
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function stairs(theme)
+    if theme == "spruce" then
+        return ItemApi.spruceStairs
+    else
+        return ItemApi.oakStairs
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function roofStairs(theme)
+    if theme == "spruce" then
+        return ItemApi.darkOakStairs
+    else
+        return ItemApi.spruceStairs
+    end
+end
+
+---@param theme BuildSmallHouseTheme
+local function buildFoundation(theme)
     right()
     forward(1)
     right()
@@ -48,11 +107,11 @@ local function buildFoundation()
     -- left border going back
     for i = 1, 5 do
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
 
         if i >= 2 and i <= 4 then
             left()
-            ahead(ItemApi.sprucePlanks)
+            ahead(planks(theme))
             right()
         end
     end
@@ -64,18 +123,18 @@ local function buildFoundation()
             forward()
             ahead(ItemApi.dirt) -- helper block to orientate placed log
             back()
-            ahead(ItemApi.strippedSpruceLog)
+            ahead(log(theme))
         end
 
         left()
 
         for i = 1, 4 do
             back()
-            ahead(ItemApi.strippedSpruceLog)
+            ahead(log(theme))
 
             if i >= 2 and i <= 3 then
                 left()
-                ahead(ItemApi.sprucePlanks)
+                ahead(planks(theme))
                 right()
             end
         end
@@ -87,49 +146,50 @@ local function buildFoundation()
         forward()
         ahead(ItemApi.dirt) -- helper block to orientate placed log
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
     end
 
     -- front border
     left()
     back()
-    ahead(ItemApi.strippedSpruceLog)
+    ahead(log(theme))
     back()
-    ahead(ItemApi.strippedSpruceLog)
+    ahead(log(theme))
     left()
     -- fill in remaining floor
     forward()
-    ahead(ItemApi.sprucePlanks)
+    ahead(planks(theme))
     back()
-    ahead(ItemApi.sprucePlanks)
+    ahead(planks(theme))
     left()
-    ahead(ItemApi.strippedSpruceLog)
+    ahead(log(theme))
     up()
-    below(ItemApi.strippedSpruceLog) -- entrance block at door
+    below(log(theme)) -- entrance block at door
     forward(4)
     down()
     around()
-    ahead(ItemApi.strippedSpruceLog)
+    ahead(log(theme))
 end
 
-local function buildWalls()
+---@param theme BuildSmallHouseTheme
+local function buildWalls(theme)
     up(2)
     forward(2)
     -- layer #1
-    below(ItemApi.strippedSpruceLog)
+    below(log(theme))
     forward()
-    below(ItemApi.sprucePlanks)
+    below(planks(theme))
     forward(2) -- skip the doorway
-    below(ItemApi.sprucePlanks)
+    below(planks(theme))
 
     for _ = 1, 3 do
         forward()
-        below(ItemApi.strippedSpruceLog)
+        below(log(theme))
         left()
 
         for _ = 1, 3 do
             forward()
-            below(ItemApi.sprucePlanks)
+            below(planks(theme))
         end
     end
 
@@ -137,22 +197,22 @@ local function buildWalls()
     forward()
     up()
     left()
-    below(ItemApi.strippedSpruceLog)
+    below(log(theme))
     forward()
-    below(ItemApi.sprucePlanks)
+    below(planks(theme))
     forward(2) -- skip the doorway
-    below(ItemApi.sprucePlanks)
+    below(planks(theme))
 
     for _ = 1, 3 do
         forward()
-        below(ItemApi.strippedSpruceLog)
+        below(log(theme))
         left()
         forward()
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
         forward()
         below(ItemApi.glassPane)
         forward()
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
     end
 
     -- layer #3
@@ -161,11 +221,11 @@ local function buildWalls()
 
     for i = 1, 4 do
         left()
-        below(ItemApi.strippedSpruceLog)
+        below(log(theme))
 
         for _ = 1, 3 do
             forward()
-            below(ItemApi.sprucePlanks)
+            below(planks(theme))
         end
 
         if i ~= 4 then
@@ -174,7 +234,8 @@ local function buildWalls()
     end
 end
 
-local function buildFurniture()
+---@param theme BuildSmallHouseTheme
+local function buildFurniture(theme)
     right()
     back()
     down(2)
@@ -206,12 +267,13 @@ local function buildFurniture()
     back()
     below(ItemApi.redCarpet)
     up()
-    above(ItemApi.strippedSpruceLog)
+    above(log(theme))
     down()
     above(ItemApi.lantern)
 end
 
-local function buildCeiling()
+---@param theme BuildSmallHouseTheme
+local function buildCeiling(theme)
     forward()
     up(2)
     forward(2)
@@ -224,11 +286,11 @@ local function buildCeiling()
     -- left border going back
     for i = 1, 5 do
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
 
         if i >= 2 and i <= 4 then
             left()
-            ahead(ItemApi.sprucePlanks)
+            ahead(planks(theme))
             right()
         end
     end
@@ -240,18 +302,18 @@ local function buildCeiling()
             forward()
             ahead(ItemApi.dirt) -- helper block to orientate placed log
             back()
-            ahead(ItemApi.strippedSpruceLog)
+            ahead(log(theme))
         end
 
         left()
 
         for i = 1, 4 do
             back()
-            ahead(ItemApi.strippedSpruceLog)
+            ahead(log(theme))
 
             if i >= 2 and i <= 3 then
                 left()
-                ahead(ItemApi.sprucePlanks)
+                ahead(planks(theme))
                 right()
             end
         end
@@ -263,7 +325,7 @@ local function buildCeiling()
         forward()
         ahead(ItemApi.dirt) -- helper block to orientate placed log
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
     end
 
     -- front border
@@ -271,28 +333,29 @@ local function buildCeiling()
 
     for i = 1, 3 do
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
 
         if i == 2 then
             left()
-            ahead(ItemApi.sprucePlanks)
+            ahead(planks(theme))
             right()
         end
     end
 
     up()
     back()
-    digHelperBlock("down", ItemApi.strippedSpruceLog)
+    digHelperBlock("down", log(theme))
     down()
-    ahead(ItemApi.strippedSpruceLog)
+    ahead(log(theme))
 
     for _ = 1, 2 do
         back()
-        ahead(ItemApi.strippedSpruceLog)
+        ahead(log(theme))
     end
 end
 
-local function buildRoofFoundation()
+---@param theme BuildSmallHouseTheme
+local function buildRoofFoundation(theme)
     up(2)
     forward(3)
     right()
@@ -302,7 +365,7 @@ local function buildRoofFoundation()
     left()
 
     for i = 1, 3 do
-        below(ItemApi.darkOakSlab)
+        below(slab(theme))
 
         if i ~= 3 then
             forward()
@@ -314,7 +377,7 @@ local function buildRoofFoundation()
 
     for _ = 1, 5 do
         forward()
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
     end
 
     forward()
@@ -322,7 +385,7 @@ local function buildRoofFoundation()
 
     -- place back slabs
     for i = 1, 3 do
-        below(ItemApi.darkOakSlab)
+        below(slab(theme))
 
         if i ~= 3 then
             forward()
@@ -334,7 +397,7 @@ local function buildRoofFoundation()
 
     for _ = 1, 5 do
         forward()
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
     end
 
     -- move back while placing center foundation line
@@ -343,7 +406,7 @@ local function buildRoofFoundation()
     left()
 
     for _ = 1, 5 do
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
         forward()
     end
 
@@ -351,22 +414,23 @@ local function buildRoofFoundation()
     forward()
     up()
     around()
-    below(ItemApi.spruceStairs)
+    below(stairs(theme))
 
     for _ = 1, 7 do
         forward()
-        below(ItemApi.sprucePlanks)
+        below(planks(theme))
     end
 
     forward()
     around()
-    below(ItemApi.spruceStairs)
+    below(stairs(theme))
 end
 
-local function buildRoofTiles()
+---@param theme BuildSmallHouseTheme
+local function buildRoofTiles(theme)
     -- top line back
     for i = 1, 7 do
-        ahead(ItemApi.darkOakStairs)
+        ahead(roofStairs(theme))
 
         if i ~= 7 then
             strafe("right")
@@ -378,7 +442,7 @@ local function buildRoofTiles()
     down()
 
     for i = 1, 7 do
-        ahead(ItemApi.darkOakStairs)
+        ahead(roofStairs(theme))
 
         if i ~= 7 then
             strafe("left")
@@ -388,13 +452,13 @@ local function buildRoofTiles()
     -- bottom line back
     back()
     down()
-    ahead(ItemApi.darkOakStairs)
+    ahead(roofStairs(theme))
     right()
     forward(2)
     left()
 
     for i = 1, 3 do
-        ahead(ItemApi.darkOakStairs)
+        ahead(roofStairs(theme))
 
         if i ~= 3 then
             strafe("right")
@@ -404,7 +468,7 @@ local function buildRoofTiles()
     right()
     forward(2)
     left()
-    ahead(ItemApi.darkOakStairs)
+    ahead(roofStairs(theme))
 
     -- move to other side while placing trapdoors
     right()
@@ -433,14 +497,15 @@ local function buildRoofTiles()
     end
 end
 
-local function buildRoof()
+---@param theme BuildSmallHouseTheme
+local function buildRoof(theme)
     forward()
     left()
     back(2)
     down()
 
     -- build right side tiles
-    buildRoofTiles()
+    buildRoofTiles(theme)
 
     up(2)
     forward()
@@ -448,10 +513,11 @@ local function buildRoof()
     back()
 
     -- build left side tiles
-    buildRoofTiles()
+    buildRoofTiles(theme)
 end
 
-local function buildOuterDecoration()
+---@param theme BuildSmallHouseTheme
+local function buildOuterDecoration(theme)
     -- build front decoration
     down(4)
     ahead(ItemApi.grassBlock)
@@ -482,15 +548,15 @@ local function buildOuterDecoration()
         end
 
         -- place corner fences
-        below(ItemApi.darkOakFence)
+        below(fence(theme))
         forward()
         down()
-        below(ItemApi.darkOakFence)
+        below(fence(theme))
         up()
-        below(ItemApi.darkOakFence)
+        below(fence(theme))
         right()
         forward()
-        below(ItemApi.darkOakFence)
+        below(fence(theme))
 
         if side == 2 then
             above(ItemApi.lantern)
@@ -537,15 +603,15 @@ local function buildOuterDecoration()
     end
 
     -- place front right corner fence
-    below(ItemApi.darkOakFence)
+    below(fence(theme))
     forward()
     down()
-    below(ItemApi.darkOakFence)
+    below(fence(theme))
     up()
-    below(ItemApi.darkOakFence)
+    below(fence(theme))
     right()
     forward()
-    below(ItemApi.darkOakFence)
+    below(fence(theme))
     above(ItemApi.lantern)
 
     -- head back to start and remove last 2 helper blocks
@@ -561,12 +627,14 @@ local function buildOuterDecoration()
     right()
 end
 
-return function()
-    buildFoundation()
-    buildWalls()
-    buildFurniture()
-    buildCeiling()
-    buildRoofFoundation()
-    buildRoof()
-    buildOuterDecoration()
+---@param theme? BuildSmallHouseTheme
+return function(theme)
+    theme = theme or "spruce"
+    buildFoundation(theme)
+    buildWalls(theme)
+    buildFurniture(theme)
+    buildCeiling(theme)
+    buildRoofFoundation(theme)
+    buildRoof(theme)
+    buildOuterDecoration(theme)
 end
