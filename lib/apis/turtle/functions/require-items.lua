@@ -147,6 +147,7 @@ return function(TurtleApi, items, alwaysUseShulkers)
     local open, requiredShulkers = getOpen(TurtleApi, items, alwaysUseShulkers)
 
     if Utils.isEmpty(open) then
+        TurtleApi.digShulkers()
         return
     elseif requiredShulkers > 0 or alwaysUseShulkers then
         requireItemsInShulkers(TurtleApi, items, open)
