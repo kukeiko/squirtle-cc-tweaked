@@ -127,11 +127,12 @@ local function showItemList(storageService, taskService)
     ---@return SearchableListOption[]
     local function getOptions()
         local stock = storageService.getStock()
+        local maxStock = storageService.getMaxStock()
         local craftableStock = storageService.getCraftableStock()
         local itemDetails = storageService.getItemDetails()
 
         local options = Utils.map(stock, function(quantity, item)
-            local suffix = tostring(quantity + (craftableStock[item] or 0))
+            local suffix = string.format("%d/%d", quantity + (craftableStock[item] or 0), maxStock[item])
 
             ---@type SearchableListOption
             return {id = item, name = itemDetails[item].displayName, suffix = suffix}
