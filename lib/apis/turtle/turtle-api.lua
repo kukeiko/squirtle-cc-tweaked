@@ -1583,7 +1583,6 @@ function TurtleApi.pushAllOutput(from, to, keep, ignoreIfFull)
 
     while not TurtleApi.pushOutput(from, to, keep, ignoreIfFull) do
         if not logged then
-            -- [todo] sometimes is logged even though all output got pushed?
             print("[busy] output full, waiting...")
             logged = true
         end

@@ -174,7 +174,7 @@ local function doHomework()
         minFuel = minFuel,
         drainDropper = "bottom",
         input = {required = {[ItemApi.boneMeal] = minBoneMealForWork}, max = {[ItemApi.boneMeal] = maxPulledBoneMeal}},
-        output = {kept = {[ItemApi.birchSapling] = minSaplings}, ignoreIfFull = {ItemApi.birchSapling}}
+        output = {kept = {[ItemApi.birchSapling] = minSaplings}, ignoreIfFull = {ItemApi.birchSapling, ItemApi.charcoal}}
     })
 
     TurtleApi.requireItem(ItemApi.birchSapling, 1)
