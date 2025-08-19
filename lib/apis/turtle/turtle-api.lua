@@ -1317,8 +1317,6 @@ end
 ---@param nbt? string
 ---@return integer?
 function TurtleApi.find(name, nbt)
-    startAtSlot = startAtSlot or 1
-
     for slot = 1, TurtleApi.size() do
         local item = TurtleApi.getStack(slot)
 
@@ -1736,6 +1734,21 @@ function TurtleApi.selectItem(item)
     TurtleApi.select(slot)
 
     return slot
+end
+
+---@param predicate fun(stack: ItemStack) : boolean
+---@return integer?
+function TurtleApi.selectPredicate(predicate)
+    for slot = 1, TurtleApi.size() do
+        if TurtleApi.getItemCount(slot) > 0 then
+            local stack = TurtleApi.getStack(slot, true)
+
+            if stack and predicate(stack) then
+                TurtleApi.select(slot)
+                return slot
+            end
+        end
+    end
 end
 
 ---@return boolean

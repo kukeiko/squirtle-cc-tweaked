@@ -44,6 +44,7 @@
                 "build turtle:recipe-reader",
                 "build turtle:remote-control",
                 "build turtle:silo",
+                "build turtle:stripper",
                 "build turtle:update",
                 "build turtle:wall",
                 "build turtle:small-house",
@@ -153,6 +154,11 @@
             "label": "build turtle:copper",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/copper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/copper"
+        },
+        {
+            "label": "build turtle:stripper",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/stripper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/stripper"
         },
         {
             "label": "build turtle:build-platform",
