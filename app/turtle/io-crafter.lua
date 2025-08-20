@@ -127,7 +127,7 @@ Shell:addWindow("Main", function()
 
         recover(task, storageService, taskService)
         print("[craft] items...")
-        local stash = os.getComputerLabel()
+        local stash = os.getComputerLabel() --[[@as string]]
 
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]

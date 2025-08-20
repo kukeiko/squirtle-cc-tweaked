@@ -175,6 +175,7 @@ function InventoryApi.empty(from, to, options)
         local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
         local bufferId = to --[[@as integer]]
         InventoryApi.resizeBufferByStock(bufferId, fromStock)
+        toInventories = InventoryCollection.resolveBuffer(bufferId)
     end
 
     local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
@@ -248,6 +249,7 @@ function InventoryApi.keep(from, to, stock, options)
     if isBufferHandle(to) then
         local bufferId = to --[[@as integer]]
         InventoryApi.resizeBufferByStock(bufferId, open)
+        toInventories = InventoryCollection.resolveBuffer(bufferId)
     end
 
     local transferSuccess, transferred, open = transferStock(fromInventories, toInventories, open, options)
@@ -343,6 +345,7 @@ local function resize(bufferId, targetSlotCount)
     local currentSlotCount = InventoryApi.getSlotCount(buffer.inventories, "buffer")
 
     if targetSlotCount < currentSlotCount then
+        print(string.format("[resize] buffer #%d from %d to %d slots", bufferId, currentSlotCount, targetSlotCount))
         compact(bufferId)
         local openSlots = targetSlotCount
         ---@type string[]
@@ -360,7 +363,8 @@ local function resize(bufferId, targetSlotCount)
 
         -- [todo] ❌ what if the "removed" inventories still contain items?
         buffer.inventories = resizedInventories
-    else
+    elseif targetSlotCount > currentSlotCount then
+        print(string.format("[resize] buffer #%d from %d to %d slots", bufferId, currentSlotCount, targetSlotCount))
         local newlyAllocated = getAllocationCandidates(targetSlotCount - currentSlotCount)
 
         for _, inventory in pairs(newlyAllocated) do
@@ -428,6 +432,7 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
         local fromStock = InventoryApi.getStock(buffer.inventories, "buffer")
         local bufferId = to --[[@as integer]]
         InventoryApi.resizeBufferByStock(bufferId, fromStock)
+        toInventories = InventoryCollection.resolveBuffer(bufferId)
     end
 
     while not InventoryApi.empty(buffer.inventories, toInventories, options) do

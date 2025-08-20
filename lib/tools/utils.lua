@@ -388,9 +388,7 @@ end
 
 ---@param text? string
 function Utils.waitForUserToHitEnter(text)
-    if text then
-        print(text)
-    end
+    print(text or "<hit enter to continue>")
 
     while true do
         local _, key = os.pullEvent("key")
