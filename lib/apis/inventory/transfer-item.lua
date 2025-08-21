@@ -26,38 +26,172 @@ local function getToCandidates(names, item, tag)
 end
 
 ---@param inventories string[]
----@param unlockedFirst? boolean
 ---@param lockId? integer
----@return fun() : string?
-local function inventories(inventories, unlockedFirst, lockId)
-    if unlockedFirst then
-        ---@type table<string, true>
-        local returned = {}
+---@param except? string
+---@return string inventory, fun() : nil unlock, integer lockId
+local function lockNextInventory(inventories, lockId, except)
+    for _, inventory in pairs(inventories) do
+        if not InventoryLocks.isLocked({inventory}, lockId) and (not except or inventory ~= except) then
+            local lockSuccess, unlock, lockId = InventoryLocks.lock({inventory}, lockId)
 
-        return function()
-            for i, inventory in pairs(inventories) do
-                if not returned[inventory] and not InventoryLocks.isLocked({inventory}, lockId) then
-                    returned[inventory] = true
-                    return inventory
-                end
+            if lockSuccess then
+                return inventory, unlock, lockId
             end
-
-            for i, inventory in pairs(inventories) do
-                if not returned[inventory] then
-                    returned[inventory] = true
-                    return inventory
-                end
-            end
-        end
-    else
-        local i = 1
-
-        return function()
-            local inventory = inventories[i]
-            i = i + 1
-            return inventory
         end
     end
+
+    for _, inventory in pairs(inventories) do
+        if not except or (inventory ~= except) then
+            -- [todo] ❌ possible optimization: add InventoryLocks.lockAny(...) which will lock the first available
+            local lockSuccess, unlock, lockId = InventoryLocks.lock({inventory}, lockId)
+
+            if lockSuccess then
+                return inventory, unlock, lockId
+            end
+        end
+    end
+
+    error("inventories table was empty")
+end
+
+---@param inventories string[]
+---@param lockId? integer
+---@param except? string
+---@return fun() : string?, (fun() : nil)?, integer?
+local function lockNext(inventories, lockId, except)
+    local open = Utils.copy(inventories)
+
+    return function()
+        if #open == 0 or (except and #open == 1 and open[1] == except) then
+            return
+        end
+
+        local inventory, unlock, lockId = lockNextInventory(open, lockId, except)
+        Utils.remove(open, inventory)
+
+        return inventory, unlock, lockId
+    end
+end
+
+---@param from string[]
+---@param to string[]
+---@param item string
+---@param total integer
+---@param options TransferOptions
+---@return integer
+local function sequential(from, to, item, total, options)
+    local open = total
+
+    for _, fromInventory in ipairs(from) do
+        for _, toInventory in ipairs(to) do
+            open = open - moveItem(fromInventory, toInventory, item, open, options)
+
+            if open == 0 then
+                return total
+            end
+        end
+
+        to = getToCandidates(to, item, options.toTag)
+    end
+
+    return total - open
+end
+
+---@param from string[]
+---@param to string[]
+---@param item string
+---@param total integer
+---@param options TransferOptions
+---@return integer
+local function sequentialDistribute(from, to, item, total, options)
+    local open = total
+
+    for _, fromInventory in ipairs(from) do
+        while Inventory.canProvideItem(InventoryCollection.get(fromInventory), item, options.fromTag) and #to > 0 do
+            local perInput = math.max(1, math.floor(open / #to))
+
+            for toInventory, unlockTo, lockId in lockNext(to, options.lockId, fromInventory) do
+                options.lockId = lockId
+                open = open - moveItem(fromInventory, toInventory, item, perInput, options)
+                unlockTo()
+
+                if open == 0 then
+                    return total
+                end
+            end
+
+            to = getToCandidates(to, item, options.toTag)
+        end
+    end
+
+    return total - open
+end
+
+---@param from string[]
+---@param to string[]
+---@param item string
+---@param total integer
+---@param options TransferOptions
+---@return integer
+local function distributeSequential(from, to, item, total, options)
+    local open = total
+
+    for _, toInventory in ipairs(to) do
+        while Inventory.canTakeItem(InventoryCollection.get(toInventory), item, options.toTag) and #from > 0 do
+            local available = InventoryCollection.getItemCount(from, item, options.fromTag)
+            local perOutput = math.max(1, math.floor(math.min(open, available) / #from))
+
+            for fromInventory, unlockFrom, lockId in lockNext(from, options.lockId, toInventory) do
+                options.lockId = lockId
+                open = open - moveItem(fromInventory, toInventory, item, perOutput, options)
+                unlockFrom()
+
+                if open == 0 then
+                    return total
+                end
+            end
+
+            from = getFromCandidates(from, item, options.toTag)
+        end
+    end
+
+    return total - open
+end
+
+---@param from string[]
+---@param to string[]
+---@param item string
+---@param total integer
+---@param options TransferOptions
+---@return integer transferred
+local function distribute(from, to, item, total, options)
+    local open = total
+
+    while open > 0 and #from > 0 and #to > 0 do
+        if #from == 1 and #to == 1 and from[1] == to[1] then
+            break
+        end
+
+        local available = InventoryCollection.getItemCount(from, item, options.fromTag)
+        local perOutput = math.min(open, available) / #from
+        local perInput = math.max(1, math.floor(perOutput / #to))
+
+        for fromInventory, unlockFrom, lockId in lockNext(from, options.lockId) do
+            options.lockId = lockId
+
+            for toInventory, unlockTo in lockNext(to, options.lockId, fromInventory) do
+                open = open - moveItem(fromInventory, toInventory, item, perInput, options)
+                unlockTo()
+            end
+
+            unlockFrom()
+        end
+
+        from = getFromCandidates(from, item, options.fromTag)
+        to = getToCandidates(to, item, options.toTag)
+    end
+
+    return total - open
 end
 
 ---@param from InventoryHandle
@@ -68,61 +202,27 @@ end
 ---@return integer transferredTotal
 return function(from, to, item, quantity, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
-    local fromTag, toTag = options.fromTag --[[@as InventorySlotTag]] , options.toTag --[[@as InventorySlotTag]]
+    local fromTag, toTag = options.fromTag, options.toTag
+
+    if not fromTag then
+        error("options.fromTag must be set")
+    end
+
+    if not toTag then
+        error("options.toTag must be set")
+    end
+
     fromInventories = getFromCandidates(fromInventories, item, fromTag)
     toInventories = getToCandidates(toInventories, item, toTag)
     local total = quantity or InventoryCollection.getItemCount(fromInventories, item, fromTag)
-    local totalTransferred = 0
 
-    while totalTransferred < total and #fromInventories > 0 and #toInventories > 0 do
-        if #fromInventories == 1 and #toInventories == 1 and fromInventories[1] == toInventories[1] then
-            break
-        end
-
-        local transferPerOutput = (total - totalTransferred)
-
-        if not options.fromSequential then
-            transferPerOutput = transferPerOutput / #fromInventories
-        end
-
-        local transferPerInput = math.max(1, math.floor(transferPerOutput))
-
-        if not options.toSequential then
-            transferPerInput = math.max(1, math.floor(transferPerOutput / #toInventories))
-        end
-
-        --- [todo] ⏰ in regards to locking/unlocking:
-        --- previously, before the rewrite, we were sorting based on lock-state, i.e. take inventories first that are not locked.
-        --- we really should have that functionality again to make sure the system is not super slow in some cases
-        --- [idea] first of all, we can only sort the fromInventories if fromSequential is false, and toInventories only if toSequential is false.
-        --- then we could create a custom iterator that will return the first unlocked inventory (which it won't ever return in subsequent calls)
-        --- in the case of fromInventories, we should then immediately lock it so we keep access to it while moving items to the toInventories
-        for fromInventory in inventories(fromInventories, not options.fromSequential, options.lockId) do
-            local lockSuccess, unlock, lockId = InventoryLocks.lock({fromInventory}, options.lockId)
-            options.lockId = lockId
-
-            if not lockSuccess and options.fromSequential then
-                return 0
-            end
-
-            for toInventory in inventories(toInventories, not options.toSequential, options.lockId) do
-                if fromInventory ~= toInventory then
-                    local transferred = moveItem(fromInventory, toInventory, item, transferPerInput, options)
-                    totalTransferred = totalTransferred + transferred
-
-                    if totalTransferred == total then
-                        unlock()
-                        return totalTransferred
-                    end
-                end
-            end
-
-            unlock()
-        end
-
-        fromInventories = getFromCandidates(fromInventories, item, fromTag)
-        toInventories = getToCandidates(toInventories, item, toTag)
+    if options.fromSequential and options.toSequential then
+        return sequential(fromInventories, toInventories, item, total, options)
+    elseif options.fromSequential then
+        return sequentialDistribute(fromInventories, toInventories, item, total, options)
+    elseif options.toSequential then
+        return distributeSequential(fromInventories, toInventories, item, total, options)
+    else
+        return distribute(fromInventories, toInventories, item, total, options)
     end
-
-    return totalTransferred
 end
