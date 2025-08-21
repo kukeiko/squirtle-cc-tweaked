@@ -40,7 +40,7 @@ local function main()
     Utils.writeStartupFile("storage")
 
     EventLoop.runUntil("storage:stop", function()
-        Inventory.start()
+        Inventory.start(arg[1])
     end, function()
         while true do
             if processors.dumps then

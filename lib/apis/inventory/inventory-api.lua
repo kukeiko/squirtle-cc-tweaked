@@ -4,6 +4,7 @@ local ItemStock = require "lib.models.item-stock"
 local Inventory = require "lib.models.inventory"
 local DatabaseApi = require "lib.apis.database.database-api"
 local ItemApi = require "lib.apis.item-api"
+local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local InventoryReader = require "lib.apis.inventory.inventory-reader"
 local InventoryCollection = require "lib.apis.inventory.inventory-collection"
 local InventoryLocks = require "lib.apis.inventory.inventory-locks"
@@ -13,6 +14,24 @@ local getTransferArguments = require "lib.apis.inventory.get-transfer-arguments"
 
 ---@class InventoryApi
 local InventoryApi = {}
+local defaultTransferRate = 1
+local transferRate = defaultTransferRate
+
+if turtle then
+    transferRate = 8
+end
+
+---@type {item:string, transfer: integer}[]
+local powerItems = {
+    {item = ItemApi.coalBlock, transfer = 2},
+    {item = ItemApi.copperBlock, transfer = 3},
+    {item = ItemApi.ironBlock, transfer = 4},
+    {item = ItemApi.redstoneBlock, transfer = 5},
+    {item = ItemApi.goldBlock, transfer = 6},
+    {item = ItemApi.diamondBlock, transfer = 7},
+    {item = ItemApi.netheriteIngot, transfer = 8},
+    {item = ItemApi.netheriteBlock, transfer = 16}
+}
 
 ---@param type InventoryType
 function InventoryApi.refresh(type)
@@ -128,6 +147,8 @@ end
 ---@param options? TransferOptions
 ---@return integer transferredTotal
 function InventoryApi.transferItem(from, to, item, quantity, options)
+    options = options or {}
+    options.rate = options.rate or transferRate
     return transferItem(from, to, item, quantity, options)
 end
 
@@ -142,6 +163,9 @@ function InventoryApi.transfer(from, to, stock, options)
         InventoryApi.resizeBufferByStock(bufferId, stock)
     end
 
+    options = options or {}
+    options.rate = options.rate or transferRate
+
     return transferStock(from, to, stock, options)
 end
 
@@ -153,6 +177,7 @@ function InventoryApi.restock(from, to, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
     local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
     local openStock = InventoryApi.getOpenStock(toInventories, options.toTag)
+    options.rate = options.rate or transferRate
 
     ---@type ItemStock
     local filteredOpenStock = {}
@@ -170,6 +195,7 @@ end
 ---@return boolean success, ItemStock transferred, ItemStock open
 function InventoryApi.empty(from, to, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
+    options.rate = options.rate or transferRate
 
     if isBufferHandle(to) then
         local fromStock = InventoryApi.getStock(fromInventories, options.fromTag)
@@ -213,6 +239,7 @@ function InventoryApi.fulfill(from, to, stock, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
     -- we're locking the toInventories to correctly read the open stock
     local lockSuccess, unlock, lockId = InventoryLocks.lock(toInventories, options.lockId)
+    options.rate = options.rate or transferRate
 
     if not lockSuccess then
         -- [todo] ❌ it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect" and "there were not enough items"
@@ -236,6 +263,7 @@ end
 function InventoryApi.keep(from, to, stock, options)
     local fromInventories, toInventories, options = getTransferArguments(from, to, options)
     local lockSuccess, unlock, lockId = InventoryLocks.lock(fromInventories, options.lockId)
+    options.rate = options.rate or transferRate
 
     if not lockSuccess then
         -- [todo] ❌ it is kinda bad that we return false: we can't easily distinguish between "did chest disconnect" and "there were not enough items"
@@ -484,9 +512,34 @@ function InventoryApi.discover()
     end
 end
 
+---@param chest string
+---@return integer
+local function checkPower(chest)
+    local power = defaultTransferRate
+
+    if not peripheral.isPresent(chest) or peripheral.getType(chest) ~= "minecraft:chest" then
+        return power
+    end
+
+    local stock = InventoryPeripheral.getStock(chest)
+
+    for _, powerItem in ipairs(powerItems) do
+        if stock[powerItem.item] then
+            power = powerItem.transfer
+        end
+    end
+
+    if stock[ItemApi.beacon] then
+        power = power * 2
+    end
+
+    return power
+end
+
 --- Runs the process of automatically mounting/unmounting any attached inventories until stopped.
 --- Call "Inventory.stop()" inside another coroutine to stop.
-function InventoryApi.start()
+---@param powerChest? string
+function InventoryApi.start(powerChest)
     EventLoop.runUntil("inventory:stop", function()
         onPeripheralEventMountInventory()
     end, function()
@@ -497,6 +550,21 @@ function InventoryApi.start()
                     InventoryCollection.unmount({name})
                 end
             end)
+        end
+    end, function()
+        if not powerChest then
+            return
+        end
+
+        while true do
+            local power = checkPower(powerChest)
+
+            if transferRate ~= power then
+                transferRate = power
+                print(string.format("[inventory] transfer rate set to %d", transferRate))
+            end
+
+            os.sleep(10)
         end
     end)
 end
