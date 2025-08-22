@@ -36,10 +36,9 @@ return function(shellWindow)
         end
     end, function()
         while true do
-            EventLoop.pull("shell-window:visible")
+            shellWindow:pullIsVisible()
             list:setOptions(getLogMessages())
-
-            EventLoop.runUntil("shell-window:invisible", function()
+            shellWindow:runUntilInvisible(function()
                 while true do
                     Logger.pullLoggedMessage()
                     list:setOptions(getLogMessages())

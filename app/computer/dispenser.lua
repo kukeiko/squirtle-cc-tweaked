@@ -17,7 +17,7 @@ local TaskService = require "lib.systems.task.task-service"
 local Shell = require "lib.ui.shell"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local showLogs = require "lib.ui.windows.show-logs"
+local showLogs = require "lib.systems.shell.windows.logs-window"
 
 local idleTimeout = 30
 local refreshIntervals = {dispense = 3, transfers = 1, missing = 1}

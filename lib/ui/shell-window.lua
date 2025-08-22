@@ -1,3 +1,4 @@
+local EventLoop = require "lib.tools.event-loop"
 local nextId = require "lib.tools.next-id"
 
 ---@class ShellWindow
@@ -33,6 +34,15 @@ end
 ---@param isVisible boolean
 function ShellWindow:setVisible(isVisible)
     self.window.setVisible(isVisible)
+end
+
+function ShellWindow:pullIsVisible()
+    EventLoop.pull("shell-window:visible")
+end
+
+---@param fn fun() : any
+function ShellWindow:runUntilInvisible(fn)
+    EventLoop.runUntil("shell-window:invisible", fn)
 end
 
 return ShellWindow

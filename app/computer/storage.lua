@@ -27,7 +27,11 @@ local processTrash = require "lib.systems.storage.processors.process-trash"
 local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
 local TurtleInventoryAdapter = require "lib.systems.storage.turtle-inventory-adapter"
 local SearchableList = require "lib.ui.searchable-list"
-local showLogs = require "lib.ui.windows.show-logs"
+
+local logsWindow = require "lib.systems.shell.windows.logs-window"
+local eventLoopWindow = require "lib.systems.shell.windows.event-loop-window"
+local activeLocksWindow = require "lib.systems.storage.windows.active-locks-window"
+local activeUnlocksWindow = require "lib.systems.storage.windows.active-unlocks-window"
 
 local processors = {dumps = true, furnaces = true, io = true, quickAccess = true, shulkers = true, trash = true, siloOutputs = true}
 
@@ -147,77 +151,6 @@ local function processorList()
     end
 end
 
----@param shellWindow ShellWindow
-local function activeLocks(shellWindow)
-    ---@return SearchableListOption[]
-    local function getActiveLockList()
-        local options = Utils.map(InventoryLocks.getLockedInventories(), function(inventory)
-            ---@type SearchableListOption
-            local option = {id = inventory, name = inventory, suffix = InventoryCollection.getType(inventory)}
-
-            return option
-        end)
-
-        return options
-    end
-
-    local list = SearchableList.new(getActiveLockList(), "Active Locks")
-
-    EventLoop.run(function()
-        while true do
-            list:run()
-        end
-    end, function()
-        while true do
-            if shellWindow:isVisible() then
-                InventoryLocks.pullLockChange()
-
-                if shellWindow:isVisible() then
-                    list:setOptions(getActiveLockList())
-                end
-            else
-                -- [todo] ❌ can we change this to pull shell-window:visible event instead?
-                os.sleep(1)
-            end
-        end
-    end)
-end
-
----@param shellWindow ShellWindow
-local function activeUnlocks(shellWindow)
-    ---@return SearchableListOption[]
-    local function getActiveUnlockList()
-        local options = Utils.map(InventoryLocks.getInventoriesPendingUnlock(), function(inventory)
-            ---@type SearchableListOption
-            local option = {id = inventory, name = inventory, suffix = InventoryCollection.getType(inventory)}
-
-            return option
-        end)
-
-        return options
-    end
-
-    local list = SearchableList.new(getActiveUnlockList(), "Active Unocks")
-
-    EventLoop.run(function()
-        while true do
-            list:run()
-        end
-    end, function()
-        while true do
-            if shellWindow:isVisible() then
-                InventoryLocks.pullLockChange()
-
-                if shellWindow:isVisible() then
-                    list:setOptions(getActiveUnlockList())
-                end
-            else
-                os.sleep(1)
-            end
-        end
-    end)
-end
-
 local monitor = peripheral.find("monitor")
 
 if monitor then
@@ -230,7 +163,7 @@ term.clear()
 local Shell = require "lib.ui.shell"
 
 Shell:addWindow("Main", main)
-Shell:addWindow("Logs", showLogs)
+Shell:addWindow("Logs", logsWindow)
 
 Shell:addWindow("RPC", function()
     EventLoop.run(function()
@@ -241,39 +174,8 @@ Shell:addWindow("RPC", function()
 end)
 
 Shell:addWindow("Processors", processorList)
-Shell:addWindow("Locks", activeLocks)
-Shell:addWindow("Unlocks", activeUnlocks)
-Shell:addWindow("Event Loop", function()
-    local start = os.epoch("utc")
-
-    ---@return SearchableListOption[]
-    local function getStatsList()
-        local stats = EventLoop.getPulledEventStats()
-        local duration = os.epoch("utc") - start
-
-        local options = Utils.map(stats, function(quantity, event)
-            ---@type SearchableListOption
-            return {id = event, name = event, suffix = tostring(math.floor(quantity / (duration / 1000)))}
-        end)
-
-        start = os.epoch("utc")
-
-        for k in pairs(stats) do
-            stats[k] = 0
-        end
-
-        return options
-    end
-
-    local list = SearchableList.new(getStatsList(), "Pulled Events", nil, 1, getStatsList)
-    list:run()
-end)
-
-Shell:addWindow("Tasks (cc:tweaked)", function()
-    while true do
-        local event = {EventLoop.pull("task_complete")}
-        print(event[1], event[2], event[3], event[4])
-    end
-end)
+Shell:addWindow("Locks", activeLocksWindow)
+Shell:addWindow("Unlocks", activeUnlocksWindow)
+Shell:addWindow("Event Loop", eventLoopWindow)
 
 Shell:run()
