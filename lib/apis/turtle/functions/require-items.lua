@@ -1,39 +1,20 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ItemStock = require "lib.models.item-stock"
 local ItemApi = require "lib.apis.item-api"
 local SearchableList = require "lib.ui.searchable-list"
-
-local defaultItemMaxCount = 64
-local maxCarriedShulkers = 8
 
 ---@param TurtleApi TurtleApi
 ---@param items ItemStock
 ---@param alwaysUseShulkers? boolean
 ---@return ItemStock, integer
 local function getOpen(TurtleApi, items, alwaysUseShulkers)
-    local open = ItemStock.subtract(items, TurtleApi.getStock(true))
+    local openStock = TurtleApi.getOpenStock(items, alwaysUseShulkers)
 
-    if not alwaysUseShulkers and ItemApi.getRequiredSlotCount(open, defaultItemMaxCount) <= TurtleApi.numEmptySlots() then
-        -- the additionally required items fit into the inventory
-        return open, 0
-    end
-
-    -- the additionally required items don't fit into inventory or the user wants them to put into shulkers,
-    -- so we'll calculate the number of required shulkers based on the items that already exist in inventory
-    -- and the items that are still needed.
-    local takenInventoryStock = ItemStock.intersect(TurtleApi.getStock(), items)
-    local requiredShulkers = TurtleApi.getRequiredAdditionalShulkers(ItemStock.merge({open, takenInventoryStock}))
-
-    if requiredShulkers > maxCarriedShulkers then
-        -- [todo] ❌ hacky way of ensuring that the turtle has enough space to carry all the shulkers, as we are
-        -- missing logic to figure out how many empty slots we'll have taking into account items in the inventory
-        -- which will not be put into shulkers.
-        error(string.format("trying to require %d shulkers (max allowed: %d)", requiredShulkers, maxCarriedShulkers))
-    elseif requiredShulkers > 0 then
+    if openStock[ItemApi.shulkerBox] then
+        local requiredShulkers = openStock[ItemApi.shulkerBox]
         return {[ItemApi.shulkerBox] = requiredShulkers}, requiredShulkers
     else
-        return open, 0
+        return openStock, 0
     end
 end
 
