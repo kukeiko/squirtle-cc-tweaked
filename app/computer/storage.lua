@@ -30,6 +30,9 @@ local eventLoopWindow = require "lib.systems.shell.windows.event-loop-window"
 local activeLocksWindow = require "lib.systems.storage.windows.active-locks-window"
 local activeUnlocksWindow = require "lib.systems.storage.windows.active-unlocks-window"
 local processorsWindow = require "lib.systems.storage.windows.processors-window"
+local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
+local allocateIngredientsWorker = require "lib.systems.task.workers.allocate-ingredients-worker"
+local provideItemsWorker = require "lib.systems.task.workers.provide-items-worker"
 
 local function refresh()
     print("[refresh] storages, silos & stashes")
@@ -105,6 +108,19 @@ local function main()
     end, table.unpack(processorFns))
 end
 
+local function workers()
+    -- give system a bit of time until localhost StorageService is available
+    os.sleep(1)
+
+    EventLoop.run(function()
+        allocateIngredientsWorker()
+    end, function()
+        craftItemsWorker()
+    end, function()
+        provideItemsWorker()
+    end)
+end
+
 local monitor = peripheral.find("monitor")
 
 if monitor then
@@ -117,6 +133,7 @@ term.clear()
 local Shell = require "lib.ui.shell"
 
 Shell:addWindow("Main", main)
+Shell:addWindow("Workers", workers)
 Shell:addWindow("Logs", logsWindow)
 
 Shell:addWindow("RPC", function()

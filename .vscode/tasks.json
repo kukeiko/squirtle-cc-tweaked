@@ -12,7 +12,6 @@
                 "build computer:fungi-farm",
                 "build computer:simon-says",
                 "build computer:storage",
-                "build computer:storage-workers",
                 "build computer:subway-switch",
                 "build computer:target-practice",
                 "build computer:teleport",
@@ -74,11 +73,6 @@
             "label": "build computer:storage",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage"
-        },
-        {
-            "label": "build computer:storage-workers",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage-workers.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage-workers"
         },
         {
             "label": "build computer:dispenser",
