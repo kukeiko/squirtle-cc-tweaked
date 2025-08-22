@@ -4,6 +4,7 @@ local ItemStock = require "lib.models.item-stock"
 local ItemApi = require "lib.apis.item-api"
 local DatabaseApi = require "lib.apis.database.database-api"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
+local TurtleStateApi = require "lib.apis.turtle.api-parts.turtle-state-api"
 
 ---@class TurtleShulkerApi
 local TurtleShulkerApi = {}
@@ -41,12 +42,11 @@ local function createEmptyCarriedShulker()
     return Inventory.create("", "shulker", {}, createShulkerSlots(shulkerSlotCount), true)
 end
 
----@param TurtleApi TurtleApi
 ---@param old string
 ---@param new string
 ---@return boolean
-local function replaceCachedShulkerName(TurtleApi, old, new)
-    for _, shulker in pairs(TurtleApi.getState().shulkers) do
+local function replaceCachedShulkerName(old, new)
+    for _, shulker in pairs(TurtleStateApi.getShulkers()) do
         if shulker.name == old then
             shulker.name = new
             return true
@@ -56,14 +56,14 @@ local function replaceCachedShulkerName(TurtleApi, old, new)
     return false
 end
 
----@param TurtleApi TurtleApi
 ---@param name string
 ---@param shulker Inventory
 ---@return boolean
-local function replaceCachedShulker(TurtleApi, name, shulker)
-    for i, candidate in pairs(TurtleApi.getState().shulkers) do
+local function replaceCachedShulker(name, shulker)
+    local shulkers = TurtleStateApi.getShulkers()
+    for i, candidate in pairs(shulkers) do
         if candidate.name == name then
-            TurtleApi.getState().shulkers[i] = shulker
+            shulkers[i] = shulker
             return true
         end
     end
@@ -96,9 +96,10 @@ local function digShulker(TurtleApi, side)
     end
 
     shulker.name = item.nbt or ""
+    local shulkers = TurtleStateApi.getShulkers()
 
-    if not replaceCachedShulker(TurtleApi, item.nbt or "", shulker) then
-        table.insert(TurtleApi.getState().shulkers, shulker)
+    if not replaceCachedShulker(item.nbt or "", shulker) then
+        table.insert(shulkers, shulker)
     end
 
     -- [todo] ❌ possible issue as this function is called during placeShulker() which also updates DiskState
@@ -141,11 +142,11 @@ local function tryPlaceShulker(TurtleApi, slot)
     end
 
     local diskState = DatabaseApi.getTurtleDiskState()
-    diskState.shulkerSides = TurtleApi.getShulkerSides()
+    diskState.shulkerSides = TurtleStateApi.getShulkerSides()
     DatabaseApi.saveTurtleDiskState(diskState)
 
     TurtleApi.select(slot)
-    local placedSide = TurtleApi.placeAtOneOf(TurtleApi.getShulkerSides()) or replaceShulkerAtOneOf(TurtleApi, TurtleApi.getShulkerSides())
+    local placedSide = TurtleApi.placeAtOneOf(TurtleStateApi.getShulkerSides()) or replaceShulkerAtOneOf(TurtleApi, TurtleStateApi.getShulkerSides())
 
     if not placedSide then
         diskState.shulkerSides = {}
@@ -154,7 +155,7 @@ local function tryPlaceShulker(TurtleApi, slot)
         return nil, "failed to place shulker"
     end
 
-    replaceCachedShulkerName(TurtleApi, item.nbt or "", placedSide)
+    replaceCachedShulkerName(item.nbt or "", placedSide)
 
     diskState.shulkerSides = {}
     diskState.cleanupSides[placedSide] = ItemApi.shulkerBox
@@ -184,7 +185,7 @@ end
 ---@param name string
 ---@return PlaceSide?, string?
 local function placeShulkerByName(TurtleApi, name)
-    if Utils.contains(TurtleApi.getShulkerSides(), name) then
+    if Utils.contains(TurtleStateApi.getShulkerSides(), name) then
         return name
     end
 
@@ -222,13 +223,13 @@ end
 ---@param name string
 ---@return boolean
 local function isCached(TurtleApi, name)
-    local shulker = Utils.find(Utils.reverse(TurtleApi.getState().shulkers), function(candidate)
+    local shulker = Utils.find(Utils.reverse(TurtleStateApi.getShulkers()), function(candidate)
         return candidate.name == name
     end)
 
     if shulker == nil then
         return false
-    elseif Utils.contains(TurtleApi.getShulkerSides(), name) then
+    elseif Utils.contains(TurtleStateApi.getShulkerSides(), name) then
         return ItemStock.isEqual(shulker.items, InventoryPeripheral.getStock(name))
     else
         return true
@@ -239,10 +240,10 @@ end
 ---@return boolean
 local function indexUncachedShulker(TurtleApi)
     -- we need to read already placed shulkers first as they might get removed to read the contents of carried shulkers
-    for _, side in pairs(TurtleApi.getState().shulkerSides) do
+    for _, side in pairs(TurtleStateApi.getShulkerSides()) do
         if peripheral.getType(side) == ItemApi.shulkerBox and not isCached(TurtleApi, side) then
             local shulker = readPlacedShulker(side, side)
-            table.insert(TurtleApi.getState().shulkers, shulker)
+            TurtleStateApi.addShulker(shulker)
 
             return true
         end
@@ -255,8 +256,7 @@ local function indexUncachedShulker(TurtleApi)
 
                 return true
             elseif not item.nbt then
-                local shulker = createEmptyCarriedShulker()
-                table.insert(TurtleApi.getState().shulkers, shulker)
+                TurtleStateApi.addShulker(createEmptyCarriedShulker())
             end
         end
     end
@@ -271,7 +271,7 @@ local function getPresentShulkerNames(TurtleApi)
     local names = {}
 
     -- placed shulkers need to be first so that item lookups prefer those
-    for _, side in pairs(TurtleApi.getShulkerSides()) do
+    for _, side in pairs(TurtleStateApi.getShulkerSides()) do
         if peripheral.getType(side) == ItemApi.shulkerBox then
             table.insert(names, side)
         end
@@ -297,7 +297,7 @@ function TurtleShulkerApi.readShulkers(TurtleApi)
     -- after, we make sure the cache is not stale by only keeping present shulkers
     ---@type Inventory[]
     local shulkers = {}
-    local cache = Utils.reverse(TurtleApi.getState().shulkers) -- we want oldest last
+    local cache = Utils.reverse(TurtleStateApi.getShulkers()) -- we want oldest last
 
     for _, name in pairs(getPresentShulkerNames(TurtleApi)) do
         local shulker = Utils.find(cache, function(candidate)
@@ -312,7 +312,7 @@ function TurtleShulkerApi.readShulkers(TurtleApi)
         table.insert(shulkers, Utils.clone(shulker))
     end
 
-    TurtleApi.getState().shulkers = shulkers
+    TurtleStateApi.setShulkers(shulkers)
 
     return Utils.clone(shulkers)
 end
@@ -357,7 +357,7 @@ function TurtleShulkerApi.loadFromShulker(TurtleApi, item)
     ---@type PlaceSide
     local side
 
-    if Utils.contains(TurtleApi.getState().shulkerSides, shulker.name) then
+    if Utils.contains(TurtleStateApi.getShulkerSides(), shulker.name) then
         side = shulker.name
     else
         local slot = TurtleApi.find(ItemApi.shulkerBox, shulker.name)
@@ -429,7 +429,7 @@ end
 
 ---@param TurtleApi TurtleApi
 function TurtleShulkerApi.digShulkers(TurtleApi)
-    for _, side in pairs(TurtleApi.getShulkerSides()) do
+    for _, side in pairs(TurtleStateApi.getShulkerSides()) do
         if peripheral.getType(side) == ItemApi.shulkerBox then
             digShulker(TurtleApi, side)
         end

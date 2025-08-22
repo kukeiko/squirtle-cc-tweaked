@@ -62,7 +62,7 @@ end
 
 ---@return SimulationState
 local function getSimulationState()
-    return {facing = TurtleApi.getFacing(), fuel = TurtleApi.getNonInfiniteFuelLevel(), position = TurtleApi.getPosition()}
+    return {facing = TurtleApi.getFacing(), fuel = TurtleApi.getFiniteFuelLevel(), position = TurtleApi.getPosition()}
 end
 
 ---@param self Resumable
