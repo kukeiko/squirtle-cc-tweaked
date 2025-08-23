@@ -17,8 +17,6 @@ local DatabaseService = require "lib.systems.database.database-service"
 local SubwayService = require "lib.systems.subway.subway-service"
 local SearchableList = require "lib.ui.searchable-list"
 
-local pseudoInfinity = 64e10
-
 ---@param unvisited table<string, SubwayStation>
 ---@param distances table<string, number>
 ---@return SubwayStation?
@@ -26,7 +24,7 @@ local function nextToVisit(unvisited, distances)
     local best = nil
 
     for _, station in pairs(unvisited) do
-        if best == nil or (distances[station.id] ~= nil and distances[station.id] <= distances[best.id]) then
+        if best == nil or distances[station.id] <= distances[best.id] then
             best = station
         end
     end
@@ -63,11 +61,11 @@ local function findPath(stations, start, goal)
     ---@type table<string, number>
     local distances = {}
     ---@type table<string, SubwayStation>
-    local unvisited = {}
+    local open = {}
 
     for _, station in pairs(stations) do
-        unvisited[station.id] = station
-        distances[station.id] = pseudoInfinity
+        open[station.id] = station
+        distances[station.id] = math.huge
     end
 
     distances[start.id] = 0
@@ -76,22 +74,22 @@ local function findPath(stations, start, goal)
     local previous = {}
 
     while true do
-        local nextStation = nextToVisit(unvisited, distances)
+        local nextStation = nextToVisit(open, distances)
 
         if not nextStation then
             return false
         elseif nextStation.id == goal.id then
-            -- [todo] i don't think this is correct - we should visit all stations first to ensure the shortest path
             return getPath(previous, start, goal)
         end
 
-        unvisited[nextStation.id] = nil
+        open[nextStation.id] = nil
 
         local nextTracks = Utils.filter(nextStation.tracks, function(track)
-            return unvisited[track.to] ~= nil
+            return open[track.to] ~= nil
         end)
 
         for _, nextTrack in pairs(nextTracks) do
+            -- if no duration is known, we'll use 0 so that the player uses this track to measure the duration and updates it to database
             local distance = distances[nextStation.id] + (nextTrack.duration or 0)
 
             if distance < distances[nextTrack.to] then
