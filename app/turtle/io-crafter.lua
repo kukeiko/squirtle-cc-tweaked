@@ -19,7 +19,7 @@ local TaskService = require "lib.systems.task.task-service"
 local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
 local TurtleApi = require "lib.apis.turtle.turtle-api"
 local Shell = require "lib.ui.shell"
-local showLogs = require "lib.ui.windows.show-logs"
+local showLogs = require "lib.systems.shell.windows.logs-window"
 
 print(string.format("[io-crafter %s] booting...", version()))
 Utils.writeStartupFile("io-crafter")
@@ -129,6 +129,8 @@ Shell:addWindow("Main", function()
         print("[craft] items...")
         local stash = os.getComputerLabel() --[[@as string]]
 
+        -- [todo] ❌ not 100% crash safe: it is possible that an item was crafted, but the recipe for it hasn't been removed yet,
+        -- so the turtle thinks (on next reboot) that ingredients are missing.
         while #task.usedRecipes > 0 do
             local recipe = task.usedRecipes[1]
             -- move ingredients from buffer to stash
@@ -137,6 +139,7 @@ Shell:addWindow("Main", function()
             end
 
             -- craft items
+            print(string.format("[craft] %dx %s", recipe.timesUsed * recipe.quantity, recipe.item))
             craftFromBottomInventory(recipe)
             -- manual refresh required due to turtle manipulating the stash
             storageService.refresh(stash)
