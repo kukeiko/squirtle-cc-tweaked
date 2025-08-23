@@ -1,4 +1,3 @@
-local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Logger = require "lib.tools.logger"
 local nextId = require "lib.tools.next-id"
@@ -26,6 +25,11 @@ local nextId = require "lib.tools.next-id"
 ---@field success boolean
 ---@field response table|string
 ---@field type "response"
+
+---@class RpcServer
+---@field open function
+---@field close function
+---@field getWiredName fun() : string
 
 ---@class RpcClient
 ---@field host string
@@ -326,7 +330,8 @@ end
 
 ---@param service Service
 ---@param modemType? "wired" | "wireless"
-function Rpc.host(service, modemType)
+---@return RpcServer
+function Rpc.server(service, modemType)
     local label = os.getComputerLabel()
 
     if not label then
@@ -363,39 +368,65 @@ function Rpc.host(service, modemType)
         return true
     end
 
-    EventLoop.run(function()
-        while true do
-            ---@param modem string
-            ---@param message RpcRequestPacket|RpcPingPacket
-            ---@param receivedChannel integer
-            ---@param replyChannel integer
-            ---@param distance? number
-            EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
-                if not shouldAcceptMessage(message, distance) then
-                    return
-                end
+    local closeEvent = string.format("rpc-server-close:%s:%d", service.name, nextId())
 
-                if message.type == "ping" then
-                    logServerRequest("ping", replyChannel, receivedChannel, message)
-                    ---@type RpcPongPacket
-                    local pong = {type = "pong", host = service.host, service = service.name}
-                    peripheral.call(modem, "transmit", replyChannel, listenChannel, pong)
-                    logServerResponse("pong", replyChannel, listenChannel, pong)
-                elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
-                    logServerRequest(message.method, replyChannel, receivedChannel, message)
+    ---@type RpcServer
+    local server = {
+        open = function()
+            EventLoop.runUntil(closeEvent, function()
+                while true do
+                    ---@param modem string
+                    ---@param message RpcRequestPacket|RpcPingPacket
+                    ---@param receivedChannel integer
+                    ---@param replyChannel integer
+                    ---@param distance? number
+                    EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
+                        if not shouldAcceptMessage(message, distance) then
+                            return
+                        end
 
-                    local success, response = pcall(function()
-                        return table.pack(service[message.method](table.unpack(message.arguments)))
+                        if message.type == "ping" then
+                            logServerRequest("ping", replyChannel, receivedChannel, message)
+                            ---@type RpcPongPacket
+                            local pong = {type = "pong", host = service.host, service = service.name}
+                            peripheral.call(modem, "transmit", replyChannel, listenChannel, pong)
+                            logServerResponse("pong", replyChannel, listenChannel, pong)
+                        elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
+                            logServerRequest(message.method, replyChannel, receivedChannel, message)
+
+                            local success, response = pcall(function()
+                                return table.pack(service[message.method](table.unpack(message.arguments)))
+                            end)
+
+                            ---@type RpcResponsePacket
+                            local packet = {callId = message.callId, type = "response", response = response, success = success}
+                            peripheral.call(modem, "transmit", replyChannel, listenChannel, packet)
+                            logServerResponse(message.method, replyChannel, receivedChannel, packet)
+                        end
                     end)
-
-                    ---@type RpcResponsePacket
-                    local packet = {callId = message.callId, type = "response", response = response, success = success}
-                    peripheral.call(modem, "transmit", replyChannel, listenChannel, packet)
-                    logServerResponse(message.method, replyChannel, receivedChannel, packet)
                 end
             end)
+        end,
+        close = function()
+            EventLoop.queue(closeEvent)
+        end,
+        getWiredName = function()
+            if modem.isWireless() then
+                error("modem is not wired")
+            end
+
+            return modem.getNameLocal()
         end
-    end)
+    }
+
+    return server
+end
+
+---@param service Service
+---@param modemType? "wired" | "wireless"
+function Rpc.host(service, modemType)
+    local server = Rpc.server(service, modemType)
+    server.open()
 end
 
 ---@generic T
