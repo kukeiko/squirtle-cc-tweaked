@@ -84,13 +84,9 @@ end
 function InventoryPeripheral.getStacks(inventory, detailed)
     local adapter = getAdapter(inventory)
 
-    if adapter then
-        return adapter.getStacks(inventory, detailed)
-    end
-
     if not detailed then
         ---@type ItemStacks
-        local stacks = peripheral.call(inventory, "list")
+        local stacks = adapter and adapter.getStacks(inventory) or peripheral.call(inventory, "list")
 
         for slot, stack in pairs(stacks) do
             stack.maxCount = readItemMaxCount(stack.name, inventory, slot)
@@ -98,7 +94,7 @@ function InventoryPeripheral.getStacks(inventory, detailed)
 
         return stacks
     else
-        local stacks = peripheral.call(inventory, "list")
+        local stacks = adapter and adapter.getStacks(inventory, detailed) or peripheral.call(inventory, "list")
         ---@type ItemStacks
         local detailedStacks = {}
 
