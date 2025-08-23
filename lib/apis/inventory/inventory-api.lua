@@ -470,6 +470,11 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
     InventoryCollection.freeBuffer(bufferId)
 end
 
+---@param inventory InventoryHandle
+function InventoryApi.mount(inventory)
+    InventoryCollection.mount(inventory)
+end
+
 local function onPeripheralEventMountInventory()
     while true do
         EventLoop.pull("peripheral", function(_, name)

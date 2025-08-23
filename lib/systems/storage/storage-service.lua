@@ -48,6 +48,11 @@ function StorageService.refresh(handle)
     InventoryApi.refreshInventories(handle)
 end
 
+---@param inventory InventoryHandle
+function StorageService.mount(inventory)
+    InventoryApi.mount(inventory)
+end
+
 ---@param from InventoryHandle
 ---@param to InventoryHandle
 ---@param stock ItemStock

@@ -96,9 +96,11 @@ function InventoryCollection.getType(name)
     return cache[name].type
 end
 
----@param inventories string[]
+---@param inventory InventoryHandle
 ---@param expected? InventoryType
-function InventoryCollection.mount(inventories, expected)
+function InventoryCollection.mount(inventory, expected)
+    local inventories = InventoryCollection.resolveHandle(inventory)
+
     for _, inventory in pairs(inventories) do
         cache[inventory] = InventoryReader.read(inventory, expected)
     end
