@@ -8,6 +8,7 @@ local ItemApi = {
     beetrootSeeds = "minecraft:beetroot_seeds",
     birchLeaves = "minecraft:birch_leaves",
     birchLog = "minecraft:birch_log",
+    birchPlanks = "minecraft:birch_planks",
     birchSapling = "minecraft:birch_sapling",
     boneMeal = "minecraft:bone_meal",
     bucket = "minecraft:bucket",
@@ -226,6 +227,13 @@ function ItemApi.getRefuelAmount(item)
     end
 
     return fuelItems[item]
+end
+
+---@param item string
+---@param fuel integer
+---@return integer
+function ItemApi.getRequiredRefuelCount(item, fuel)
+    return math.ceil(fuel / ItemApi.getRefuelAmount(item))
 end
 
 ---@param item string

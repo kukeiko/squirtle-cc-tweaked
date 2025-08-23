@@ -228,7 +228,7 @@ function TurtleStateApi.missingFuel(limit)
         return 0
     end
 
-    return (limit or TurtleStateApi.getFuelLimit()) - current
+    return (limit or TurtleStateApi.getFiniteFuelLimit()) - current
 end
 
 function TurtleStateApi.fuelTargetReached()

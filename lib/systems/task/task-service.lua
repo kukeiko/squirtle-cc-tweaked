@@ -229,4 +229,27 @@ function TaskService.craftFromIngredients(options)
     return awaitTaskCompletion(task) --[[@as CraftFromIngredientsTask]]
 end
 
+---@class BuildChunkStorageTaskOptions : TaskOptions
+---@field chunkX integer
+---@field chunkY integer
+---@param options BuildChunkStorageTaskOptions
+---@return BuildChunkStorageTask
+function TaskService.buildChunkStorage(options)
+    local task = TaskService.findTask("build-chunk-storage", options.partOfTaskId, options.label) --[[@as BuildChunkStorageTask?]]
+
+    if not task then
+        local databaseService = Rpc.nearest(DatabaseService)
+        task = constructTask(options.issuedBy, "build-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkStorageTask]]
+        task.chunkX = options.chunkX
+        task.chunkY = options.chunkY
+        task = databaseService.createTask(task) --[[@as BuildChunkStorageTask]]
+    end
+
+    if options.skipAwait then
+        return task
+    end
+
+    return awaitTaskCompletion(task) --[[@as BuildChunkStorageTask]]
+end
+
 return TaskService
