@@ -1,6 +1,4 @@
 local Utils = require "lib.tools.utils"
-local Rpc = require "lib.tools.rpc"
-local DatabaseService = require "lib.database.database-service"
 local TaskRepository = require "lib.database.task-repository"
 
 ---@class TaskService : Service
@@ -39,7 +37,7 @@ end
 local function awaitTaskCompletion(task)
     while task.status ~= "finished" and task.status ~= "failed" do
         os.sleep(1)
-        task = Rpc.nearest(DatabaseService).getTask(task.id)
+        task = TaskRepository.getTask(task.id)
     end
 
     return task
@@ -48,12 +46,12 @@ end
 ---@param id integer
 ---@return Task
 function TaskService.getTask(id)
-    return Rpc.nearest(DatabaseService).getTask(id)
+    return TaskRepository.getTask(id)
 end
 
 ---@param id integer
 function TaskService.deleteTask(id)
-    Rpc.nearest(DatabaseService).deleteTask(id)
+    TaskRepository.deleteTask(id)
 end
 
 ---@param taskType TaskType
@@ -61,43 +59,38 @@ end
 ---@param label string
 ---@return Task?
 function TaskService.findTask(taskType, partOfTaskId, label)
-    local databaseService = Rpc.nearest(DatabaseService)
-
-    return Utils.find(databaseService.getTasks(), function(task)
+    return Utils.find(TaskRepository.getTasks(), function(task)
         return task.type == taskType and task.partOfTaskId == partOfTaskId and task.label == label
     end)
 end
 
 ---@param task Task
 function TaskService.updateTask(task)
-    Rpc.nearest(DatabaseService).updateTask(task)
+    TaskRepository.updateTask(task)
 end
 
 ---@param id integer
 function TaskService.finishTask(id)
-    local databaseService = Rpc.nearest(DatabaseService)
-    databaseService.completeTask(id, "finished")
+    TaskRepository.completeTask(id, "finished")
 end
 
 ---@param id integer
 function TaskService.failTask(id)
-    local databaseService = Rpc.nearest(DatabaseService)
-    databaseService.completeTask(id, "failed")
+    TaskRepository.completeTask(id, "failed")
 end
 
 ---@param acceptedBy string
 ---@param taskType TaskType
 ---@return Task
 function TaskService.acceptTask(acceptedBy, taskType)
-    local databaseService = Rpc.nearest(DatabaseService)
-    local acceptedTask = databaseService.getAcceptedTask(acceptedBy, taskType)
+    local acceptedTask = TaskRepository.getAcceptedTask(acceptedBy, taskType)
 
     if acceptedTask then
         print(string.format("[found] %s #%d", taskType, acceptedTask.id))
         return acceptedTask
     end
 
-    local task = databaseService.getIssuedTask(taskType)
+    local task = TaskRepository.getIssuedTask(taskType)
 
     if not task then
         print(string.format("[wait] for %s...", taskType))
@@ -105,10 +98,10 @@ function TaskService.acceptTask(acceptedBy, taskType)
 
     while not task do
         os.sleep(1)
-        task = databaseService.getIssuedTask(taskType)
+        task = TaskRepository.getIssuedTask(taskType)
 
         if not task then
-            task = databaseService.getAcceptedTask(acceptedBy, taskType)
+            task = TaskRepository.getAcceptedTask(acceptedBy, taskType)
         end
     end
 
@@ -117,7 +110,7 @@ function TaskService.acceptTask(acceptedBy, taskType)
     if task.status == "issued" then
         task.acceptedBy = acceptedBy
         task.status = "accepted"
-        databaseService.updateTask(task)
+        TaskRepository.updateTask(task)
     end
 
     return task
@@ -130,10 +123,9 @@ end
 ---@param options ProvideItemsTaskOptions
 ---@return ProvideItemsTask
 function TaskService.provideItems(options)
-    local task = TaskService.findTask("provide-items", options.partOfTaskId, options.label) --[[@as ProvideItemsTask?]]
+    local task = TaskRepository.findTask("provide-items", options.partOfTaskId, options.label) --[[@as ProvideItemsTask?]]
 
     if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "provide-items", options.partOfTaskId, options.label, options.autoDelete) --[[@as ProvideItemsTask]]
         task.transferredInitial = false
         task.items = options.items
@@ -141,7 +133,7 @@ function TaskService.provideItems(options)
         task.craftMissing = options.craftMissing
         task.transferred = {}
         task.crafted = {}
-        task = databaseService.createTask(task) --[[@as ProvideItemsTask]]
+        task = TaskRepository.createTask(task) --[[@as ProvideItemsTask]]
     end
 
     if options.skipAwait then
@@ -165,15 +157,14 @@ end
 ---@param options CraftItemsTaskOptions
 ---@return CraftItemsTask
 function TaskService.craftItems(options)
-    local task = TaskService.findTask("craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask?]]
+    local task = TaskRepository.findTask("craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask?]]
 
     if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "craft-items", options.partOfTaskId, options.label) --[[@as CraftItemsTask]]
         task.items = options.items
         task.crafted = {}
         task.to = options.to
-        task = databaseService.createTask(task) --[[@as CraftItemsTask]]
+        task = TaskRepository.createTask(task) --[[@as CraftItemsTask]]
     end
 
     if options.skipAwait then
@@ -188,14 +179,13 @@ end
 ---@param options AllocateIngredientsTaskOptions
 ---@return AllocateIngredientsTask
 function TaskService.allocateIngredients(options)
-    local task = TaskService.findTask("allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask?]]
+    local task = TaskRepository.findTask("allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask?]]
 
     if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "allocate-ingredients", options.partOfTaskId, options.label) --[[@as AllocateIngredientsTask]]
         task.items = options.items
         task.missing = {}
-        task = databaseService.createTask(task) --[[@as AllocateIngredientsTask]]
+        task = TaskRepository.createTask(task) --[[@as AllocateIngredientsTask]]
     end
 
     if options.skipAwait then
@@ -211,15 +201,14 @@ end
 ---@param options CraftFromIngredientsTaskOptions
 ---@return CraftFromIngredientsTask
 function TaskService.craftFromIngredients(options)
-    local task = TaskService.findTask("craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask?]]
+    local task = TaskRepository.findTask("craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask?]]
 
     if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "craft-from-ingredients", options.partOfTaskId, options.label) --[[@as CraftFromIngredientsTask]]
         task.craftingDetails = options.craftingDetails
         task.bufferId = options.bufferId
         task.crafted = {}
-        task = databaseService.createTask(task) --[[@as CraftFromIngredientsTask]]
+        task = TaskRepository.createTask(task) --[[@as CraftFromIngredientsTask]]
     end
 
     if options.skipAwait then
@@ -235,14 +224,13 @@ end
 ---@param options BuildChunkStorageTaskOptions
 ---@return BuildChunkStorageTask
 function TaskService.buildChunkStorage(options)
-    local task = TaskService.findTask("build-chunk-storage", options.partOfTaskId, options.label) --[[@as BuildChunkStorageTask?]]
+    local task = TaskRepository.findTask("build-chunk-storage", options.partOfTaskId, options.label) --[[@as BuildChunkStorageTask?]]
 
     if not task then
-        local databaseService = Rpc.nearest(DatabaseService)
         task = constructTask(options.issuedBy, "build-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkStorageTask]]
         task.chunkX = options.chunkX
         task.chunkY = options.chunkY
-        task = databaseService.createTask(task) --[[@as BuildChunkStorageTask]]
+        task = TaskRepository.createTask(task) --[[@as BuildChunkStorageTask]]
     end
 
     if options.skipAwait then

@@ -129,6 +129,33 @@ function TaskRepository.getTask(id)
     return task
 end
 
+---@param acceptedBy string
+---@param type TaskType
+---@return Task?
+function TaskRepository.getAcceptedTask(acceptedBy, type)
+    return Utils.find(TaskRepository.getTasks(), function(task)
+        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy
+    end)
+end
+
+---@param type TaskType
+---@return Task?
+function TaskRepository.getIssuedTask(type)
+    return Utils.find(TaskRepository.getTasks(), function(task)
+        return task.type == type and task.status == "issued"
+    end)
+end
+
+---@param taskType TaskType
+---@param partOfTaskId integer
+---@param label string
+---@return Task?
+function TaskRepository.findTask(taskType, partOfTaskId, label)
+    return Utils.find(TaskRepository.getTasks(), function(task)
+        return task.type == taskType and task.partOfTaskId == partOfTaskId and task.label == label
+    end)
+end
+
 ---@param taskType TaskType
 ---@param issuedBy? string
 ---@param partOfTaskId? integer

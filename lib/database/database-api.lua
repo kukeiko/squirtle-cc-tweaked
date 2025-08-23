@@ -1,5 +1,4 @@
 local Utils = require "lib.tools.utils"
-local TaskRepository = require "lib.database.task-repository"
 
 ---@class DatabaseApi
 local DatabaseApi = {folder = "data"}
@@ -9,8 +8,7 @@ local entityTypes = {
     craftingRecipes = "crafting-recipes",
     subwayStations = "subway-stations",
     turtleResumables = "turtle-resumables",
-    turtleDiskState = "turtle-disk-state",
-    tasks = "tasks"
+    turtleDiskState = "turtle-disk-state"
 }
 
 ---@param entity string
@@ -105,56 +103,6 @@ function DatabaseApi.saveCraftingRecipe(recipe)
     local recipes = DatabaseApi.getCraftingRecipes()
     recipes[recipe.item] = recipe
     DatabaseApi.setCraftingRecipes(recipes)
-end
-
----@param task Task
----@return Task
-function DatabaseApi.createTask(task)
-    return TaskRepository.createTask(task)
-end
-
----@return Task[]
-function DatabaseApi.getTasks()
-    return TaskRepository.getTasks()
-end
-
----@param id integer
----@return Task
-function DatabaseApi.getTask(id)
-    return TaskRepository.getTask(id)
-end
-
----@param id integer
----@param status TaskStatus
-function DatabaseApi.completeTask(id, status)
-    TaskRepository.completeTask(id, status)
-end
-
----@param task Task
-function DatabaseApi.updateTask(task)
-    TaskRepository.updateTask(task)
-end
-
----@param id integer
-function DatabaseApi.deleteTask(id)
-    TaskRepository.deleteTask(id)
-end
-
----@param type TaskType
----@return Task?
-function DatabaseApi.getIssuedTask(type)
-    return Utils.find(DatabaseApi.getTasks(), function(task)
-        return task.type == type and task.status == "issued"
-    end)
-end
-
----@param acceptedBy string
----@param type TaskType
----@return Task?
-function DatabaseApi.getAcceptedTask(acceptedBy, type)
-    return Utils.find(DatabaseApi.getTasks(), function(task)
-        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy
-    end)
 end
 
 ---@param taskId integer
