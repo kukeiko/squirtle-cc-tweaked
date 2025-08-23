@@ -6,6 +6,13 @@ local TaskRepository = require "lib.apis.database.task-repository"
 ---@class TaskService : Service
 local TaskService = {name = "task", host = ""}
 
+---@class TaskOptions
+---@field issuedBy string
+---@field partOfTaskId? integer
+---@field label? string
+---@field skipAwait? boolean
+---@field autoDelete? boolean
+
 ---@param issuedBy string
 ---@param type TaskType
 ---@param partOfTaskId? integer
@@ -116,12 +123,7 @@ function TaskService.acceptTask(acceptedBy, taskType)
     return task
 end
 
----@class ProvideItemsTaskOptions
----@field issuedBy string
----@field partOfTaskId? integer
----@field label? string
----@field await? boolean
----@field autoDelete? boolean
+---@class ProvideItemsTaskOptions : TaskOptions
 ---@field items ItemStock
 ---@field to InventoryHandle
 ---@field craftMissing boolean
@@ -142,11 +144,11 @@ function TaskService.provideItems(options)
         task = databaseService.createTask(task) --[[@as ProvideItemsTask]]
     end
 
-    if options.await then
-        return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
+    if options.skipAwait then
+        return task
     end
 
-    return task
+    return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
 end
 
 ---@param issuedBy string
@@ -157,10 +159,7 @@ function TaskService.getProvideItemsReport(issuedBy)
     return TaskRepository.getProvideItemsReport(issuedBy)
 end
 
----@class CraftItemsTaskOptions
----@field issuedBy string
----@field partOfTaskId? integer
----@field label? string
+---@class CraftItemsTaskOptions : TaskOptions
 ---@field items ItemStock
 ---@field to? InventoryHandle
 ---@param options CraftItemsTaskOptions
@@ -177,14 +176,15 @@ function TaskService.craftItems(options)
         task = databaseService.createTask(task) --[[@as CraftItemsTask]]
     end
 
+    if options.skipAwait then
+        return task
+    end
+
     return awaitTaskCompletion(task) --[[@as CraftItemsTask]]
 end
 
----@class AllocateIngredientsTaskOptions
----@field issuedBy string
+---@class AllocateIngredientsTaskOptions : TaskOptions
 ---@field items ItemStock
----@field partOfTaskId integer
----@field label? string
 ---@param options AllocateIngredientsTaskOptions
 ---@return AllocateIngredientsTask
 function TaskService.allocateIngredients(options)
@@ -198,13 +198,14 @@ function TaskService.allocateIngredients(options)
         task = databaseService.createTask(task) --[[@as AllocateIngredientsTask]]
     end
 
+    if options.skipAwait then
+        return task
+    end
+
     return awaitTaskCompletion(task) --[[@as AllocateIngredientsTask]]
 end
 
----@class CraftFromIngredientsTaskOptions
----@field issuedBy string
----@field partOfTaskId integer
----@field label? string
+---@class CraftFromIngredientsTaskOptions : TaskOptions
 ---@field craftingDetails CraftingDetails
 ---@field bufferId integer
 ---@param options CraftFromIngredientsTaskOptions
@@ -219,6 +220,10 @@ function TaskService.craftFromIngredients(options)
         task.bufferId = options.bufferId
         task.crafted = {}
         task = databaseService.createTask(task) --[[@as CraftFromIngredientsTask]]
+    end
+
+    if options.skipAwait then
+        return task
     end
 
     return awaitTaskCompletion(task) --[[@as CraftFromIngredientsTask]]

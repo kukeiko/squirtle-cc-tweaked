@@ -63,7 +63,8 @@ local function showDispenseScreen(storageService, taskService, selection)
             items = {[selection.id] = quantity},
             to = stash,
             label = tostring(os.epoch("utc")),
-            autoDelete = true
+            autoDelete = true,
+            skipAwait = true
         })
     end
 
