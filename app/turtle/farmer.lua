@@ -37,7 +37,7 @@ end
 ---@param time? integer maximum amount of time to wait
 ---@return boolean ready if crops are ready
 local function waitUntilCropsReady(side, max, time)
-    while getCropsRemainingAge(side) > 0 and TurtleApi.selectItem(ItemApi.boneMeal) and TurtleApi.place(side) do
+    while getCropsRemainingAge(side) > 0 and TurtleApi.use(side, ItemApi.boneMeal) do
     end
 
     local remainingAge = getCropsRemainingAge(side)

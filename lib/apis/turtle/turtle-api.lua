@@ -407,11 +407,38 @@ function TurtleApi.harvestBirchTree(minSaplings)
 end
 
 ---@param direction? string
+---@param item? string
+---@param require? boolean
+---@return boolean, string?
+function TurtleApi.use(direction, item, require)
+    if TurtleApi.isSimulating() then
+        return true
+    end
+
+    if item then
+        if not TurtleApi.selectItem(item) and not require then
+            return false
+        end
+
+        while not TurtleApi.selectItem(item) do
+            TurtleApi.requireItem(item, 1)
+        end
+    end
+
+    direction = direction or "front"
+    return getNative("place", direction)()
+end
+
+---@param direction? string
 ---@param text? string
 ---@return boolean, string?
 function TurtleApi.place(direction, text)
     if TurtleApi.isSimulating() then
         return true
+    end
+
+    if TurtleApi.probe(direction) then
+        return false
     end
 
     direction = direction or "front"
@@ -426,52 +453,6 @@ function TurtleApi.placeAtOneOf(directions)
     for i = 1, #directions do
         if TurtleApi.place(directions[i]) then
             return directions[i]
-        end
-    end
-end
-
----@param side? string
----@param text? string
----@return boolean, string?
-function TurtleApi.tryReplace(side, text)
-    if TurtleApi.isSimulating() then
-        return true
-    end
-
-    if TurtleApi.place(side, text) then
-        return true
-    end
-
-    while TurtleApi.tryMine(side) do
-    end
-
-    return TurtleApi.place(side, text)
-end
-
----@param sides? string[]
----@param text? string
----@return string?
-function TurtleApi.tryReplaceAtOneOf(sides, text)
-    assertNotSimulating("tryReplaceAtOneOf")
-    sides = sides or {"top", "front", "bottom"}
-
-    for i = 1, #sides do
-        local side = sides[i]
-
-        if TurtleApi.place(side, text) then
-            return side
-        end
-    end
-
-    -- [todo] tryPut() is attacking - should we do it here as well?
-    for i = 1, #sides do
-        local side = sides[i]
-
-        while TurtleApi.tryMine(side) do
-        end
-
-        if TurtleApi.place(side, text) then
-            return side
         end
     end
 end
@@ -591,7 +572,7 @@ function TurtleApi.placeWater(side)
         return
     end
 
-    if not TurtleApi.selectItem(ItemApi.waterBucket) or not TurtleApi.place(side) then
+    if not TurtleApi.use(side, ItemApi.waterBucket) then
         error("failed to place water")
     end
 end
@@ -601,11 +582,9 @@ function TurtleApi.tryTakeWater(side)
     if TurtleApi.isSimulating() then
         TurtleStateApi.takeWater()
         return true
-    elseif not TurtleApi.selectItem(ItemApi.bucket) then
-        return false
     end
 
-    return TurtleApi.place(side)
+    return TurtleApi.use(side, ItemApi.bucket)
 end
 
 ---@param side PlaceSide?
@@ -624,7 +603,7 @@ function TurtleApi.placeLava(side)
         return
     end
 
-    if not TurtleApi.selectItem(ItemApi.lavaBucket) or not TurtleApi.place(side) then
+    if not TurtleApi.use(side, ItemApi.lavaBucket) then
         error("failed to place lava")
     end
 end
@@ -634,11 +613,9 @@ function TurtleApi.tryTakeLava(side)
     if TurtleApi.isSimulating() then
         TurtleStateApi.takeLava()
         return true
-    elseif not TurtleApi.selectItem(ItemApi.bucket) then
-        return false
     end
 
-    return TurtleApi.place(side)
+    return TurtleApi.use(side, ItemApi.bucket)
 end
 
 ---@param side PlaceSide?

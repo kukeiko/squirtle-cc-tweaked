@@ -24,8 +24,7 @@ return function(chestLayers)
     forward()
     above(ItemApi.wiredModem)
     -- select an item we definitely have in order to right click
-    TurtleApi.selectItem(ItemApi.diskDrive)
-    TurtleApi.place("up")
+    TurtleApi.use("up", ItemApi.diskDrive)
     back()
     ahead(ItemApi.networkCable)
     back()
@@ -158,11 +157,9 @@ return function(chestLayers)
     forward(2)
     left()
 
-    -- select an item we definitely have in order to right click
-    TurtleApi.selectItem(ItemApi.diskDrive)
-
     for i = 1, chestLayers do
-        TurtleApi.place()
+        -- select an item we definitely have in order to right click
+        TurtleApi.use("forward", ItemApi.diskDrive)
 
         if i ~= chestLayers then
             down()

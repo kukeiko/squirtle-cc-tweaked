@@ -55,7 +55,7 @@ local function plantTree()
     print("[plant] tree...")
     TurtleApi.put("front", ItemApi.oakSapling)
 
-    while TurtleApi.selectItem(ItemApi.boneMeal) and TurtleApi.place() do
+    while TurtleApi.use("forward", ItemApi.boneMeal) do
     end
 
     -- when player harvests the leafs they can easily break the sapling. in that case, suck it in

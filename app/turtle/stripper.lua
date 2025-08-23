@@ -21,8 +21,7 @@ end
 local function strip()
     while TurtleApi.selectPredicate(isUnstrippedLog) do
         TurtleApi.place("top")
-        TurtleApi.selectItem("minecraft:diamond_axe")
-        TurtleApi.place("top")
+        TurtleApi.use("top", "minecraft:diamond_axe")
         TurtleApi.dig("top")
     end
 end

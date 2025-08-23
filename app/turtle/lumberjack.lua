@@ -185,8 +185,7 @@ local function plantTree()
     TurtleApi.walk("back")
     TurtleApi.put("front", ItemApi.birchSapling)
 
-    while not TurtleApi.probe("front", ItemApi.birchLog) and TurtleApi.selectItem(ItemApi.boneMeal) do
-        TurtleApi.place()
+    while not TurtleApi.probe("front", ItemApi.birchLog) and TurtleApi.use("front", ItemApi.boneMeal) do
     end
 
     return TurtleApi.probe("front", ItemApi.birchLog)

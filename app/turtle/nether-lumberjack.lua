@@ -24,13 +24,7 @@ local function ensureNylium(variant)
     if TurtleApi.probe("bottom", ItemApi.getNylium(variant)) then
         TurtleApi.move("back")
     else
-        -- [todo] ❌ I'm thinking of adding "trySelectItem()" and "tryPlace()" to TurtleApi and make "selectItem()" and "place()" error
-        -- on failure so I don't need to do it here
-        if not TurtleApi.selectItem(ItemApi.boneMeal) then
-            error("expected to have bone meal")
-        end
-
-        if not TurtleApi.place("bottom") then
+        if not TurtleApi.use("bottom", ItemApi.boneMeal) then
             error("failed to place bone meal - maybe there is no adjacent nylium?")
         end
 
@@ -44,8 +38,7 @@ local function plant(variant)
     TurtleApi.place()
 
     while not TurtleApi.probe("forward", ItemApi.getStem(variant)) do
-        TurtleApi.selectItem(ItemApi.boneMeal)
-        TurtleApi.place()
+        TurtleApi.use("forward", ItemApi.boneMeal)
     end
 end
 

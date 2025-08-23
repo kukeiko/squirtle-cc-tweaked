@@ -20,13 +20,7 @@ local dig = TurtleApi.dig
 
 ---@param direction? string
 local function clickTrapdoor(direction)
-    if not TurtleApi.isSimulating() then
-        while not TurtleApi.selectItem(ItemApi.diskDrive) do
-            TurtleApi.requireItem(ItemApi.diskDrive, 1)
-        end
-
-        TurtleApi.place(direction)
-    end
+    TurtleApi.use(direction, ItemApi.diskDrive, true)
 end
 
 ---@param direction? string
