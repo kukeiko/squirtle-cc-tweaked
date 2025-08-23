@@ -1,76 +1,76 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
+local TaskWorker = require "lib.system.task-worker"
 local ItemStock = require "lib.inventory.item-stock"
-local TaskService = require "lib.system.task-service"
 local StorageService = require "lib.inventory.storage-service"
 
-local function work()
-    local name = os.getComputerLabel()
-    local taskService = Rpc.nearest(TaskService)
+---@class ProvideItemsTaskWorker : TaskWorker
+local ProvideItemsTaskWorker = {}
+setmetatable(ProvideItemsTaskWorker, {__index = TaskWorker})
+
+---@param task ProvideItemsTask
+---@param taskService TaskService | RpcClient
+---@return ProvideItemsTaskWorker
+function ProvideItemsTaskWorker.new(task, taskService)
+    local instance = TaskWorker.new(task, taskService) --[[@as ProvideItemsTaskWorker]]
+    setmetatable(instance, {__index = ProvideItemsTaskWorker})
+
+    return instance
+end
+
+---@return TaskType
+function ProvideItemsTaskWorker.getTaskType()
+    return "provide-items"
+end
+
+---@return ProvideItemsTask
+function ProvideItemsTaskWorker:getTask()
+    return self.task --[[@as ProvideItemsTask]]
+end
+
+function ProvideItemsTaskWorker:work()
     local storageService = Rpc.nearest(StorageService)
+    local task = self:getTask()
 
-    print(string.format("[awaiting] next %s...", "provide-items"))
-    local task = taskService.acceptTask(name, "provide-items") --[[@as ProvideItemsTask]]
-    print(string.format("[accepted] %s #%d", task.type, task.id))
+    if not task.bufferId then
+        -- [todo] ❌ buffer leak if turtle crashes before updateTask()
+        task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
+        self:updateTask()
+    end
 
-    local success, message = pcall(function(...)
-        if not task.bufferId then
-            -- [todo] ❌ buffer leak if turtle crashes before updateTask()
-            task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
-            taskService.updateTask(task)
+    if not task.transferredInitial then
+        local from = storageService.getByType("storage")
+        local _, transferred = storageService.fulfill(from, task.bufferId, task.items)
+        task.transferredInitial = true
+        task.transferred = transferred
+        self:updateTask()
+    end
+
+    if task.craftMissing then
+        -- [todo] ❌ issues craftItems() task even if nothing needs to be crafted,
+        -- meaning that just providing items (without crafting) doesn't work if no crafter is running
+        local bufferStock = storageService.getBufferStock(task.bufferId)
+        local open = ItemStock.subtract(task.items, bufferStock)
+
+        if not Utils.isEmpty(open) then
+            local craftItemsTask = self:craftItems(open, task.bufferId)
+            task.crafted = craftItemsTask.crafted
+            self:updateTask()
         end
+    end
 
-        if not task.transferredInitial then
-            local from = storageService.getByType("storage")
-            local _, transferred = storageService.fulfill(from, task.bufferId, task.items)
-            task.transferredInitial = true
-            task.transferred = transferred
-            taskService.updateTask(task)
-        end
+    -- [todo] ❌ support "task.to" being nil, in which case another task will take over the buffer
+    storageService.flushAndFreeBuffer(task.bufferId, task.to)
+end
 
-        if task.craftMissing then
-            -- [todo] ❌ issues craftItems() task even if nothing needs to be crafted,
-            -- meaning that just providing items (without crafting) doesn't work if no crafter is running
-            local bufferStock = storageService.getBufferStock(task.bufferId)
-            local open = ItemStock.subtract(task.items, bufferStock)
+function ProvideItemsTaskWorker:cleanup()
+    local storageService = Rpc.nearest(StorageService)
+    local task = self:getTask()
 
-            if not Utils.isEmpty(open) then
-                local craftItemsTask = taskService.craftItems({
-                    issuedBy = os.getComputerLabel(),
-                    partOfTaskId = task.id,
-                    items = open,
-                    to = task.bufferId
-                })
-
-                if craftItemsTask.status == "failed" then
-                    print("[error] craft items failed")
-                    return taskService.failTask(task.id)
-                end
-
-                task.crafted = craftItemsTask.crafted
-                taskService.updateTask(task)
-            end
-        end
-
-        -- [todo] ❌ support "task.to" being nil, in which case another task will take over the buffer
+    if task.bufferId then
+        print(string.format("[cleanup] flush & free buffer %d...", task.bufferId))
         storageService.flushAndFreeBuffer(task.bufferId, task.to)
-        print(string.format("[finish] %s %d", task.type, task.id))
-        taskService.finishTask(task.id)
-    end)
-
-    if not success then
-        if task.bufferId then
-            storageService.flushAndFreeBuffer(task.bufferId, task.to)
-        end
-
-        print(string.format("[failed] %s %d: %s", task.type, task.id, message))
-        taskService.failTask(task.id)
-    end
-
-end
-
-return function()
-    while true do
-        work()
     end
 end
+
+return ProvideItemsTaskWorker

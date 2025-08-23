@@ -81,9 +81,10 @@ end
 
 ---@param acceptedBy string
 ---@param taskType TaskType
+---@param exceptTaskIds? integer[]
 ---@return Task
-function TaskService.acceptTask(acceptedBy, taskType)
-    local acceptedTask = TaskRepository.getAcceptedTask(acceptedBy, taskType)
+function TaskService.acceptTask(acceptedBy, taskType, exceptTaskIds)
+    local acceptedTask = TaskRepository.getAcceptedTask(acceptedBy, taskType, exceptTaskIds)
 
     if acceptedTask then
         print(string.format("[found] %s #%d", taskType, acceptedTask.id))
@@ -101,7 +102,7 @@ function TaskService.acceptTask(acceptedBy, taskType)
         task = TaskRepository.getIssuedTask(taskType)
 
         if not task then
-            task = TaskRepository.getAcceptedTask(acceptedBy, taskType)
+            task = TaskRepository.getAcceptedTask(acceptedBy, taskType, exceptTaskIds)
         end
     end
 

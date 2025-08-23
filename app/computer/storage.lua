@@ -12,6 +12,7 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local TaskWorkerPool = require "lib.system.task-worker-pool"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
@@ -30,9 +31,9 @@ local eventLoopWindow = require "lib.system.windows.event-loop-window"
 local activeLocksWindow = require "lib.inventory.windows.active-locks-window"
 local activeUnlocksWindow = require "lib.inventory.windows.active-unlocks-window"
 local processorsWindow = require "lib.inventory.windows.processors-window"
-local craftItemsWorker = require "lib.inventory.workers.craft-items-worker"
-local allocateIngredientsWorker = require "lib.inventory.workers.allocate-ingredients-worker"
-local provideItemsWorker = require "lib.inventory.workers.provide-items-worker"
+local CraftItemsTaskWorker = require "lib.inventory.workers.craft-items-worker"
+local AllocateIngredientsTaskWorker = require "lib.inventory.workers.allocate-ingredients-worker"
+local ProvideItemsTaskWorker = require "lib.inventory.workers.provide-items-worker"
 
 local function refresh()
     print("[refresh] storages, silos & stashes")
@@ -66,8 +67,11 @@ local processors = {
     refresh = {enabled = true, fn = refresh, interval = 10}
 }
 
+local numWorkers = 2
+
 local function main()
     print(string.format("[storage %s] booting...", version()))
+    print(string.format("[storage] using %dx workers for each task", numWorkers))
     InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
     Inventory.discover()
@@ -113,11 +117,11 @@ local function workers()
     os.sleep(1)
 
     EventLoop.run(function()
-        allocateIngredientsWorker()
+        TaskWorkerPool.new(AllocateIngredientsTaskWorker, numWorkers):run()
     end, function()
-        craftItemsWorker()
+        TaskWorkerPool.new(CraftItemsTaskWorker, numWorkers):run()
     end, function()
-        provideItemsWorker()
+        TaskWorkerPool.new(ProvideItemsTaskWorker, numWorkers):run()
     end)
 end
 

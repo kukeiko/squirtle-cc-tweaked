@@ -131,10 +131,12 @@ end
 
 ---@param acceptedBy string
 ---@param type TaskType
+---@param exceptTaskIds? integer[]
 ---@return Task?
-function TaskRepository.getAcceptedTask(acceptedBy, type)
+function TaskRepository.getAcceptedTask(acceptedBy, type, exceptTaskIds)
     return Utils.find(TaskRepository.getTasks(), function(task)
-        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy
+        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy and
+                   (not exceptTaskIds or not Utils.contains(exceptTaskIds, task.id))
     end)
 end
 

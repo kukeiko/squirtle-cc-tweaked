@@ -1,38 +1,39 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
+local TaskWorker = require "lib.system.task-worker"
 local ItemStock = require "lib.inventory.item-stock"
-local TaskService = require "lib.system.task-service"
 local StorageService = require "lib.inventory.storage-service"
 
-local function work()
-    local name = os.getComputerLabel()
-    local taskService = Rpc.nearest(TaskService)
+---@class CraftItemsTaskWorker : TaskWorker
+local CraftItemsTaskWorker = {}
+setmetatable(CraftItemsTaskWorker, {__index = TaskWorker})
+
+---@param task CraftItemsTask
+---@param taskService TaskService | RpcClient
+---@return CraftItemsTaskWorker
+function CraftItemsTaskWorker.new(task, taskService)
+    local instance = TaskWorker.new(task, taskService) --[[@as CraftItemsTaskWorker]]
+    setmetatable(instance, {__index = CraftItemsTaskWorker})
+
+    return instance
+end
+
+---@return TaskType
+function CraftItemsTaskWorker.getTaskType()
+    return "craft-items"
+end
+
+---@return CraftItemsTask
+function CraftItemsTaskWorker:getTask()
+    return self.task --[[@as CraftItemsTask]]
+end
+
+function CraftItemsTaskWorker:work()
+    local task = self:getTask()
     local storageService = Rpc.nearest(StorageService)
-
-    print(string.format("[awaiting] next %s...", "craft-items"))
-    local task = taskService.acceptTask(name, "craft-items") --[[@as CraftItemsTask]]
-    print(string.format("[accepted] %s #%d", task.type, task.id))
-
-    local allocateIngredientsTask = taskService.allocateIngredients({issuedBy = name, items = task.items, partOfTaskId = task.id})
-
-    if allocateIngredientsTask.status == "failed" then
-        print("[error] allocating ingredients failed")
-        return taskService.failTask(task.id)
-    end
-
+    local allocateIngredientsTask = self:allocateIngredients(task.items)
     local bufferId = allocateIngredientsTask.bufferId --[[@as integer]]
-    local craftFromIngredientsTask = taskService.craftFromIngredients({
-        issuedBy = name,
-        partOfTaskId = task.id,
-        bufferId = bufferId,
-        craftingDetails = allocateIngredientsTask.craftingDetails
-    })
-
-    if craftFromIngredientsTask.status == "failed" then
-        print("[error] crafting from ingredients failed")
-        return taskService.failTask(task.id)
-    end
-
+    local craftFromIngredientsTask = self:craftFromIngredients(allocateIngredientsTask.craftingDetails, bufferId)
     local craftedSpillover = ItemStock.subtract(storageService.getBufferStock(bufferId), task.items)
 
     if not Utils.isEmpty(craftedSpillover) then
@@ -42,14 +43,12 @@ local function work()
     end
 
     task.crafted = craftFromIngredientsTask.crafted
-    taskService.updateTask(task)
+    self:updateTask()
     storageService.flushAndFreeBuffer(bufferId, task.to)
-    print(string.format("[finish] %s %d", task.type, task.id))
-    taskService.finishTask(task.id)
 end
 
-return function()
-    while true do
-        work()
-    end
+function CraftItemsTaskWorker:cleanup()
+    -- [todo] ❌ figure out if cleanup is needed
 end
+
+return CraftItemsTaskWorker
