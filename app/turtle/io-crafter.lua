@@ -12,14 +12,14 @@ end
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local CraftingApi = require "lib.apis.crafting-api"
-local StorageService = require "lib.systems.storage.storage-service"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local TaskService = require "lib.systems.task.task-service"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local Shell = require "lib.ui.shell"
-local showLogs = require "lib.systems.shell.windows.logs-window"
+local CraftingApi = require "lib.inventory.crafting-api"
+local StorageService = require "lib.inventory.storage-service"
+local RemoteService = require "lib.system.remote-service"
+local TaskService = require "lib.system.task-service"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local TurtleApi = require "lib.turtle.turtle-api"
+local Shell = require "lib.system.shell"
+local showLogs = require "lib.system.windows.logs-window"
 
 print(string.format("[io-crafter %s] booting...", version()))
 Utils.writeStartupFile("io-crafter")

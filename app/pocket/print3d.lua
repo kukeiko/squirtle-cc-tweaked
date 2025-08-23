@@ -10,7 +10,7 @@ if not arg then
 end
 
 local Rpc = require "lib.tools.rpc"
-local Print3dService = require "lib.systems.builders.print3d-service"
+local Print3dService = require "lib.building.print3d-service"
 
 print(string.format("[print3d %s]", version()))
 

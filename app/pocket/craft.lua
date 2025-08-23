@@ -12,9 +12,9 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local TaskService = require "lib.systems.task.task-service"
-local StorageService = require "lib.systems.storage.storage-service"
+local RemoteService = require "lib.system.remote-service"
+local TaskService = require "lib.system.task-service"
+local StorageService = require "lib.inventory.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
 

@@ -9,9 +9,9 @@ if not arg then
     return {version = version(), platform = "pocket"}
 end
 
-local Vector = require "lib.models.vector"
+local Vector = require "lib.common.vector"
 local Rpc = require "lib.tools.rpc"
-local TurtleService = require "lib.systems.turtle-service"
+local TurtleService = require "lib.turtle.turtle-service"
 
 print(string.format("[turtle %s] booting...", version()))
 local squirtles = Rpc.all(TurtleService)

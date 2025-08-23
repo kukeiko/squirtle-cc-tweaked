@@ -10,7 +10,7 @@ if not arg then
 end
 
 local Utils = require "lib.tools.utils"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 local blockSide = arg[1]
 local signalSide = arg[2]

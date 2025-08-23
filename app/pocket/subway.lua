@@ -12,9 +12,9 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local DatabaseApi = require "lib.apis.database.database-api"
-local DatabaseService = require "lib.systems.database.database-service"
-local SubwayService = require "lib.systems.subway.subway-service"
+local DatabaseApi = require "lib.database.database-api"
+local DatabaseService = require "lib.database.database-service"
+local SubwayService = require "lib.transportation.subway-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 ---@param unvisited table<string, SubwayStation>

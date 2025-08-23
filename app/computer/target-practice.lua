@@ -12,8 +12,8 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local Side = require "lib.apis.side"
-local RemoteService = require "lib.systems.runtime.remote-service"
+local Side = require "lib.common.side"
+local RemoteService = require "lib.system.remote-service"
 local isClient = arg[1] == "client"
 local score = 0
 local maxScore = 10

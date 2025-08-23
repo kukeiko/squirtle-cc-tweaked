@@ -9,7 +9,7 @@ if not arg then
     return {version = version(), platform = "turtle"}
 end
 
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 ---@class AqueductAppState
 local state = {

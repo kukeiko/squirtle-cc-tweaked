@@ -13,7 +13,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local SearchableList = require "lib.ui.searchable-list"
-local TeleportService = require "lib.systems.teleport-service"
+local TeleportService = require "lib.transportation.teleport-service"
 
 ---@return SearchableListOption[]
 local function getListOptions()

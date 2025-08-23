@@ -2,8 +2,8 @@ package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local Resumable = require "lib.apis.turtle.resumable"
+local TurtleApi = require "lib.turtle.turtle-api"
+local Resumable = require "lib.turtle.resumable"
 
 EventLoop.run(function()
     while true do

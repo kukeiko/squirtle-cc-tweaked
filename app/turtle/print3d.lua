@@ -12,12 +12,12 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local Vector = require "lib.models.vector"
-local Cardinal = require "lib.models.cardinal"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local Print3dService = require "lib.systems.builders.print3d-service"
-local TurtleService = require "lib.systems.turtle-service"
-local Resumable = require "lib.apis.turtle.resumable"
+local Vector = require "lib.common.vector"
+local Cardinal = require "lib.common.cardinal"
+local TurtleApi = require "lib.turtle.turtle-api"
+local Print3dService = require "lib.building.print3d-service"
+local TurtleService = require "lib.turtle.turtle-service"
+local Resumable = require "lib.turtle.resumable"
 
 ---@class ColoredPoint
 ---@field vector Vector

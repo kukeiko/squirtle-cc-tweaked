@@ -12,8 +12,8 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local TeleportService = require "lib.systems.teleport-service"
+local RemoteService = require "lib.system.remote-service"
+local TeleportService = require "lib.transportation.teleport-service"
 
 local sides = {"left", "right", "top"}
 

@@ -9,7 +9,7 @@ if not arg then
     return {version = version(), platform = "computer"}
 end
 
-local UpdateService = require "lib.systems.runtime.update-service"
+local UpdateService = require "lib.system.update-service"
 
 print(string.format("[update %s]", version()))
 local app = arg[1]

@@ -10,7 +10,7 @@ if not arg then
 end
 
 local Rpc = require "lib.tools.rpc"
-local OakService = require "lib.systems.farms.oak-service"
+local OakService = require "lib.farms.oak-service"
 
 print(string.format("[oak %s] booting...", version()))
 local on = arg[1] == "on"

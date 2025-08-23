@@ -9,8 +9,8 @@ if not arg then
     return {version = version(), platform = "turtle"}
 end
 
-local World = require "lib.models.world"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local World = require "lib.common.world"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 local function printUsage()
     print("Usage:")

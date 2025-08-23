@@ -12,7 +12,7 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.systems.runtime.remote-service"
+local RemoteService = require "lib.system.remote-service"
 local isClient = arg[1] == "client"
 local sounds = {front = "entity.pig.ambient", back = "entity.cat.ambient", left = "entity.chicken.ambient", right = "entity.sheep.ambient"}
 

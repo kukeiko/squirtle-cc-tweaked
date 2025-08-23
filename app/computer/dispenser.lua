@@ -11,13 +11,13 @@ end
 
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local StorageService = require "lib.systems.storage.storage-service"
-local TaskService = require "lib.systems.task.task-service"
-local Shell = require "lib.ui.shell"
+local RemoteService = require "lib.system.remote-service"
+local StorageService = require "lib.inventory.storage-service"
+local TaskService = require "lib.system.task-service"
+local Shell = require "lib.system.shell"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local showLogs = require "lib.systems.shell.windows.logs-window"
+local showLogs = require "lib.system.windows.logs-window"
 
 local idleTimeout = 30
 local refreshIntervals = {dispense = 3, transfers = 1, missing = 1}

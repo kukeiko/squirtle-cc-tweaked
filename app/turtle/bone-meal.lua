@@ -11,10 +11,10 @@ end
 
 package.path = package.path .. ";/app/turtle/?.lua"
 local EventLoop = require "lib.tools.event-loop"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local ItemApi = require "lib.apis.item-api"
-local Resumable = require "lib.apis.turtle.resumable"
-local buildBoneMealFarm = require "lib.systems.builders.build-bone-meal-farm"
+local TurtleApi = require "lib.turtle.turtle-api"
+local ItemApi = require "lib.inventory.item-api"
+local Resumable = require "lib.turtle.resumable"
+local buildBoneMealFarm = require "lib.building.build-bone-meal-farm"
 
 EventLoop.run(function()
     print(string.format("[bone-meal %s] booting...", version()))

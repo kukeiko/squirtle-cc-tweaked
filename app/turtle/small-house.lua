@@ -11,10 +11,10 @@ end
 
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local TurtleService = require "lib.systems.turtle-service"
-local Resumable = require "lib.apis.turtle.resumable"
-local buildSmallHouse = require "lib.systems.builders.build-small-house"
+local TurtleApi = require "lib.turtle.turtle-api"
+local TurtleService = require "lib.turtle.turtle-service"
+local Resumable = require "lib.turtle.resumable"
+local buildSmallHouse = require "lib.building.build-small-house"
 
 local function printUsage()
     print("Usage: small-house <spruce|oak>")

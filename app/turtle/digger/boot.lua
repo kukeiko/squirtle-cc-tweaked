@@ -1,5 +1,5 @@
-local AppState = require "lib.apis.app-state"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local AppState = require "lib.system.app-state"
+local TurtleApi = require "lib.turtle.turtle-api"
 local setup = require "digger.setup"
 
 return function()

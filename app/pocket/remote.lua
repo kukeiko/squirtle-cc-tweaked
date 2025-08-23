@@ -13,8 +13,8 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local SearchableList = require "lib.ui.searchable-list"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local Shell = require "lib.ui.shell"
+local RemoteService = require "lib.system.remote-service"
+local Shell = require "lib.system.shell"
 local readInteger = require "lib.ui.read-integer"
 
 print(string.format("[remote %s]", version()))

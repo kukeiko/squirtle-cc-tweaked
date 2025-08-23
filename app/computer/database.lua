@@ -12,9 +12,9 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local AppsService = require "lib.systems.runtime.apps-service"
-local DatabaseService = require "lib.systems.database.database-service"
-local TaskService = require "lib.systems.task.task-service"
+local AppsService = require "lib.system.apps-service"
+local DatabaseService = require "lib.database.database-service"
+local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 print(string.format("[database %s] booting...", version()))
@@ -48,7 +48,7 @@ if monitor then
     term.redirect(monitor)
 end
 
-local Shell = require "lib.ui.shell"
+local Shell = require "lib.system.shell"
 
 Shell:addWindow("Apps", function()
     while true do

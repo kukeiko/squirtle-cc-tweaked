@@ -12,7 +12,7 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local SubwayService = require "lib.systems.subway.subway-service"
+local SubwayService = require "lib.transportation.subway-service"
 
 local function printUsage()
     print("Usage:")

@@ -10,7 +10,7 @@ if not arg then
 end
 
 package.path = package.path .. ";/app/turtle/?.lua"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleApi = require "lib.turtle.turtle-api"
 local boot = require "silo.boot"
 local sequence = require "silo.sequence"
 

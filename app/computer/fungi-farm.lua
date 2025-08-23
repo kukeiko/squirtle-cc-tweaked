@@ -11,9 +11,9 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ItemApi = require "lib.apis.item-api"
-local InventoryApi = require "lib.apis.inventory.inventory-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
+local ItemApi = require "lib.inventory.item-api"
+local InventoryApi = require "lib.inventory.inventory-api"
+local RemoteService = require "lib.system.remote-service"
 
 print(string.format("[fungi-farm %s] booting...", version()))
 local interval = math.max(2, tonumber(arg[1]) or 2)

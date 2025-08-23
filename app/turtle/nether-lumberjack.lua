@@ -11,11 +11,11 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local Vector = require "lib.models.vector"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local ItemApi = require "lib.apis.item-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local Resumable = require "lib.apis.turtle.resumable"
+local Vector = require "lib.common.vector"
+local TurtleApi = require "lib.turtle.turtle-api"
+local ItemApi = require "lib.inventory.item-api"
+local RemoteService = require "lib.system.remote-service"
+local Resumable = require "lib.turtle.resumable"
 
 ---@param variant "crimson" | "warped"
 local function ensureNylium(variant)

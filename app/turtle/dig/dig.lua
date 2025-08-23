@@ -11,10 +11,10 @@ end
 
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
-local World = require "lib.models.world"
+local World = require "lib.common.world"
 local nextPoint = require "dig.next-point"
 local boot = require "dig.boot"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 ---@class DigAppState
 ---@field world World

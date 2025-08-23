@@ -12,10 +12,10 @@ end
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Utils = require "lib.tools.utils"
-local ItemApi = require "lib.apis.item-api"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local TurtleService = require "lib.systems.turtle-service"
-local Resumable = require "lib.apis.turtle.resumable"
+local ItemApi = require "lib.inventory.item-api"
+local TurtleApi = require "lib.turtle.turtle-api"
+local TurtleService = require "lib.turtle.turtle-service"
+local Resumable = require "lib.turtle.resumable"
 
 local function readPattern()
     ---@type string[]

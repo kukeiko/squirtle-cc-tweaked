@@ -10,9 +10,9 @@ if not arg then
 end
 
 local Utils = require "lib.tools.utils"
-local Redstone = require "lib.apis.redstone"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local Inventory = require "lib.apis.inventory.inventory-api"
+local Redstone = require "lib.common.redstone"
+local TurtleApi = require "lib.turtle.turtle-api"
+local Inventory = require "lib.inventory.inventory-api"
 
 local function dumpChestcartToBarrel()
     while TurtleApi.suck() do

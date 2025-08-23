@@ -12,9 +12,9 @@ end
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ItemApi = require "lib.apis.item-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local ItemApi = require "lib.inventory.item-api"
+local RemoteService = require "lib.system.remote-service"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 local minFuel = 512
 local maxCropWaitDifference = 1

@@ -13,10 +13,10 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local ItemApi = require "lib.apis.item-api"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local OakService = require "lib.systems.farms.oak-service"
+local ItemApi = require "lib.inventory.item-api"
+local TurtleApi = require "lib.turtle.turtle-api"
+local RemoteService = require "lib.system.remote-service"
+local OakService = require "lib.farms.oak-service"
 
 local minFuel = 80 * 64;
 

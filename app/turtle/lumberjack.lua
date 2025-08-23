@@ -12,12 +12,12 @@ end
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ItemApi = require "lib.apis.item-api"
-local InventoryApi = require "lib.apis.inventory.inventory-api"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local FurnacePeripheral = require "lib.peripherals.furnace-peripheral"
+local ItemApi = require "lib.inventory.item-api"
+local InventoryApi = require "lib.inventory.inventory-api"
+local TurtleApi = require "lib.turtle.turtle-api"
+local RemoteService = require "lib.system.remote-service"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local FurnacePeripheral = require "lib.inventory.furnace-peripheral"
 
 local maxLogs = 64
 local minBoneMealForPlanting = 1

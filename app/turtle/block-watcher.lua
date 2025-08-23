@@ -10,9 +10,9 @@ if not arg then
 end
 
 local Utils = require "lib.tools.utils"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local Shell = require "lib.ui.shell"
+local TurtleApi = require "lib.turtle.turtle-api"
+local RemoteService = require "lib.system.remote-service"
+local Shell = require "lib.system.shell"
 
 local blockSide = arg[1]
 local signalSide = arg[2]

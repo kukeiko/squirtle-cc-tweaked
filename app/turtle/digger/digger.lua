@@ -11,13 +11,13 @@ end
 
 package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
-local Vectors = require "lib.models.vector"
-local World = require "lib.models.world"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
-local AppState = require "lib.apis.app-state"
+local Vectors = require "lib.common.vector"
+local World = require "lib.common.world"
+local TurtleApi = require "lib.turtle.turtle-api"
+local AppState = require "lib.system.app-state"
 local boot = require "digger.boot"
-local Inventory = require "lib.apis.inventory.inventory-api"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
+local Inventory = require "lib.inventory.inventory-api"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 
 ---@class DiggerAppState
 ---@field home Vector

@@ -11,7 +11,7 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local Peripheral = require "lib.apis.peripheral"
+local Peripheral = require "lib.common.peripheral"
 
 local function printUsage()
     print("Usage: crafter <source> <target> [trash]")

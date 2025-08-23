@@ -11,7 +11,7 @@ end
 
 package.path = package.path .. ";/app/turtle/?.lua"
 local boot = require "build-platform.boot"
-local TurtleApi = require "lib.apis.turtle.turtle-api"
+local TurtleApi = require "lib.turtle.turtle-api"
 
 ---@class BuildPlatformAppState
 ---@field depth integer

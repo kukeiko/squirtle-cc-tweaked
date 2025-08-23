@@ -12,9 +12,9 @@ end
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Utils = require "lib.tools.utils"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local XylophoneService = require "lib.systems.games.xylophone-service"
-local Shell = require "lib.ui.shell"
+local RemoteService = require "lib.system.remote-service"
+local XylophoneService = require "lib.games.xylophone-service"
+local Shell = require "lib.system.shell"
 
 local isClient = arg[1] == "client"
 

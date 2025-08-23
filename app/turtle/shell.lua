@@ -11,13 +11,13 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ApplicationApi = require "lib.apis.application-api"
-local Shell = require "lib.ui.shell"
+local ApplicationApi = require "lib.system.application-api"
+local Shell = require "lib.system.shell"
 local SearchableList = require "lib.ui.searchable-list"
 
 Shell:addWindow("Apps", function()
-    -- [todo] ❌ only for dev
     ApplicationApi.initAppVersions()
+    -- [todo] ❌ only for dev
     local apps = ApplicationApi.getComputerApps()
     -- local apps = ApplicationApi.getTurtleApps()
     local function getOptions()

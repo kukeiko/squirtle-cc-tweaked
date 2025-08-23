@@ -12,27 +12,27 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local InventoryPeripheral = require "lib.peripherals.inventory-peripheral"
-local Inventory = require "lib.apis.inventory.inventory-api"
-local InventoryCollection = require "lib.apis.inventory.inventory-collection"
-local StorageService = require "lib.systems.storage.storage-service"
-local RemoteService = require "lib.systems.runtime.remote-service"
-local processDumps = require "lib.systems.storage.processors.process-dumps"
-local processFurnaces = require "lib.systems.storage.processors.process-furnaces"
-local processIo = require "lib.systems.storage.processors.process-io"
-local processQuickAccess = require "lib.systems.storage.processors.process-quick-access"
-local processShulkers = require "lib.systems.storage.processors.process-shulkers"
-local processTrash = require "lib.systems.storage.processors.process-trash"
-local processSiloOutputs = require "lib.systems.storage.processors.process-silo-outputs"
-local TurtleInventoryAdapter = require "lib.systems.storage.turtle-inventory-adapter"
-local logsWindow = require "lib.systems.shell.windows.logs-window"
-local eventLoopWindow = require "lib.systems.shell.windows.event-loop-window"
-local activeLocksWindow = require "lib.systems.storage.windows.active-locks-window"
-local activeUnlocksWindow = require "lib.systems.storage.windows.active-unlocks-window"
-local processorsWindow = require "lib.systems.storage.windows.processors-window"
-local craftItemsWorker = require "lib.systems.task.workers.craft-items-worker"
-local allocateIngredientsWorker = require "lib.systems.task.workers.allocate-ingredients-worker"
-local provideItemsWorker = require "lib.systems.task.workers.provide-items-worker"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
+local Inventory = require "lib.inventory.inventory-api"
+local InventoryCollection = require "lib.inventory.inventory-collection"
+local StorageService = require "lib.inventory.storage-service"
+local RemoteService = require "lib.system.remote-service"
+local processDumps = require "lib.inventory.processors.process-dumps"
+local processFurnaces = require "lib.inventory.processors.process-furnaces"
+local processIo = require "lib.inventory.processors.process-io"
+local processQuickAccess = require "lib.inventory.processors.process-quick-access"
+local processShulkers = require "lib.inventory.processors.process-shulkers"
+local processTrash = require "lib.inventory.processors.process-trash"
+local processSiloOutputs = require "lib.inventory.processors.process-silo-outputs"
+local TurtleInventoryAdapter = require "lib.inventory.turtle-inventory-adapter"
+local logsWindow = require "lib.system.windows.logs-window"
+local eventLoopWindow = require "lib.system.windows.event-loop-window"
+local activeLocksWindow = require "lib.inventory.windows.active-locks-window"
+local activeUnlocksWindow = require "lib.inventory.windows.active-unlocks-window"
+local processorsWindow = require "lib.inventory.windows.processors-window"
+local craftItemsWorker = require "lib.inventory.workers.craft-items-worker"
+local allocateIngredientsWorker = require "lib.inventory.workers.allocate-ingredients-worker"
+local provideItemsWorker = require "lib.inventory.workers.provide-items-worker"
 
 local function refresh()
     print("[refresh] storages, silos & stashes")
@@ -130,7 +130,7 @@ end
 
 term.clear()
 
-local Shell = require "lib.ui.shell"
+local Shell = require "lib.system.shell"
 
 Shell:addWindow("Main", main)
 Shell:addWindow("Workers", workers)
