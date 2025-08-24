@@ -561,6 +561,8 @@ function InventoryApi.start(powerChest)
             return
         end
 
+        InventoryCollection.unmount({powerChest})
+
         while true do
             local power = checkPower(powerChest)
 
