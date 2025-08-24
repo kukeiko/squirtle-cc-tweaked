@@ -3,9 +3,9 @@
 ---@class Task
 ---@field id integer
 ---@field issuedBy string
----@field acceptedBy? string
----@field partOfTaskId? integer
----@field label? string
+---@field acceptedBy string?
+---@field partOfTaskId integer?
+---@field label string?
 ---@field status TaskStatus
 ---@field type TaskType
 ---@field autoDelete boolean
@@ -14,7 +14,7 @@
 ---
 ---@class ProvideItemsTask : Task
 ---@field type "provide-items"
----@field bufferId? integer
+---@field bufferId integer?
 ---@field transferredInitial boolean
 ---@field craftMissing boolean
 ---@field items ItemStock
@@ -32,20 +32,20 @@
 ---@field items ItemStock
 ---@field quantity integer
 ---@field crafted ItemStock
----@field to? InventoryHandle
+---@field to InventoryHandle?
 ---
 ---@class AllocateIngredientsTask : Task
 ---@field type "allocate-ingredients"
----@field bufferId? integer
+---@field bufferId integer?
 ---@field items ItemStock
 ---@field missing ItemStock
----@field craftingDetails? CraftingDetails
+---@field craftingDetails CraftingDetails?
 ---
 ---@class CraftFromIngredientsTask : Task
 ---@field type "craft-from-ingredients"
 ---@field bufferId integer
 ---@field craftingDetails CraftingDetails
----@field usedRecipes? UsedCraftingRecipe[]
+---@field usedRecipes UsedCraftingRecipe[]?
 ---@field crafted ItemStock
 ---
 ---@class BuildChunkStorageTask : Task

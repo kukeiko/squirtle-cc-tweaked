@@ -1,10 +1,14 @@
 local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local InventoryApi = require "lib.inventory.inventory-api"
+local StorageService = require "lib.inventory.storage-service"
+local TurtleInventoryService = require "lib.turtle.turtle-inventory-service"
 local TurtleStateApi = require "lib.turtle.api-parts.turtle-state-api"
 local TurtleMovementApi = require "lib.turtle.api-parts.turtle-movement-api"
 local TurtleInventoryApi = require "lib.turtle.api-parts.turtle-inventory-api"
@@ -1402,6 +1406,30 @@ function TurtleApi.recover()
             TurtleApi.dig(direction)
         end
     end
+end
+
+---@param fn fun(inventory: string) : any
+function TurtleApi.connectToStorage(fn)
+    local storageService = Rpc.nearest(StorageService)
+    local inventoryServer = Rpc.server(TurtleInventoryService, "wired")
+    local inventory = inventoryServer.getWiredName()
+
+    EventLoop.waitForAny(function()
+        inventoryServer.open()
+    end, function()
+        storageService.mount({inventory})
+
+        while true do
+            os.sleep(3)
+            storageService.refresh({inventory})
+        end
+    end, function()
+        pcall(function()
+            fn(inventory)
+        end)
+    end)
+
+    inventoryServer.close()
 end
 
 return TurtleApi

@@ -40,6 +40,27 @@ function TaskWorker:cleanup()
 end
 
 ---@param items ItemStock
+---@param to InventoryHandle
+---@param label? string
+---@param craftMissing? boolean
+function TaskWorker:provideItems(items, to, label, craftMissing)
+    local task = self.taskService.provideItems({
+        issuedBy = os.getComputerLabel(),
+        partOfTaskId = self.task.id,
+        craftMissing = craftMissing or false,
+        items = items,
+        to = to,
+        label = label
+    })
+
+    if task.status == "failed" then
+        error(string.format("%s #%d failed", task.type, task.id))
+    end
+
+    return task
+end
+
+---@param items ItemStock
 ---@param to? InventoryHandle
 ---@return CraftItemsTask
 function TaskWorker:craftItems(items, to)

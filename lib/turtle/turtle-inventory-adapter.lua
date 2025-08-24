@@ -1,6 +1,6 @@
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local TurtleInventoryService = require "lib.inventory.turtle-inventory-service"
+local TurtleInventoryService = require "lib.turtle.turtle-inventory-service"
 
 ---@class TurtleInventoryAdapter : InventoryAdapter
 local TurtleInventoryAdapter = {}
