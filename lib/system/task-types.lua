@@ -19,7 +19,7 @@
 ---@field craftMissing boolean
 ---@field items ItemStock
 ---@field transferred ItemStock
----@field crafted ItemStock
+---@field missing ItemStock
 ---@field to InventoryHandle
 ---
 ---@class ProvideItemsTaskReport

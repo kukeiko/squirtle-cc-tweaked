@@ -117,7 +117,6 @@ end
 
 function CraftFromIngredientsTaskWorker:work()
     local task = self:getTask()
-    local taskService = Rpc.nearest(TaskService)
     local storageService = Rpc.nearest(StorageService)
 
     if not task.usedRecipes then

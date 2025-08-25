@@ -33,29 +33,47 @@ function ProvideItemsTaskWorker:work()
     local task = self:getTask()
 
     if not task.bufferId then
-        -- [todo] ❌ buffer leak if turtle crashes before updateTask()
         task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
         self:updateTask()
     end
 
     if not task.transferredInitial then
         local from = storageService.getByType("storage")
-        local _, transferred = storageService.fulfill(from, task.bufferId, task.items)
+        storageService.fulfill(from, task.bufferId, task.items)
         task.transferredInitial = true
-        task.transferred = transferred
+        task.transferred = storageService.getBufferStock(task.bufferId)
         self:updateTask()
     end
 
     if task.craftMissing then
-        -- [todo] ❌ issues craftItems() task even if nothing needs to be crafted,
-        -- meaning that just providing items (without crafting) doesn't work if no crafter is running
         local bufferStock = storageService.getBufferStock(task.bufferId)
         local open = ItemStock.subtract(task.items, bufferStock)
+        local craftingRecipes = storageService.getCraftingRecipes()
+        local openCraftable = Utils.filterMap(open, function(_, item)
+            return craftingRecipes[item] ~= nil
+        end)
 
-        if not Utils.isEmpty(open) then
-            local craftItemsTask = self:craftItems(open, task.bufferId)
-            task.crafted = craftItemsTask.crafted
+        if not Utils.isEmpty(openCraftable) then
+            self:craftItems(openCraftable, task.bufferId)
+            task.transferred = storageService.getBufferStock(task.bufferId)
             self:updateTask()
+        end
+    end
+
+    local open = ItemStock.subtract(task.items, storageService.getBufferStock(task.bufferId))
+
+    if not Utils.isEmpty(open) then
+        while true do
+            local fulfilled = storageService.fulfill(storageService.getByType("storage"), task.bufferId, task.items)
+            task.transferred = storageService.getBufferStock(task.bufferId)
+            task.missing = ItemStock.subtract(task.items, task.transferred)
+            self:updateTask()
+
+            if fulfilled then
+                break
+            end
+
+            os.sleep(5)
         end
     end
 

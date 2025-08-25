@@ -86,7 +86,7 @@ local function showMissing(storageService, taskService)
         return options
     end
 
-    local searchableList = SearchableList.new(getOptions(), "Missing Ingredients", idleTimeout, refreshIntervals.missing, getOptions)
+    local searchableList = SearchableList.new(getOptions(), "Missing", idleTimeout, refreshIntervals.missing, getOptions)
 
     while true do
         searchableList:run()

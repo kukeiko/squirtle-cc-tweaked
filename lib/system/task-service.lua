@@ -133,7 +133,7 @@ function TaskService.provideItems(options)
         task.to = options.to
         task.craftMissing = options.craftMissing
         task.transferred = {}
-        task.crafted = {}
+        task.missing = {}
         task = TaskRepository.createTask(task) --[[@as ProvideItemsTask]]
     end
 
@@ -147,8 +147,6 @@ end
 ---@param issuedBy string
 ---@return ProvideItemsTaskReport
 function TaskService.getProvideItemsReport(issuedBy)
-    -- [todo] we're being naughty here by directly accessing TaskRepository instead of going through DatabaseSevice,
-    -- but I'm kinda thinking we want to do this everywhere else anyway as I see no need for the added layering of a DatabaseService
     return TaskRepository.getProvideItemsReport(issuedBy)
 end
 

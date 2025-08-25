@@ -36,7 +36,6 @@ function AllocateIngredientsTaskWorker:work()
     local recipes = databaseService.getCraftingRecipes()
 
     if not task.bufferId then
-        -- [todo] ❌ buffer leak if turtle crashes before updateTask()
         task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
         self:updateTask()
     end
