@@ -16,6 +16,7 @@ local AppsService = require "lib.system.apps-service"
 local DatabaseService = require "lib.database.database-service"
 local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
+local logsWindow = require "lib.system.windows.logs-window"
 
 print(string.format("[database %s] booting...", version()))
 Utils.writeStartupFile("database")
@@ -89,7 +90,7 @@ Shell:addWindow("Apps", function()
     end
 end)
 
-Shell:addWindow("Log", function()
+Shell:addWindow("RPC / Upload", function()
     EventLoop.run(function()
         AppsService.run()
     end, function()
@@ -103,6 +104,7 @@ Shell:addWindow("Log", function()
             local apps = {computer = {}, pocket = {}, turtle = {}}
 
             for _, file in pairs(files.getFiles()) do
+                -- [todo] ❌ support uploading subway-stations.json
                 local contents = file.readAll()
                 local fn, message = load(contents, "@/" .. file.getName(), nil, {})
 
@@ -124,6 +126,8 @@ Shell:addWindow("Log", function()
         end
     end)
 end)
+
+Shell:addWindow("Logs", logsWindow)
 
 EventLoop.run(function()
     Shell:run()
