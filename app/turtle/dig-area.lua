@@ -9,6 +9,7 @@ if not arg then
     return {version = version(), platform = "turtle"}
 end
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local TurtleApi = require "lib.turtle.turtle-api"
@@ -38,6 +39,8 @@ end, function()
             return nil
         end
 
+        -- [todo] ❌ should dig above/below if within bounds to place disk drive
+        -- [todo] ❌ should dig above/below/forward if within bounds to read shulkers
         ---@class DigAreaAppState
         local state = {
             depth = depth,
@@ -48,6 +51,7 @@ end, function()
         }
 
         options.requireFuel = true
+        Utils.writeStartupFile("dig-area")
 
         return state
     end)
@@ -59,6 +63,10 @@ end, function()
     ---@param state DigAreaAppState
     resumable:addSimulatableMain("dig-area", function(state)
         TurtleApi.digArea(state.depth, state.width, state.height, state.home, state.facing)
+    end)
+
+    resumable:setFinish(function ()
+        Utils.deleteStartupFile()
     end)
 
     local success, message = pcall(function(...)
