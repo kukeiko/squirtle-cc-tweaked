@@ -58,6 +58,17 @@ function TurtleApi.getPosition()
     return TurtleStateApi.getPosition()
 end
 
+---@return Vector?
+function TurtleApi.tryGetLivePosition()
+    local x, y, z = gps.locate()
+
+    if not x then
+        return nil
+    end
+
+    return Vector.create(x, y, z)
+end
+
 ---@param direction string
 ---@return Vector
 function TurtleApi.getPositionTowards(direction)
@@ -1213,14 +1224,15 @@ function TurtleApi.getOpenStock(items, alwaysUseShulkers)
     return open, requiredShulkers
 end
 
+---@return Vector
 function TurtleApi.locate()
-    local x, y, z = gps.locate()
+    local position = TurtleApi.tryGetLivePosition()
 
-    if not x then
+    if not position then
         error("no gps available")
     end
 
-    TurtleApi.setPosition(Vector.create(x, y, z))
+    TurtleApi.setPosition(position)
 
     return TurtleApi.getPosition()
 end

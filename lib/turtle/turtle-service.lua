@@ -4,8 +4,8 @@ local TurtleApi = require "lib.turtle.turtle-api"
 ---@field error string?
 local TurtleService = {name = "squirtle", error = nil}
 
-function TurtleService.locate()
-    return TurtleApi.locate()
+function TurtleService.tryGetLivePosition()
+    return TurtleApi.tryGetLivePosition()
 end
 
 ---@return string?
