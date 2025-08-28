@@ -1161,7 +1161,7 @@ function TurtleApi.tryLoadShulkers()
     local unloadedAll = true
 
     for slot, stack in pairs(TurtleApi.getStacks()) do
-        if stack.name ~= ItemApi.shulkerBox then
+        if stack.name ~= ItemApi.shulkerBox and stack.name ~= ItemApi.diskDrive then
             if not TurtleApi.loadIntoShulker(slot) then
                 unloadedAll = false
             end

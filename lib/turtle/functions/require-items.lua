@@ -117,6 +117,7 @@ local function requireItemsInShulkers(TurtleApi, items, open)
     end)
 
     TurtleApi.digShulkers()
+    TurtleApi.condense()
     term.clear()
     term.setCursorPos(1, 1)
 end
@@ -129,6 +130,7 @@ return function(TurtleApi, items, alwaysUseShulkers)
 
     if Utils.isEmpty(open) then
         TurtleApi.digShulkers()
+        TurtleApi.condense()
         return
     elseif requiredShulkers > 0 or alwaysUseShulkers then
         requireItemsInShulkers(TurtleApi, items, open)

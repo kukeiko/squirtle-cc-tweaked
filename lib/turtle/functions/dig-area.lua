@@ -140,6 +140,10 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
         end
     end
 
+    if not TurtleApi.isSimulating() then
+        TurtleApi.tryLoadShulkers()
+    end
+
     TurtleApi.moveToPoint(homePosition)
     TurtleApi.face(homeFacing)
 end

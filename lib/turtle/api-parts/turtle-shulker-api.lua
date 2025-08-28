@@ -79,7 +79,7 @@ local function digShulker(TurtleApi, side)
     end
 
     local shulker = readPlacedShulker(side)
-    TurtleApi.selectEmpty()
+    TurtleApi.selectEmpty(1)
 
     if not TurtleApi.dig(side) then
         error(string.format("failed to dig shulker at %s", side))

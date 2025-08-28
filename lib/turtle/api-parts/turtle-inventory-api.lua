@@ -236,28 +236,34 @@ function TurtleInventoryApi.condense(TurtleApi)
         return nil
     end
 
-    for slot = TurtleInventoryApi.size(), 1, -1 do
-        local item = TurtleInventoryApi.getStack(slot)
+    repeat
+        local didTransfer = false
 
-        if item then
-            for targetSlot = 1, slot - 1 do
-                local candidate = TurtleInventoryApi.getStack(targetSlot, true)
+        for slot = TurtleInventoryApi.size(), 1, -1 do
+            local item = TurtleInventoryApi.getStack(slot)
 
-                if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
-                    TurtleInventoryApi.select(TurtleApi, slot)
-                    TurtleInventoryApi.transferTo(targetSlot)
+            if item then
+                for targetSlot = 1, slot - 1 do
+                    local candidate = TurtleInventoryApi.getStack(targetSlot, true)
 
-                    if TurtleInventoryApi.getItemCount(slot) == 0 then
+                    if candidate and candidate.name == item.name and candidate.count < candidate.maxCount then
+                        TurtleInventoryApi.select(TurtleApi, slot)
+                        TurtleInventoryApi.transferTo(targetSlot)
+                        didTransfer = true
+
+                        if TurtleInventoryApi.getItemCount(slot) == 0 then
+                            break
+                        end
+                    elseif not candidate then
+                        TurtleInventoryApi.select(TurtleApi, slot)
+                        TurtleInventoryApi.transferTo(targetSlot)
+                        didTransfer = true
                         break
                     end
-                elseif not candidate then
-                    TurtleInventoryApi.select(TurtleApi, slot)
-                    TurtleInventoryApi.transferTo(targetSlot)
-                    break
                 end
             end
         end
-    end
+    until not didTransfer
 end
 
 return TurtleInventoryApi
