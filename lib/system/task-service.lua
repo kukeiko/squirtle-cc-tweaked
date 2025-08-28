@@ -134,6 +134,7 @@ function TaskService.provideItems(options)
         task.craftMissing = options.craftMissing
         task.transferred = {}
         task.missing = {}
+        task.missingDetails = {}
         task = TaskRepository.createTask(task) --[[@as ProvideItemsTask]]
     end
 
@@ -144,7 +145,7 @@ function TaskService.provideItems(options)
     return awaitTaskCompletion(task) --[[@as ProvideItemsTask]]
 end
 
----@param issuedBy string
+---@param issuedBy? string
 ---@return ProvideItemsTaskReport
 function TaskService.getProvideItemsReport(issuedBy)
     return TaskRepository.getProvideItemsReport(issuedBy)

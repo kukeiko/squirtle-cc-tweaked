@@ -136,6 +136,21 @@ function ItemApi.getItemMaxCount(item, default)
 end
 
 ---@param stock ItemStock
+---@return ItemStock
+function ItemApi.filterIsMissingDetails(stock)
+    ---@type ItemStock
+    local unknown = {}
+
+    for item, quantity in pairs(stock) do
+        if not itemDetails[item] then
+            unknown[item] = quantity
+        end
+    end
+
+    return unknown
+end
+
+---@param stock ItemStock
 ---@param defaultMaxCount? integer
 ---@return integer
 function ItemApi.getRequiredSlotCount(stock, defaultMaxCount)

@@ -194,17 +194,18 @@ function TaskRepository.findCraftFromIngredientsTaskOf(partOfTaskId)
     return TaskRepository.findTask("craft-from-ingredients", partOfTaskId) --[[@as CraftFromIngredientsTask?]]
 end
 
----@param issuedBy string
+---@param issuedBy? string
 ---@return ProvideItemsTaskReport
 function TaskRepository.getProvideItemsReport(issuedBy)
     ---@type ProvideItemsTaskReport
-    local report = {missing = {}, found = {}, wanted = {}}
+    local report = {missing = {}, found = {}, wanted = {}, missingDetails = {}}
     local provideItemsTasks = TaskRepository.findProvideItemsTasks(issuedBy)
 
     for _, provideItemsTask in pairs(provideItemsTasks) do
         report.wanted = ItemStock.merge({report.wanted, provideItemsTask.items})
         report.found = ItemStock.merge({report.found, provideItemsTask.transferred})
         report.missing = ItemStock.merge({report.missing, provideItemsTask.missing})
+        report.missingDetails = ItemStock.merge({report.missingDetails, provideItemsTask.missingDetails})
         local craftItemsTask = TaskRepository.findCraftItemsTaskOf(provideItemsTask.id)
 
         if craftItemsTask then

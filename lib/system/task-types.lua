@@ -20,12 +20,14 @@
 ---@field items ItemStock
 ---@field transferred ItemStock
 ---@field missing ItemStock
+---@field missingDetails ItemStock
 ---@field to InventoryHandle
 ---
 ---@class ProvideItemsTaskReport
 ---@field wanted ItemStock
 ---@field found ItemStock
 ---@field missing ItemStock
+---@field missingDetails ItemStock
 ---
 ---@class CraftItemsTask : Task
 ---@field type "craft-items"

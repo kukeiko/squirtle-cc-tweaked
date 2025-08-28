@@ -32,6 +32,13 @@ function ProvideItemsTaskWorker:work()
     local storageService = Rpc.nearest(StorageService)
     local task = self:getTask()
 
+    repeat
+        -- before we can allocate a task buffer, we need to have ItemDetails available for all items to get the maxCount,
+        -- so we report what's missing and wait until it has been resolved by the player.
+        task.missingDetails = storageService.filterIsMissingDetails(task.items)
+        self:updateTask()
+    until Utils.isEmpty(task.missingDetails) or os.sleep(7)
+
     if not task.bufferId then
         task.bufferId = storageService.allocateTaskBufferForStock(task.id, task.items)
         self:updateTask()

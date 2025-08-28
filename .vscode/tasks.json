@@ -22,8 +22,10 @@
                 "build pocket:print3d",
                 "build pocket:remote",
                 "build pocket:remote-control",
+                "build pocket:shell",
                 "build pocket:subway",
                 "build pocket:teleport",
+                "build pocket:tasks",
                 "build pocket:turtle",
                 "build pocket:update",
                 "build turtle:aqueduct",
@@ -49,6 +51,21 @@
                 "build turtle:wall",
                 "build turtle:small-house",
             ]
+        },
+        {
+            "label": "build pocket:shell",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/pocket/shell"
+        },
+        {
+            "label": "build pocket:tasks",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p ?.lua -o dist/pocket/tasks"
+        },
+        {
+            "label": "build pocket:tasks:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p app/pocket/?.lua -p ?.lua -o ../23/tasks.lua"
         },
         {
             "label": "build turtle:oak",

@@ -158,6 +158,12 @@ function StorageService.getItemDetails()
 end
 
 ---@param stock ItemStock
+---@return ItemStock
+function StorageService.filterIsMissingDetails(stock)
+    return ItemApi.filterIsMissingDetails(stock)
+end
+
+---@param stock ItemStock
 ---@return integer
 function StorageService.getRequiredSlotCount(stock)
     return ItemApi.getRequiredSlotCount(stock)
