@@ -17,6 +17,7 @@ local TurtleRefuelApi = require "lib.turtle.api-parts.turtle-refuel-api"
 local DatabaseApi = require "lib.database.database-api"
 local getNative = require "lib.turtle.functions.get-native"
 local digArea = require "lib.turtle.functions.dig-area"
+local buildFloor = require "lib.turtle.functions.build-floor"
 local harvestBirchTree = require "lib.turtle.functions.harvest-birch-tree"
 local requireItems = require "lib.turtle.functions.require-items"
 
@@ -414,6 +415,20 @@ end
 ---@param homeFacing? integer
 function TurtleApi.digArea(depth, width, height, homePosition, homeFacing)
     return digArea(TurtleApi, depth, width, height, homePosition, homeFacing)
+end
+
+---@param depth integer
+---@param width integer
+---@param block string
+function TurtleApi.buildFloor(depth, width, block)
+    return buildFloor(TurtleApi, depth, width, block)
+end
+
+---@param depth integer
+---@param width integer
+---@param block string
+function TurtleApi.buildCeiling(depth, width, block)
+    return buildFloor(TurtleApi, depth, width, block, true)
 end
 
 ---@param minSaplings? integer

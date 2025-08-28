@@ -29,6 +29,7 @@
                 "build turtle:aqueduct",
                 "build turtle:bone-meal",
                 "build turtle:build-platform",
+                "build turtle:ceiling",
                 "build turtle:copper",
                 "build turtle:crafter",
                 "build turtle:dig",
@@ -113,6 +114,11 @@
             "label": "build turtle:dig-area",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig-area.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig-area"
+        },
+        {
+            "label": "build turtle:ceiling",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/ceiling.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/ceiling"
         },
         {
             "label": "build turtle:bone-meal",
