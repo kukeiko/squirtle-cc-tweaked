@@ -422,6 +422,12 @@
         "tracks": []
     },
     {
+        "id": "aztec:wheat:exit",
+        "type": "endpoint",
+        "name": "Aztec: Wheat Fields",
+        "tracks": []
+    },
+    {
         "id": "aztec:wood:switch",
         "type": "switch",
         "name": "Aztec: Wood Farm [SW]",
@@ -446,6 +452,10 @@
         "type": "switch",
         "name": "Aztec: Trading Hall [SW]",
         "tracks": [
+            {
+                "to": "aztec:wheat:exit",
+                "signal": 0
+            },
             {
                 "to": "aztec:trade:exit",
                 "signal": 5
