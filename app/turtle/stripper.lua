@@ -32,7 +32,7 @@ EventLoop.run(function()
     term.clear()
     term.setCursorPos(1, 1)
     print("I can strip logs for you!\n")
-    print("Just make sure I have a diamond pickaxe equipped, another one in my inventory, and that the space above me is empty.\n")
+    print("Just make sure I have a diamond axe equipped, another one in my inventory, and that the space above me is empty.\n")
     print("Then just start putting logs into my inventory.")
 
     while true do
