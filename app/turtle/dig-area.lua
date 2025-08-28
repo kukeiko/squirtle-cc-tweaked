@@ -39,8 +39,6 @@ end, function()
             return nil
         end
 
-        -- [todo] ❌ should dig above/below if within bounds to place disk drive
-        -- [todo] ❌ should dig above/below/forward if within bounds to read shulkers
         ---@class DigAreaAppState
         local state = {
             depth = depth,
@@ -52,6 +50,13 @@ end, function()
 
         options.requireFuel = true
         Utils.writeStartupFile("dig-area")
+
+        -- [todo] ❌ band-aid fix to make space for disk-drive/shulker-box
+        if height > 0 then
+            TurtleApi.dig("up")
+        else
+            TurtleApi.dig("down")
+        end
 
         return state
     end)
