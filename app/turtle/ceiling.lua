@@ -15,6 +15,7 @@ local Rpc = require "lib.tools.rpc"
 local TurtleApi = require "lib.turtle.turtle-api"
 local TurtleService = require "lib.turtle.turtle-service"
 local Resumable = require "lib.turtle.resumable"
+local EditEntity = require "lib.ui.edit-entity"
 
 ---@return string
 local function promptBlock()
@@ -39,30 +40,22 @@ end, function()
     local resumable = Resumable.new("ceiling")
 
     resumable:setStart(function(args, options)
-        local function printUsage()
-            print("Usage:")
-            print("ceiling <depth> <width>")
-            print("(negative width possible)")
-        end
+        local editEntity = EditEntity.new("Options")
+        editEntity:addInteger("depth", "Depth", {validate = EditEntity.greaterZero})
+        editEntity:addInteger("width", "Width", {validate = EditEntity.notZero})
+        ---@class CeilingAppArguments
+        ---@field depth integer
+        ---@field width integer
+        local arguments = editEntity:run({}, "data/app/ceiling-options.json")
 
-        local depth = tonumber(args[1])
-        local width = tonumber(args[2])
-
-        if not depth or not width or depth == 0 or width == 0 then
-            printUsage()
-            return nil
-        end
-
-        local block = promptBlock()
         ---@class CeilingAppState
         local state = {
-            depth = depth,
-            width = width,
-            block = block,
+            depth = arguments.depth,
+            width = arguments.width,
+            block = promptBlock(),
             home = TurtleApi.getPosition(),
             facing = TurtleApi.orientate("disk-drive")
         }
-
         options.requireFuel = true
         options.requireItems = true
         Utils.writeStartupFile("ceiling")

@@ -148,6 +148,14 @@ function EditEntity:addField(type, key, label, options)
     return self
 end
 
+---@param key string
+---@param label? string
+---@param options? EditEntityPropertyOptions
+---@return EditEntity
+function EditEntity:addInteger(key, label, options)
+    return self:addField("integer", key, label, options)
+end
+
 ---@param entity table
 ---@return table<string, string>
 function EditEntity:validate(entity)
