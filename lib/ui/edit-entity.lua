@@ -2,14 +2,25 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local readString = require "lib.ui.read-string"
 local readInteger = require "lib.ui.read-integer"
+local readBoolean = require "lib.ui.read-boolean"
 local readOption = require "lib.ui.read-option"
 
 ---@class EditEntity
 ---@field window table
 ---@field properties EditEntityProperty[]
 ---@field index integer
+---@field saveIndex integer?
+---@field cancelIndex integer?
 ---@field title string
-local EditEntity = {}
+local EditEntity = {
+    greaterZero = function(value)
+        return value > 0, "must be greater than 0"
+    end,
+    notZero = function(value)
+        return value ~= 0, "cannot be 0"
+    end
+
+}
 
 ---@alias EditEntityPropertyType "string" | "number" | "boolean" | "integer"
 
@@ -25,7 +36,7 @@ local EditEntity = {}
 ---@field maxLength? number
 ---@field minValue? number
 ---@field maxValue? number
----@field validate? fun(value:unknown, entity: table):boolean
+---@field validate? fun(value:unknown, entity: table) : boolean, string
 ---@field values? table
 
 ---@param self EditEntity
@@ -33,87 +44,82 @@ local EditEntity = {}
 local function draw(self, entity)
     local win = self.window
     win.setTextColor(colors.white)
-    local w = win.getSize()
+    local width = win.getSize()
     win.clear()
     win.setCursorPos(1, 1)
     win.write(self.title)
     win.setCursorPos(1, 2)
-    win.write(("-"):rep(w))
+    win.write(string.rep("-", width))
     win.setCursorPos(1, 3)
 
     local control = {x = 1, y = 1}
-    local listY = 3
+    local listStartY = 3
     win.setTextColor(colors.lightGray)
+    local errors = self:validate(entity)
 
-    for i = 1, #self.properties do
-        local selected = self.index == i
-        local y = listY + (i - 1)
-        win.setCursorPos(1, y)
+    for index, property in ipairs(self.properties) do
+        local selected = self.index == index
+        local drawY = listStartY + (index - 1)
+        win.setCursorPos(1, drawY)
 
         if selected then
             win.setTextColor(colors.white)
         end
 
-        win.write(self.properties[i].label .. ": ")
+        win.write(property.label .. ": ")
         win.setTextColor(colors.lightGray)
 
         if selected then
             control.x = win.getCursorPos()
-            control.y = y
+            control.y = drawY
         else
-            local value = entity[self.properties[i].key]
+            local value = entity[property.key]
 
             if value == nil or value == "" then
-                win.write(string.format("(%s)", self.properties[i].type))
+                win.write(string.format("(%s)", property.type))
             else
                 win.setTextColor(colors.white)
-                win.write(entity[self.properties[i].key])
+                local value = entity[property.key]
+
+                if value == true then
+                    win.write("Yes")
+                elseif value == false then
+                    win.write("No")
+                else
+                    win.write(entity[property.key])
+                end
+
+                if errors[property.key] then
+                    win.setTextColor(colors.red)
+                    win.write(" " .. errors[property.key])
+                end
+
                 win.setTextColor(colors.lightGray)
             end
         end
     end
 
-    win.setCursorPos(1, listY + #self.properties + 1)
-
-    if self.index == #self.properties + 1 then
-        win.setTextColor(colors.white)
-        win.write("Save")
-        win.setTextColor(colors.lightGray)
-    else
-        win.write("Save")
-    end
-
-    win.setCursorPos(1, listY + #self.properties + 2)
-
-    if self.index == #self.properties + 2 then
-        win.setTextColor(colors.white)
-        win.write("Cancel")
-        win.setTextColor(colors.lightGray)
-    else
-        win.write("Cancel")
-    end
-
     win.setCursorPos(control.x, control.y)
 end
 
----@param current integer
----@param max integer
-local function nextIndex(current, max)
-    if current + 1 > max then
+---@param self EditEntity
+---@return integer
+local function nextIndex(self)
+    if self.index + 1 > #self.properties then
         return 1
     end
 
-    return current + 1
+    return self.index + 1
 end
 
----@param current integer
----@param max integer
-local function previousIndex(current, max)
-    if current == 1 then
-        return max
+---@param self EditEntity
+---@return integer
+local function previousIndex(self)
+    if self.index == 1 then
+        return #self.properties
     end
 
-    return current - 1
+    return self.index - 1
 end
 
 ---@param title? string
@@ -127,26 +133,74 @@ function EditEntity.new(title)
     return setmetatable(instance, {__index = EditEntity})
 end
 
----@param self EditEntity
 ---@param type EditEntityPropertyType
 ---@param key string
 ---@param label? string
 ---@param options? EditEntityPropertyOptions
 ---@return EditEntity
-function EditEntity.addField(self, type, key, label, options)
+function EditEntity:addField(type, key, label, options)
     ---@type EditEntityProperty
     local property = {type = type, key = key, label = label or key, options = options or {}}
     table.insert(self.properties, property)
+    self.saveIndex = #self.properties + 1
+    self.cancelIndex = #self.properties + 2
 
     return self
 end
 
+---@param entity table
+---@return table<string, string>
+function EditEntity:validate(entity)
+    ---@type table<string, string>
+    local errors = {}
+
+    for _, property in pairs(self.properties) do
+        local value = entity[property.key]
+
+        if value ~= nil and property.options.validate then
+            local isValid, message = property.options.validate(value, entity)
+
+            if not isValid then
+                errors[property.key] = message
+            end
+        end
+    end
+
+    return errors
+end
+
+---@param entity table
+function EditEntity:isValid(entity)
+    for _, property in pairs(self.properties) do
+        local value = entity[property.key]
+
+        if not property.options.optional and value == nil then
+            return false
+        elseif property.options.validate and not property.options.validate(value, entity) then
+            return false
+        end
+    end
+
+    return true
+end
+
 ---@generic T
----@param self EditEntity
 ---@param entity T
----@return T?
-function EditEntity.run(self, entity)
+---@param savePath? string
+---@return T
+function EditEntity:run(entity, savePath)
     entity = Utils.copy(entity)
+
+    if savePath then
+        local saved = Utils.readJson(savePath) or {}
+
+        for _, property in ipairs(self.properties) do
+            if saved[property.key] ~= nil and entity[property.key] == nil then
+                entity[property.key] = saved[property.key]
+            end
+        end
+    end
+
     local result = nil
 
     while true do
@@ -163,6 +217,8 @@ function EditEntity.run(self, entity)
             end
         elseif selected and selected.type == "integer" then
             entity[selected.key], key = readInteger(entity[selected.key], {cancel = controlKeys})
+        elseif selected and selected.type == "boolean" then
+            entity[selected.key], key = readBoolean(entity[selected.key], true)
         else
             self.window.setCursorBlink(false)
             local _, k = EventLoop.pull("key")
@@ -172,14 +228,14 @@ function EditEntity.run(self, entity)
         if key == keys.f4 then
             break
         elseif key == keys.up then
-            self.index = previousIndex(self.index, #self.properties + 2)
+            self.index = previousIndex(self)
         elseif key == keys.down then
-            self.index = nextIndex(self.index, #self.properties + 2)
-        elseif key == keys.enter then
-            if self.index == #self.properties + 1 then
+            self.index = nextIndex(self)
+        elseif key == keys.enter or key == keys.numPadEnter then
+            if self.index < #self.properties then
+                self.index = nextIndex(self)
+            elseif self.index == #self.properties and self:isValid(entity) then
                 result = entity
-                break
-            elseif self.index == #self.properties + 2 then
                 break
             end
         end
@@ -187,6 +243,19 @@ function EditEntity.run(self, entity)
 
     self.window.clear()
     self.window.setCursorPos(1, 1)
+    self.window.setTextColor(colors.white)
+
+    if result and savePath then
+        local saved = {}
+
+        for _, property in ipairs(self.properties) do
+            if result[property.key] ~= nil then
+                saved[property.key] = result[property.key]
+            end
+        end
+
+        Utils.writeJson(savePath, saved)
+    end
 
     return result
 end

@@ -6,17 +6,17 @@ local EventLoop = require "lib.tools.event-loop"
 ---@field min? integer
 ---@field max? integer
 
----@param value? integer
 ---@param win table
-local function drawValue(value, win)
-    if value == nil then
+---@param value string
+local function drawValue(win, value)
+    if #value == 0 then
         win.setCursorPos(1, 1)
         win.clearLine()
     else
         local offset = 0
         local width = win.getSize()
 
-        if #tostring(value) >= width then
+        if #value >= width then
             offset = #value - (width - 2)
         end
 
@@ -24,7 +24,7 @@ local function drawValue(value, win)
         win.clearLine()
 
         if value ~= nil then
-            win.write(tostring(value):sub(offset))
+            win.write(string.sub(value, offset))
         end
     end
 end
@@ -39,7 +39,8 @@ return function(value, options)
     w = w - (x - 1)
 
     local win = window.create(term.current(), x, y, w, 1)
-    drawValue(value, win)
+    local strValue = value == nil and "" or tostring(value)
+    drawValue(win, strValue)
     win.setCursorBlink(true)
 
     while true do
@@ -50,31 +51,29 @@ return function(value, options)
                 term.setCursorPos(x, y)
                 print(value)
                 return value, key
-            end
-
-            if key == keys.enter or key == keys.numPadEnter then
+            elseif key == keys.enter or key == keys.numPadEnter then
                 term.setCursorPos(x, y)
                 print(value)
                 return value, key
             elseif key == keys.backspace then
-                value = tonumber(tostring(value):sub(1, #tostring(value) - 1))
+                strValue = string.sub(strValue, 1, #strValue - 1)
+                value = tonumber(strValue)
             end
-        elseif event == "char" and tonumber(key) ~= nil then
-            if value == nil or value == 0 then
-                value = tonumber(key)
-            else
-                value = tonumber(tostring(value) .. key)
-            end
+        elseif event == "char" and (tonumber(key) ~= nil or (key == "-" and #strValue == 0)) then
+            strValue = strValue .. key
+            value = tonumber(strValue)
 
-            if options.max and value > options.max then
+            if value ~= nil and options.max and value > options.max then
                 value = options.max
+                strValue = tostring(value)
             end
 
-            if options.min and value < options.min then
+            if value ~= nil and options.min and value < options.min then
                 value = options.min
+                strValue = tostring(value)
             end
         end
 
-        drawValue(value, win)
+        drawValue(win, strValue)
     end
 end

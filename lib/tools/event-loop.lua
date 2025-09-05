@@ -264,13 +264,13 @@ function EventLoop.pullTimer(timerId)
     end
 end
 
----@param key number
+---@param key? number
 function EventLoop.pullKey(key)
     while true do
         local _, pulledKey = EventLoop.pull("key")
 
-        if pulledKey == key then
-            return
+        if key == nil or pulledKey == key then
+            return pulledKey
         end
     end
 end

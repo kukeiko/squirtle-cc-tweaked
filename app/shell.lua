@@ -20,16 +20,13 @@ Shell:addWindow("Apps", function()
     ---@type Application[]
     local apps = {}
 
-    -- [todo] ❌ for dev only
-    apps = ApplicationApi.getPocketApps()
-
-    -- if turtle then
-    --     apps = ApplicationApi.getTurtleApps()
-    -- elseif pocket then
-    --     apps = ApplicationApi.getPocketApps()
-    -- else
-    --     apps = ApplicationApi.getComputerApps()
-    -- end
+    if turtle then
+        apps = ApplicationApi.getTurtleApps()
+    elseif pocket then
+        apps = ApplicationApi.getPocketApps()
+    else
+        apps = ApplicationApi.getComputerApps()
+    end
 
     local function getOptions()
         return Utils.map(apps, function(app)

@@ -15,6 +15,7 @@ local Rpc = require "lib.tools.rpc"
 local TurtleApi = require "lib.turtle.turtle-api"
 local TurtleService = require "lib.turtle.turtle-service"
 local Resumable = require "lib.turtle.resumable"
+local EditEntity = require "lib.ui.edit-entity"
 
 EventLoop.run(function()
     EventLoop.runUntil("dig-area:stop", function()
@@ -24,35 +25,22 @@ end, function()
     local resumable = Resumable.new("dig-area")
 
     resumable:setStart(function(args, options)
-        local function printUsage()
-            print("Usage:")
-            print("dig-area <depth> <width> <height>")
-            print("(negative numbers possible)")
-        end
-
-        local depth = tonumber(args[1])
-        local width = tonumber(args[2])
-        local height = tonumber(args[3])
-
-        if not depth or not width or not height or depth == 0 or width == 0 or height == 0 then
-            printUsage()
-            return nil
-        end
-
         ---@class DigAreaAppState
-        local state = {
-            depth = depth,
-            width = width,
-            height = height,
-            home = TurtleApi.getPosition(),
-            facing = TurtleApi.orientate("disk-drive")
-        }
-
+        ---@field depth integer?
+        ---@field width integer?
+        ---@field height integer?
+        ---@field returnHome boolean
+        local state = {depth = nil, width = nil, height = nil, home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive")}
+        local editEntity = EditEntity.new("Options")
+        editEntity:addField("integer", "depth", "Depth", {validate = EditEntity.greaterZero})
+        editEntity:addField("integer", "width", "Width", {validate = EditEntity.notZero})
+        editEntity:addField("integer", "height", "Height", {validate = EditEntity.notZero})
+        state = editEntity:run(state, "data/app/dig-area-options.json")
         options.requireFuel = true
         Utils.writeStartupFile("dig-area")
 
         -- [todo] ❌ band-aid fix to make space for disk-drive/shulker-box
-        if height > 0 then
+        if state.height > 0 then
             TurtleApi.dig("up")
         else
             TurtleApi.dig("down")
@@ -70,7 +58,7 @@ end, function()
         TurtleApi.digArea(state.depth, state.width, state.height, state.home, state.facing)
     end)
 
-    resumable:setFinish(function ()
+    resumable:setFinish(function()
         Utils.deleteStartupFile()
     end)
 
