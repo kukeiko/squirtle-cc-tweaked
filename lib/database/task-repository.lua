@@ -13,6 +13,7 @@ end
 ---@field tasks Task[]
 ---@return TaskFile
 local function loadFile()
+    ---@type TaskFile
     local file = Utils.readJson(getFilePath()) or {}
 
     if not file.id then
@@ -88,7 +89,7 @@ function TaskRepository.updateTask(task)
     end)
 
     if not index then
-        error(string.format("can't update task: task %d doesn't exist", task.id))
+        error(string.format("can't update, task %d doesn't exist", task.id))
     end
 
     tasks[index] = task
@@ -103,7 +104,7 @@ function TaskRepository.deleteTask(id)
     end)
 
     if not index then
-        error(string.format("can't delete task: task %d doesn't exist", id))
+        error(string.format("can't delete, task %d doesn't exist", id))
     end
 
     table.remove(tasks, index)

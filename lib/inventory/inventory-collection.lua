@@ -2,7 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.inventory.item-stock"
 local Inventory = require "lib.inventory.inventory"
-local DatabaseApi = require "lib.database.database-api"
+local TaskBufferRepository = require "lib.database.task-buffer-repository"
 local InventoryReader = require "lib.inventory.inventory-reader"
 local InventoryLocks = require "lib.inventory.inventory-locks"
 
@@ -45,7 +45,7 @@ end
 ---@param bufferId integer
 ---@return string[]
 function InventoryCollection.resolveBuffer(bufferId)
-    return DatabaseApi.getAllocatedBuffer(bufferId).inventories
+    return TaskBufferRepository.getTaskBuffer(bufferId).inventories
 end
 
 ---@param handle InventoryHandle
@@ -155,13 +155,13 @@ end
 
 ---@param bufferId integer
 function InventoryCollection.freeBuffer(bufferId)
-    DatabaseApi.deleteAllocatedBuffer(bufferId)
+    TaskBufferRepository.deleteTaskBuffer(bufferId)
 end
 
 ---@param bufferId integer
 ---@return ItemStock
 function InventoryCollection.getBufferStock(bufferId)
-    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
+    local buffer = TaskBufferRepository.getTaskBuffer(bufferId)
 
     return InventoryCollection.getStock(buffer.inventories, "buffer")
 end

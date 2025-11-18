@@ -4,7 +4,6 @@ local Utils = require "lib.tools.utils"
 local DatabaseApi = {folder = "data"}
 
 local entityTypes = {
-    allocatedBuffers = "allocated-buffers",
     craftingRecipes = "crafting-recipes",
     subwayStations = "subway-stations",
     turtleResumables = "turtle-resumables",
@@ -14,11 +13,6 @@ local entityTypes = {
 ---@param entity string
 local function getPath(entity)
     return DatabaseApi.folder .. "/" .. entity .. ".json"
-end
-
----@return string
-local function getIdsPath()
-    return DatabaseApi.folder .. "/ids.json"
 end
 
 ---@param entity string
@@ -39,21 +33,6 @@ local function pushEntity(entityType, entity)
     local entities = readEntities(entityType)
     table.insert(entities, entity)
     writeEntities(entityType, entities)
-end
-
----@param entity string
----@return integer
-local function nextId(entity)
-    local ids = Utils.readJson(getIdsPath()) or {}
-
-    if not ids[entity] then
-        ids[entity] = 0
-    end
-
-    ids[entity] = ids[entity] + 1
-    Utils.writeJson(getIdsPath(), ids)
-
-    return ids[entity]
 end
 
 ---@return SubwayStation[]
@@ -103,68 +82,6 @@ function DatabaseApi.saveCraftingRecipe(recipe)
     local recipes = DatabaseApi.getCraftingRecipes()
     recipes[recipe.item] = recipe
     DatabaseApi.setCraftingRecipes(recipes)
-end
-
----@param taskId integer
----@param inventories string[]
-function DatabaseApi.createAllocatedBuffer(inventories, taskId)
-    local entityType = entityTypes.allocatedBuffers
-    ---@type AllocatedBuffer
-    local allocatedBuffer = {id = nextId(entityType), inventories = inventories, taskId = taskId}
-    pushEntity(entityType, allocatedBuffer)
-
-    return allocatedBuffer
-end
-
----@return AllocatedBuffer[]
-function DatabaseApi.getAllocatedBuffers()
-    return readEntities(entityTypes.allocatedBuffers)
-end
-
----@param id integer
----@return AllocatedBuffer
-function DatabaseApi.getAllocatedBuffer(id)
-    local buffer = Utils.find(DatabaseApi.getAllocatedBuffers(), function(candidate)
-        return candidate.id == id
-    end)
-
-    if not buffer then
-        error(string.format("allocated buffer %d doesn't exist", id))
-    end
-
-    return buffer
-end
-
----@param taskId integer
----@return AllocatedBuffer?
-function DatabaseApi.findAllocatedBuffer(taskId)
-    return Utils.find(DatabaseApi.getAllocatedBuffers(), function(candidate)
-        return candidate.taskId == taskId
-    end)
-end
-
----@param buffer AllocatedBuffer
-function DatabaseApi.updateAllocatedBuffer(buffer)
-    local buffers = DatabaseApi.getAllocatedBuffers()
-    local index = Utils.findIndex(buffers, function(candidate)
-        return candidate.id == buffer.id
-    end)
-
-    if not index then
-        error(string.format("can't update buffer: buffer %d doesn't exist", buffer.id))
-    end
-
-    buffers[index] = buffer
-    writeEntities(entityTypes.allocatedBuffers, buffers)
-end
-
----@param bufferId integer
-function DatabaseApi.deleteAllocatedBuffer(bufferId)
-    local buffers = Utils.filter(DatabaseApi.getAllocatedBuffers(), function(item)
-        return item.id ~= bufferId
-    end)
-
-    writeEntities(entityTypes.allocatedBuffers, buffers)
 end
 
 ---@return TurtleDiskState

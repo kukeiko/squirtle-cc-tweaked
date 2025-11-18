@@ -45,7 +45,7 @@
 ---
 ---@alias InventoryHandle integer | string | string[]
 ---
----@class AllocatedBuffer
+---@class TaskBuffer
 ---@field id integer
 ---@field taskId integer
 ---@field inventories string[]

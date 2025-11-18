@@ -67,11 +67,11 @@ local processors = {
     refresh = {enabled = true, fn = refresh, interval = 10}
 }
 
-local numWorkers = 2
+local numWorkersPerTaskType = 2
 
 local function main()
     print(string.format("[storage %s] booting...", version()))
-    print(string.format("[storage] using %dx workers for each task", numWorkers))
+    print(string.format("[storage] using %dx workers for each task", numWorkersPerTaskType))
     InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
     Inventory.discover()
@@ -117,11 +117,11 @@ local function workers()
     os.sleep(1)
 
     EventLoop.run(function()
-        TaskWorkerPool.new(AllocateIngredientsTaskWorker, numWorkers):run()
+        TaskWorkerPool.new(AllocateIngredientsTaskWorker, numWorkersPerTaskType):run()
     end, function()
-        TaskWorkerPool.new(CraftItemsTaskWorker, numWorkers):run()
+        TaskWorkerPool.new(CraftItemsTaskWorker, numWorkersPerTaskType):run()
     end, function()
-        TaskWorkerPool.new(ProvideItemsTaskWorker, numWorkers):run()
+        TaskWorkerPool.new(ProvideItemsTaskWorker, numWorkersPerTaskType):run()
     end)
 end
 

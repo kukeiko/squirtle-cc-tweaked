@@ -2,7 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemStock = require "lib.inventory.item-stock"
 local Inventory = require "lib.inventory.inventory"
-local DatabaseApi = require "lib.database.database-api"
+local TaskBufferRepository = require "lib.database.task-buffer-repository"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local InventoryReader = require "lib.inventory.inventory-reader"
@@ -307,10 +307,10 @@ end
 local function getAllocatedInventories()
     ---@type table<string, unknown>
     local allocatedInventories = {}
-    local allocatedBuffers = DatabaseApi.getAllocatedBuffers()
+    local taskBuffers = TaskBufferRepository.getTaskBuffers()
 
-    for _, allocatedBuffer in pairs(allocatedBuffers) do
-        for _, name in pairs(allocatedBuffer.inventories) do
+    for _, taskBuffer in pairs(taskBuffers) do
+        for _, name in pairs(taskBuffer.inventories) do
             allocatedInventories[name] = true
         end
     end
@@ -346,7 +346,7 @@ end
 
 ---@param bufferId integer
 local function compact(bufferId)
-    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
+    local buffer = TaskBufferRepository.getTaskBuffer(bufferId)
 
     if #buffer.inventories == 1 then
         return
@@ -369,7 +369,7 @@ end
 ---@param bufferId integer
 ---@param targetSlotCount integer
 local function resize(bufferId, targetSlotCount)
-    local buffer = DatabaseApi.getAllocatedBuffer(bufferId)
+    local buffer = TaskBufferRepository.getTaskBuffer(bufferId)
     local currentSlotCount = InventoryApi.getSlotCount(buffer.inventories, "buffer")
 
     if targetSlotCount < currentSlotCount then
@@ -400,13 +400,13 @@ local function resize(bufferId, targetSlotCount)
         end
     end
 
-    DatabaseApi.updateAllocatedBuffer(buffer)
+    TaskBufferRepository.updateTaskBuffer(buffer)
 end
 
 ---@param bufferId integer
----@return AllocatedBuffer
+---@return TaskBuffer
 function InventoryApi.getBuffer(bufferId)
-    return DatabaseApi.getAllocatedBuffer(bufferId)
+    return TaskBufferRepository.getTaskBuffer(bufferId)
 end
 
 ---@param taskId integer
@@ -414,17 +414,17 @@ end
 ---@return integer
 function InventoryApi.allocateTaskBuffer(taskId, slotCount)
     slotCount = slotCount or 1
-    local allocatedBuffer = DatabaseApi.findAllocatedBuffer(taskId)
+    local taskBuffer = TaskBufferRepository.findTaskBufferByTaskId(taskId)
 
-    if allocatedBuffer then
+    if taskBuffer then
         -- [todo] ❌ check if slotCount can still be fulfilled
-        return allocatedBuffer.id
+        return taskBuffer.id
     end
 
     local newlyAllocated = getAllocationCandidates(slotCount)
-    allocatedBuffer = DatabaseApi.createAllocatedBuffer(newlyAllocated, taskId)
+    taskBuffer = TaskBufferRepository.createTaskBuffer(newlyAllocated, taskId)
 
-    return allocatedBuffer.id
+    return taskBuffer.id
 end
 
 -- [todo] ❌ would like to move some core buffer logic out of the InventoryApi, but it uses InventoryApi.empty(),
