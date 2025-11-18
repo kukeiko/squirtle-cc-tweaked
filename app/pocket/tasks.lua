@@ -21,7 +21,7 @@ local storageService = Rpc.nearest(StorageService)
 local taskService = Rpc.nearest(TaskService)
 
 local idleTimeout = 30
-local refreshIntervals = {dispense = 3, transfers = 1, missingDetails = 3}
+local refreshIntervals = {dispense = 3, transfers = 1, missingDetails = 3, missing = 3}
 
 ---@param taskService TaskService|RpcClient
 local function showMissingDetails(taskService)

@@ -3,6 +3,7 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
+local PeripheralApi = require "lib.common.peripheral-api"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
@@ -336,6 +337,17 @@ function TurtleApi.probe(direction, name)
     elseif type(name) == "table" and Utils.indexOf(name, block.name) then
         return block
     end
+end
+
+---@param side string
+function TurtleApi.isWiredModemPowered(side)
+    local modem = TurtleApi.probe(side, ItemApi.wiredModem)
+
+    if not modem then
+        error(string.format("there is no modem @ %s", side))
+    end
+
+    return modem.state.peripheral == true
 end
 
 ---@param direction? string
@@ -1219,7 +1231,7 @@ function TurtleApi.getOpenStock(items, alwaysUseShulkers)
         return open, 0
     end
 
-    -- the additionally required items don't fit into inventory or the user wants them to put into shulkers,
+    -- the additionally required items don't fit into inventory or the user wants them to be put into shulkers,
     -- so we'll calculate the number of required shulkers based on the items that already exist in inventory
     -- and the items that are still needed.
     local takenInventoryStock = ItemStock.intersect(TurtleApi.getStock(), items)
@@ -1232,11 +1244,18 @@ function TurtleApi.getOpenStock(items, alwaysUseShulkers)
         error(string.format("trying to require %d shulkers (max allowed: %d)", requiredShulkers, maxCarriedShulkers))
     end
 
-    if requiredShulkers > 0 then
-        open[ItemApi.shulkerBox] = requiredShulkers
-    end
-
     return open, requiredShulkers
+end
+
+---@param chunkX integer
+---@param y integer
+---@param chunkZ integer
+---@return Vector
+function TurtleApi.getChunkCenter(chunkX, y, chunkZ)
+    local x = (chunkX * 16) + 8
+    local z = (chunkZ * 16) + 8
+
+    return Vector.create(x, y, z)
 end
 
 ---@return Vector
@@ -1437,9 +1456,17 @@ end
 
 ---@param fn fun(inventory: string) : any
 function TurtleApi.connectToStorage(fn)
+    local wiredModemSide = PeripheralApi.findSide("modem") or error("no wired modem next to me found")
+
+    if not TurtleApi.isWiredModemPowered(wiredModemSide) then
+        TurtleApi.use(wiredModemSide, ItemApi.diskDrive, true)
+    end
+
     local storageService = Rpc.nearest(StorageService)
-    local inventoryServer = Rpc.server(TurtleInventoryService, "wired")
+    local inventoryServer = Rpc.server(TurtleInventoryService, wiredModemSide)
     local inventory = inventoryServer.getWiredName()
+    local success = true
+    local message = nil
 
     EventLoop.waitForAny(function()
         inventoryServer.open()
@@ -1451,12 +1478,16 @@ function TurtleApi.connectToStorage(fn)
             storageService.refresh({inventory})
         end
     end, function()
-        pcall(function()
+        success, message = pcall(function()
             fn(inventory)
         end)
     end)
 
     inventoryServer.close()
+
+    if not success then
+        error(message)
+    end
 end
 
 return TurtleApi

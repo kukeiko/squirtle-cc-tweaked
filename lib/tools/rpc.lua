@@ -62,9 +62,10 @@ local function getWirelessModem()
     end)
 end
 
-local function getWiredModem()
-    return peripheral.find("modem", function(_, modem)
-        return not modem.isWireless()
+---@param side? string
+local function getWiredModem(side)
+    return peripheral.find("modem", function(foundSide, modem)
+        return not modem.isWireless() and (side == nil or foundSide == side)
     end)
 end
 
@@ -81,8 +82,10 @@ local function getModem(modemType)
         return wirelessModem
     elseif modemType == "wireless" then
         return getWirelessModem() or error("no wireless modem found")
-    else
+    elseif modemType == "wired" then
         return getWiredModem() or error("no wired modem found")
+    else
+        return getWiredModem(modemType) or error(string.format("no wired modem found @ %s", modemType))
     end
 end
 
@@ -328,18 +331,19 @@ function Rpc.all(service, timeout)
     return clients
 end
 
+-- [todo] ❌ instead of "string" for "modemType", should be some "Side" type for front, left, etc.
 ---@param service Service
----@param modemType? "wired" | "wireless"
+---@param modemType? "wired" | "wireless" | string
 ---@return RpcServer
 function Rpc.server(service, modemType)
-    local label = os.getComputerLabel()
-
-    if not label then
-        error("can't host a service without a label")
-    end
-
+    local label = os.getComputerLabel() or error("can't host a service without a label")
     local modem = getModem(modemType)
     service.host = modem.isWireless() and label or modem.getNameLocal()
+
+    if service.host == nil then
+        error("the wired modem seems to be inactive")
+    end
+
     local listenChannel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(listenChannel)

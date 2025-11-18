@@ -10,6 +10,7 @@ local DatabaseService = require "lib.database.database-service"
 local StorageService = require "lib.inventory.storage-service"
 local CraftingApi = require "lib.inventory.crafting-api"
 local EditEntity = require "lib.ui.edit-entity"
+local readInteger = require "lib.ui.read-integer"
 local Shell = require "lib.system.shell"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleInventoryService = require "lib.turtle.turtle-inventory-service"
@@ -261,15 +262,25 @@ local function testBuildChunkStorageWorker()
         TaskWorkerPool.new(BuildChunkStorageTaskWorker, 1):run()
     end, function()
         os.sleep(1)
-        taskService.buildChunkStorage({issuedBy = "foo", chunkX = 0, chunkY = 0, skipAwait = true, label = tostring(os.epoch("utc"))})
+        taskService.buildChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = true})
+        -- taskService.buildChunkStorage({issuedBy = "foo", chunkX = 0, chunkY = 0, skipAwait = true, label = tostring(os.epoch("utc"))})
     end)
+end
+
+local function testItemApiGetRequiredSlotCount()
+    local slots = ItemApi.getRequiredSlotCount({[ItemApi.shulkerBox] = 65}, 64)
+    print(slots)
+end
+
+local function testGetChunkCenter()
+    print(TurtleApi.getChunkCenter(-2, 1, 1))
 end
 
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    -- TurtleApi.requireItems({[ItemApi.smoothStone] = 1}, true)
     testBuildChunkStorageWorker()
+    -- testRequireItems()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

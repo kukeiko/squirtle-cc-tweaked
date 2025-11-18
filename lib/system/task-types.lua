@@ -53,4 +53,5 @@
 ---@class BuildChunkStorageTask : Task
 ---@field type "build-chunk-storage"
 ---@field chunkX integer
----@field chunkY integer
+---@field chunkZ integer
+---@field y integer

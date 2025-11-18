@@ -220,7 +220,8 @@ end
 
 ---@class BuildChunkStorageTaskOptions : TaskOptions
 ---@field chunkX integer
----@field chunkY integer
+---@field chunkZ integer
+---@field y integer
 ---@param options BuildChunkStorageTaskOptions
 ---@return BuildChunkStorageTask
 function TaskService.buildChunkStorage(options)
@@ -228,8 +229,9 @@ function TaskService.buildChunkStorage(options)
 
     if not task then
         task = constructTask(options.issuedBy, "build-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkStorageTask]]
-        task.chunkX = options.chunkX
-        task.chunkY = options.chunkY
+        task.chunkX = options.chunkX or error("chunkX option missing")
+        task.chunkZ = options.chunkZ or error("chunkZ option missing")
+        task.y = options.y or error("y option missing")
         task = TaskRepository.createTask(task) --[[@as BuildChunkStorageTask]]
     end
 

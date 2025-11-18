@@ -11,7 +11,7 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local Peripheral = require "lib.common.peripheral"
+local PeripheralApi = require "lib.common.peripheral-api"
 
 local function printUsage()
     print("Usage: crafter <source> <target> [trash]")
@@ -166,11 +166,11 @@ local function main(args)
         return printUsage()
     end
 
-    local barrel = Peripheral.findSide("minecraft:barrel")
+    local barrel = PeripheralApi.findSide("minecraft:barrel")
 
     while not barrel do
         printBarrelUsage()
-        barrel = Peripheral.findSide("minecraft:barrel")
+        barrel = PeripheralApi.findSide("minecraft:barrel")
     end
 
     local workbench = peripheral.find("workbench")

@@ -146,7 +146,8 @@ local function tryPlaceShulker(TurtleApi, slot)
     DatabaseApi.saveTurtleDiskState(diskState)
 
     TurtleApi.select(slot)
-    local placedSide = TurtleApi.placeAtOneOf(TurtleStateApi.getShulkerSides()) or replaceShulkerAtOneOf(TurtleApi, TurtleStateApi.getShulkerSides())
+    local placedSide = TurtleApi.placeAtOneOf(TurtleStateApi.getShulkerSides()) or
+                           replaceShulkerAtOneOf(TurtleApi, TurtleStateApi.getShulkerSides())
 
     if not placedSide then
         diskState.shulkerSides = {}
@@ -464,6 +465,7 @@ function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
     local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
     local open = Utils.copy(items)
 
+    -- first we fill up existing stacks in shulkers
     for _, shulker in pairs(shulkers) do
         for item in pairs(shulker.items) do
             if open[item] then
@@ -476,6 +478,7 @@ function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
         end
     end
 
+    -- then we move new stacks into shulkers
     for _, item in pairs(Utils.getKeys(open)) do
         for _, shulker in pairs(shulkers) do
             open[item] = open[item] - fakeMoveItem(item, open[item], shulker)

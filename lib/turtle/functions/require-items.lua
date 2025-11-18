@@ -8,10 +8,9 @@ local SearchableList = require "lib.ui.searchable-list"
 ---@param alwaysUseShulkers? boolean
 ---@return ItemStock, integer
 local function getOpen(TurtleApi, items, alwaysUseShulkers)
-    local openStock = TurtleApi.getOpenStock(items, alwaysUseShulkers)
+    local openStock, requiredShulkers = TurtleApi.getOpenStock(items, alwaysUseShulkers)
 
-    if openStock[ItemApi.shulkerBox] then
-        local requiredShulkers = openStock[ItemApi.shulkerBox]
+    if requiredShulkers > 0 then
         return {[ItemApi.shulkerBox] = requiredShulkers}, requiredShulkers
     else
         return openStock, 0
@@ -100,6 +99,10 @@ local function requireItemsInShulkers(TurtleApi, items, open)
                 loadIntoShulker(TurtleApi, items)
             end
 
+            -- put shulkers into first slots to move them out of the last 4 slots in case items are required via the storage system
+            -- and more than 4x shulkers are needed (last 4x slots are the I/O slots the storage has access to)
+            TurtleApi.condense()
+
             if Utils.isEmpty(open) then
                 break
             end
@@ -126,6 +129,11 @@ end
 ---@param items ItemStock
 ---@param alwaysUseShulkers? boolean
 return function(TurtleApi, items, alwaysUseShulkers)
+    if items[ItemApi.shulkerBox] then
+        -- making this work is more difficult than expected
+        error("requiring shulker boxes is not supported")
+    end
+
     local open, requiredShulkers = getOpen(TurtleApi, items, alwaysUseShulkers)
 
     if Utils.isEmpty(open) then

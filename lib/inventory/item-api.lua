@@ -150,6 +150,7 @@ function ItemApi.filterIsMissingDetails(stock)
     return unknown
 end
 
+---How many slots the given stock of items would occupy.
 ---@param stock ItemStock
 ---@param defaultMaxCount? integer
 ---@return integer
