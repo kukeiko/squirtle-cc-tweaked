@@ -33,6 +33,14 @@ local powerItems = {
     {item = ItemApi.netheriteBlock, transfer = 16}
 }
 
+---@param transfer? integer
+---@return PowerItem[]
+function InventoryApi.getPowerItems(transfer)
+    return Utils.filter(powerItems, function(item)
+        return item.transfer <= transfer
+    end)
+end
+
 ---@param type InventoryType
 function InventoryApi.refresh(type)
     local inventories = InventoryApi.getByType(type)
@@ -490,6 +498,11 @@ end
 ---@param flag boolean
 function InventoryApi.useCache(flag)
     InventoryCollection.useCache = flag
+end
+
+---@param flag boolean
+function InventoryApi.useAutoStorage(flag)
+    InventoryCollection.autoStorage = flag
 end
 
 function InventoryApi.discover()

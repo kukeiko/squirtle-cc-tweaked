@@ -1,8 +1,6 @@
 local EventLoop = require "lib.tools.event-loop"
-local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local TaskWorker = require "lib.system.task-worker"
-local StorageService = require "lib.inventory.storage-service"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
@@ -34,17 +32,15 @@ end
 
 function BuildChunkStorageTaskWorker:work()
     local resumable = Resumable.new("build-chunk-storage-worker")
+    local task = self:getTask()
+    local storageComputerLabel = string.format("Chunk Storage %d/%d", task.chunkX, task.chunkZ)
 
     resumable:setStart(function(_, options)
-        local storageService = Rpc.nearest(StorageService)
-
         -- [todo] ❌ assert that turtle is connected to turtle hub
         -- [todo] ❌ clean out any unneeded items
-        -- [todo] ❌ issue task to provide basic items (disk drive, shulkers, ...)
-        -- [todo] ❌ issue task to provide required items (chest, computer, network cables, ...)
 
         local results = TurtleApi.simulate(function()
-            buildChunkStorage()
+            buildChunkStorage(storageComputerLabel)
         end)
 
         local requiredItems, requiredShulkers = TurtleApi.getOpenStock(results.placed, true)
@@ -71,6 +67,8 @@ function BuildChunkStorageTaskWorker:work()
 
                 -- print("[issuing] items...")
                 self:provideItems(requiredItems, {inventory}, "materials", true)
+
+                -- [todo] ❌ fetch more shulkers so the turtle can dig bigger parts of the chunk at once
             end)
         end)
 
@@ -83,6 +81,11 @@ function BuildChunkStorageTaskWorker:work()
         return state
     end)
 
+    resumable:setResume(function(state, resumed)
+        TurtleApi.locate()
+        TurtleApi.orientate("disk-drive")
+    end)
+
     resumable:addMain("navigate", function(state)
         local task = self:getTask()
         TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
@@ -90,12 +93,11 @@ function BuildChunkStorageTaskWorker:work()
     end)
 
     resumable:addSimulatableMain("build", function(state)
-        buildChunkStorage()
+        buildChunkStorage(storageComputerLabel)
     end)
 
-    resumable:setResume(function(state, resumed)
-        TurtleApi.locate()
-        TurtleApi.orientate("disk-drive")
+    resumable:addMain("dump", function(state)
+        -- [todo] ❌ dump inventory (except shulkers + disk drive) to storage
     end)
 
     ---@param state BuildChunkStorageState

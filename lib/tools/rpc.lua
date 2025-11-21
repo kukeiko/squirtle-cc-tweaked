@@ -336,12 +336,12 @@ end
 ---@param modemType? "wired" | "wireless" | string
 ---@return RpcServer
 function Rpc.server(service, modemType)
-    local label = os.getComputerLabel() or error("can't host a service without a label")
     local modem = getModem(modemType)
-    service.host = modem.isWireless() and label or modem.getNameLocal()
 
-    if service.host == nil then
-        error("the wired modem seems to be inactive")
+    if modem.isWireless() then
+        service.host = os.getComputerLabel() or error("can't host a service without a computer label when using a wireless modem")
+    else
+        service.host = modem.getNameLocal() or error("the wired modem seems to be inactive")
     end
 
     local listenChannel = os.getComputerID()

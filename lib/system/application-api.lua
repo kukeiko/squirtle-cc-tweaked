@@ -132,10 +132,18 @@ function ApplicationApi.setTurleApps(apps, inRoot)
 end
 
 ---@param withContent? boolean
----@param filter? string[]
+---@param names? string[]
 ---@return Application[]
-function ApplicationApi.getComputerApps(withContent, filter)
-    return getApps(fs.combine(ApplicationApi.folder, "computer"), withContent, filter)
+function ApplicationApi.getComputerApps(withContent, names)
+    return getApps(fs.combine(ApplicationApi.folder, "computer"), withContent, names)
+end
+
+---@param withContent? boolean
+---@param name string
+---@return Application
+function ApplicationApi.getComputerApp(withContent, name)
+    local apps = getApps(fs.combine(ApplicationApi.folder, "computer"), withContent, {name})
+    return apps[1] or error(string.format("computer app %s not found", name))
 end
 
 ---@param apps Application[]

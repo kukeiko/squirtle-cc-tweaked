@@ -8,7 +8,7 @@ local InventoryLocks = require "lib.inventory.inventory-locks"
 
 ---@class InventoryCollection
 ---@field useCache boolean
-local InventoryCollection = {useCache = false}
+local InventoryCollection = {useCache = false, autoStorage = false}
 
 ---@type table<string, Inventory>
 local cache = {}
@@ -26,7 +26,7 @@ end
 ---@return Inventory
 function InventoryCollection.get(inventory)
     if not InventoryCollection.useCache then
-        return InventoryReader.read(inventory)
+        return InventoryReader.read(inventory, InventoryCollection.autoStorage)
     elseif not cache[inventory] then
         InventoryCollection.mount({inventory})
     end
@@ -97,12 +97,11 @@ function InventoryCollection.getType(name)
 end
 
 ---@param inventory InventoryHandle
----@param expected? InventoryType
-function InventoryCollection.mount(inventory, expected)
+function InventoryCollection.mount(inventory)
     local inventories = InventoryCollection.resolveHandle(inventory)
 
     for _, inventory in pairs(inventories) do
-        cache[inventory] = InventoryReader.read(inventory, expected)
+        cache[inventory] = InventoryReader.read(inventory, InventoryCollection.autoStorage)
     end
 end
 
@@ -136,7 +135,7 @@ function InventoryCollection.refresh(inventories, lockId)
             end
 
             pcall(function()
-                cache[inventory] = InventoryReader.read(inventory)
+                cache[inventory] = InventoryReader.read(inventory, InventoryCollection.autoStorage)
             end)
             unlock()
         end

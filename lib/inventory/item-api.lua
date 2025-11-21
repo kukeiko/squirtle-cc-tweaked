@@ -28,6 +28,7 @@ local ItemApi = {
     darkOakStairs = "minecraft:dark_oak_stairs",
     diamondBlock = "minecraft:diamond_block",
     dirt = "minecraft:dirt",
+    disk = "computercraft:disk",
     diskDrive = "computercraft:disk_drive",
     dispenser = "minecraft:dispenser",
     dropper = "minecraft:dropper",
@@ -92,7 +93,8 @@ local ItemApi = {
     weepingVines = "minecraft:weeping_vines",
     weepingVinesPlant = "minecraft:weeping_vines_plant",
     wheatSeeds = "minecraft:wheat_seeds",
-    wiredModem = "computercraft:wired_modem_full"
+    wiredModem = "computercraft:wired_modem_full",
+    wirelessModem = "computercraft:wireless_modem_normal"
 }
 
 local fuelItems = {[ItemApi.lavaBucket] = 1000, [ItemApi.coal] = 80, [ItemApi.charcoal] = 80, [ItemApi.coalBlock] = 800}

@@ -5,6 +5,7 @@ local TurtleApi = require "lib.turtle.turtle-api"
 local TurtleShulkerApi = require "lib.turtle.api-parts.turtle-shulker-api"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc";
+local ApplicationService = require "lib.system.apps-service"
 local TaskService = require "lib.system.task-service"
 local DatabaseService = require "lib.database.database-service"
 local StorageService = require "lib.inventory.storage-service"
@@ -19,6 +20,7 @@ local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryLocks = require "lib.inventory.inventory-locks"
 local TaskWorkerPool = require "lib.system.task-worker-pool"
 local BuildChunkStorageTaskWorker = require "lib.building.build-chunk-storage-worker"
+local buildChunkStorage = require "lib.building.build-chunk-storage"
 
 local function testGetCraftingDetails()
     local function testCampfires()
@@ -276,11 +278,104 @@ local function testGetChunkCenter()
     print(TurtleApi.getChunkCenter(-2, 1, 1))
 end
 
+local function testWriteStorageFloppy()
+    local appService = Rpc.nearest(ApplicationService)
+    local storageApp = appService.getComputerApp(true, "storage")
+
+    TurtleApi.up()
+    TurtleApi.put("front", ItemApi.diskDrive)
+
+    while not TurtleApi.selectItem(ItemApi.disk) do
+        TurtleApi.requireItem(ItemApi.disk)
+    end
+
+    TurtleApi.drop("front")
+    local storageFile = fs.open("disk/storage", "w")
+    storageFile.write(storageApp.content)
+    storageFile.close()
+
+    local storageStartupFile = fs.open("disk/storage-startup", "w")
+    storageStartupFile.write("shell.run(\"storage\")")
+    storageStartupFile.close()
+
+    local startupFile = fs.open("disk/startup", "w")
+    startupFile.write("shell.run(\"copy disk/storage storage\")")
+    startupFile.write("shell.run(\"copy disk/storage-startup startup\")")
+    local computerLabel = string.format("Chunk Storage %d-%d")
+    startupFile.write("shell.run(\"label set \\\"Chunk Storage\\\" \")")
+    startupFile.close()
+
+    TurtleApi.down()
+    local computerIsOn = peripheral.call("front", "isOn")
+    peripheral.call("front", computerIsOn and "reboot" or "turnOn")
+
+    TurtleApi.up()
+    TurtleApi.suck()
+    TurtleApi.dig()
+    TurtleApi.down()
+    peripheral.call("front", "reboot")
+end
+
+local function testStorageServiceViaWiredModem()
+    TurtleApi.connectToStorage(function(inventory, storage)
+        Utils.prettyPrint(storage.getStock())
+        local storages = storage.getByType("storage")
+        storage.empty({inventory}, storages)
+        -- storage.fulfill(storages, {inventory}, {[ItemApi.barrel] = 2})
+    end)
+end
+
+local function testBuildChunkStorage()
+    local results = TurtleApi.simulate(function()
+        buildChunkStorage("", 1)
+    end)
+
+    TurtleApi.requireItems(results.placed)
+    print("steps", results.steps)
+    TurtleApi.refuelTo(results.steps)
+
+    buildChunkStorage("Foo Bar", 1)
+end
+
+local function testEmptyTurtleToStorage()
+    TurtleApi.connectToStorage(function(inventory, storage, refresh)
+        local storages = storage.getByType("storage")
+
+        while true do
+            local inventoryStock = TurtleApi.getStock(true)
+            inventoryStock[ItemApi.shulkerBox] = nil
+
+            Utils.prettyPrint(inventoryStock)
+
+            if Utils.isEmpty(inventoryStock) then
+                break
+            end
+
+            while not storage.empty({inventory}, storages, {toSequential = true}) do
+                os.sleep(3)
+            end
+
+            for item in pairs(inventoryStock) do
+                if item ~= ItemApi.shulkerBox then
+                    TurtleApi.selectItem(item)
+                    if not TurtleApi.transferTo(13) then
+                        error("oh no")
+                    end
+                    break
+                end
+            end
+
+            refresh()
+        end
+    end)
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    testBuildChunkStorageWorker()
-    -- testRequireItems()
+    -- testBuildChunkStorage()
+    -- testBuildChunkStorageWorker()
+    testEmptyTurtleToStorage()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

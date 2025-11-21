@@ -69,11 +69,14 @@ function StorageService.restock(from, to, options)
     return InventoryApi.restock(from, to, options)
 end
 
+-- [todo] ❌ having "options" arg here is a hack: i only need it to set toSequential to "true"
+-- for when a turtle empties out their inventory to a storage with autoStorage set to true
 ---@param from InventoryHandle
 ---@param to InventoryHandle
+---@param options? TransferOptions
 ---@return boolean success, ItemStock transferred, ItemStock open
-function StorageService.empty(from, to)
-    return InventoryApi.empty(from, to)
+function StorageService.empty(from, to, options)
+    return InventoryApi.empty(from, to, options)
 end
 
 ---@param from InventoryHandle

@@ -60,3 +60,7 @@
 ---@field rate? integer
 ---@field lockId? integer
 ---
+---@class PowerItem
+---@field item string
+---@field transfer integer
+---

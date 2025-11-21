@@ -87,9 +87,9 @@ function InventoryReader.isInventoryType(name)
 end
 
 ---@param name string
----@param expected? InventoryType
+---@param autoStorage? boolean
 ---@return Inventory
-function InventoryReader.read(name, expected)
+function InventoryReader.read(name, autoStorage)
     local function create()
         local baseType = getPeripheralBaseType(name)
 
@@ -152,20 +152,12 @@ function InventoryReader.read(name, expected)
             elseif baseType == "minecraft:hopper" then
                 return readIgnore(name)
             else
-                return readStorage(name, stacks)
+                return readStorage(name, stacks, autoStorage)
             end
         end
     end
 
-    local inventory = create()
-
-    if expected and not inventory then
-        error(string.format("expected %s to be of type %s, but found nothing", name, expected))
-    elseif expected and inventory.type ~= expected then
-        error(string.format("expected %s to be of type %s, but got %s", name, expected, inventory.type))
-    end
-
-    return inventory
+    return create()
 end
 
 return InventoryReader
