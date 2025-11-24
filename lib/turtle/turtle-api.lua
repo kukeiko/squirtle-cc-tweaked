@@ -21,6 +21,7 @@ local digArea = require "lib.turtle.functions.dig-area"
 local buildFloor = require "lib.turtle.functions.build-floor"
 local harvestBirchTree = require "lib.turtle.functions.harvest-birch-tree"
 local requireItems = require "lib.turtle.functions.require-items"
+local getIoSlots = require "lib.turtle.functions.get-io-slots"
 
 ---@alias OrientationMethod "move" | "disk-drive"
 ---@alias DiskDriveOrientationSide "top" | "bottom"
@@ -1491,6 +1492,45 @@ function TurtleApi.connectToStorage(fn)
     if not success then
         error(message)
     end
+end
+
+---@param items ItemStock
+function TurtleApi.dumpToStorage(items)
+    local ioSlots = getIoSlots()
+    local keepStock = ItemStock.subtract(TurtleApi.getStock(true), items)
+
+    local function getOpen()
+        return ItemStock.subtract(TurtleApi.getStock(true), keepStock)
+    end
+
+    -- [todo] ❌ missing logic to move items that are not to be dumped out of the io slots
+    TurtleApi.connectToStorage(function(inventory, storage)
+        local storages = storage.getByType("storage")
+
+        while true do
+            local open = getOpen()
+
+            if Utils.isEmpty(open) then
+                break
+            end
+
+            for item, quantity in pairs(open) do
+                TurtleApi.selectItem(item)
+
+                for _, slot in ipairs(ioSlots) do
+                    if TurtleApi.transferTo(slot, quantity) then
+                        break
+                    end
+                end
+            end
+
+            -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
+            storage.transfer({inventory}, storages, open, {toSequential = true})
+            os.sleep(1)
+        end
+    end)
+
+    TurtleApi.condense()
 end
 
 return TurtleApi

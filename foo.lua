@@ -231,10 +231,6 @@ local function testGetRequiredShulkers()
     print(string.format("need %dx more shulkers", additionalShulkers))
 end
 
-local function testRequireItems()
-    requireItems(TurtleApi, {[ItemApi.smoothStone] = (27 * 64 * 1) + 1}, true)
-end
-
 local function testLoadShulkers()
     local success = TurtleApi.tryLoadShulkers()
     print(success)
@@ -264,7 +260,15 @@ local function testBuildChunkStorageWorker()
         TaskWorkerPool.new(BuildChunkStorageTaskWorker, 1):run()
     end, function()
         os.sleep(1)
-        taskService.buildChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = true})
+        taskService.buildChunkStorage({
+            issuedBy = "foo",
+            chunkX = 3,
+            chunkZ = 1,
+            y = 60,
+            chestLayers = 1,
+            skipAwait = true,
+            autoDelete = true
+        })
         -- taskService.buildChunkStorage({issuedBy = "foo", chunkX = 0, chunkY = 0, skipAwait = true, label = tostring(os.epoch("utc"))})
     end)
 end
@@ -338,44 +342,22 @@ local function testBuildChunkStorage()
 end
 
 local function testEmptyTurtleToStorage()
-    TurtleApi.connectToStorage(function(inventory, storage, refresh)
-        local storages = storage.getByType("storage")
+    local stock = TurtleApi.getStock(true)
+    TurtleApi.dumpToStorage(stock)
+end
 
-        while true do
-            local inventoryStock = TurtleApi.getStock(true)
-            inventoryStock[ItemApi.shulkerBox] = nil
-
-            Utils.prettyPrint(inventoryStock)
-
-            if Utils.isEmpty(inventoryStock) then
-                break
-            end
-
-            while not storage.empty({inventory}, storages, {toSequential = true}) do
-                os.sleep(3)
-            end
-
-            for item in pairs(inventoryStock) do
-                if item ~= ItemApi.shulkerBox then
-                    TurtleApi.selectItem(item)
-                    if not TurtleApi.transferTo(13) then
-                        error("oh no")
-                    end
-                    break
-                end
-            end
-
-            refresh()
-        end
-    end)
+local function testRequireItems()
+    -- requireItems(TurtleApi, {[ItemApi.smoothStone] = (27 * 64 * 1) + 1}, true)
+    requireItems(TurtleApi, {[ItemApi.smoothStone] = (3 * 64 * 1) + 1})
 end
 
 local now = os.epoch("utc")
 
 EventLoop.run(function()
+    -- testRequireItems()
     -- testBuildChunkStorage()
     -- testBuildChunkStorageWorker()
-    testEmptyTurtleToStorage()
+    -- testEmptyTurtleToStorage()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

@@ -77,7 +77,7 @@ local function main()
     Inventory.useAutoStorage(arg[2] == "auto-storage")
     Inventory.discover()
     print("[storage] ready!")
-    Utils.writeStartupFile(string.format("storage%s", arg[1] and " " .. arg[1] or ""))
+    Utils.writeStartupFile(string.format("storage %s%s", arg[1], arg[2] and " " .. arg[2] or ""))
 
     local processorFns = Utils.map(processors, function(processor)
         return function()

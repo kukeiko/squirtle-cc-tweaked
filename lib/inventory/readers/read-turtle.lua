@@ -1,5 +1,7 @@
+local Utils = require "lib.tools.utils"
 local Inventory = require "lib.inventory.inventory"
 local ItemStock = require "lib.inventory.item-stock"
+local getIoSlots = require "lib.turtle.functions.get-io-slots"
 
 ---@param name string
 ---@param stacks table<integer, ItemStack>
@@ -11,13 +13,15 @@ return function(name, stacks)
     local ioSlotTags = {input = true, output = true}
     ---@type ItemStack[]
     local ioStacks = {}
+    -- [todo] ❌ should be handled by the TurtleInventoryAdapter
+    local ioSlots = getIoSlots()
 
     for slot = 1, 16 do
-        if slot < 13 then
-            slots[slot] = {index = slot, tags = {}}
-        else
+        if Utils.contains(ioSlots, slot) then
             slots[slot] = {index = slot, tags = ioSlotTags}
             ioStacks[slot] = stacks[slot]
+        else
+            slots[slot] = {index = slot, tags = {}}
         end
     end
 

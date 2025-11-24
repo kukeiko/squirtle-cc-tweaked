@@ -97,6 +97,9 @@ function TaskService.acceptTask(acceptedBy, taskType, exceptTaskIds)
         print(string.format("[wait] for %s...", taskType))
     end
 
+    -- [todo] ❌ check that client accepting a task still exists, somehow.
+    -- I currently have the issue that in the sandbox world, I have a turtle build a chunk-storage which I am then destroying,
+    -- but the storage called acceptTask() and then there is nothing to actually run it.
     while not task do
         os.sleep(1)
         task = TaskRepository.getIssuedTask(taskType)
@@ -222,6 +225,7 @@ end
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field y integer
+---@field chestLayers integer?
 ---@param options BuildChunkStorageTaskOptions
 ---@return BuildChunkStorageTask
 function TaskService.buildChunkStorage(options)
@@ -232,6 +236,7 @@ function TaskService.buildChunkStorage(options)
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
         task.y = options.y or error("y option missing")
+        task.chestLayers = options.chestLayers
         task = TaskRepository.createTask(task) --[[@as BuildChunkStorageTask]]
     end
 
