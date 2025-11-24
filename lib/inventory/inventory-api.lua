@@ -455,7 +455,7 @@ function InventoryApi.getBufferStock(bufferId)
     return InventoryCollection.getBufferStock(bufferId)
 end
 
--- [todo] ❌ should throw if called twice
+-- [todo] ❌ should throw if called twice or make idempotent
 ---@param bufferId integer
 ---@param to? InventoryHandle
 function InventoryApi.flushAndFreeBuffer(bufferId, to)
@@ -463,7 +463,7 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
     local _, toInventories, options = getTransferArguments(bufferId, to)
     local buffer = InventoryApi.getBuffer(bufferId)
 
-    if to and isBufferHandle(to) then
+    if isBufferHandle(to) then
         -- [todo] ❌ duplicated from InventoryApi.empty()
         local fromStock = InventoryApi.getStock(buffer.inventories, "buffer")
         local bufferId = to --[[@as integer]]
@@ -472,7 +472,8 @@ function InventoryApi.flushAndFreeBuffer(bufferId, to)
     end
 
     while not InventoryApi.empty(buffer.inventories, toInventories, options) do
-        os.sleep(7)
+        -- using a short sleep to speed up process of loading up turtles
+        os.sleep(1)
     end
 
     InventoryCollection.freeBuffer(bufferId)

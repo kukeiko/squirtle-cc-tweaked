@@ -247,6 +247,9 @@ function ItemApi.getRefuelAmount(item)
     return fuelItems[item]
 end
 
+---Returns the quantity of the given item needed to fulfill the given fuel.
+---
+---Throws an error if the given item is not fuel.
 ---@param item string
 ---@param fuel integer
 ---@return integer

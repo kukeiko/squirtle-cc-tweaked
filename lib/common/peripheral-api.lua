@@ -26,4 +26,13 @@ function PeripheralApi.findSide(types, sides)
     end
 end
 
+---@return string?
+function PeripheralApi.findWiredModem()
+    local wiredModem = peripheral.find("modem", function(_, modem)
+        return not modem.isWireless()
+    end)
+
+    return wiredModem and peripheral.getName(wiredModem) or nil
+end
+
 return PeripheralApi

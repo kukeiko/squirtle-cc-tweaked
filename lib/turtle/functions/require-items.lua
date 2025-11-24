@@ -47,17 +47,11 @@ local function requireItemsInInventory(TurtleApi, items, open)
             end
 
             searchableList:setOptions(getOptions(open))
-
-            while true do
-                local event = EventLoop.pull()
-
-                if event == "turtle_inventory" then
-                    break
-                end
-            end
+            EventLoop.pull("turtle_inventory")
         end
     end)
 
+    TurtleApi.condense()
     term.clear()
     term.setCursorPos(1, 1)
 end
@@ -71,10 +65,17 @@ local function loadIntoShulker(TurtleApi, items)
         for slot = 1, TurtleApi.size() do
             local item = TurtleApi.getStack(slot)
 
-            if item and items[item.name] and item.name ~= ItemApi.shulkerBox then
+            if item and item.name == ItemApi.shulkerBox then
+                local firstEmptySlot = TurtleApi.firstEmptySlot()
+
+                if firstEmptySlot ~= nil and firstEmptySlot < slot then
+                    TurtleApi.select(slot)
+                    TurtleApi.transferTo(firstEmptySlot)
+                    loadedItem = true
+                end
+            elseif item and items[item.name] then
                 if TurtleApi.loadIntoShulker(slot) then
                     loadedItem = true
-                    break
                 end
             end
         end
@@ -93,29 +94,15 @@ local function requireItemsInShulkers(TurtleApi, items, open)
         end
     end, function()
         while true do
+            loadIntoShulker(TurtleApi, items)
             open = getOpen(TurtleApi, items, true)
-
-            if not open[ItemApi.shulkerBox] then
-                loadIntoShulker(TurtleApi, items)
-            end
-
-            -- put shulkers into first slots to move them out of the last 4 slots in case items are required via the storage system
-            -- and more than 4x shulkers are needed (last 4x slots are the I/O slots the storage has access to)
-            TurtleApi.condense()
 
             if Utils.isEmpty(open) then
                 break
             end
 
             searchableList:setOptions(getOptions(open))
-
-            while true do
-                local event = EventLoop.pull()
-
-                if event == "turtle_inventory" or event == "peripheral" or event == "peripheral_detach" then
-                    break
-                end
-            end
+            EventLoop.pullOneOf({"turtle_inventory", "peripheral", "peripheral_detach"})
         end
     end)
 

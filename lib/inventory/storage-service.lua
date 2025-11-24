@@ -160,6 +160,7 @@ function StorageService.getItemDetails()
     return ItemApi.getItemDetails()
 end
 
+---Filters the given stock, keeping only the items for which no maxCount, displayName, etc. are known.
 ---@param stock ItemStock
 ---@return ItemStock
 function StorageService.filterIsMissingDetails(stock)

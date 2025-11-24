@@ -165,7 +165,7 @@ local function doHomework()
     TurtleApi.dump("bottom", {ItemApi.birchLog})
     print("[checking] the furnace...")
     local missingCharcoalInIO = InventoryApi.getItemOpenCount({"front"}, ItemApi.charcoal, "output")
-    local requiredFuelCharcoal = math.ceil(TurtleApi.missingFuel(minFuel) / 80)
+    local requiredFuelCharcoal = math.ceil(TurtleApi.getOpenFuel(minFuel) / 80)
     doFurnaceWork(requiredFuelCharcoal, missingCharcoalInIO)
 
     TurtleApi.doHomework({
@@ -201,7 +201,7 @@ local function shouldPlantTree()
 end
 
 local function refuelFromBackpack()
-    while TurtleApi.missingFuel() > 0 and TurtleApi.selectItem(ItemApi.stick) do
+    while TurtleApi.getOpenFuel() > 0 and TurtleApi.selectItem(ItemApi.stick) do
         print("[refuel] from sticks...")
         TurtleApi.refuel()
     end

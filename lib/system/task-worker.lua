@@ -5,6 +5,7 @@ local TaskWorker = {}
 
 ---@param task Task
 ---@param taskService TaskService | RpcClient
+---@return TaskWorker
 function TaskWorker.new(task, taskService)
     ---@type TaskWorker
     local instance = {task = task, taskService = taskService}

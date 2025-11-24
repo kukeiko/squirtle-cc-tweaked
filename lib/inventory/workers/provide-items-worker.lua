@@ -44,6 +44,8 @@ function ProvideItemsTaskWorker:work()
         self:updateTask()
     end
 
+    -- transfer wanted items into the buffer to prevent someone else taking them.
+    -- we're using a flag to ensure idempotency and to keep this task simple as missing items will be crafted.
     if not task.transferredInitial then
         local from = storageService.getByType("storage")
         storageService.fulfill(from, task.bufferId, task.items)
@@ -52,6 +54,7 @@ function ProvideItemsTaskWorker:work()
         self:updateTask()
     end
 
+    -- crafts the missing items if allowed and possible and transfers them directly into the buffer.
     if task.craftMissing then
         local bufferStock = storageService.getBufferStock(task.bufferId)
         local open = ItemStock.subtract(task.items, bufferStock)
@@ -69,6 +72,7 @@ function ProvideItemsTaskWorker:work()
 
     local open = ItemStock.subtract(task.items, storageService.getBufferStock(task.bufferId))
 
+    -- transfer missing items from the storage to the buffer until all are found
     if not Utils.isEmpty(open) then
         while true do
             local fulfilled = storageService.fulfill(storageService.getByType("storage"), task.bufferId, task.items)
@@ -84,7 +88,6 @@ function ProvideItemsTaskWorker:work()
         end
     end
 
-    -- [todo] ❌ support "task.to" being nil, in which case another task will take over the buffer
     storageService.flushAndFreeBuffer(task.bufferId, task.to)
 end
 

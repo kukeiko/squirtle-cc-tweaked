@@ -1,20 +1,21 @@
 local EventLoop = require "lib.tools.event-loop"
+local Logger = require "lib.tools.logger"
 local Cardinal = require "lib.common.cardinal"
-local TaskWorker = require "lib.system.task-worker"
+local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 
----@class BuildChunkStorageTaskWorker : TaskWorker 
+---@class BuildChunkStorageTaskWorker : TurtleTaskWorker 
 local BuildChunkStorageTaskWorker = {}
-setmetatable(BuildChunkStorageTaskWorker, {__index = TaskWorker})
+setmetatable(BuildChunkStorageTaskWorker, {__index = TurtleTaskWorker})
 
 ---@param task BuildChunkStorageTask
 ---@param taskService TaskService | RpcClient
 ---@return BuildChunkStorageTaskWorker
 function BuildChunkStorageTaskWorker.new(task, taskService)
-    local instance = TaskWorker.new(task, taskService) --[[@as BuildChunkStorageTaskWorker]]
+    local instance = TurtleTaskWorker.new(task, taskService) --[[@as BuildChunkStorageTaskWorker]]
     setmetatable(instance, {__index = BuildChunkStorageTaskWorker})
 
     return instance
@@ -31,46 +32,25 @@ function BuildChunkStorageTaskWorker:getTask()
 end
 
 function BuildChunkStorageTaskWorker:work()
+    -- [todo] ❌ assert that turtle is connected to turtle hub
+    -- [todo] ❌ clean out any unneeded items
+
     local resumable = Resumable.new("build-chunk-storage-worker")
     local task = self:getTask()
     local storageComputerLabel = string.format("Chunk Storage %d/%d", task.chunkX, task.chunkZ)
 
-    resumable:setStart(function(_, options)
-        -- [todo] ❌ assert that turtle is connected to turtle hub
-        -- [todo] ❌ clean out any unneeded items
-
+    resumable:setStart(function()
         local results = TurtleApi.simulate(function()
             buildChunkStorage(storageComputerLabel)
         end)
 
         local requiredItems, requiredShulkers = TurtleApi.getOpenStock(results.placed, true)
-        local requiredCharcoal = ItemApi.getRequiredRefuelCount(ItemApi.charcoal, TurtleApi.missingFuel())
+        local totalShulkers = math.max(requiredShulkers, 4)
 
-        TurtleApi.connectToStorage(function(inventory)
-            if requiredCharcoal > 0 then
-                print("[issuing] charcoal", requiredCharcoal)
-                self:provideItems({[ItemApi.charcoal] = requiredCharcoal}, {inventory}, "charcoal")
-                TurtleApi.refuelTo(TurtleApi.getFiniteFuelLimit())
-            end
-
-            EventLoop.run(function()
-                -- [todo] ❌ use logger instead
-                -- print("[requiring] items...")
-                -- [todo] ❌ is this sleep really required?
-                os.sleep(1)
-                TurtleApi.requireItems(requiredItems, true)
-            end, function()
-                if requiredShulkers then
-                    -- print("[issuing] shulkers...")
-                    self:provideItems({[ItemApi.shulkerBox] = requiredShulkers}, {inventory}, "shulkers")
-                end
-
-                -- print("[issuing] items...")
-                self:provideItems(requiredItems, {inventory}, "materials", true)
-
-                -- [todo] ❌ fetch more shulkers so the turtle can dig bigger parts of the chunk at once
-            end)
-        end)
+        -- we're fueling up to maximum as this turtle will (I think❓) also dig out the chunk.
+        self:requireFuel(TurtleApi.getOpenFuel())
+        self:requireShulkers(totalShulkers)
+        self:requireItems(requiredItems, "materials")
 
         TurtleApi.locate()
         TurtleApi.orientate("disk-drive")

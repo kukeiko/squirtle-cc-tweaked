@@ -115,6 +115,18 @@ function EventLoop.pull(event, callback)
     return coroutine.yield(event, callback)
 end
 
+---@param events string[]
+---@return string, ...
+function EventLoop.pullOneOf(events)
+    while true do
+        local pulled = table.pack(EventLoop.pull())
+
+        if Utils.contains(events, pulled[1]) then
+            return table.unpack(pulled)
+        end
+    end
+end
+
 ---@param event string
 ---@param ... unknown
 function EventLoop.queue(event, ...)

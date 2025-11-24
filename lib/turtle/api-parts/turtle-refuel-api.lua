@@ -36,7 +36,7 @@ end
 ---@param fuel? integer
 ---@param allowLava? boolean
 local function refuelFromBackpack(TurtleApi, fuel, allowLava)
-    fuel = fuel or TurtleApi.missingFuel()
+    fuel = fuel or TurtleApi.getOpenFuel()
     local fuelStacks = pickFuelStacks(TurtleApi.getStacks(), fuel, allowLava)
     local emptyBucketSlot = TurtleApi.find(ItemApi.bucket)
 
@@ -57,7 +57,7 @@ end
 ---@param TurtleApi TurtleApi
 ---@param fuel? integer
 local function refuelWithHelpFromPlayer(TurtleApi, fuel)
-    fuel = fuel or TurtleApi.missingFuel()
+    fuel = fuel or TurtleApi.getOpenFuel()
     local _, y = term.getCursorPos()
 
     while not TurtleApi.hasFuel(fuel) do
@@ -81,7 +81,7 @@ local function refuelViaInputOutput(TurtleApi, fuel, barrel, ioChest)
     end
 
     if not TurtleApi.hasFuel(fuel) and not hasCharcoal() then
-        print(string.format("[fuel] need %d more fuel", TurtleApi.missingFuel(fuel)))
+        print(string.format("[fuel] need %d more fuel", TurtleApi.getOpenFuel(fuel)))
     end
 
     while not TurtleApi.hasFuel(fuel) do

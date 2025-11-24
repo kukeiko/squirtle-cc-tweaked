@@ -13,7 +13,7 @@ local function refuel(level)
     shell.run("refuel", "all")
 
     while not TurtleApi.hasFuel(level) do
-        print(string.format("[help] not enough fuel, need %d more.", TurtleApi.missingFuel(level)))
+        print(string.format("[help] not enough fuel, need %d more.", TurtleApi.getOpenFuel(level)))
         print("please put some into inventory")
         os.pullEvent("turtle_inventory")
         shell.run("refuel", "all")

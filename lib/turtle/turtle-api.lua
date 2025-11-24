@@ -3,11 +3,11 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
-local PeripheralApi = require "lib.common.peripheral-api"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local InventoryApi = require "lib.inventory.inventory-api"
+local PeripheralApi = require "lib.common.peripheral-api"
 local StorageService = require "lib.inventory.storage-service"
 local TurtleInventoryService = require "lib.turtle.turtle-inventory-service"
 local TurtleStateApi = require "lib.turtle.api-parts.turtle-state-api"
@@ -149,10 +149,10 @@ function TurtleApi.hasFuel(fuel)
     return TurtleStateApi.hasFuel(fuel)
 end
 
----@param limit? integer
+---@param level? integer
 ---@return integer
-function TurtleApi.missingFuel(limit)
-    return TurtleStateApi.missingFuel(limit)
+function TurtleApi.getOpenFuel(level)
+    return TurtleStateApi.getOpenFuel(level)
 end
 
 function TurtleApi.isSimulating()
@@ -1454,19 +1454,22 @@ function TurtleApi.recover()
     end
 end
 
----@param fn fun(inventory: string) : any
+---@param fn fun(inventory: string, storage: StorageService|RpcClient, refresh: fun() : nil) : any
 function TurtleApi.connectToStorage(fn)
-    local wiredModemSide = PeripheralApi.findSide("modem") or error("no wired modem next to me found")
+    local wiredModem = PeripheralApi.findWiredModem() or error("no wired modem next to me found")
 
-    if not TurtleApi.isWiredModemPowered(wiredModemSide) then
-        TurtleApi.use(wiredModemSide, ItemApi.diskDrive, true)
+    if not TurtleApi.isWiredModemPowered(wiredModem) then
+        TurtleApi.use(wiredModem, ItemApi.diskDrive, true)
     end
 
     local storageService = Rpc.nearest(StorageService)
-    local inventoryServer = Rpc.server(TurtleInventoryService, wiredModemSide)
+    local inventoryServer = Rpc.server(TurtleInventoryService, wiredModem)
     local inventory = inventoryServer.getWiredName()
     local success = true
     local message = nil
+    local refresh = function()
+        storageService.refresh({inventory})
+    end
 
     EventLoop.waitForAny(function()
         inventoryServer.open()
@@ -1474,12 +1477,12 @@ function TurtleApi.connectToStorage(fn)
         storageService.mount({inventory})
 
         while true do
-            os.sleep(3)
-            storageService.refresh({inventory})
+            EventLoop.pull("turtle_inventory")
+            refresh()
         end
     end, function()
         success, message = pcall(function()
-            fn(inventory)
+            fn(inventory, storageService, refresh)
         end)
     end)
 

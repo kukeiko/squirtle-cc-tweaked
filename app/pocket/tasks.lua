@@ -36,7 +36,7 @@ local function showMissingDetails(taskService)
         return options
     end
 
-    local searchableList = SearchableList.new(getOptions(), "Missing Stored", idleTimeout, refreshIntervals.missingDetails, getOptions)
+    local searchableList = SearchableList.new(getOptions(), "Missing Info", idleTimeout, refreshIntervals.missingDetails, getOptions)
 
     while true do
         searchableList:run()

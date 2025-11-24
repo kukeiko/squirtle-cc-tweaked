@@ -219,16 +219,18 @@ function TurtleStateApi.hasFuel(fuel)
     return level == "unlimited" or level >= fuel
 end
 
----@param limit? integer
+---@param level? integer
 ---@return integer
-function TurtleStateApi.missingFuel(limit)
+function TurtleStateApi.getOpenFuel(level)
     local current = TurtleStateApi.getFuelLevel()
 
     if current == "unlimited" then
         return 0
     end
 
-    return (limit or TurtleStateApi.getFiniteFuelLimit()) - current
+    level = level or TurtleStateApi.getFiniteFuelLimit()
+
+    return math.max(0, level - current)
 end
 
 function TurtleStateApi.fuelTargetReached()
