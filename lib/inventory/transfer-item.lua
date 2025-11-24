@@ -182,6 +182,10 @@ local function distribute(from, to, item, total, options)
             for toInventory, unlockTo in lockNext(to, options.lockId, fromInventory) do
                 open = open - moveItem(fromInventory, toInventory, item, perInput, options)
                 unlockTo()
+
+                if open == 0 then
+                    break
+                end
             end
 
             unlockFrom()
