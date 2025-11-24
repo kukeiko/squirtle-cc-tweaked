@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage"
+---@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage" | "dig-chunk"
 ---
 ---@class Task
 ---@field id integer
@@ -52,6 +52,13 @@
 ---
 ---@class BuildChunkStorageTask : Task
 ---@field type "build-chunk-storage"
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@field chestLayers integer?
+---
+---@class DigChunkTask : Task
+---@field type "dig-chunk"
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field y integer

@@ -6,6 +6,8 @@ local function swap(a, b)
     return b, a
 end
 
+-- [todo] ❌ using dig() for up/down, but move() for digging forward, and move() probes blocks, while dig() doesn't.
+-- I think I should just also use dig() for forward digging, as the probing from move() costs quite a lot of time.
 ---@param TurtleApi TurtleApi
 ---@param depth integer
 ---@param width integer

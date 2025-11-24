@@ -1463,6 +1463,7 @@ function TurtleApi.connectToStorage(fn)
         TurtleApi.use(wiredModem, ItemApi.diskDrive, true)
     end
 
+    -- [todo] ❌ should instead use wired modem - for that to work, Storage app needs to host on its wired modem as well
     local storageService = Rpc.nearest(StorageService)
     local inventoryServer = Rpc.server(TurtleInventoryService, wiredModem)
     local inventory = inventoryServer.getWiredName()
@@ -1504,6 +1505,7 @@ function TurtleApi.dumpToStorage(items)
     end
 
     -- [todo] ❌ missing logic to move items that are not to be dumped out of the io slots
+    -- [todo] 🛠️ this is really slow as its only transfering one stack at a time
     TurtleApi.connectToStorage(function(inventory, storage)
         local storages = storage.getByType("storage")
 
@@ -1518,7 +1520,7 @@ function TurtleApi.dumpToStorage(items)
                 TurtleApi.selectItem(item)
 
                 for _, slot in ipairs(ioSlots) do
-                    if TurtleApi.transferTo(slot, quantity) then
+                    if TurtleApi.transferTo(slot, math.min(quantity, 64)) then
                         break
                     end
                 end

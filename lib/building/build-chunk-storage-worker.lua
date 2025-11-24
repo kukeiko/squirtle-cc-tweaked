@@ -47,8 +47,7 @@ function BuildChunkStorageTaskWorker:work()
         local requiredItems, requiredShulkers = TurtleApi.getOpenStock(results.placed, true)
         local totalShulkers = math.max(requiredShulkers, 4)
 
-        -- we're fueling up to maximum as this turtle will (I think❓) also dig out the chunk.
-        self:requireFuel(TurtleApi.getOpenFuel())
+        self:requireFuel(TurtleApi.getFiniteFuelLimit())
         self:requireShulkers(totalShulkers)
         self:requireItems(requiredItems, "materials")
 

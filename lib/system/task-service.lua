@@ -247,4 +247,28 @@ function TaskService.buildChunkStorage(options)
     return awaitTaskCompletion(task) --[[@as BuildChunkStorageTask]]
 end
 
+---@class DigChunkTaskOptions : TaskOptions
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@param options DigChunkTaskOptions
+---@return DigChunkTask
+function TaskService.digChunk(options)
+    local task = TaskRepository.findTask("dig-chunk", options.partOfTaskId, options.label) --[[@as DigChunkTask?]]
+
+    if not task then
+        task = constructTask(options.issuedBy, "dig-chunk", options.partOfTaskId, options.label, options.autoDelete) --[[@as DigChunkTask]]
+        task.chunkX = options.chunkX or error("chunkX option missing")
+        task.chunkZ = options.chunkZ or error("chunkZ option missing")
+        task.y = options.y or error("y option missing")
+        task = TaskRepository.createTask(task) --[[@as DigChunkTask]]
+    end
+
+    if options.skipAwait then
+        return task
+    end
+
+    return awaitTaskCompletion(task) --[[@as DigChunkTask]]
+end
+
 return TaskService

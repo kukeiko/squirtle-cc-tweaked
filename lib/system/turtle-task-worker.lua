@@ -2,6 +2,7 @@ local EventLoop = require "lib.tools.event-loop"
 local TaskWorker = require "lib.system.task-worker"
 local TurtleApi = require "lib.turtle.turtle-api"
 local ItemApi = require "lib.inventory.item-api"
+local getIoSlots = require "lib.turtle.functions.get-io-slots"
 
 ---@class TurtleTaskWorker : TaskWorker 
 local TurtleTaskWorker = {}
@@ -38,9 +39,15 @@ end
 
 ---@param quantity integer
 function TurtleTaskWorker:requireShulkers(quantity)
+    local numIoSlots = #getIoSlots()
+
     TurtleApi.connectToStorage(function(inventory)
-        self:provideItems({[ItemApi.shulkerBox] = quantity}, {inventory}, "shulkers", true)
-        TurtleApi.condense()
+        for i = 1, math.ceil(quantity / numIoSlots) do
+            local open = quantity - (numIoSlots * (i - 1))
+            local transfer = math.min(open, numIoSlots)
+            self:provideItems({[ItemApi.shulkerBox] = transfer}, {inventory}, string.format("shulkers-%d", i), true)
+            TurtleApi.condense()
+        end
     end)
 end
 

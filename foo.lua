@@ -20,6 +20,7 @@ local InventoryApi = require "lib.inventory.inventory-api"
 local InventoryLocks = require "lib.inventory.inventory-locks"
 local TaskWorkerPool = require "lib.system.task-worker-pool"
 local BuildChunkStorageTaskWorker = require "lib.building.build-chunk-storage-worker"
+local DigChunkWorker = require "lib.digging.dig-chunk-worker"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 
 local function testGetCraftingDetails()
@@ -253,26 +254,6 @@ local function testTransferItem()
     end)
 end
 
-local function testBuildChunkStorageWorker()
-    local taskService = Rpc.nearest(TaskService)
-
-    EventLoop.run(function()
-        TaskWorkerPool.new(BuildChunkStorageTaskWorker, 1):run()
-    end, function()
-        os.sleep(1)
-        taskService.buildChunkStorage({
-            issuedBy = "foo",
-            chunkX = 3,
-            chunkZ = 1,
-            y = 60,
-            chestLayers = 1,
-            skipAwait = true,
-            autoDelete = true
-        })
-        -- taskService.buildChunkStorage({issuedBy = "foo", chunkX = 0, chunkY = 0, skipAwait = true, label = tostring(os.epoch("utc"))})
-    end)
-end
-
 local function testItemApiGetRequiredSlotCount()
     local slots = ItemApi.getRequiredSlotCount({[ItemApi.shulkerBox] = 65}, 64)
     print(slots)
@@ -341,6 +322,37 @@ local function testBuildChunkStorage()
     buildChunkStorage("Foo Bar", 1)
 end
 
+local function testBuildChunkStorageWorker()
+    local taskService = Rpc.nearest(TaskService)
+
+    EventLoop.run(function()
+        TaskWorkerPool.new(BuildChunkStorageTaskWorker, 1):run()
+    end, function()
+        os.sleep(1)
+        taskService.buildChunkStorage({
+            issuedBy = "foo",
+            chunkX = 3,
+            chunkZ = 1,
+            y = 60,
+            chestLayers = 1,
+            skipAwait = true,
+            autoDelete = true
+        })
+        -- taskService.buildChunkStorage({issuedBy = "foo", chunkX = 0, chunkY = 0, skipAwait = true, label = tostring(os.epoch("utc"))})
+    end)
+end
+
+local function testDigChunkStorageWorker()
+    local taskService = Rpc.nearest(TaskService)
+
+    EventLoop.run(function()
+        TaskWorkerPool.new(DigChunkWorker, 1):run()
+    end, function()
+        os.sleep(1)
+        taskService.digChunk({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = true})
+    end)
+end
+
 local function testEmptyTurtleToStorage()
     local stock = TurtleApi.getStock(true)
     TurtleApi.dumpToStorage(stock)
@@ -357,6 +369,7 @@ EventLoop.run(function()
     -- testRequireItems()
     -- testBuildChunkStorage()
     -- testBuildChunkStorageWorker()
+    -- testDigChunkStorageWorker()
     -- testEmptyTurtleToStorage()
 end)
 
