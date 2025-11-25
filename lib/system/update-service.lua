@@ -12,7 +12,7 @@ function UpdateService.update(apps)
     local databaseClient = Rpc.nearest(DatabaseService)
 
     if turtle then
-        AppsService.setTurleApps(appsClient.getTurtleApps(true, apps), true)
+        AppsService.setTurtleApps(appsClient.getTurtleApps(true, apps), true)
         print("[updated] turtle apps")
     elseif pocket then
         AppsService.setPocketApps(appsClient.getPocketApps(true, apps), true)

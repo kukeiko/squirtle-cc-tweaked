@@ -122,7 +122,7 @@ Shell:addWindow("RPC / Upload", function()
 
             AppsService.setComputerApps(apps.computer)
             AppsService.setPocketApps(apps.pocket)
-            AppsService.setTurleApps(apps.turtle)
+            AppsService.setTurtleApps(apps.turtle)
         end
     end)
 end)

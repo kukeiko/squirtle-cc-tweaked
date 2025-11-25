@@ -10,6 +10,7 @@
                 "build computer:database",
                 "build computer:dispenser",
                 "build computer:fungi-farm",
+                "build computer:shell",
                 "build computer:simon-says",
                 "build computer:storage",
                 "build computer:subway-switch",
@@ -24,8 +25,8 @@
                 "build pocket:remote-control",
                 "build pocket:shell",
                 "build pocket:subway",
-                "build pocket:teleport",
                 "build pocket:tasks",
+                "build pocket:teleport",
                 "build pocket:turtle",
                 "build pocket:update",
                 "build turtle:aqueduct",
@@ -43,11 +44,12 @@
                 "build turtle:pyramid",
                 "build turtle:recipe-reader",
                 "build turtle:remote-control",
+                "build turtle:shell",
                 "build turtle:silo",
+                "build turtle:small-house",
                 "build turtle:stripper",
                 "build turtle:update",
                 "build turtle:wall",
-                "build turtle:small-house",
             ]
         },
         {
@@ -74,6 +76,16 @@
             "label": "build computer:fungi-farm",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/fungi-farm.lua -p app/computer/?.lua -p ?.lua -o dist/computer/fungi-farm"
+        },
+        {
+            "label": "build computer:shell",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/computer/kita"
+        },
+        {
+            "label": "build computer:shell:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o ../7/kita"
         },
         {
             "label": "build computer:simon-says",
@@ -183,7 +195,7 @@
         {
             "label": "build pocket:shell",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/pocket/shell"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/pocket/kita"
         },
         {
             "label": "build pocket:subway",
@@ -329,6 +341,11 @@
             "label": "build turtle:remote-control",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/remote-control"
+        },
+        {
+            "label": "build turtle:shell",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/turtle/kita"
         },
         {
             "label": "build turtle:silo",

@@ -92,6 +92,7 @@ local function wrapRun(shellApplication, run)
                 return true
             end
         })
+
         os.sleep(.1)
 
         local success, message = pcall(run)
@@ -176,6 +177,8 @@ function Shell:launch(hostApplication, path)
             error(message)
         end
 
+        -- [todo] ❌ if "fn" crashes and user hits "enter" to continue, nothing happens. also, terminating doesn't work.
+        -- need to understand & adapt wrapRun(), especially together its usage in bootstrap
         EventLoop.waitForAny(function()
             while true do
                 local _, id = EventLoop.pull("shell:terminate")

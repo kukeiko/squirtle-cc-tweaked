@@ -80,7 +80,7 @@ end
 ---@param folder string
 ---@param apps Application[]
 local function setApps(folder, apps)
-    if Utils.isDev() and os.getComputerLabel() ~= "Database" then
+    if Utils.isDev() and os.getComputerLabel() ~= "Database" and os.getComputerLabel() ~= "Playground" then
         return
     end
 
@@ -98,6 +98,14 @@ end
 ---@return Application[]
 function ApplicationApi.getPocketApps(withContent, filter)
     return getApps(fs.combine(ApplicationApi.folder, "pocket"), withContent, filter)
+end
+
+---@param withContent? boolean
+---@param name string
+---@return Application
+function ApplicationApi.getPocketApp(withContent, name)
+    local apps = getApps(fs.combine(ApplicationApi.folder, "pocket"), withContent, {name})
+    return apps[1] or error(string.format("pocket app %s not found", name))
 end
 
 ---@param apps Application[]
@@ -119,9 +127,17 @@ function ApplicationApi.getTurtleApps(withContent, filter)
     return getApps(fs.combine(ApplicationApi.folder, "turtle"), withContent, filter)
 end
 
+---@param withContent? boolean
+---@param name string
+---@return Application
+function ApplicationApi.getTurtleApp(withContent, name)
+    local apps = getApps(fs.combine(ApplicationApi.folder, "turtle"), withContent, {name})
+    return apps[1] or error(string.format("turtle app %s not found", name))
+end
+
 ---@param apps Application[]
 ---@param inRoot? boolean
-function ApplicationApi.setTurleApps(apps, inRoot)
+function ApplicationApi.setTurtleApps(apps, inRoot)
     local path = "/"
 
     if not inRoot then
