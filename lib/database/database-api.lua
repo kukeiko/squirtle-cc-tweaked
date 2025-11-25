@@ -1,14 +1,10 @@
 local Utils = require "lib.tools.utils"
+local CraftingRecipeRepository = require "lib.database.crafting-recipe-repository"
 
 ---@class DatabaseApi
 local DatabaseApi = {folder = "data"}
 
-local entityTypes = {
-    craftingRecipes = "crafting-recipes",
-    subwayStations = "subway-stations",
-    turtleResumables = "turtle-resumables",
-    turtleDiskState = "turtle-disk-state"
-}
+local entityTypes = {subwayStations = "subway-stations", turtleResumables = "turtle-resumables", turtleDiskState = "turtle-disk-state"}
 
 ---@param entity string
 local function getPath(entity)
@@ -54,34 +50,18 @@ end
 
 ---@return CraftingRecipes
 function DatabaseApi.getCraftingRecipes()
-    ---@type CraftingRecipe[]
-    local recipes = readEntities(entityTypes.craftingRecipes)
-
-    return Utils.toMap(recipes, function(item)
-        return item.item
-    end)
-end
-
----@param recipes CraftingRecipes
-function DatabaseApi.setCraftingRecipes(recipes)
-    writeEntities(entityTypes.craftingRecipes, Utils.toList(recipes))
+    return CraftingRecipeRepository.getAll()
 end
 
 ---@param item string
 ---@return CraftingRecipe?
 function DatabaseApi.getCraftingRecipe(item)
-    local recipe = Utils.find(DatabaseApi.getCraftingRecipes(), function(recipe)
-        return recipe.item == item
-    end)
-
-    return recipe
+    return CraftingRecipeRepository.find(item)
 end
 
 ---@param recipe CraftingRecipe
 function DatabaseApi.saveCraftingRecipe(recipe)
-    local recipes = DatabaseApi.getCraftingRecipes()
-    recipes[recipe.item] = recipe
-    DatabaseApi.setCraftingRecipes(recipes)
+    CraftingRecipeRepository.save(recipe)
 end
 
 ---@return TurtleDiskState

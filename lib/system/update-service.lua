@@ -22,8 +22,6 @@ function UpdateService.update(apps)
     else
         AppsService.setComputerApps(appsClient.getComputerApps(true, apps), true)
         print("[updated] computer apps")
-        DatabaseApi.setCraftingRecipes(databaseClient.getCraftingRecipes())
-        print("[updated] crafting recipes")
     end
 end
 
