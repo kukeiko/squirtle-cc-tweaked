@@ -39,7 +39,7 @@ EventLoop.run(function()
 end, function()
     local resumable = Resumable.new("ceiling")
 
-    resumable:setStart(function(args, options)
+    resumable:setStart(function(_, options)
         local editEntity = EditEntity.new("Options")
         editEntity:addInteger("depth", "Depth", {validate = EditEntity.greaterZero})
         editEntity:addInteger("width", "Width", {validate = EditEntity.notZero})

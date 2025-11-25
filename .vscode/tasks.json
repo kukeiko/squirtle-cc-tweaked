@@ -30,11 +30,9 @@
                 "build pocket:update",
                 "build turtle:aqueduct",
                 "build turtle:bone-meal",
-                "build turtle:build-platform",
                 "build turtle:ceiling",
                 "build turtle:copper",
                 "build turtle:crafter",
-                "build turtle:dig",
                 "build turtle:dig-area",
                 "build turtle:farmer",
                 "build turtle:io-crafter",
@@ -53,44 +51,14 @@
             ]
         },
         {
-            "label": "build pocket:shell",
+            "label": "build computer:bone-meal",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/pocket/shell"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/bone-meal.lua -p app/computer/?.lua -p ?.lua -o dist/computer/bone-meal"
         },
         {
-            "label": "build pocket:tasks",
+            "label": "build computer:database",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p ?.lua -o dist/pocket/tasks"
-        },
-        {
-            "label": "build pocket:tasks:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p app/pocket/?.lua -p ?.lua -o ../23/tasks.lua"
-        },
-        {
-            "label": "build turtle:oak",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/oak.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/oak"
-        },
-        {
-            "label": "build pocket:oak",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/oak"
-        },
-        {
-            "label": "build pocket:oak:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o ../23/oak.lua"
-        },
-        {
-            "label": "build turtle:io-chestcart",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-chestcart",
-        },
-        {
-            "label": "build computer:storage",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/database.lua -p app/computer/?.lua -p ?.lua -o dist/computer/database"
         },
         {
             "label": "build computer:dispenser",
@@ -103,109 +71,19 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/dispenser.lua -p app/computer/?.lua -p ?.lua -o ../21/dispenser"
         },
         {
-            "label": "build turtle:lumberjack",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/lumberjack"
-        },
-        {
-            "label": "build turtle:nether-lumberjack",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/nether-lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/nether-lumberjack"
-        },
-        {
             "label": "build computer:fungi-farm",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/fungi-farm.lua -p app/computer/?.lua -p ?.lua -o dist/computer/fungi-farm"
         },
         {
-            "label": "build turtle:digger",
+            "label": "build computer:simon-says",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/digger/digger.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/digger"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/simon-says.lua -p app/computer/?.lua -p ?.lua -o dist/computer/simon-says"
         },
         {
-            "label": "build turtle:dig",
+            "label": "build computer:storage",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig/dig.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig"
-        },
-        {
-            "label": "build turtle:dig-area",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/dig-area.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig-area"
-        },
-        {
-            "label": "build turtle:ceiling",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/ceiling.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/ceiling"
-        },
-        {
-            "label": "build turtle:bone-meal",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/bone-meal.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/bone-meal"
-        },
-        {
-            "label": "build computer:bone-meal",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/bone-meal.lua -p app/computer/?.lua -p ?.lua -o dist/computer/bone-meal"
-        },
-        {
-            "label": "build pocket:bone-meal",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/bone-meal.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/bone-meal"
-        },
-        {
-            "label": "build turtle:wall",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/wall.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/wall"
-        },
-        {
-            "label": "build turtle:pyramid",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/pyramid.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/pyramid"
-        },
-        {
-            "label": "build turtle:pyramid:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/pyramid.lua -p app/turtle/?.lua -p ?.lua -o ../6/pyramid"
-        },
-        {
-            "label": "build turtle:copper",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/copper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/copper"
-        },
-        {
-            "label": "build turtle:stripper",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/stripper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/stripper"
-        },
-        {
-            "label": "build turtle:build-platform",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/build-platform/build-platform.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/build-platform"
-        },
-        {
-            "label": "build turtle:farmer",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farmer.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/farmer"
-        },
-        {
-            "label": "build pocket:turtle:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p ?.lua -o ../23/turtle"
-        },
-        {
-            "label": "build pocket:turtle",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/turtle"
-        },
-        {
-            "label": "build pocket:subway:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p ?.lua -o ../23/subway.lua"
-        },
-        {
-            "label": "build pocket:subway",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/subway"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o dist/computer/storage"
         },
         {
             "label": "build computer:subway-hub",
@@ -228,9 +106,14 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/subway/subway-switch.lua -p app/computer/subway/?.lua -p ?.lua -o ../21/subway-switch"
         },
         {
-            "label": "build computer:database",
+            "label": "build computer:target-practice",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/database.lua -p app/computer/?.lua -p ?.lua -o dist/computer/database"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/target-practice.lua -p app/computer/?.lua -p ?.lua -o dist/computer/target-practice"
+        },
+        {
+            "label": "build computer:teleport",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/teleport.lua -p app/computer/?.lua -p ?.lua -o dist/computer/teleport"
         },
         {
             "label": "build computer:update",
@@ -238,39 +121,9 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/update.lua -p app/computer/?.lua -p ?.lua -o dist/computer/update"
         },
         {
-            "label": "build pocket:update",
+            "label": "build computer:xylophone",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/update.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/update"
-        },
-        {
-            "label": "build turtle:update",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/update"
-        },
-        {
-            "label": "build pocket:remote-control",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote-control.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote-control"
-        },
-        {
-            "label": "build turtle:remote-control",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/remote-control"
-        },
-        {
-            "label": "build turtle:crafter",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/crafter"
-        },
-        {
-            "label": "build turtle:silo",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/silo/silo.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/silo"
-        },
-        {
-            "label": "build turtle:aqueduct",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/aqueduct/aqueduct.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/aqueduct"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/xylophone.lua -p app/computer/?.lua -p ?.lua -o dist/computer/xylophone"
         },
         {
             "label": "build pocket:aqueduct",
@@ -278,29 +131,9 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/aqueduct.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/aqueduct"
         },
         {
-            "label": "build turtle:print3d",
+            "label": "build pocket:bone-meal",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/print3d.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/print3d"
-        },
-        {
-            "label": "build pocket:print3d",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/print3d"
-        },
-        {
-            "label": "build pocket:print3d:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o ../23/print3d.lua"
-        },
-        {
-            "label": "build turtle:io-crafter",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-crafter"
-        },
-        {
-            "label": "build turtle:recipe-reader",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/recipe-reader.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/recipe-reader"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/bone-meal.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/bone-meal"
         },
         {
             "label": "build pocket:craft",
@@ -313,9 +146,34 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o ../23/craft.lua"
         },
         {
+            "label": "build pocket:oak",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/oak"
+        },
+        {
+            "label": "build pocket:oak:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o ../23/oak.lua"
+        },
+        {
+            "label": "build pocket:print3d",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/print3d"
+        },
+        {
+            "label": "build pocket:print3d:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/print3d.lua -p app/pocket/?.lua -p ?.lua -o ../23/print3d.lua"
+        },
+        {
             "label": "build pocket:remote",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote"
+        },
+        {
+            "label": "build pocket:remote-control",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote-control.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/remote-control"
         },
         {
             "label": "build pocket:remote:dev",
@@ -323,19 +181,29 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/remote.lua -p app/pocket/?.lua -p ?.lua -o ../23/remote.lua"
         },
         {
-            "label": "build computer:simon-says",
+            "label": "build pocket:shell",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/simon-says.lua -p app/computer/?.lua -p ?.lua -o dist/computer/simon-says"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/shell.lua -p ?.lua -o dist/pocket/shell"
         },
         {
-            "label": "build computer:target-practice",
+            "label": "build pocket:subway",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/target-practice.lua -p app/computer/?.lua -p ?.lua -o dist/computer/target-practice"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/subway"
         },
         {
-            "label": "build computer:teleport",
+            "label": "build pocket:subway:dev",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/teleport.lua -p app/computer/?.lua -p ?.lua -o dist/computer/teleport"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/subway.lua -p app/pocket/?.lua -p ?.lua -o ../23/subway.lua"
+        },
+        {
+            "label": "build pocket:tasks",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p ?.lua -o dist/pocket/tasks"
+        },
+        {
+            "label": "build pocket:tasks:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p app/pocket/?.lua -p ?.lua -o ../23/tasks.lua"
         },
         {
             "label": "build pocket:teleport",
@@ -348,29 +216,144 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o ../23/teleport.lua"
         },
         {
-            "label": "build computer:xylophone",
+            "label": "build pocket:turtle",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/xylophone.lua -p app/computer/?.lua -p ?.lua -o dist/computer/xylophone"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/turtle"
         },
         {
-            "label": "build turtle:password",
+            "label": "build pocket:turtle:dev",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/password.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/password"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/turtle.lua -p app/pocket/?.lua -p ?.lua -o ../23/turtle"
+        },
+        {
+            "label": "build pocket:update",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/update.lua -p app/pocket/?.lua -p ?.lua -o dist/pocket/update"
+        },
+        {
+            "label": "build turtle:aqueduct",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/aqueduct.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/aqueduct"
         },
         {
             "label": "build turtle:block-watcher",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/block-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/block-watcher"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/games/block-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/block-watcher"
+        },
+        {
+            "label": "build turtle:bone-meal",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/bone-meal.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/bone-meal"
+        },
+        {
+            "label": "build turtle:ceiling",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/ceiling.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/ceiling"
+        },
+        {
+            "label": "build turtle:copper",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/copper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/copper"
+        },
+        {
+            "label": "build turtle:crafter",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafting/crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/crafter"
+        },
+        {
+            "label": "build turtle:dig-area",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/digging/dig-area.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/dig-area"
+        },
+        {
+            "label": "build turtle:farmer",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/farmer.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/farmer"
         },
         {
             "label": "build turtle:inspect-watcher",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/inspect-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/inspect-watcher"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/games/inspect-watcher.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/inspect-watcher"
+        },
+        {
+            "label": "build turtle:io-chestcart",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/io-chestcart.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-chestcart"
+        },
+        {
+            "label": "build turtle:io-crafter",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafting/io-crafter.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/io-crafter"
+        },
+        {
+            "label": "build turtle:lumberjack",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/lumberjack"
+        },
+        {
+            "label": "build turtle:nether-lumberjack",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/nether-lumberjack.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/nether-lumberjack"
+        },
+        {
+            "label": "build turtle:oak",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/oak.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/oak"
+        },
+        {
+            "label": "build turtle:password",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/games/password.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/password"
+        },
+        {
+            "label": "build turtle:print3d",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/print3d.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/print3d"
+        },
+        {
+            "label": "build turtle:pyramid",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/pyramid.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/pyramid"
+        },
+        {
+            "label": "build turtle:pyramid:dev",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/pyramid.lua -p app/turtle/?.lua -p ?.lua -o ../6/pyramid"
+        },
+        {
+            "label": "build turtle:recipe-reader",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/recipe-reader.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/recipe-reader"
+        },
+        {
+            "label": "build turtle:remote-control",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/remote-control.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/remote-control"
+        },
+        {
+            "label": "build turtle:silo",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/silo.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/silo"
         },
         {
             "label": "build turtle:small-house",
             "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/small-house.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/small-house"
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/small-house.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/small-house"
         },
+        {
+            "label": "build turtle:stripper",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafting/stripper.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/stripper"
+        },
+        {
+            "label": "build turtle:update",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/update.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/update"
+        },
+        {
+            "label": "build turtle:wall",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/wall.lua -p app/turtle/?.lua -p ?.lua -o dist/turtle/wall"
+        }
     ]
 }
