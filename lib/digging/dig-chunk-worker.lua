@@ -80,7 +80,7 @@ function DigChunkWorker:work()
             TurtleApi.turn("back")
             TurtleApi.move("down", layersPerIteration * (i - 1))
             -- dig out
-            TurtleApi.digArea(16, -16, digHeight)
+            TurtleApi.digArea(16, -16, digHeight, TurtleApi.getPosition(), TurtleApi.getFacing())
             -- move back to storage
             TurtleApi.move("up", layersPerIteration * (i - 1))
             TurtleApi.move("forward", 8)

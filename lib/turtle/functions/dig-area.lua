@@ -46,9 +46,6 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
         return
     end
 
-    homePosition = homePosition or TurtleApi.getPosition()
-    homeFacing = homeFacing or TurtleApi.getFacing()
-
     if math.abs(width) > depth then
         if width > 0 then
             TurtleApi.turn("right")
@@ -146,6 +143,11 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
         TurtleApi.tryLoadShulkers()
     end
 
-    TurtleApi.moveToPoint(homePosition)
-    TurtleApi.face(homeFacing)
+    if homePosition then
+        TurtleApi.moveToPoint(homePosition)
+
+        if homeFacing then
+            TurtleApi.face(homeFacing)
+        end
+    end
 end

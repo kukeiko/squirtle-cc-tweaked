@@ -8,6 +8,6 @@ EventLoop.run(function()
     while true do
         print("[test] dig-area")
         Utils.waitForUserToHitEnter("<hit enter to start test>")
-        TurtleApi.digArea(2, 2, 4)
+        TurtleApi.digArea(2, 2, 4, TurtleApi.getPosition(), TurtleApi.getFacing())
     end
 end)

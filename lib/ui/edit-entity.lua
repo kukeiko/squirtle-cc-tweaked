@@ -14,12 +14,11 @@ local readOption = require "lib.ui.read-option"
 ---@field title string
 local EditEntity = {
     greaterZero = function(value)
-        return value > 0, "must be greater than 0"
+        return value > 0, "must be > 0"
     end,
     notZero = function(value)
-        return value ~= 0, "cannot be 0"
+        return value ~= 0, "can't be 0"
     end
-
 }
 
 ---@alias EditEntityPropertyType "string" | "number" | "boolean" | "integer"
@@ -82,9 +81,15 @@ local function draw(self, entity)
                 local value = entity[property.key]
 
                 if value == true then
-                    win.write("Yes")
+                    win.setTextColor(colors.white)
+                    win.write("Yes /")
+                    win.setTextColor(colors.gray)
+                    win.write(" No")
                 elseif value == false then
-                    win.write("No")
+                    win.setTextColor(colors.gray)
+                    win.write("Yes")
+                    win.setTextColor(colors.white)
+                    win.write(" / No")
                 else
                     win.write(entity[property.key])
                 end
@@ -154,6 +159,14 @@ end
 ---@return EditEntity
 function EditEntity:addInteger(key, label, options)
     return self:addField("integer", key, label, options)
+end
+
+---@param key string
+---@param label? string
+---@param options? EditEntityPropertyOptions
+---@return EditEntity
+function EditEntity:addBoolean(key, label, options)
+    return self:addField("boolean", key, label, options)
 end
 
 ---@param entity table

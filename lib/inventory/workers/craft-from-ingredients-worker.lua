@@ -1,7 +1,6 @@
 local Rpc = require "lib.tools.rpc"
 local TaskWorker = require "lib.system.task-worker"
 local StorageService = require "lib.inventory.storage-service"
-local TaskService = require "lib.system.task-service"
 local CraftingApi = require "lib.inventory.crafting-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"

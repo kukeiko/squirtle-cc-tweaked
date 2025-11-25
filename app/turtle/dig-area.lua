@@ -24,18 +24,40 @@ EventLoop.run(function()
 end, function()
     local resumable = Resumable.new("dig-area")
 
-    resumable:setStart(function(args, options)
-        ---@class DigAreaAppState
-        ---@field depth integer?
-        ---@field width integer?
-        ---@field height integer?
-        ---@field returnHome boolean
-        local state = {depth = nil, width = nil, height = nil, home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive")}
+    resumable:setStart(function(_, options)
         local editEntity = EditEntity.new("Options")
-        editEntity:addField("integer", "depth", "Depth", {validate = EditEntity.greaterZero})
-        editEntity:addField("integer", "width", "Width", {validate = EditEntity.notZero})
-        editEntity:addField("integer", "height", "Height", {validate = EditEntity.notZero})
-        state = editEntity:run(state, "data/app/dig-area-options.json")
+        editEntity:addInteger("depth", "Depth", {validate = EditEntity.greaterZero})
+        editEntity:addInteger("width", "Width", {validate = EditEntity.notZero})
+        editEntity:addInteger("height", "Height", {validate = EditEntity.notZero})
+        editEntity:addBoolean("returnHome", "Return Home")
+
+        ---@class DigAreaAppArguments
+        ---@field depth integer
+        ---@field width integer
+        ---@field height integer
+        ---@field returnHome boolean
+        local arguments = editEntity:run({returnHome = true}, "data/app/dig-area-options.json")
+
+        if not arguments then
+            return
+        end
+
+        ---@class DigAreaAppState
+        ---@field depth integer
+        ---@field width integer
+        ---@field height integer
+        ---@field returnHome boolean
+        ---@field home Vector
+        ---@field facing integer
+        local state = {
+            depth = arguments.depth,
+            width = arguments.width,
+            height = arguments.height,
+            returnHome = arguments.returnHome,
+            home = TurtleApi.getPosition(),
+            facing = TurtleApi.orientate("disk-drive")
+        }
+
         options.requireFuel = true
         Utils.writeStartupFile("dig-area")
 
@@ -55,7 +77,12 @@ end, function()
 
     ---@param state DigAreaAppState
     resumable:addSimulatableMain("dig-area", function(state)
-        TurtleApi.digArea(state.depth, state.width, state.height, state.home, state.facing)
+        TurtleApi.digArea(state.depth, state.width, state.height)
+
+        if state.returnHome then
+            TurtleApi.moveToPoint(state.home)
+            TurtleApi.face(state.facing)
+        end
     end)
 
     resumable:setFinish(function()
