@@ -19,6 +19,8 @@ local DatabaseApi = require "lib.database.database-api"
 local getNative = require "lib.turtle.functions.get-native"
 local digArea = require "lib.turtle.functions.dig-area"
 local buildFloor = require "lib.turtle.functions.build-floor"
+local buildDoubleFloor = require "lib.turtle.functions.build-double-floor"
+local buildTripleFloor = require "lib.turtle.functions.build-triple-floor"
 local harvestBirchTree = require "lib.turtle.functions.harvest-birch-tree"
 local requireItems = require "lib.turtle.functions.require-items"
 local getIoSlots = require "lib.turtle.functions.get-io-slots"
@@ -435,6 +437,20 @@ end
 ---@param block string
 function TurtleApi.buildFloor(depth, width, block)
     return buildFloor(TurtleApi, depth, width, block)
+end
+
+---@param depth integer
+---@param width integer
+---@param block string
+function TurtleApi.buildDoubleFloor(depth, width, block)
+    return buildDoubleFloor(TurtleApi, depth, width, block)
+end
+
+---@param depth integer
+---@param width integer
+---@param block string
+function TurtleApi.buildTripleFloor(depth, width, block)
+    return buildTripleFloor(TurtleApi, depth, width, block)
 end
 
 ---@param depth integer
@@ -1259,6 +1275,17 @@ function TurtleApi.getChunkCenter(chunkX, y, chunkZ)
     return Vector.create(x, y, z)
 end
 
+---@param chunkX integer
+---@param y integer
+---@param chunkZ integer
+---@return Vector
+function TurtleApi.getChunkNorthWest(chunkX, y, chunkZ)
+    local x = (chunkX * 16) + 8 - 7
+    local z = (chunkZ * 16) + 8 - 7
+
+    return Vector.create(x, y, z)
+end
+
 ---@return Vector
 function TurtleApi.locate()
     local position = TurtleApi.tryGetLivePosition()
@@ -1400,6 +1427,25 @@ function TurtleApi.requireItems(items, alwaysUseShulker)
     return requireItems(TurtleApi, items, alwaysUseShulker)
 end
 
+---@param items ItemStock
+---@param alwaysUseShulker boolean?
+function TurtleApi.requireItemsFromStorage(items, alwaysUseShulker)
+    TurtleApi.connectToStorage(function(inventory, storage)
+        EventLoop.run(function()
+            TurtleApi.requireItems(items, alwaysUseShulker)
+        end, function()
+            while true do
+                local openStock = ItemStock.subtract(items, TurtleApi.getStock(true))
+                storage.transfer(storage.getByType("storage"), {inventory}, openStock)
+
+                if Utils.isEmpty(openStock) then
+                    break
+                end
+            end
+        end)
+    end)
+end
+
 ---@param item string
 ---@param quantity? integer
 ---@param alwaysUseShulker? boolean
@@ -1463,8 +1509,7 @@ function TurtleApi.connectToStorage(fn)
         TurtleApi.use(wiredModem, ItemApi.diskDrive, true)
     end
 
-    -- [todo] ❌ should instead use wired modem - for that to work, Storage app needs to host on its wired modem as well
-    local storageService = Rpc.nearest(StorageService)
+    local storageService = Rpc.nearest(StorageService, nil, "wired")
     local inventoryServer = Rpc.server(TurtleInventoryService, wiredModem)
     local inventory = inventoryServer.getWiredName()
     local success = true
@@ -1476,13 +1521,12 @@ function TurtleApi.connectToStorage(fn)
     EventLoop.waitForAny(function()
         inventoryServer.open()
     end, function()
-        storageService.mount({inventory})
-
         while true do
             EventLoop.pull("turtle_inventory")
             refresh()
         end
     end, function()
+        storageService.mount({inventory})
         success, message = pcall(function()
             fn(inventory, storageService, refresh)
         end)

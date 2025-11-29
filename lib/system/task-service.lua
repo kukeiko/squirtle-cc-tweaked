@@ -271,4 +271,30 @@ function TaskService.digChunk(options)
     return awaitTaskCompletion(task) --[[@as DigChunkTask]]
 end
 
+---@class BuildChunkPylonTaskOptions : TaskOptions
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@param options BuildChunkPylonTaskOptions
+---@return BuildChunkPylonTask
+function TaskService.buildChunkPylon(options)
+    local task = TaskRepository.findTask("build-chunk-pylon", options.partOfTaskId, options.label) --[[@as BuildChunkPylonTask?]]
+
+    if not task then
+        task = constructTask(options.issuedBy, "build-chunk-pylon", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkPylonTask]]
+        task.chunkX = options.chunkX or error("chunkX option missing")
+        task.chunkZ = options.chunkZ or error("chunkZ option missing")
+        task.y = options.y or error("y option missing")
+        task.initialized = false
+        task.navigated = false
+        task = TaskRepository.createTask(task) --[[@as BuildChunkPylonTask]]
+    end
+
+    if options.skipAwait then
+        return task
+    end
+
+    return awaitTaskCompletion(task) --[[@as BuildChunkPylonTask]]
+end
+
 return TaskService

@@ -11,6 +11,7 @@ local DatabaseService = require "lib.database.database-service"
 local StorageService = require "lib.inventory.storage-service"
 local CraftingApi = require "lib.inventory.crafting-api"
 local EditEntity = require "lib.ui.edit-entity"
+local ItemStock = require "lib.inventory.item-stock"
 local readInteger = require "lib.ui.read-integer"
 local Shell = require "lib.system.shell"
 local ItemApi = require "lib.inventory.item-api"
@@ -21,7 +22,10 @@ local InventoryLocks = require "lib.inventory.inventory-locks"
 local TaskWorkerPool = require "lib.system.task-worker-pool"
 local BuildChunkStorageTaskWorker = require "lib.building.build-chunk-storage-worker"
 local DigChunkWorker = require "lib.digging.dig-chunk-worker"
+local BuildChunkPylonWorker = require "lib.building.build-chunk-pylon-worker"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
+local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
+local duck = require "duck"
 
 local function testGetCraftingDetails()
     local function testCampfires()
@@ -353,6 +357,17 @@ local function testDigChunkStorageWorker()
     end)
 end
 
+local function testBuildChunkPylonWorker()
+    local taskService = Rpc.nearest(TaskService)
+
+    EventLoop.run(function()
+        TaskWorkerPool.new(BuildChunkPylonWorker, 1):run()
+    end, function()
+        os.sleep(1)
+        taskService.buildChunkPylon({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
+    end)
+end
+
 local function testEmptyTurtleToStorage()
     local stock = TurtleApi.getStock(true)
     TurtleApi.dumpToStorage(stock)
@@ -363,6 +378,11 @@ local function testRequireItems()
     requireItems(TurtleApi, {[ItemApi.smoothStone] = (3 * 64 * 1) + 1})
 end
 
+local function testToBuildChunkPylonIterations()
+    local iterations = toBuildChunkPylonIterations({ItemApi.stone}, {[ItemApi.stone] = 16 * 16 * 7}, 1)
+    Utils.prettyPrint(iterations)
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
@@ -371,6 +391,28 @@ EventLoop.run(function()
     -- testBuildChunkStorageWorker()
     -- testDigChunkStorageWorker()
     -- testEmptyTurtleToStorage()
+    -- testToBuildChunkPylonIterations()
+    testBuildChunkPylonWorker()
+
+    -- duck()
+
+    -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
+    -- local stock = {[ItemApi.cobblestone] = 64 * 1}
+
+    -- TurtleApi.connectToStorage(function(inventory, storage)
+    --     EventLoop.run(function()
+    --         TurtleApi.requireItems(stock, true)
+    --     end, function()
+    --         while true do
+    --             local openStock = ItemStock.subtract(stock, TurtleApi.getStock(true))
+    --             storage.transfer(storage.getByType("storage"), {inventory}, openStock)
+
+    --             if Utils.isEmpty(openStock) then
+    --                 break
+    --             end
+    --         end
+    --     end)
+    -- end)
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

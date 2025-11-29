@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage" | "dig-chunk"
+---@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage" | "dig-chunk" | "build-chunk-pylon"
 ---
 ---@class Task
 ---@field id integer
@@ -62,3 +62,18 @@
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field y integer
+---
+---@class BuildChunkPylonTask : Task
+---@field type "build-chunk-pylon"
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@field initialized boolean
+---@field navigated boolean
+---@field iterations BuildChunkPylonIteration[]?
+---
+---@class BuildChunkPylonIteration
+---@field layers integer
+---@field stock ItemStock
+---@field materials string[]
+---

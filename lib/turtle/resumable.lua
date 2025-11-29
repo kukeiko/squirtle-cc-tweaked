@@ -82,11 +82,13 @@ local function bootstrap(self, args)
     math.randomseed(randomSeed)
 
     local results = TurtleApi.simulate(function()
+        local simulatedState = Utils.clone(state)
+
         for _, resumableFn in ipairs(self.resumableFns) do
             if resumableFn.isSimulatable then
                 -- [todo] ❓ if an app makes use of using the returned state of one function for the next, this right here might become an issue
                 -- as we're skipping functions that are not simulatable.
-                state = resumableFn.fn(state) or state
+                simulatedState = resumableFn.fn(simulatedState) or simulatedState
             end
         end
     end)

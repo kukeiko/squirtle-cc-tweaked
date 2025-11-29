@@ -13,6 +13,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local TaskWorkerPool = require "lib.system.task-worker-pool"
+local PeripheralApi = require "lib.common.peripheral-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
@@ -146,6 +147,10 @@ Shell:addWindow("RPC", function()
         RemoteService.run({"storage"})
     end, function()
         Rpc.host(StorageService)
+    end, function()
+        if PeripheralApi.findWiredModem() then
+            Rpc.host(StorageService, "wired")
+        end
     end)
 end)
 

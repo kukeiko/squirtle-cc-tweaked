@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local Inventory = require "lib.inventory.inventory"
+local InventoryLocks = require "lib.inventory.inventory-locks"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local DatabaseApi = require "lib.database.database-api"
@@ -290,6 +291,8 @@ end
 ---@param TurtleApi TurtleApi
 ---@return Inventory[]
 function TurtleShulkerApi.readShulkers(TurtleApi)
+    local _, unlock = InventoryLocks.lock({"backpack"})
+
     -- read every present shulker into the cache. I've chosen to do it in a while loop like this
     -- so that this works even if a player manipulates the inventory of the turtle.
     while indexUncachedShulker(TurtleApi) do
@@ -315,6 +318,7 @@ function TurtleShulkerApi.readShulkers(TurtleApi)
 
     TurtleStateApi.setShulkers(shulkers)
 
+    unlock()
     return Utils.clone(shulkers)
 end
 

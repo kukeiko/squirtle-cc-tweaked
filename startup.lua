@@ -19,7 +19,8 @@ local programs = {
     ["Xylophone: Server"] = "app/computer/xylophone 2",
     ["Xylophone: Note #1"] = "app/computer/xylophone client 1",
     ["Xylophone: Note #2"] = "app/computer/xylophone client 2",
-    ["Test: Resumable Move Back"] = "test/resumable-move-back"
+    ["Test: Resumable Move Back"] = "test/resumable-move-back",
+    ["Test: Resumable Move To Point"] = "test/resumable-move-to-point"
 }
 
 if programs[label] then

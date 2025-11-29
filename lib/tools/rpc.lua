@@ -317,6 +317,25 @@ end
 
 ---@generic T
 ---@param service T | Service
+---@param host string
+---@param timeout? number
+---@param modemType? "wired" | "wireless"
+---@return T|RpcClient
+function Rpc.connect(service, host, timeout, modemType)
+    local client = createClient(service, host, 0, nil, modemType)
+
+    if not EventLoop.runTimed(timeout, function()
+        while not client.ping() do
+        end
+    end) then
+        error(string.format("could not connect to %s @ %s", service.name, host))
+    end
+
+    return client
+end
+
+---@generic T
+---@param service T | Service
 ---@param timeout number?
 ---@return (T|RpcClient)[]
 function Rpc.all(service, timeout)
@@ -347,6 +366,7 @@ function Rpc.server(service, modemType)
     local listenChannel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(listenChannel)
+    local modemName = peripheral.getName(modem)
 
     print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
 
@@ -379,12 +399,17 @@ function Rpc.server(service, modemType)
         open = function()
             EventLoop.runUntil(closeEvent, function()
                 while true do
-                    ---@param modem string
+                    ---@param modemReceived string
                     ---@param message RpcRequestPacket|RpcPingPacket
                     ---@param receivedChannel integer
                     ---@param replyChannel integer
                     ---@param distance? number
-                    EventLoop.pull("modem_message", function(_, modem, receivedChannel, replyChannel, message, distance)
+                    EventLoop.pull("modem_message", function(_, modemReceived, receivedChannel, replyChannel, message, distance)
+                        if modemReceived ~= modemName then
+                            return
+                        end
+
+                        -- [todo] check that modem is also the same
                         if not shouldAcceptMessage(message, distance) then
                             return
                         end
@@ -393,7 +418,7 @@ function Rpc.server(service, modemType)
                             logServerRequest("ping", replyChannel, receivedChannel, message)
                             ---@type RpcPongPacket
                             local pong = {type = "pong", host = service.host, service = service.name}
-                            peripheral.call(modem, "transmit", replyChannel, listenChannel, pong)
+                            peripheral.call(modemReceived, "transmit", replyChannel, listenChannel, pong)
                             logServerResponse("pong", replyChannel, listenChannel, pong)
                         elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
                             logServerRequest(message.method, replyChannel, receivedChannel, message)
@@ -404,7 +429,7 @@ function Rpc.server(service, modemType)
 
                             ---@type RpcResponsePacket
                             local packet = {callId = message.callId, type = "response", response = response, success = success}
-                            peripheral.call(modem, "transmit", replyChannel, listenChannel, packet)
+                            peripheral.call(modemReceived, "transmit", replyChannel, listenChannel, packet)
                             logServerResponse(message.method, replyChannel, receivedChannel, packet)
                         end
                     end)
@@ -431,25 +456,6 @@ end
 function Rpc.host(service, modemType)
     local server = Rpc.server(service, modemType)
     server.open()
-end
-
----@generic T
----@param service T | Service
----@param host string
----@param timeout? number
----@param modemType? "wired" | "wireless"
----@return T|RpcClient
-function Rpc.connect(service, host, timeout, modemType)
-    local client = createClient(service, host, 0, nil, modemType)
-
-    if not EventLoop.runTimed(timeout, function()
-        while not client.ping() do
-        end
-    end) then
-        error(string.format("could not connect to %s @ %s", service.name, host))
-    end
-
-    return client
 end
 
 return Rpc

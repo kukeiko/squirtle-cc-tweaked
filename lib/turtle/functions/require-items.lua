@@ -79,6 +79,10 @@ local function loadIntoShulker(TurtleApi, items)
                 end
             end
         end
+
+        -- [note] sometimes, "turtle_inventory" event is missed. to replicate, let the storage transfer 64x cobblestone
+        -- to the turtle so that it will transfer 63x and then 1x. without this hack, the 1x piece is just leftover.
+        os.sleep(.25)
     until not loadedItem
 end
 
