@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Logger = require "lib.tools.logger"
 local nextId = require "lib.tools.next-id"
@@ -27,6 +28,7 @@ local nextId = require "lib.tools.next-id"
 ---@field type "response"
 
 ---@class RpcServer
+---@field service Service
 ---@field open function
 ---@field close function
 ---@field getWiredName fun() : string
@@ -44,7 +46,6 @@ local nextId = require "lib.tools.next-id"
 
 ---@class Service
 ---@field name string
----@field host string?
 ---@field maxDistance integer?
 
 local pingChannel = 0
@@ -126,7 +127,8 @@ local function logServerResponse(method, clientChannel, serverChannel, response)
 end
 
 ---@class Rpc
-local Rpc = {}
+---@field servers RpcServer[]
+local Rpc = {servers = {}}
 
 ---@param service Service
 ---@param timeout number?
@@ -276,7 +278,11 @@ end
 ---@param modemType? "wired" | "wireless"
 ---@return (T|RpcClient)?
 function Rpc.tryNearest(service, timeout, modemType)
-    if os.getComputerLabel() ~= nil and (service.host == os.getComputerLabel() or service.localhostHack == true) then
+    local localServer = Utils.find(Rpc.servers, function(candidate)
+        return candidate.service.name == service.name
+    end)
+
+    if localServer then
         return createLocalHostClient(service)
     end
 
@@ -356,22 +362,21 @@ end
 ---@return RpcServer
 function Rpc.server(service, modemType)
     local modem = getModem(modemType)
+    ---@type string
+    local host
 
     if modem.isWireless() then
-        service.host = os.getComputerLabel() or error("can't host a service without a computer label when using a wireless modem")
+        host = os.getComputerLabel() or error("can't host a service without a computer label when using a wireless modem")
     else
-        service.host = modem.getNameLocal() or error("the wired modem seems to be inactive")
+        host = modem.getNameLocal() or error("the wired modem seems to be inactive")
     end
-
-    -- [todo] ❌ hack: storage is now hosting both wireless & wired, causing its own workers to no longer connect to localhost
-    service.localhostHack = true
 
     local listenChannel = os.getComputerID()
     modem.open(pingChannel)
     modem.open(listenChannel)
     local modemName = peripheral.getName(modem)
 
-    print("[host]", service.name, "@", service.host, "using modem", peripheral.getName(modem))
+    print("[host]", service.name, "@", host, "using modem", peripheral.getName(modem))
 
     ---@param message RpcRequestPacket|RpcPingPacket
     ---@param distance? number
@@ -384,7 +389,7 @@ function Rpc.server(service, modemType)
             return false
         end
 
-        if message.host and message.host ~= service.host then
+        if message.host and message.host ~= host then
             return false
         end
 
@@ -398,8 +403,13 @@ function Rpc.server(service, modemType)
     local closeEvent = string.format("rpc-server-close:%s:%d", service.name, nextId())
 
     ---@type RpcServer
+    local this
+
+    ---@type RpcServer
     local server = {
+        service = service,
         open = function()
+            table.insert(Rpc.servers, this)
             EventLoop.runUntil(closeEvent, function()
                 while true do
                     ---@param modemReceived string
@@ -412,7 +422,6 @@ function Rpc.server(service, modemType)
                             return
                         end
 
-                        -- [todo] check that modem is also the same
                         if not shouldAcceptMessage(message, distance) then
                             return
                         end
@@ -420,10 +429,10 @@ function Rpc.server(service, modemType)
                         if message.type == "ping" then
                             logServerRequest("ping", replyChannel, receivedChannel, message)
                             ---@type RpcPongPacket
-                            local pong = {type = "pong", host = service.host, service = service.name}
+                            local pong = {type = "pong", host = host, service = service.name}
                             peripheral.call(modemReceived, "transmit", replyChannel, listenChannel, pong)
                             logServerResponse("pong", replyChannel, listenChannel, pong)
-                        elseif message.type == "request" and message.host == service.host and type(service[message.method]) == "function" then
+                        elseif message.type == "request" and message.host == host and type(service[message.method]) == "function" then
                             logServerRequest(message.method, replyChannel, receivedChannel, message)
 
                             local success, response = pcall(function()
@@ -440,6 +449,7 @@ function Rpc.server(service, modemType)
             end)
         end,
         close = function()
+            Utils.remove(Rpc.servers, this)
             EventLoop.queue(closeEvent)
         end,
         getWiredName = function()
@@ -450,6 +460,8 @@ function Rpc.server(service, modemType)
             return modem.getNameLocal()
         end
     }
+
+    this = server
 
     return server
 end

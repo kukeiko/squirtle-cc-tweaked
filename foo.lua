@@ -205,19 +205,6 @@ local function testShell()
     Shell:run()
 end
 
-local function testStorageUsingTurtleInventory()
-    EventLoop.run(function()
-        Rpc.host(TurtleInventoryService, "wired")
-    end, function()
-        Utils.waitForUserToHitEnter("<hit enter to transfer>")
-        local storage = Rpc.nearest(StorageService)
-        local storages = storage.getByType("storage")
-        storage.fulfill(storages, {TurtleInventoryService.host}, {[ItemApi.diskDrive] = 1})
-        Utils.waitForUserToHitEnter("<hit enter to transfer back>")
-        storage.empty({TurtleInventoryService.host}, storages)
-    end)
-end
-
 local function testReadShulkers()
     -- TurtleApi.requireItems({[ItemApi.smoothStone] = 3}, true)
     Utils.waitForUserToHitEnter("read #1")
@@ -427,14 +414,14 @@ EventLoop.run(function()
     -- testDigChunkStorageWorker()
     -- testToBuildChunkPylonIterations()
     -- testBuildChunkPylonWorker()
-    
+
     -- duck()
-    
+
     -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
     -- testItemStockSlice()
     -- testSliceStockForShulkers()
-    -- testEmptyChunkStorageWorker()
-    testEmptyTurtleToStorage()
+    testEmptyChunkStorageWorker()
+    -- testEmptyTurtleToStorage()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")
