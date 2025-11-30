@@ -276,7 +276,7 @@ end
 ---@param modemType? "wired" | "wireless"
 ---@return (T|RpcClient)?
 function Rpc.tryNearest(service, timeout, modemType)
-    if os.getComputerLabel() ~= nil and service.host == os.getComputerLabel() then
+    if os.getComputerLabel() ~= nil and (service.host == os.getComputerLabel() or service.localhostHack == true) then
         return createLocalHostClient(service)
     end
 
@@ -362,6 +362,9 @@ function Rpc.server(service, modemType)
     else
         service.host = modem.getNameLocal() or error("the wired modem seems to be inactive")
     end
+
+    -- [todo] ❌ hack: storage is now hosting both wireless & wired, causing its own workers to no longer connect to localhost
+    service.localhostHack = true
 
     local listenChannel = os.getComputerID()
     modem.open(pingChannel)

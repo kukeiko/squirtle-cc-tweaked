@@ -1,4 +1,4 @@
----@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage" | "dig-chunk" | "build-chunk-pylon"
+---@alias TaskType "provide-items" | "craft-items" | "allocate-ingredients"  | "craft-from-ingredients" | "build-chunk-storage" | "dig-chunk" | "build-chunk-pylon" | "empty-chunk-storage"
 ---
 ---@class Task
 ---@field id integer
@@ -76,4 +76,14 @@
 ---@field layers integer
 ---@field stock ItemStock
 ---@field materials string[]
+---
+---@class EmptyChunkStorageTask : Task
+---@field type "empty-chunk-storage"
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@field home Vector?
+---@field homeFacing integer?
+---@field loadUp boolean
+---@field isEmpty boolean
 ---

@@ -441,6 +441,29 @@ function TurtleShulkerApi.digShulkers(TurtleApi)
     end
 end
 
+---@param TurtleApi TurtleApi
+---@param stock ItemStock
+---@param itemDetails ItemDetails
+---@return ItemStock sliced, ItemStock open
+function TurtleShulkerApi.sliceStock(TurtleApi, stock, itemDetails)
+    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
+    local open = stock
+    ---@type ItemStock
+    local sliced = {}
+
+    for _, shulker in ipairs(shulkers) do
+        local shulkerSliced, shulkerOpen = Inventory.sliceStock(shulker, open, "buffer", itemDetails)
+        open = shulkerOpen
+        sliced = ItemStock.merge({sliced, shulkerSliced})
+
+        if Utils.isEmpty(open) then
+            break
+        end
+    end
+
+    return sliced, open
+end
+
 ---@param item string
 ---@param quantity integer
 ---@param shulker Inventory
@@ -455,7 +478,7 @@ local function fakeMoveItem(item, quantity, shulker)
             break
         end
 
-        local moved = Inventory.addItem(shulker, nextSlot.index, item, quantity, ItemApi.getItemMaxCount(item, defaultItemMaxCount))
+        local moved = Inventory.addItem(shulker, nextSlot.index, item, open, ItemApi.getItemMaxCount(item, defaultItemMaxCount))
         open = open - moved
     end
 
@@ -466,6 +489,7 @@ end
 ---@param items ItemStock
 ---@return integer
 function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
+    -- [todo] ❌ use Inventory.sliceStock()
     local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
     local open = Utils.copy(items)
 

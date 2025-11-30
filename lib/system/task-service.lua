@@ -297,4 +297,30 @@ function TaskService.buildChunkPylon(options)
     return awaitTaskCompletion(task) --[[@as BuildChunkPylonTask]]
 end
 
+---@class EmptyChunkStorageTaskOptions : TaskOptions
+---@field chunkX integer
+---@field chunkZ integer
+---@field y integer
+---@param options EmptyChunkStorageTaskOptions
+---@return EmptyChunkStorageTask
+function TaskService.emptyChunkStorage(options)
+    local task = TaskRepository.findTask("empty-chunk-storage", options.partOfTaskId, options.label) --[[@as EmptyChunkStorageTask?]]
+
+    if not task then
+        task = constructTask(options.issuedBy, "empty-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as EmptyChunkStorageTask]]
+        task.chunkX = options.chunkX or error("chunkX option missing")
+        task.chunkZ = options.chunkZ or error("chunkZ option missing")
+        task.y = options.y or error("y option missing")
+        task.loadUp = true
+        task.isEmpty = false
+        task = TaskRepository.createTask(task) --[[@as EmptyChunkStorageTask]]
+    end
+
+    if options.skipAwait then
+        return task
+    end
+
+    return awaitTaskCompletion(task) --[[@as EmptyChunkStorageTask]]
+end
+
 return TaskService

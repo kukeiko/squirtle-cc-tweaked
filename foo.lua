@@ -23,6 +23,7 @@ local TaskWorkerPool = require "lib.system.task-worker-pool"
 local BuildChunkStorageTaskWorker = require "lib.building.build-chunk-storage-worker"
 local DigChunkWorker = require "lib.digging.dig-chunk-worker"
 local BuildChunkPylonWorker = require "lib.building.build-chunk-pylon-worker"
+local EmptyChunkStorageWorker = require "lib.building.empty-chunk-storage-worker"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
 local duck = require "duck"
@@ -370,6 +371,7 @@ end
 
 local function testEmptyTurtleToStorage()
     local stock = TurtleApi.getStock(true)
+    stock[ItemApi.shulkerBox] = nil
     TurtleApi.dumpToStorage(stock)
 end
 
@@ -383,6 +385,38 @@ local function testToBuildChunkPylonIterations()
     Utils.prettyPrint(iterations)
 end
 
+local function testItemStockSlice()
+    local storage = Rpc.nearest(StorageService)
+    local itemDetails = storage.getItemDetails()
+
+    ---@type ItemStock
+    local stock = {[ItemApi.smoothStone] = (64 * 26), [ItemApi.bucket] = 17}
+    local sliced = ItemStock.slice(stock, 27, itemDetails)
+
+    Utils.prettyPrint(sliced)
+end
+
+local function testSliceStockForShulkers()
+    local storage = Rpc.nearest(StorageService)
+    local itemDetails = storage.getItemDetails()
+    local stock = storage.getStock()
+    local sliced, open = TurtleApi.sliceStockForShulkers(stock, itemDetails)
+    local total = ItemStock.merge({TurtleApi.getShulkerStock(), sliced})
+    Utils.prettyPrint(sliced)
+    TurtleApi.requireItemsFromStorage(total, true)
+end
+
+local function testEmptyChunkStorageWorker()
+    local taskService = Rpc.nearest(TaskService)
+
+    EventLoop.run(function()
+        TaskWorkerPool.new(EmptyChunkStorageWorker, 1):run()
+    end, function()
+        os.sleep(1)
+        taskService.emptyChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
+    end)
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
@@ -390,29 +424,16 @@ EventLoop.run(function()
     -- testBuildChunkStorage()
     -- testBuildChunkStorageWorker()
     -- testDigChunkStorageWorker()
-    -- testEmptyTurtleToStorage()
+    testEmptyTurtleToStorage()
     -- testToBuildChunkPylonIterations()
-    testBuildChunkPylonWorker()
+    -- testBuildChunkPylonWorker()
 
     -- duck()
 
     -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
-    -- local stock = {[ItemApi.cobblestone] = 64 * 1}
-
-    -- TurtleApi.connectToStorage(function(inventory, storage)
-    --     EventLoop.run(function()
-    --         TurtleApi.requireItems(stock, true)
-    --     end, function()
-    --         while true do
-    --             local openStock = ItemStock.subtract(stock, TurtleApi.getStock(true))
-    --             storage.transfer(storage.getByType("storage"), {inventory}, openStock)
-
-    --             if Utils.isEmpty(openStock) then
-    --                 break
-    --             end
-    --         end
-    --     end)
-    -- end)
+    -- testItemStockSlice()
+    -- testSliceStockForShulkers()
+    -- testEmptyChunkStorageWorker()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

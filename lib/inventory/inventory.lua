@@ -1,3 +1,6 @@
+local Utils = require "lib.tools.utils"
+local ItemStock = require "lib.inventory.item-stock"
+
 local Inventory = {}
 
 ---@param name string
@@ -288,6 +291,62 @@ function Inventory.removeItem(inventory, slotIndex, item, quantity)
     if stack.count == 0 and not slot.permanent then
         inventory.stacks[slot.index] = nil
     end
+end
+
+---@param inventory Inventory
+---@param item string
+---@param quantity integer
+---@param tag InventorySlotTag
+---@param itemDetails ItemDetails
+---@return integer
+local function fakeMoveItem(inventory, item, quantity, tag, itemDetails)
+    local details = itemDetails[item] or error(string.format("item details missing for %s", item))
+    local open = quantity
+
+    while open > 0 do
+        local nextSlot = Inventory.nextToSlot(inventory, item, tag)
+
+        if not nextSlot then
+            break
+        end
+
+        local moved = Inventory.addItem(inventory, nextSlot.index, item, open, details.maxCount)
+        open = open - moved
+    end
+
+    return quantity - open
+end
+
+---@param inventory Inventory
+---@param stock ItemStock
+---@param tag InventorySlotTag
+---@param itemDetails ItemDetails
+---@return ItemStock sliced, ItemStock open
+function Inventory.sliceStock(inventory, stock, tag, itemDetails)
+    inventory = Utils.clone(inventory)
+    local open = Utils.copy(stock)
+
+    -- first we fill up existing stacks
+    for item in pairs(inventory.items) do
+        if open[item] then
+            open[item] = open[item] - fakeMoveItem(inventory, item, open[item], tag, itemDetails)
+
+            if open[item] == 0 then
+                open[item] = nil
+            end
+        end
+    end
+
+    -- then we insert new items
+    for _, item in pairs(Utils.getKeys(open)) do
+        open[item] = open[item] - fakeMoveItem(inventory, item, open[item], tag, itemDetails)
+
+        if open[item] == 0 then
+            open[item] = nil
+        end
+    end
+
+    return ItemStock.subtract(stock, open), open
 end
 
 return Inventory

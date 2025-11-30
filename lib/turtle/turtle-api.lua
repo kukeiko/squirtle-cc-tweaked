@@ -1221,6 +1221,13 @@ function TurtleApi.getRequiredAdditionalShulkers(items)
     return TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
 end
 
+---@param stock ItemStock
+---@param itemDetails ItemDetails
+---@return ItemStock sliced, ItemStock open
+function TurtleApi.sliceStockForShulkers(stock, itemDetails)
+    return TurtleShulkerApi.sliceStock(TurtleApi, stock, itemDetails)
+end
+
 ---@param item string
 ---@return integer?
 function TurtleApi.loadFromShulker(item)
@@ -1427,25 +1434,6 @@ function TurtleApi.requireItems(items, alwaysUseShulker)
     return requireItems(TurtleApi, items, alwaysUseShulker)
 end
 
----@param items ItemStock
----@param alwaysUseShulker boolean?
-function TurtleApi.requireItemsFromStorage(items, alwaysUseShulker)
-    TurtleApi.connectToStorage(function(inventory, storage)
-        EventLoop.run(function()
-            TurtleApi.requireItems(items, alwaysUseShulker)
-        end, function()
-            while true do
-                local openStock = ItemStock.subtract(items, TurtleApi.getStock(true))
-                storage.transfer(storage.getByType("storage"), {inventory}, openStock)
-
-                if Utils.isEmpty(openStock) then
-                    break
-                end
-            end
-        end)
-    end)
-end
-
 ---@param item string
 ---@param quantity? integer
 ---@param alwaysUseShulker? boolean
@@ -1537,6 +1525,26 @@ function TurtleApi.connectToStorage(fn)
     if not success then
         error(message)
     end
+end
+
+---@param items ItemStock
+---@param alwaysUseShulker boolean?
+function TurtleApi.requireItemsFromStorage(items, alwaysUseShulker)
+    -- [todo] ❌ should also transfer shulkers from storage if needed
+    TurtleApi.connectToStorage(function(inventory, storage)
+        EventLoop.run(function()
+            TurtleApi.requireItems(items, alwaysUseShulker)
+        end, function()
+            while true do
+                local openStock = ItemStock.subtract(items, TurtleApi.getStock(true))
+                storage.transfer(storage.getByType("storage"), {inventory}, openStock)
+
+                if Utils.isEmpty(openStock) then
+                    break
+                end
+            end
+        end)
+    end)
 end
 
 ---@param items ItemStock
