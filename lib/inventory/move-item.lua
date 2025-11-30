@@ -4,6 +4,8 @@ local Inventory = require "lib.inventory.inventory"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local ItemApi = require "lib.inventory.item-api"
 
+local itemPrefixes = {"minecraft", "computercraft"}
+
 local function getDefaultRate()
     return 8
 end
@@ -11,8 +13,15 @@ end
 ---@param name string
 ---@return string
 local function removePrefix(name)
-    local str = string.gsub(name, "minecraft:", "")
-    return str
+    for _, prefix in ipairs(itemPrefixes) do
+        local removed, count = string.gsub(name, prefix .. ":", "")
+
+        if count > 0 then
+            return removed
+        end
+    end
+
+    return name
 end
 
 ---@param from string
