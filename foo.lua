@@ -372,6 +372,7 @@ end
 local function testEmptyTurtleToStorage()
     local stock = TurtleApi.getStock(true)
     stock[ItemApi.shulkerBox] = nil
+    stock[ItemApi.diskDrive] = nil
     TurtleApi.dumpToStorage(stock)
 end
 
@@ -424,16 +425,16 @@ EventLoop.run(function()
     -- testBuildChunkStorage()
     -- testBuildChunkStorageWorker()
     -- testDigChunkStorageWorker()
-    testEmptyTurtleToStorage()
     -- testToBuildChunkPylonIterations()
     -- testBuildChunkPylonWorker()
-
+    
     -- duck()
-
+    
     -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
     -- testItemStockSlice()
     -- testSliceStockForShulkers()
     -- testEmptyChunkStorageWorker()
+    testEmptyTurtleToStorage()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

@@ -79,9 +79,9 @@ return function(from, to, item, total, options)
             alreadyTransferred = alreadyTransferred + transferred
 
             if transferred ~= quantity then
-                -- "from" and/or "to" inventory cache is no longer valid, refreshing both so that distributeItem() doesn't run in an endless loop
-                print(string.format("[cache] invalidated: expected %d, transferred %d", quantity, transferred))
-                InventoryCollection.mount({from, to})
+                -- "from" and/or "to" inventory cache is no longer valid, refreshing both
+                print(string.format("[stale] %d ~= %d, %s > %s", quantity, transferred, removePrefix(from), removePrefix(to)))
+                InventoryCollection.refresh({from, to}, lockId)
                 return
             end
 

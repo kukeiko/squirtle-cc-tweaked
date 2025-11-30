@@ -1,11 +1,13 @@
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
+local PeripheralInventoryAdapter = require "lib.inventory.peripheral-inventory-adapter"
 
 ---@class InventoryPeripheral
 ---@field adapters InventoryAdapter[]
-local InventoryPeripheral = {adapters = {}}
+local InventoryPeripheral = {adapters = {PeripheralInventoryAdapter}}
 
 ---@class InventoryAdapter
+---@field isPresent fun(inventory: string): boolean
 ---@field accept fun(inventory: string): boolean
 ---@field getSize fun(inventory: string): integer
 ---@field getStack fun(inventory: string, slot: integer): ItemStack?
@@ -31,7 +33,7 @@ end
 
 ---@param inventory string
 ---@return InventoryAdapter?
-local function getAdapter(inventory)
+local function tryGetAdapter(inventory)
     for _, adapter in pairs(InventoryPeripheral.adapters) do
         if adapter.accept(inventory) then
             return adapter
@@ -39,9 +41,27 @@ local function getAdapter(inventory)
     end
 end
 
+---@param inventory string
+---@return InventoryAdapter
+local function getAdapter(inventory)
+    return tryGetAdapter(inventory) or error(string.format("no inventory adapter for %s", inventory))
+end
+
 ---@param adapter InventoryAdapter
 function InventoryPeripheral.addAdapter(adapter)
     table.insert(InventoryPeripheral.adapters, adapter)
+end
+
+---@param inventory string
+---@return boolean
+function InventoryPeripheral.isPresent(inventory)
+    local adapter = tryGetAdapter(inventory)
+
+    if not adapter then
+        return false
+    end
+
+    return adapter.isPresent(inventory)
 end
 
 ---@param inventory string
@@ -59,17 +79,14 @@ end
 ---@param inventory string
 ---@return integer
 function InventoryPeripheral.getSize(inventory)
-    local adapter = getAdapter(inventory)
-
-    return adapter and adapter.getSize(inventory) or peripheral.call(inventory, "size")
+    return getAdapter(inventory).getSize(inventory)
 end
 
 ---@param inventory string
 ---@param slot integer
 ---@return ItemStack?
 function InventoryPeripheral.getStack(inventory, slot)
-    local adapter = getAdapter(inventory)
-    local detailedStack = adapter and adapter.getStack(inventory, slot) or peripheral.call(inventory, "getItemDetail", slot)
+    local detailedStack = getAdapter(inventory).getStack(inventory, slot)
 
     if detailedStack then
         ItemApi.addItemDetail({name = detailedStack.name, displayName = detailedStack.displayName, maxCount = detailedStack.maxCount})
@@ -86,7 +103,7 @@ function InventoryPeripheral.getStacks(inventory, detailed)
 
     if not detailed then
         ---@type ItemStacks
-        local stacks = adapter and adapter.getStacks(inventory) or peripheral.call(inventory, "list")
+        local stacks = adapter.getStacks(inventory)
 
         for slot, stack in pairs(stacks) do
             stack.maxCount = readItemMaxCount(stack.name, inventory, slot)
@@ -94,7 +111,7 @@ function InventoryPeripheral.getStacks(inventory, detailed)
 
         return stacks
     else
-        local stacks = adapter and adapter.getStacks(inventory, detailed) or peripheral.call(inventory, "list")
+        local stacks = adapter.getStacks(inventory, detailed)
         ---@type ItemStacks
         local detailedStacks = {}
 
@@ -160,12 +177,7 @@ end
 function InventoryPeripheral.transfer(from, to, fromSlot, limit, toSlot)
     local adapter = getAdapter(from)
     os.sleep(.25) -- [note] intentional nerf to the whole inventory system
-
-    if adapter then
-        return adapter.transfer(from, to, fromSlot, limit, toSlot)
-    end
-
-    return peripheral.call(from, "pushItems", to, fromSlot, limit, toSlot)
+    return adapter.transfer(from, to, fromSlot, limit, toSlot)
 end
 
 ---@param inventory string

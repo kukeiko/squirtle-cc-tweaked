@@ -18,6 +18,17 @@ end
 
 ---@param inventory string
 ---@return boolean
+function TurtleInventoryAdapter.isPresent(inventory)
+    -- [todo] ❌ should add tryConnect() to RPC to prevent using a pcall
+    local success = pcall(function()
+        connect(inventory)
+    end)
+
+    return success
+end
+
+---@param inventory string
+---@return boolean
 function TurtleInventoryAdapter.accept(inventory)
     return isTurtlePeripheral(inventory)
 end

@@ -5,6 +5,7 @@ local Inventory = require "lib.inventory.inventory"
 local TaskBufferRepository = require "lib.database.task-buffer-repository"
 local InventoryReader = require "lib.inventory.inventory-reader"
 local InventoryLocks = require "lib.inventory.inventory-locks"
+local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 
 ---@class InventoryCollection
 ---@field useCache boolean
@@ -116,10 +117,9 @@ end
 ---@return boolean
 function InventoryCollection.isMounted(name)
     if InventoryCollection.useCache then
-        return cache[name] ~= nil
+        return cache[name] ~= nil and InventoryPeripheral.isPresent(name)
     else
-        -- [todo] meh
-        return peripheral.isPresent(name)
+        return InventoryPeripheral.isPresent(name)
     end
 end
 
@@ -134,9 +134,14 @@ function InventoryCollection.refresh(inventories, lockId)
                 return
             end
 
-            pcall(function()
+            local readSuccess = pcall(function()
                 cache[inventory] = InventoryReader.read(inventory, InventoryCollection.autoStorage)
             end)
+
+            if not readSuccess then
+                InventoryCollection.unmount({inventory})
+            end
+
             unlock()
         end
     end)
