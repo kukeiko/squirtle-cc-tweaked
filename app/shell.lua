@@ -13,71 +13,38 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local ApplicationApi = require "lib.system.application-api"
-local ApplicationService = require "lib.system.apps-service"
+local ApplicationService = require "lib.system.application-service"
 local Shell = require "lib.system.shell"
 local SearchableList = require "lib.ui.searchable-list"
 
 ---@return Application[]
 local function getLocalApplications()
-    ---@type Application[]
-    local apps = {}
-
-    if turtle then
-        apps = ApplicationApi.getTurtleApps()
-    elseif pocket then
-        apps = ApplicationApi.getPocketApps()
-    else
-        apps = ApplicationApi.getComputerApps()
-    end
-
-    return apps
+    return ApplicationApi.getApplications(Utils.getPlatform())
 end
 
----@param applicationService AppsService|RpcClient
+---@param applicationService ApplicationService|RpcClient
 ---@return Application[]
 local function getAvailableApps(applicationService)
-    ---@type Application[]
-    local apps = {}
-
-    if turtle then
-        apps = applicationService.getTurtleApps()
-    elseif pocket then
-        apps = applicationService.getPocketApps()
-    else
-        apps = applicationService.getComputerApps()
-    end
-
-    return apps
+    return applicationService.getApplications(Utils.getPlatform())
 end
 
----@param applicationService AppsService|RpcClient
+---@param applicationService ApplicationService|RpcClient
 ---@param name string
 local function installApp(applicationService, name)
-    ---@type Application
-    local app
-
-    if turtle then
-        app = applicationService.getTurtleApp(true, name)
-        ApplicationApi.setTurtleApps({app}, false)
-    elseif pocket then
-        app = applicationService.getPocketApp(true, name)
-        ApplicationApi.setPocketApps({app}, false)
-    else
-        app = applicationService.getComputerApp(true, name)
-        ApplicationApi.setComputerApps({app}, false)
-    end
-
+    local platform = Utils.getPlatform()
+    local app = applicationService.getApplication(platform, name, true)
+    ApplicationApi.addApplications(platform, {app}, false)
     EventLoop.queue("shell:app-installed")
 end
 
 Shell:addWindow("Apps", function()
-    ApplicationApi.initAppVersions()
+    ApplicationApi.initializeVersions()
     local apps = getLocalApplications()
 
     local function getOptions()
         return Utils.map(apps, function(app)
             ---@type SearchableListOption
-            local option = {id = app.path, name = app.name, suffix = Shell:isRunning(app.path) and "\07" or " "}
+            local option = {id = app.name, name = app.name, suffix = Shell:isRunning(app.name) and "\07" or " "}
 
             return option
         end)

@@ -3,6 +3,21 @@ local Pretty = require(ccPretty)
 
 local Utils = {}
 
+---@return Platform
+function Utils.getPlatform()
+    if turtle then
+        return "turtle"
+    elseif pocket then
+        return "pocket"
+    else
+        return "computer"
+    end
+end
+
+function Utils.isDev()
+    return fs.exists("package.json") or fs.exists("is-dev")
+end
+
 ---@generic K, V
 ---@param list table<K, V>
 ---@param item V
@@ -397,10 +412,6 @@ function Utils.waitForUserToHitEnter(text)
             break
         end
     end
-end
-
-function Utils.isDev()
-    return fs.exists("package.json") or fs.exists("is-dev")
 end
 
 ---@param ... string

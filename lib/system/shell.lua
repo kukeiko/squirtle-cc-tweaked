@@ -166,10 +166,10 @@ function Shell:run(shellApplication, fn)
 end
 
 ---@param hostApplication ShellApplication
----@param path string
-function Shell:launch(hostApplication, path)
+---@param name string
+function Shell:launch(hostApplication, name)
     local alreadyRunning = Utils.find(Shell.applications, function(item)
-        return item.metadata.path == path
+        return item.metadata.name == name
     end)
 
     if alreadyRunning then
@@ -177,7 +177,8 @@ function Shell:launch(hostApplication, path)
         return
     end
 
-    local metadata = ApplicationApi.getApplication(path, true)
+    local platform = Utils.getPlatform()
+    local metadata = ApplicationApi.getApplication(platform, name, true)
     local appWindow = window.create(Shell.window, 1, 1, width, height, false)
     local shellApplication = ShellApplication.new(metadata, appWindow, Shell)
     table.insert(Shell.applications, shellApplication)
@@ -202,10 +203,10 @@ function Shell:launch(hostApplication, path)
 end
 
 ---@param hostApplication ShellApplication
----@param path string
-function Shell:terminate(hostApplication, path)
+---@param name string
+function Shell:terminate(hostApplication, name)
     local shellApplication = Utils.find(Shell.applications, function(item)
-        return item.metadata.path == path
+        return item.metadata.name == name
     end)
 
     if not shellApplication then
@@ -219,11 +220,11 @@ function Shell:terminate(hostApplication, path)
     end
 end
 
----@param path string
+---@param name string
 ---@return boolean
-function Shell:isRunning(path)
+function Shell:isRunning(name)
     return Utils.find(Shell.applications, function(item)
-        return item.metadata.path == path
+        return item.metadata.name == name
     end) ~= nil
 end
 

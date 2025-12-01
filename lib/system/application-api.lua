@@ -8,40 +8,6 @@ if Utils.isDev() then
     ApplicationApi.folder = "dist"
 end
 
-function ApplicationApi.initAppVersions()
-    ---@type table<string, string>
-    local versions = {}
-    local subFolders = {"computer", "pocket", "turtle"}
-
-    for _, subFolder in pairs(subFolders) do
-        if fs.isDir(fs.combine(ApplicationApi.folder, subFolder)) then
-            for _, fileName in pairs(fs.list(fs.combine(ApplicationApi.folder, subFolder))) do
-                local appPath = fs.combine(ApplicationApi.folder, subFolder, fileName)
-                ---@type ApplicationMetadata
-                local metadata = dofile(appPath)
-                versions[appPath] = metadata.version
-            end
-        end
-    end
-
-    ApplicationApi.versions = versions
-end
-
----@param path string
----@param withContent? boolean
----@return Application
-function ApplicationApi.getApplication(path, withContent)
-    local app = {name = fs.getName(path), version = ApplicationApi.versions[path] or "?", path = path}
-
-    if withContent then
-        local file = fs.open(path, "r")
-        app.content = file.readAll()
-        file.close()
-    end
-
-    return app
-end
-
 ---@param folder string
 ---@param withContent? boolean
 ---@param filter? string[]
@@ -93,82 +59,53 @@ local function setApps(folder, apps)
     end
 end
 
----@param withContent? boolean
----@param filter? string[]
----@return Application[]
-function ApplicationApi.getPocketApps(withContent, filter)
-    return getApps(fs.combine(ApplicationApi.folder, "pocket"), withContent, filter)
-end
+function ApplicationApi.initializeVersions()
+    ---@type table<string, string>
+    local versions = {}
+    local subFolders = {"computer", "pocket", "turtle"}
 
----@param withContent? boolean
----@param name string
----@return Application
-function ApplicationApi.getPocketApp(withContent, name)
-    local apps = getApps(fs.combine(ApplicationApi.folder, "pocket"), withContent, {name})
-    return apps[1] or error(string.format("pocket app %s not found", name))
-end
-
----@param apps Application[]
----@param inRoot? boolean
-function ApplicationApi.setPocketApps(apps, inRoot)
-    local path = "/"
-
-    if not inRoot then
-        path = fs.combine(ApplicationApi.folder, "pocket")
+    for _, subFolder in pairs(subFolders) do
+        if fs.isDir(fs.combine(ApplicationApi.folder, subFolder)) then
+            for _, fileName in pairs(fs.list(fs.combine(ApplicationApi.folder, subFolder))) do
+                local appPath = fs.combine(ApplicationApi.folder, subFolder, fileName)
+                ---@type ApplicationMetadata
+                local metadata = dofile(appPath)
+                versions[appPath] = metadata.version
+            end
+        end
     end
 
-    setApps(path, apps)
+    ApplicationApi.versions = versions
 end
 
----@param withContent? boolean
+---@param platform Platform
 ---@param filter? string[]
----@return Application[]
-function ApplicationApi.getTurtleApps(withContent, filter)
-    return getApps(fs.combine(ApplicationApi.folder, "turtle"), withContent, filter)
-end
-
 ---@param withContent? boolean
----@param name string
----@return Application
-function ApplicationApi.getTurtleApp(withContent, name)
-    local apps = getApps(fs.combine(ApplicationApi.folder, "turtle"), withContent, {name})
-    return apps[1] or error(string.format("turtle app %s not found", name))
+---@return Application[]
+function ApplicationApi.getApplications(platform, filter, withContent)
+    local folder = fs.combine(ApplicationApi.folder, platform)
+
+    return getApps(folder, withContent, filter)
 end
 
+---@param platform Platform
+---@param name string
+---@param withContent? boolean
+---@return Application
+function ApplicationApi.getApplication(platform, name, withContent)
+    local apps = ApplicationApi.getApplications(platform, {name}, withContent)
+
+    return apps[1] or error(string.format("%s app %s not found", platform, name))
+end
+
+---@param platform Platform
 ---@param apps Application[]
 ---@param inRoot? boolean
-function ApplicationApi.setTurtleApps(apps, inRoot)
+function ApplicationApi.addApplications(platform, apps, inRoot)
     local path = "/"
 
     if not inRoot then
-        path = fs.combine(ApplicationApi.folder, "turtle")
-    end
-
-    setApps(path, apps)
-end
-
----@param withContent? boolean
----@param names? string[]
----@return Application[]
-function ApplicationApi.getComputerApps(withContent, names)
-    return getApps(fs.combine(ApplicationApi.folder, "computer"), withContent, names)
-end
-
----@param withContent? boolean
----@param name string
----@return Application
-function ApplicationApi.getComputerApp(withContent, name)
-    local apps = getApps(fs.combine(ApplicationApi.folder, "computer"), withContent, {name})
-    return apps[1] or error(string.format("computer app %s not found", name))
-end
-
----@param apps Application[]
----@param inRoot? boolean
-function ApplicationApi.setComputerApps(apps, inRoot)
-    local path = "/"
-
-    if not inRoot then
-        path = fs.combine(ApplicationApi.folder, "computer")
+        path = fs.combine(ApplicationApi.folder, platform)
     end
 
     setApps(path, apps)

@@ -12,7 +12,7 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local AppsService = require "lib.system.apps-service"
+local AppsService = require "lib.system.application-service"
 local DatabaseService = require "lib.database.database-service"
 local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
@@ -53,18 +53,18 @@ local Shell = require "lib.system.shell"
 
 Shell:addWindow("Apps", function()
     while true do
-        local apps = {
-            ["computer"] = AppsService.getComputerApps(),
-            ["pocket"] = AppsService.getPocketApps(),
-            ["turtle"] = AppsService.getTurtleApps()
-        }
+        local function getApps()
+            return {
+                ["computer"] = AppsService.getApplications("computer"),
+                ["pocket"] = AppsService.getApplications("pocket"),
+                ["turtle"] = AppsService.getApplications("turtle")
+            }
+        end
+
+        local apps = getApps()
 
         local function getListOptions()
-            local apps = {
-                ["computer"] = AppsService.getComputerApps(),
-                ["pocket"] = AppsService.getPocketApps(),
-                ["turtle"] = AppsService.getTurtleApps()
-            }
+            local apps = getApps()
 
             ---@type SearchableListOption[]
             local options = {
@@ -120,9 +120,9 @@ Shell:addWindow("RPC / Upload", function()
                 end
             end
 
-            AppsService.setComputerApps(apps.computer)
-            AppsService.setPocketApps(apps.pocket)
-            AppsService.setTurtleApps(apps.turtle)
+            AppsService.addApplications("computer", apps.computer)
+            AppsService.addApplications("pocket", apps.pocket)
+            AppsService.addApplications("turtle", apps.turtle)
         end
     end)
 end)

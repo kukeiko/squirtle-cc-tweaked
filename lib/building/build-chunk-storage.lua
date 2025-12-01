@@ -1,5 +1,5 @@
 local Rpc = require "lib.tools.rpc"
-local ApplicationService = require "lib.system.apps-service"
+local ApplicationService = require "lib.system.application-service"
 local TurtleApi = require "lib.turtle.turtle-api"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryApi = require "lib.inventory.inventory-api"
@@ -194,7 +194,7 @@ return function(storageLabel, chestLayers)
         TurtleApi.recordPlacedBlock(ItemApi.disk)
     else
         local appService = Rpc.nearest(ApplicationService)
-        local storageApp = appService.getComputerApp(true, "storage")
+        local storageApp = appService.getApplication("computer", "storage", true)
         local storageFile = fs.open("disk/storage", "w")
         storageFile.write(storageApp.content)
         storageFile.close()

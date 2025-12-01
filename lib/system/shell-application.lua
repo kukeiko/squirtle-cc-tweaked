@@ -169,14 +169,14 @@ function ShellApplication:showActiveWindow()
     self:drawMenu()
 end
 
----@param path string
-function ShellApplication:launch(path)
-    self.shell:launch(self, path)
+---@param name string
+function ShellApplication:launch(name)
+    self.shell:launch(self, name)
 end
 
----@param path string
-function ShellApplication:terminate(path)
-    self.shell:terminate(self, path)
+---@param name string
+function ShellApplication:terminate(name)
+    self.shell:terminate(self, name)
 end
 
 function ShellApplication:run()
@@ -205,10 +205,10 @@ function ShellApplication:run()
     term.setCursorPos(1, 1)
 end
 
----@param path string
+---@param name string
 ---@return boolean
-function ShellApplication:isRunning(path)
-    return self.shell:isRunning(path)
+function ShellApplication:isRunning(name)
+    return self.shell:isRunning(name)
 end
 
 function ShellApplication:pullApplicationStateChange()

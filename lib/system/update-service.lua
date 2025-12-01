@@ -1,7 +1,8 @@
+local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local DatabaseApi = require "lib.database.database-api"
 local DatabaseService = require "lib.database.database-service"
-local AppsService = require "lib.system.apps-service"
+local AppsService = require "lib.system.application-service"
 
 ---@class UpdateService : Service
 local UpdateService = {name = "update"}
@@ -10,18 +11,14 @@ local UpdateService = {name = "update"}
 function UpdateService.update(apps)
     local appsClient = Rpc.nearest(AppsService)
     local databaseClient = Rpc.nearest(DatabaseService)
+    local platform = Utils.getPlatform()
 
-    if turtle then
-        AppsService.setTurtleApps(appsClient.getTurtleApps(true, apps), true)
-        print("[updated] turtle apps")
-    elseif pocket then
-        AppsService.setPocketApps(appsClient.getPocketApps(true, apps), true)
-        print("[updated] pocket apps")
+    AppsService.addApplications(platform, appsClient.getApplications(platform, apps, true), true)
+    print(string.format("[updated] % apps", platform))
+
+    if platform == "pocket" then
         DatabaseApi.setSubwayStations(databaseClient.getSubwayStations())
         print("[updated] subway stations")
-    else
-        AppsService.setComputerApps(appsClient.getComputerApps(true, apps), true)
-        print("[updated] computer apps")
     end
 end
 

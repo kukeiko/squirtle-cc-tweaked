@@ -1,6 +1,8 @@
+---@alias Platform "computer" | "pocket" | "turtle"
+---
 ---@class ApplicationMetadata
 ---@field version string
----@field platform "computer" | "pocket" | "turtle"
+---@field platform Platform
 ---
 ---@class Application
 ---@field name string
