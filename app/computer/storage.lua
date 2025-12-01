@@ -115,8 +115,9 @@ local function main()
 end
 
 local function workers()
-    -- give system a bit of time until localhost StorageService is available
-    os.sleep(1)
+    -- give system a bit of time until localhost StorageService is available & power items are read
+    -- [todo] ❌ use events instead
+    os.sleep(3)
 
     EventLoop.run(function()
         TaskWorkerPool.new(AllocateIngredientsTaskWorker, numWorkersPerTaskType):run()

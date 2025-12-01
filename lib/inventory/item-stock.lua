@@ -110,4 +110,39 @@ local function fromStacks(stacks, ignoredSlots)
     return stock
 end
 
-return {subtract = subtract, add = add, merge = merge, isEmpty = isEmpty, fromStacks = fromStacks, isEqual = isEqual, intersect = intersect}
+-- [todo] ❌ unused as I implemented Inventory.sliceStock() instead
+---@param stock ItemStock
+---@param slots integer
+---@param itemDetails ItemDetails
+---@return ItemStock
+local function slice(stock, slots, itemDetails)
+    ---@type ItemStock
+    local sliced = {}
+    local open = slots
+
+    for item, quantity in pairs(stock) do
+        local details = itemDetails[item] or error(string.format("item details missing for %s", item))
+        local takenSlots = math.min(open, math.ceil(quantity / details.maxCount))
+        local takenQuantity = math.min(quantity, takenSlots * details.maxCount)
+
+        open = open - takenSlots
+        sliced[item] = takenQuantity
+
+        if open == 0 then
+            break
+        end
+    end
+
+    return sliced
+end
+
+return {
+    subtract = subtract,
+    add = add,
+    merge = merge,
+    isEmpty = isEmpty,
+    fromStacks = fromStacks,
+    isEqual = isEqual,
+    intersect = intersect,
+    slice = slice
+}

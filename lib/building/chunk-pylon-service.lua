@@ -1,25 +1,25 @@
----@class ChunkToPylonService : Service
-local ChunkToPylonService = {name = "chunk-to-pylon"}
+---@class ChunkPylonService : Service
+local ChunkPylonService = {name = "chunk-pylon"}
 
 ---@param x integer
 ---@param y integer
 ---@param reserveFor string
 ---@return true
-function ChunkToPylonService.reserveChunk(x, y, reserveFor)
+function ChunkPylonService.reserveChunk(x, y, reserveFor)
     error("not implemented")
 end
 
 ---@param x integer
 ---@param y integer
-function ChunkToPylonService.markChunkComplete(x, y)
+function ChunkPylonService.markChunkComplete(x, y)
     error("not implemented")
 end
 
 ---@param x integer
 ---@param y integer
 ---@return boolean
-function ChunkToPylonService.isStorageBuilt(x, y)
+function ChunkPylonService.isStorageBuilt(x, y)
     error("not implemented")
 end
 
-return ChunkToPylonService
+return ChunkPylonService

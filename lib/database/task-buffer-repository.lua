@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 
+-- [todo] ❌ use EntityRepository
 local TaskBufferRepository = {}
 
 ---@return string

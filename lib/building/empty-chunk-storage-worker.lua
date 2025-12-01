@@ -6,7 +6,6 @@ local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local StorageService = require "lib.inventory.storage-service"
-local Resumable = require "lib.turtle.resumable"
 
 ---@class EmptyChunkStorageWorker : TurtleTaskWorker 
 local EmptyChunkStorageWorker = {}
@@ -33,11 +32,8 @@ function EmptyChunkStorageWorker:getTask()
 end
 
 function EmptyChunkStorageWorker:work()
-    -- local resumable = Resumable.new("empty-chunk-storage-worker")
     local task = self:getTask()
-    -- local numShulkers = 4
-    local numShulkers = 1
-
+    local numShulkers = 4
     TurtleApi.locate()
     TurtleApi.orientate("disk-drive")
 
@@ -84,51 +80,6 @@ function EmptyChunkStorageWorker:work()
     TurtleApi.face(task.homeFacing)
     local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
     TurtleApi.dumpToStorage(stock)
-
-    -- resumable:setStart(function()
-    --     self:requireFuel(TurtleApi.getFiniteFuelLimit())
-    --     self:requireShulkers(numShulkers)
-
-    --     TurtleApi.locate()
-    --     TurtleApi.orientate("disk-drive")
-
-    --     ---@class EmptyChunkStorageState
-    --     local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive")}
-
-    --     return state
-    -- end)
-
-    -- resumable:setResume(function()
-    --     TurtleApi.locate()
-    --     TurtleApi.orientate("disk-drive")
-    -- end)
-
-    -- resumable:addMain("load-from-storage", function()
-    --     TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
-    --     TurtleApi.face(Cardinal.south)
-
-    --     TurtleApi.connectToStorage(function(inventory, storage)
-
-    --     end)
-    -- end)
-
-    -- ---@param state EmptyChunkStorageState
-    -- resumable:addMain("dump-to-hub", function(state)
-    --     TurtleApi.navigate(state.home)
-    --     TurtleApi.face(state.facing)
-    --     local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = numShulkers})
-    --     TurtleApi.dumpToStorage(stock)
-    -- end)
-
-    -- ---@param state EmptyChunkStorageState
-    -- resumable:setFinish(function(state)
-    --     TurtleApi.navigate(state.home)
-    --     TurtleApi.face(state.facing)
-    --     local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
-    --     TurtleApi.dumpToStorage(stock)
-    -- end)
-
-    -- resumable:run(nil, true)
 end
 
 return EmptyChunkStorageWorker

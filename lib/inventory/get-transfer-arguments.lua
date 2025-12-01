@@ -18,6 +18,9 @@ end
 local function getDefaultFromOptions(type, options)
     if type == "buffer" and options.fromSequential == nil then
         options.fromSequential = true
+    elseif type == "storage" and options.fromSequential == nil and InventoryCollection.autoStorage then
+        -- [todo] ❌ doesnt work yet because type is never "storage"
+        options.toSequential = true
     end
 
     if options.fromTag == nil then
@@ -36,6 +39,9 @@ end
 ---@return TransferOptions
 local function getDefaultToOptions(type, options)
     if type == "buffer" and options.toSequential == nil then
+        options.toSequential = true
+    elseif type == "storage" and options.toSequential == nil and InventoryCollection.autoStorage then
+        -- [todo] ❌ doesnt work yet because type is never "storage"
         options.toSequential = true
     end
 

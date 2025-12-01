@@ -1,6 +1,7 @@
 local Utils = require "lib.tools.utils"
 local ItemStock = require "lib.inventory.item-stock"
 
+-- [todo] ❌ use EntityRepository
 local TaskRepository = {}
 
 ---@return string
