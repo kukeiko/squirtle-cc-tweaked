@@ -76,8 +76,11 @@ local addThreadToMainLoop, runMainLoop = EventLoop.createRun()
 
 ---@param shellApplication ShellApplication
 ---@param run function
-local function wrapRun(shellApplication, run)
+---@param hostApplication? ShellApplication
+local function wrapRunApplication(shellApplication, run, hostApplication)
     return function()
+        EventLoop.queue("shell:app-start")
+
         EventLoop.configure({
             window = shellApplication.window,
             accept = function(event, ...)
@@ -95,12 +98,29 @@ local function wrapRun(shellApplication, run)
 
         os.sleep(.1)
 
-        local success, message = pcall(run)
+        EventLoop.waitForAny(function()
+            while true do
+                local _, id = EventLoop.pull("shell:terminate")
 
-        if not success then
-            print(string.format("%s crashed", shellApplication.metadata.name))
-            print(message)
-            Utils.waitForUserToHitEnter("<hit enter to continue>")
+                if id == shellApplication:getId() then
+                    break
+                end
+            end
+        end, function()
+            local success, message = pcall(run)
+
+            if not success then
+                print(string.format("%s crashed", shellApplication.metadata.name))
+                print(message)
+                Utils.waitForUserToHitEnter("<hit enter to continue>")
+            end
+        end)
+
+        Utils.remove(Shell.applications, shellApplication)
+        EventLoop.queue("shell:app-stop")
+
+        if hostApplication and Shell.current == shellApplication then
+            switchToApplication(hostApplication)
         end
     end
 end
@@ -115,13 +135,13 @@ local function bootstrap(shellApplication, fn)
     Shell.current = shellApplication
     Shell.current.window.setVisible(true)
 
-    addThreadToMainLoop(wrapRun(shellApplication, fn))
+    addThreadToMainLoop(wrapRunApplication(shellApplication, fn))
 
     EventLoop.waitForAny(function()
         runMainLoop()
     end, function()
         while true do
-            -- on tab, goto root application
+            -- switch to root application
             EventLoop.pullKey(keys.tab)
 
             if Shell.current ~= Shell.root then
@@ -160,6 +180,7 @@ function Shell:launch(hostApplication, path)
     local metadata = ApplicationApi.getApplication(path, true)
     local appWindow = window.create(Shell.window, 1, 1, width, height, false)
     local shellApplication = ShellApplication.new(metadata, appWindow, Shell)
+    table.insert(Shell.applications, shellApplication)
 
     if Shell.current == hostApplication then
         Shell.current.window.setVisible(false)
@@ -167,37 +188,17 @@ function Shell:launch(hostApplication, path)
         Shell.current.window.setVisible(true)
     end
 
-    table.insert(Shell.applications, shellApplication)
-
-    local fn = wrapRun(shellApplication, function()
-        EventLoop.queue("shell:start")
+    local loadAndRun = function()
         local fn, message = load(metadata.content, "@/" .. metadata.path, nil, createApplicationEnvironment(shellApplication))
 
-        if not fn then
+        if fn then
+            fn()
+        else
             error(message)
         end
+    end
 
-        -- [todo] ❌ if "fn" crashes and user hits "enter" to continue, nothing happens. also, terminating doesn't work.
-        -- need to understand & adapt wrapRun(), especially together its usage in bootstrap
-        EventLoop.waitForAny(function()
-            while true do
-                local _, id = EventLoop.pull("shell:terminate")
-
-                if id == shellApplication:getId() then
-                    break
-                end
-            end
-        end, fn)
-
-        Utils.remove(Shell.applications, shellApplication)
-        EventLoop.queue("shell:stop")
-
-        if Shell.current == shellApplication then
-            switchToApplication(hostApplication)
-        end
-    end)
-
-    addThreadToMainLoop(fn)
+    addThreadToMainLoop(wrapRunApplication(shellApplication, loadAndRun, hostApplication))
 end
 
 ---@param hostApplication ShellApplication
@@ -228,9 +229,9 @@ end
 
 function Shell:pullApplicationStateChange()
     EventLoop.waitForAny(function()
-        EventLoop.pull("shell:start")
+        EventLoop.pull("shell:app-start")
     end, function()
-        EventLoop.pull("shell:stop")
+        EventLoop.pull("shell:app-stop")
     end)
 end
 
