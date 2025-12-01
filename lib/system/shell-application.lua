@@ -52,7 +52,7 @@ end
 function ShellApplication:addWindow(title, fn)
     local w, h = self.window.getSize()
     ---@type ShellWindow
-    local shellWindow = ShellWindow.new(title, fn, window.create(self.window, 1, 1, w, h - 2, false))
+    local shellWindow = ShellWindow.new(self, title, fn, window.create(self.window, 1, 1, w, h - 2, false))
     table.insert(self.windows, shellWindow)
 
     if #self.windows == 1 then

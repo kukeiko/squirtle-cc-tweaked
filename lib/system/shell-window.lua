@@ -6,15 +6,17 @@ local nextId = require "lib.tools.next-id"
 ---@field title string
 ---@field fn fun(window: ShellWindow): any
 ---@field window table
+---@field shell ShellApplication
 local ShellWindow = {}
 
+---@param shell ShellApplication
 ---@param title string
 ---@param fn fun(): any
 ---@param window table
 ---@return ShellWindow
-function ShellWindow.new(title, fn, window)
-    ---@type ShellWindow|{}
-    local instance = {id = nextId(), title = title, fn = fn, window = window}
+function ShellWindow.new(shell, title, fn, window)
+    ---@type ShellWindow
+    local instance = {shell = shell, id = nextId(), title = title, fn = fn, window = window}
     setmetatable(instance, {__index = ShellWindow})
 
     return instance
@@ -22,6 +24,10 @@ end
 
 function ShellWindow:getId()
     return self.id
+end
+
+function ShellWindow:getShell()
+    return self.shell
 end
 
 ---@return boolean
