@@ -12,7 +12,6 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.system.remote-service"
 local isClient = arg[1] == "client"
 local sounds = {front = "entity.pig.ambient", back = "entity.cat.ambient", left = "entity.chicken.ambient", right = "entity.sheep.ambient"}
 
@@ -211,8 +210,6 @@ local function server()
 end
 
 EventLoop.run(function()
-    RemoteService.run({"simon-says"})
-end, function()
     if isClient then
         client()
     else

@@ -1,17 +1,10 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
-local ApplicationApi = require "lib.system.application-api"
 local SearchableList = require "lib.ui.searchable-list"
-
----@return Application[]
-local function getLocalApplications()
-    return ApplicationApi.getApplications(Utils.getPlatform())
-end
 
 ---@param shellWindow ShellWindow
 return function(shellWindow)
-    ApplicationApi.initializeVersions()
-    local apps = getLocalApplications()
+    local apps = shellWindow:getShell():getInstalled(true)
 
     local function getOptions()
         return Utils.map(apps, function(app)
@@ -21,30 +14,6 @@ return function(shellWindow)
             return option
         end)
     end
-
-    -- local autorunViaArg = arg[1] and Utils.find(apps, function(candidate)
-    --     return candidate.name == arg[1]
-    -- end)
-
-    -- if autorunViaArg then
-    --     shellWindow:getShell():addAutorun(autorunViaArg.name)
-    -- end
-
-    -- local autoruns = Utils.map(shellWindow:getShell():getAutorun(), function(name)
-    --     local app = Utils.find(apps, function(candidate)
-    --         return candidate.name == name
-    --     end)
-
-    --     if app then
-    --         return function()
-    --             shellWindow:getShell():launch(app.name)
-    --         end
-    --     else
-    --         return function()
-    --             -- do nothing
-    --         end
-    --     end
-    -- end)
 
     local list = SearchableList.new(getOptions(), "Apps")
 
@@ -66,9 +35,8 @@ return function(shellWindow)
     end, function()
         while true do
             EventLoop.pull("shell:app-installed")
-            apps = getLocalApplications()
+            apps = shellWindow:getShell():getInstalled(true)
             list:setOptions(getOptions())
         end
     end)
-    -- end, table.unpack(autoruns))
 end

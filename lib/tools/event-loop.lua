@@ -207,6 +207,7 @@ function EventLoop.configure(options)
 
     currentThread.accept = options.accept or currentThread.accept
     currentThread.window = options.window or currentThread.window
+    os.sleep(.1)
 end
 
 ---@param ... function

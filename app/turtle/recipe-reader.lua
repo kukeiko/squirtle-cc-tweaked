@@ -13,15 +13,14 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.system.remote-service"
 local DatabaseService = require "lib.database.database-service"
 local StorageService = require "lib.inventory.storage-service"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Shell = require "lib.system.shell"
 local SearchableList = require "lib.ui.searchable-list"
 
+local app = Shell.getApplication(arg)
 print(string.format("[recipe-reader %s] booting...", version()))
-Utils.writeStartupFile("recipe-reader")
 
 local function readRecipe()
     local workbench = peripheral.find("workbench")
@@ -135,18 +134,15 @@ local function browse()
     end
 end
 
-Shell:addWindow("Add Recipe", function()
+app:addWindow("Add Recipe", function()
     while true do
         readRecipe()
     end
 end)
 
-Shell:addWindow("Browse Recipes", function()
+app:addWindow("Browse Recipes", function()
     browse()
 end)
 
-Shell:addWindow("RPC", function()
-    RemoteService.run({"recipe-reader"})
-end)
-
-Shell:run()
+app:addLogsWindow()
+app:run()

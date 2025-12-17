@@ -95,7 +95,7 @@ end
 ---@param serverChannel integer
 ---@param request? table
 local function logClientRequest(method, clientChannel, serverChannel, request)
-    local message = string.format("[c:req] %s %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("\62 %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, request)
 end
 
@@ -104,7 +104,7 @@ end
 ---@param serverChannel integer
 ---@param response? table
 local function logClientResponse(method, clientChannel, serverChannel, response)
-    local message = string.format("[c:res] %s %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("\60 %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, response)
 end
 
@@ -113,7 +113,7 @@ end
 ---@param serverChannel integer
 ---@param request? table
 local function logServerRequest(method, clientChannel, serverChannel, request)
-    local message = string.format("[s:req] %s %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("\171 %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, request)
 end
 
@@ -122,13 +122,33 @@ end
 ---@param serverChannel integer
 ---@param response? table
 local function logServerResponse(method, clientChannel, serverChannel, response)
-    local message = string.format("[s:res] %s %d/%d", method, clientChannel, serverChannel)
+    local message = string.format("\187 %s %d/%d", method, clientChannel, serverChannel)
     Logger.log(message, response)
 end
 
 ---@class Rpc
 ---@field servers RpcServer[]
 local Rpc = {servers = {}}
+
+---@param service Service
+---@return DiscoveredServiceHost
+local function waitForPong(service)
+    while true do
+        local event = table.pack(EventLoop.pull("modem_message"))
+        ---@type integer
+        local replyChannel = event[4]
+        ---@type RpcPongPacket
+        local message = event[5]
+        ---@type integer
+        local distance = event[6]
+
+        if type(message) == "table" and message.type == "pong" and message.service == service.name then
+            ---@type DiscoveredServiceHost
+            local discovered = {host = message.host, distance = distance, channel = replyChannel}
+            return discovered
+        end
+    end
+end
 
 ---@param service Service
 ---@param timeout number?
@@ -149,19 +169,7 @@ local function findAllHosts(service, timeout, modemType)
         modem.transmit(pingChannel, channel, ping)
 
         while true do
-            local event = table.pack(EventLoop.pull("modem_message"))
-            ---@type integer
-            local replyChannel = event[4]
-            ---@type RpcPongPacket
-            local message = event[5]
-            ---@type integer
-            local distance = event[6]
-
-            if type(message) == "table" and message.type == "pong" and message.service == service.name then
-                ---@type DiscoveredServiceHost
-                local discovered = {host = message.host, distance = distance, channel = replyChannel}
-                table.insert(hosts, discovered)
-            end
+            table.insert(hosts, waitForPong(service))
         end
     end)
 
@@ -251,6 +259,35 @@ local function createClient(service, host, distance, channel, modemType)
     })
 
     return client
+end
+
+---@generic T
+---@param service T | Service
+---@param modemType? "wired" | "wireless"
+---@return fun(): T | RpcClient
+function Rpc.discover(service, modemType)
+    local modem = getModem(modemType)
+    local channel = os.getComputerID()
+    modem.open(pingChannel)
+    modem.open(channel)
+
+    ---@type RpcPingPacket
+    local ping = {type = "ping", service = service.name}
+    modem.transmit(pingChannel, channel, ping)
+
+    ---@type table<string, true>
+    local alreadyDiscovered = {}
+
+    return function()
+        while true do
+            local discovered = waitForPong(service)
+
+            if not alreadyDiscovered[discovered.host] then
+                alreadyDiscovered[discovered.host] = true
+                return createClient(service, discovered.host, discovered.distance, discovered.channel)
+            end
+        end
+    end
 end
 
 ---@generic T

@@ -16,6 +16,7 @@ local StorageService = require "lib.inventory.storage-service"
 local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
 
+local app = Shell.getApplication(arg)
 print(string.format("[tasks %s] connecting to services...", version()))
 local storageService = Rpc.nearest(StorageService)
 local taskService = Rpc.nearest(TaskService)
@@ -65,12 +66,12 @@ local function showMissing(storageService, taskService)
     end
 end
 
-Shell:addWindow("Missing Ingredients", function(shellWindow)
+app:addWindow("Missing Ingredients", function()
     showMissing(storageService, taskService)
 end)
 
-Shell:addWindow("Missing Stored", function(shellWindow)
+app:addWindow("Missing Stored", function()
     showMissingDetails(taskService)
 end)
 
-Shell:run()
+app:run()

@@ -9,31 +9,42 @@ if not arg then
     return {version = version(), platform = "computer"}
 end
 
-local Utils = require "lib.tools.utils"
+local Logger = require "lib.tools.logger"
 local EventLoop = require "lib.tools.event-loop"
+local Shell = require "lib.system.shell"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryApi = require "lib.inventory.inventory-api"
-local RemoteService = require "lib.system.remote-service"
+local EditEntity = require "lib.ui.edit-entity"
 
-print(string.format("[fungi-farm %s] booting...", version()))
-local interval = math.max(2, tonumber(arg[1]) or 2)
-print("[interval]", interval)
-Utils.writeStartupFile(string.format("fungi-farm %d", interval))
+local app = Shell.getApplication(arg)
 
-EventLoop.run(function()
-    RemoteService.run({"fungi-farm"})
-end, function()
-    while true do
-        if InventoryApi.getItemCount({"back"}, ItemApi.boneMeal, "input") > 0 then
-            redstone.setOutput("back", true)
-            os.sleep(2)
-            redstone.setOutput("back", false)
-            os.sleep(interval)
+app:addWindow("Main", function()
+    local editEntity = EditEntity.new("Fungi Farm Options", ".kita/data/fungi-farm.options.json")
+    editEntity:addInteger("interval", "Interval", {minValue = 2})
+    app:exposeRemoteOptions(editEntity)
+
+    ---@class FungiFarmOptions
+    ---@field interval integer
+    local options = editEntity:run({interval = 2}, app:wasAutorun())
+
+    EventLoop.run(function()
+        while true do
+            -- redstone tick to dispense bone meal
+            if InventoryApi.getItemCount({"back"}, ItemApi.boneMeal, "input") > 0 then
+                redstone.setOutput("back", true)
+                os.sleep(2)
+                redstone.setOutput("back", false)
+                os.sleep(options.interval)
+            end
         end
-    end
-end, function()
-    while true do
-        InventoryApi.empty({"bottom"}, {"back"})
-        os.sleep(30)
-    end
+    end, function()
+        while true do
+            Logger.log("refill bone meal")
+            InventoryApi.empty({"bottom"}, {"back"})
+            os.sleep(30)
+        end
+    end)
 end)
+
+app:addLogsWindow()
+app:run()

@@ -11,7 +11,6 @@ end
 
 local Utils = require "lib.tools.utils"
 local TurtleApi = require "lib.turtle.turtle-api"
-local RemoteService = require "lib.system.remote-service"
 local Shell = require "lib.system.shell"
 
 local blockSide = arg[1]
@@ -24,8 +23,9 @@ if not blockSide or not signalSide then
 end
 
 Utils.writeStartupFile(string.format("block-watcher %s %s", blockSide, signalSide))
+local app = Shell.getApplication(arg)
 
-Shell:addWindow("Game", function()
+app:addWindow("Game", function()
     TurtleApi.select(1)
     redstone.setOutput(signalSide, true)
 
@@ -35,8 +35,5 @@ Shell:addWindow("Game", function()
     end
 end)
 
-Shell:addWindow("RPC", function()
-    RemoteService.run({"block-watcher"})
-end)
-
-Shell:run()
+app:addLogsWindow()
+app:run()

@@ -9,27 +9,17 @@ if not arg then
     return {version = version(), platform = "pocket"}
 end
 
+local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local BoneMealService = require "lib.farms.bone-meal-service"
 
-print(string.format("[bone-meal %s] booting...", version()))
-local on = arg[1] == "on"
-local off = arg[1] == "off"
-local reboot = arg[1] == "reboot"
-
+print(string.format("[bone-meal %s]", version()))
+print("[connecting] ...")
 local boneMeals = Rpc.all(BoneMealService)
 
 for _, boneMeal in pairs(boneMeals) do
-    if on then
-        print(string.format("[on] %s", boneMeal.host))
-        boneMeal.on()
-    elseif off then
-        print(string.format("[off] %s", boneMeal.host))
-        boneMeal.off()
-    elseif reboot then
-        boneMeal.reboot()
-    else
-        local _, _, percentage = boneMeal.getStock()
-        print(string.format("[stock] %s", percentage))
-    end
+    local _, _, percentage = boneMeal.getStock()
+    print(string.format("%s %s %s", boneMeal.isOn() and "[on]" or "[off]", boneMeal.host, percentage))
 end
+
+Utils.waitForUserToHitEnter()

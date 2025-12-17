@@ -12,10 +12,12 @@ end
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Utils = require "lib.tools.utils"
-local RemoteService = require "lib.system.remote-service"
 local XylophoneService = require "lib.games.xylophone-service"
 local Shell = require "lib.system.shell"
 
+local app = Shell.getApplication(arg)
+
+-- [todo] ❌ instead create 2x apps: xylophone-server & xylophone-client
 local isClient = arg[1] == "client"
 
 ---@param noteCount integer
@@ -42,7 +44,7 @@ local function client(note)
     end
 end
 
-Shell:addWindow("Game", function()
+app:addWindow("Game", function()
     if isClient then
         local note = tonumber(arg[2])
 
@@ -62,8 +64,5 @@ Shell:addWindow("Game", function()
     end
 end)
 
-Shell:addWindow("RPC", function()
-    RemoteService.run({"xylophone"})
-end)
-
-Shell:run()
+app:addLogsWindow()
+app:run()

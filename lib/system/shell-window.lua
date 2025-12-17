@@ -51,4 +51,10 @@ function ShellWindow:runUntilInvisible(fn)
     EventLoop.runUntil("shell-window:invisible", fn)
 end
 
+function ShellWindow:clear()
+    self.window.clear()
+    self.window.setCursorPos(1, 1)
+    self.window.setCursorBlink(false)
+end
+
 return ShellWindow

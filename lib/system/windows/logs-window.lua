@@ -8,7 +8,7 @@ local TableViewer = require "lib.ui.table-viewer"
 local function getLogMessages()
     local options = Utils.map(Utils.reverse(Logger.getMessages()), function(message)
         ---@type SearchableListOption
-        local option = {id = tostring(message.id), name = message.message, suffix = message.timestamp, data = message}
+        local option = {id = tostring(message.id), name = message.message, suffix = Utils.getDeltaTime(message.timestamp), data = message}
 
         return option
     end)
@@ -40,7 +40,12 @@ return function(shellWindow)
             list:setOptions(getLogMessages())
             shellWindow:runUntilInvisible(function()
                 while true do
-                    Logger.pullLoggedMessage()
+                    EventLoop.waitForAny(function()
+                        os.sleep(1)
+                    end, function()
+                        Logger.pullLoggedMessage()
+                    end)
+
                     list:setOptions(getLogMessages())
                 end
             end)

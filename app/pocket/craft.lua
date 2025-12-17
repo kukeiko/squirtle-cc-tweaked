@@ -12,7 +12,6 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local RemoteService = require "lib.system.remote-service"
 local TaskService = require "lib.system.task-service"
 local StorageService = require "lib.inventory.storage-service"
 local SearchableList = require "lib.ui.searchable-list"
@@ -44,8 +43,6 @@ function getListTitle()
 end
 
 EventLoop.run(function()
-    RemoteService.run({"craft"})
-end, function()
     print(string.format("[craft %s] connecting to storage service...", version()))
     os.sleep(1)
 

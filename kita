@@ -1,0 +1,1 @@
+shell.run("app/kita", table.unpack(arg))

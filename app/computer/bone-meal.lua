@@ -9,20 +9,30 @@ if not arg then
     return {version = version(), platform = "computer"}
 end
 
-local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local Shell = require "lib.system.shell"
 local BoneMealService = require "lib.farms.bone-meal-service"
-local RemoteService = require "lib.system.remote-service"
+local app = Shell.getApplication(arg)
 
-print(string.format("[bone-meal %s] booting...", version()))
-Utils.writeStartupFile("bone-meal")
-BoneMealService.off()
+app:addWindow("Main", function()
+    while true do
+        local isFull, stock, percentage = BoneMealService.getStock()
 
-EventLoop.run(function()
-    Rpc.host(BoneMealService)
-end, function()
-    BoneMealService.run()
-end, function()
-    RemoteService.run({"bone-meal"})
+        if isFull and BoneMealService.isOn() then
+            print(string.format("[off] stock is at %s (%dx bone meal)", percentage, stock))
+            BoneMealService.off()
+        elseif not isFull and not BoneMealService.isOn() then
+            print(string.format("[on] stock is at %s (%dx bone meal)", percentage, stock))
+            BoneMealService.on()
+        end
+
+        os.sleep(30)
+    end
 end)
+
+app:addWindow("RPC", function()
+    Rpc.host(BoneMealService)
+end)
+
+app:addLogsWindow()
+app:run()

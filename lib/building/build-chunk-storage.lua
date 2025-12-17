@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local ApplicationService = require "lib.system.application-service"
 local TurtleApi = require "lib.turtle.turtle-api"
@@ -195,16 +196,28 @@ return function(storageLabel, chestLayers)
     else
         local appService = Rpc.nearest(ApplicationService)
         local storageApp = appService.getApplication("computer", "storage", true)
+        local kitaApp = appService.getApplication("computer", "kita", true)
+
+        -- [todo] ❌ files need adaptation
         local storageFile = fs.open("disk/storage", "w")
         storageFile.write(storageApp.content)
         storageFile.close()
 
+        local kitaFile = fs.open("disk/kita", "w")
+        kitaFile.write(kitaApp.content)
+        kitaFile.close()
+
+        ---@type StorageAppOptions
+        local storageOptions = {isAutoStorage = true, powerChest = "right"}
+        Utils.writeJson("disk/storage.options.json", storageOptions)
+
         local storageStartupFile = fs.open("disk/storage-startup", "w")
-        storageStartupFile.write("shell.run(\"storage right auto-storage\")\n")
+        storageStartupFile.write("shell.run(\"kita storage\")\n")
         storageStartupFile.close()
 
         local startupFile = fs.open("disk/startup", "w")
-        startupFile.write("shell.run(\"copy disk/storage storage\")\n")
+        startupFile.write("shell.run(\"copy disk/storage .kita/app/storage\")\n")
+        startupFile.write("shell.run(\"copy disk/storage/storage.options.json .kita/data/storage.options.json\")\n")
         startupFile.write("shell.run(\"copy disk/storage-startup startup\")\n")
         startupFile.write(string.format("shell.run(\"label set \\\"%s\\\"\")\n", storageLabel))
         startupFile.close()

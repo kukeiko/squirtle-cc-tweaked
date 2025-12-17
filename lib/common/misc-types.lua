@@ -2,7 +2,7 @@
 ---
 ---@class ApplicationMetadata
 ---@field version string
----@field platform Platform
+---@field platform Platform | Platform[]
 ---
 ---@class Application
 ---@field name string

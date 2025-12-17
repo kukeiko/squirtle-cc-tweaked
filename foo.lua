@@ -1,11 +1,12 @@
 package.path = package.path .. ";/?.lua"
 
 local Utils = require "lib.tools.utils"
+local Logger = require "lib.tools.logger"
 local TurtleApi = require "lib.turtle.turtle-api"
 local TurtleShulkerApi = require "lib.turtle.api-parts.turtle-shulker-api"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc";
-local ApplicationService = require "lib.system.apps-service"
+local ApplicationService = require "lib.system.application-service"
 local TaskService = require "lib.system.task-service"
 local DatabaseService = require "lib.database.database-service"
 local StorageService = require "lib.inventory.storage-service"
@@ -26,7 +27,8 @@ local BuildChunkPylonWorker = require "lib.building.build-chunk-pylon-worker"
 local EmptyChunkStorageWorker = require "lib.building.empty-chunk-storage-worker"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
-local duck = require "duck"
+local duck = require "lib.ui.duck"
+local ShellService = require "lib.system.shell-service"
 
 local function testGetCraftingDetails()
     local function testCampfires()
@@ -257,7 +259,7 @@ end
 
 local function testWriteStorageFloppy()
     local appService = Rpc.nearest(ApplicationService)
-    local storageApp = appService.getComputerApp(true, "storage")
+    local storageApp = appService.getApplication("computer", "storage", true)
 
     TurtleApi.up()
     TurtleApi.put("front", ItemApi.diskDrive)
@@ -405,6 +407,25 @@ local function testEmptyChunkStorageWorker()
     end)
 end
 
+---@param folder string
+---@return string[]
+local function getFiles(folder)
+    ---@type string[]
+    local files = {}
+
+    for _, name in ipairs(fs.list(folder)) do
+        local path = fs.combine(folder, name)
+
+        if fs.isDir(path) then
+            files = Utils.concat(files, getFiles(path))
+        else
+            table.insert(files, path)
+        end
+    end
+
+    return files
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
@@ -420,8 +441,17 @@ EventLoop.run(function()
     -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
     -- testItemStockSlice()
     -- testSliceStockForShulkers()
-    testEmptyChunkStorageWorker()
+    -- testEmptyChunkStorageWorker()
     -- testEmptyTurtleToStorage()
+    -- print("howdy!")
+    -- Logger.log("hello there!")
+    -- Utils.prettyPrint(getFiles("app/turtle"))
+
+    -- local from = 0.1
+    -- local to = 1
+    -- local delta = to - from
+    -- local minutes = 
+    -- print(Utils.getTime24(delta))
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

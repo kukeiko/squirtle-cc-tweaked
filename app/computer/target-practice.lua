@@ -13,7 +13,6 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Side = require "lib.common.side"
-local RemoteService = require "lib.system.remote-service"
 local isClient = arg[1] == "client"
 local score = 0
 local maxScore = 10
@@ -225,8 +224,6 @@ local function client()
 end
 
 EventLoop.run(function()
-    RemoteService.run({"target-practice"})
-end, function()
     if isClient then
         client()
     else

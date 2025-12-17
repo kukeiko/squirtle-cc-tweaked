@@ -14,7 +14,6 @@ local EventLoop = require "lib.tools.event-loop"
 local Vector = require "lib.common.vector"
 local TurtleApi = require "lib.turtle.turtle-api"
 local ItemApi = require "lib.inventory.item-api"
-local RemoteService = require "lib.system.remote-service"
 local Resumable = require "lib.turtle.resumable"
 
 ---@param variant "crimson" | "warped"
@@ -94,8 +93,6 @@ end
 print(string.format("[nether-lumberjack %s] booting...", version()))
 
 EventLoop.run(function()
-    RemoteService.run({"nether-lumberjack"})
-end, function()
     local resumable = Resumable.new("nether-lumberjack")
 
     resumable:setStart(function(args, options)

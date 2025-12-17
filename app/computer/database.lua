@@ -12,14 +12,11 @@ end
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
-local AppsService = require "lib.system.application-service"
+local ApplicationApi = require "lib.system.application-api"
+local ApplicationService = require "lib.system.application-service"
 local DatabaseService = require "lib.database.database-service"
 local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
-local logsWindow = require "lib.system.windows.logs-window"
-
-print(string.format("[database %s] booting...", version()))
-Utils.writeStartupFile("database")
 
 ---@param apps Application[]
 ---@param title string
@@ -42,22 +39,16 @@ local function showApps(apps, title)
     end
 end
 
-local monitor = peripheral.find("monitor")
-
-if monitor then
-    monitor.setTextScale(1.0)
-    term.redirect(monitor)
-end
-
 local Shell = require "lib.system.shell"
+local app = Shell.getApplication(arg)
 
-Shell:addWindow("Apps", function()
+app:addWindow("Apps", function()
     while true do
         local function getApps()
             return {
-                ["computer"] = AppsService.getApplications("computer"),
-                ["pocket"] = AppsService.getApplications("pocket"),
-                ["turtle"] = AppsService.getApplications("turtle")
+                ["computer"] = ApplicationService.getApplications("computer"),
+                ["pocket"] = ApplicationService.getApplications("pocket"),
+                ["turtle"] = ApplicationService.getApplications("turtle")
             }
         end
 
@@ -90,9 +81,17 @@ Shell:addWindow("Apps", function()
     end
 end)
 
-Shell:addWindow("RPC / Upload", function()
+app:addWindow("RPC / Upload", function()
+    local monitor = peripheral.find("monitor")
+
+    if monitor then
+        print("[redirected to monitor]")
+        monitor.setTextScale(1.0)
+        EventLoop.configure({window = monitor})
+    end
+
     EventLoop.run(function()
-        AppsService.run()
+        Rpc.host(ApplicationService)
     end, function()
         Rpc.host(DatabaseService)
     end, function()
@@ -113,25 +112,81 @@ Shell:addWindow("RPC / Upload", function()
                     local metadata = fn()
                     ---@type Application
                     local application = {name = file.getName(), path = "", version = metadata.version, content = contents}
-                    table.insert(apps[metadata.platform], application)
-                    print(string.format("[uploaded] %s/%s %s", metadata.platform, application.name, application.version))
+                    local platforms = metadata.platform
+
+                    if type(platforms) == "string" then
+                        platforms = {platforms}
+                    end
+
+                    for _, platform in ipairs(platforms) do
+                        table.insert(apps[platform], application)
+                        print(string.format("[uploaded] %s/%s %s", platform, application.name, application.version))
+                    end
                 else
                     print(message)
                 end
             end
 
-            AppsService.addApplications("computer", apps.computer)
-            AppsService.addApplications("pocket", apps.pocket)
-            AppsService.addApplications("turtle", apps.turtle)
+            for _, platform in pairs(Utils.getPlatforms()) do
+                for _, app in pairs(apps[platform]) do
+                    ApplicationApi.writeApp(string.format(".kita/app/%s", platform), app)
+                end
+            end
         end
     end)
 end)
 
-Shell:addWindow("Logs", logsWindow)
+app:addWindow("Boot Disk", function()
+    while true do
+        os.sleep(1)
+        Utils.waitForUserToHitEnter("hit <enter> to create a boot disk")
 
-EventLoop.run(function()
-    Shell:run()
+        while not fs.isDir("disk") do
+            Utils.waitForUserToHitEnter("no disk attached. attach one, then hit <enter>")
+        end
+
+        print("[creating] boot disk...")
+
+        ---@type string[]
+        local paths = {}
+
+        -- create a program file in root so the user can just type "kita" to start kita
+        local programFile = fs.open("disk/kita", "w")
+        programFile.writeLine("local platform = (pocket and \"pocket\") or (turtle and \"turtle\") or \"computer\"")
+        programFile.writeLine("shell.run(string.format(\".kita/app/%s/kita\", platform), table.unpack(arg))")
+        programFile.close()
+        table.insert(paths, "kita")
+        print("[created] disk/kita")
+
+        for _, platform in ipairs(Utils.getPlatforms()) do
+            -- create kita app file for each platform
+            local kitaApp = ApplicationService.getApplication(platform, "kita", true)
+            local path = string.format("disk/.kita/app/%s/kita", platform)
+            local kitaAppFile = fs.open(path, "w")
+            kitaAppFile.write(kitaApp.content)
+            kitaAppFile.close()
+            table.insert(paths, string.format(".kita/app/%s/kita", platform))
+            print(string.format("[created] %s", path))
+        end
+
+        -- create startup file copying over everything and starting kita
+        local startupFile = fs.open("disk/startup", "w")
+
+        startupFile.writeLine("if fs.isDir(\"disk\") then")
+        for _, path in ipairs(paths) do
+            startupFile.writeLine(string.format("    if fs.exists(\"%s\") then fs.delete(\"%s\") end", path, path))
+            startupFile.writeLine(string.format("    fs.copy(\"/disk/%s\", \"%s\")", path, path))
+        end
+        startupFile.writeLine("else")
+        -- delete the startup file if not booting from a disk
+        startupFile.writeLine("    fs.delete(\"startup\")")
+        startupFile.writeLine("end")
+
+        startupFile.writeLine("shell.run(\"kita\")")
+        startupFile.close()
+        print("[created] disk/startup")
+    end
 end)
 
-term.clear()
-term.setCursorPos(1, 1)
+app:addLogsWindow()
+app:run()

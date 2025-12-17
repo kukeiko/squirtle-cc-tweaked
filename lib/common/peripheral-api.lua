@@ -35,4 +35,13 @@ function PeripheralApi.findWiredModem()
     return wiredModem and peripheral.getName(wiredModem) or nil
 end
 
+---@return string?
+function PeripheralApi.findWirelessModem()
+    local wirelessModem = peripheral.find("modem", function(_, modem)
+        return modem.isWireless()
+    end)
+
+    return wirelessModem and peripheral.getName(wirelessModem) or nil
+end
+
 return PeripheralApi

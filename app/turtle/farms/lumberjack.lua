@@ -15,7 +15,6 @@ local EventLoop = require "lib.tools.event-loop"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryApi = require "lib.inventory.inventory-api"
 local TurtleApi = require "lib.turtle.turtle-api"
-local RemoteService = require "lib.system.remote-service"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local FurnacePeripheral = require "lib.inventory.furnace-peripheral"
 
@@ -270,8 +269,6 @@ local function recover()
 end
 
 EventLoop.run(function()
-    RemoteService.run({"lumberjack"})
-end, function()
     Utils.writeStartupFile("lumberjack")
     print(string.format("[lumberjack %s] booting...", version()))
     TurtleApi.setBreakable({ItemApi.birchLog, ItemApi.birchLeaves, ItemApi.birchSapling})

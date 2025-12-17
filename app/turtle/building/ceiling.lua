@@ -40,13 +40,13 @@ end, function()
     local resumable = Resumable.new("ceiling")
 
     resumable:setStart(function(_, options)
-        local editEntity = EditEntity.new("Options")
+        local editEntity = EditEntity.new("Options", ".kita/data/ceiling.options.json")
         editEntity:addInteger("depth", "Depth", {validate = EditEntity.greaterZero})
         editEntity:addInteger("width", "Width", {validate = EditEntity.notZero})
         ---@class CeilingAppArguments
         ---@field depth integer
         ---@field width integer
-        local arguments = editEntity:run({}, "data/app/ceiling-options.json")
+        local arguments = editEntity:run()
 
         ---@class CeilingAppState
         local state = {

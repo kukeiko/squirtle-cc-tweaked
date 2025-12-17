@@ -12,13 +12,13 @@ end
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local EditEntity = require "lib.ui.edit-entity"
 local TaskWorkerPool = require "lib.system.task-worker-pool"
 local PeripheralApi = require "lib.common.peripheral-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local Inventory = require "lib.inventory.inventory-api"
 local InventoryCollection = require "lib.inventory.inventory-collection"
 local StorageService = require "lib.inventory.storage-service"
-local RemoteService = require "lib.system.remote-service"
 local processDumps = require "lib.inventory.processors.process-dumps"
 local processFurnaces = require "lib.inventory.processors.process-furnaces"
 local processIo = require "lib.inventory.processors.process-io"
@@ -27,7 +27,6 @@ local processShulkers = require "lib.inventory.processors.process-shulkers"
 local processTrash = require "lib.inventory.processors.process-trash"
 local processSiloOutputs = require "lib.inventory.processors.process-silo-outputs"
 local TurtleInventoryAdapter = require "lib.turtle.turtle-inventory-adapter"
-local logsWindow = require "lib.system.windows.logs-window"
 local eventLoopWindow = require "lib.system.windows.event-loop-window"
 local activeLocksWindow = require "lib.inventory.windows.active-locks-window"
 local activeUnlocksWindow = require "lib.inventory.windows.active-unlocks-window"
@@ -69,16 +68,35 @@ local processors = {
 }
 
 local numWorkersPerTaskType = 2
+local Shell = require "lib.system.shell"
+local app = Shell.getApplication(arg)
 
-local function main()
+app:addWindow("Main", function()
+    ---@class StorageAppOptions
+    ---@field isAutoStorage boolean?
+    ---@field powerChest string?
+
+    local editEntity = EditEntity.new("Storage Options", ".kita/data/storage.options.json")
+    editEntity:addString("powerChest", "Power Chest", {values = {"top", "front", "bottom", "back"}, optional = true})
+    editEntity:addBoolean("isAutoStorage", "Auto Storage")
+
+    ---@type StorageAppOptions
+    local options = editEntity:run({}, app:wasAutorun())
+    local monitor = peripheral.find("monitor")
+
+    if monitor then
+        print("[redirected to monitor]")
+        monitor.setTextScale(1.0)
+        EventLoop.configure({window = monitor})
+    end
+
     print(string.format("[storage %s] booting...", version()))
     print(string.format("[storage] using %dx workers for each task", numWorkersPerTaskType))
     InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
-    Inventory.useAutoStorage(arg[2] == "auto-storage")
+    Inventory.useAutoStorage(options.isAutoStorage)
     Inventory.discover()
     print("[storage] ready!")
-    Utils.writeStartupFile(string.format("storage %s%s", arg[1], arg[2] and " " .. arg[2] or ""))
 
     local processorFns = Utils.map(processors, function(processor)
         return function()
@@ -92,13 +110,8 @@ local function main()
         end
     end)
 
-    EventLoop.runUntil("storage:stop", function()
-        Inventory.start(arg[1])
-    end, function()
-        EventLoop.pullKey(keys.f4)
-        print("[stop] storage")
-        Inventory.stop()
-        EventLoop.queue("storage:stop")
+    EventLoop.run(function()
+        Inventory.start(options.powerChest)
     end, function()
         while true do
             EventLoop.pullKey(keys.f3)
@@ -112,9 +125,9 @@ local function main()
             Utils.writeJson("storage-cache-dump.json", cache)
         end
     end, table.unpack(processorFns))
-end
+end)
 
-local function workers()
+app:addWindow("Workers", function()
     -- give system a bit of time until localhost StorageService is available & power items are read
     -- [todo] ❌ use events instead
     os.sleep(3)
@@ -126,27 +139,12 @@ local function workers()
     end, function()
         TaskWorkerPool.new(ProvideItemsTaskWorker, numWorkersPerTaskType):run()
     end)
-end
+end)
 
-local monitor = peripheral.find("monitor")
+app:addLogsWindow()
 
-if monitor then
-    monitor.setTextScale(1.0)
-    term.redirect(monitor)
-end
-
-term.clear()
-
-local Shell = require "lib.system.shell"
-
-Shell:addWindow("Main", main)
-Shell:addWindow("Workers", workers)
-Shell:addWindow("Logs", logsWindow)
-
-Shell:addWindow("RPC", function()
+app:addWindow("RPC", function()
     EventLoop.run(function()
-        RemoteService.run({"storage"})
-    end, function()
         Rpc.host(StorageService)
     end, function()
         if PeripheralApi.findWiredModem() then
@@ -155,9 +153,9 @@ Shell:addWindow("RPC", function()
     end)
 end)
 
-Shell:addWindow("Processors", processorsWindow(processors))
-Shell:addWindow("Locks", activeLocksWindow)
-Shell:addWindow("Unlocks", activeUnlocksWindow)
-Shell:addWindow("Event Loop", eventLoopWindow)
+app:addWindow("Processors", processorsWindow(processors))
+app:addWindow("Locks", activeLocksWindow)
+app:addWindow("Unlocks", activeUnlocksWindow)
+app:addWindow("Event Loop", eventLoopWindow)
 
-Shell:run()
+app:run()

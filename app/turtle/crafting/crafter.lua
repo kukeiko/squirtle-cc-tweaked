@@ -11,13 +11,11 @@ end
 
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local PeripheralApi = require "lib.common.peripheral-api"
-
-local function printUsage()
-    print("Usage: crafter <source> <target> [trash]")
-    print("- target must be one of: top, bottom, front")
-    print("- needs a barrel at either: top, bottom, front")
-end
+local Shell = require "lib.system.shell"
+local TurtleService = require "lib.turtle.turtle-service"
+local EditEntity = require "lib.ui.edit-entity"
 
 local function promptForWorkbench()
     term.clear()
@@ -155,16 +153,30 @@ local function moveNonRecipeItems(source, target, barrel)
     end
 end
 
----@param args string[]
-local function main(args)
-    print(string.format("[crafter %s] booting...", version()))
-    local source = args[1]
-    local target = args[2]
-    local trash = args[3]
+local app = Shell.getApplication(arg)
 
-    if not source or not target then
-        return printUsage()
+app:addWindow("Main", function()
+    -- [todo] ❌ need a way to know if app has been launched via the shell ui (or from terminal) or via autorun.
+    -- if autorun and valid arguments exist, use those and skip showing EditEntity screen.
+    local editEntity = EditEntity.new("Options", ".kita/data/crafter.options.json")
+    editEntity:addString("source", "Source", {values = {"top", "front", "bottom"}})
+    editEntity:addString("target", "Target", {values = {"top", "front", "bottom"}})
+    editEntity:addString("trash", "Trash", {values = {"top", "front", "bottom", "back"}, optional = true})
+
+    ---@class CrafterAppArguments
+    ---@field source string
+    ---@field target string
+    ---@field trash string?
+    ---@field returnHome boolean
+    local arguments = editEntity:run({source = "top", target = "front"})
+
+    if not arguments then
+        return
     end
+
+    local source = arguments.source
+    local target = arguments.target
+    local trash = arguments.trash
 
     local barrel = PeripheralApi.findSide("minecraft:barrel")
 
@@ -207,6 +219,10 @@ local function main(args)
         moveNonRecipeItems(source, trash or target, barrel)
     end)
 
-end
+end)
 
-return main(arg)
+app:addWindow("RPC", function()
+    Rpc.host(TurtleService, "wireless")
+end)
+
+app:run()

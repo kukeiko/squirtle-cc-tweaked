@@ -2,6 +2,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ShellWindow = require "lib.system.shell-window"
 local nextId = require "lib.tools.next-id"
+local logsWindow = require "lib.system.windows.logs-window"
 
 ---@class ShellApplication
 ---@field id number
@@ -12,13 +13,15 @@ local nextId = require "lib.tools.next-id"
 ---@field addThreadFn fun(...) : nil
 ---@field runLoopFn fun() : nil
 ---@field shell Shell
+---@field isAutorun boolean
 local ShellApplication = {}
 
 ---@param metadata Application
 ---@param window table
 ---@param shell Shell
+---@param isAutorun? boolean
 ---@return ShellApplication
-function ShellApplication.new(metadata, window, shell)
+function ShellApplication.new(metadata, window, shell, isAutorun)
     local addThreadFn, runLoopFn = EventLoop.createRun()
 
     ---@type ShellApplication
@@ -30,7 +33,8 @@ function ShellApplication.new(metadata, window, shell)
         windowIndex = 1,
         addThreadFn = addThreadFn,
         runLoopFn = runLoopFn,
-        shell = shell
+        shell = shell,
+        isAutorun = isAutorun or false
     }
     setmetatable(instance, {__index = ShellApplication})
 
@@ -40,6 +44,10 @@ end
 ---@return integer
 function ShellApplication:getId()
     return self.id
+end
+
+function ShellApplication:getPath()
+    return self.metadata.path
 end
 
 ---@param fn function
@@ -66,16 +74,15 @@ function ShellApplication:addWindow(title, fn)
             accept = function(event, ...)
                 local args = {...}
 
-                if self.shell:isUiEvent(event) then
+                if self.shell.isUiEvent(event) then
                     return shellWindow == self.windows[self.windowIndex]
-                elseif self.shell:isShellWindowEvent(event) then
+                elseif self.shell.isShellWindowEvent(event) then
                     return args[1] == shellWindow:getId()
                 end
 
                 return true
             end
         })
-        os.sleep(.1)
 
         if shellWindow == self.windows[self.windowIndex] then
             EventLoop.queue("shell-window:visible", shellWindow:getId())
@@ -102,6 +109,10 @@ function ShellApplication:addWindow(title, fn)
     end
 
     self.addThreadFn(wrapper)
+end
+
+function ShellApplication:addLogsWindow()
+    self:addWindow("Logs", logsWindow)
 end
 
 ---@param shellWindow ShellWindow
@@ -171,48 +182,73 @@ end
 
 ---@param name string
 function ShellApplication:launch(name)
-    self.shell:launch(self, name)
+    self.shell.launch(name, self)
 end
 
 ---@param name string
 function ShellApplication:terminate(name)
-    self.shell:terminate(self, name)
+    self.shell.terminate(self, name)
 end
 
-function ShellApplication:run()
-    self:drawMenu()
+---@return function
+function ShellApplication:getRunFunction()
+    return function()
+        EventLoop.waitForAny(function()
+            self.runLoopFn()
+        end, function()
+            self:drawMenu()
 
-    EventLoop.run(function()
-        self.shell:run(self, self.runLoopFn)
-    end, function()
-        while true do
-            local key = EventLoop.pullKeys({keys.left, keys.right})
-            local nextIndex = self.windowIndex
+            while true do
+                local key = EventLoop.pullKeys({keys.left, keys.right})
+                local nextIndex = self.windowIndex
 
-            if key == keys.left then
-                nextIndex = math.max(1, nextIndex - 1)
-            else
-                nextIndex = math.min(#self.windows, nextIndex + 1)
+                if key == keys.left then
+                    nextIndex = math.max(1, nextIndex - 1)
+                else
+                    nextIndex = math.min(#self.windows, nextIndex + 1)
+                end
+
+                if nextIndex ~= self.windowIndex then
+                    self:switchToWindowIndex(nextIndex)
+                end
             end
+        end)
+    end
+end
 
-            if nextIndex ~= self.windowIndex then
-                self:switchToWindowIndex(nextIndex)
-            end
-        end
-    end)
-
-    term.clear()
-    term.setCursorPos(1, 1)
+---@param withShellUi? boolean
+function ShellApplication:run(withShellUi)
+    self.shell.run(self, withShellUi)
 end
 
 ---@param name string
 ---@return boolean
 function ShellApplication:isRunning(name)
-    return self.shell:isRunning(name)
+    return self.shell.isRunning(name)
 end
 
 function ShellApplication:pullApplicationStateChange()
-    return self.shell:pullApplicationStateChange()
+    return self.shell.pullApplicationStateChange()
+end
+
+function ShellApplication:wasAutorun()
+    return self.isAutorun
+end
+
+---@param skipKita? boolean
+function ShellApplication:getInstalled(skipKita)
+    return self.shell.getInstalled(skipKita)
+end
+
+---@param name string
+---@param applicationService ApplicationService | RpcClient
+function ShellApplication:install(name, applicationService)
+    return self.shell.install(name, applicationService)
+end
+
+---@param editEntity EditEntity
+function ShellApplication:exposeRemoteOptions(editEntity)
+    self.shell.exposeRemoteOptions(self.metadata.name, editEntity)
 end
 
 return ShellApplication

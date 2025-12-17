@@ -13,7 +13,6 @@ package.path = package.path .. ";/app/turtle/?.lua"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemApi = require "lib.inventory.item-api"
-local RemoteService = require "lib.system.remote-service"
 local TurtleApi = require "lib.turtle.turtle-api"
 
 local minFuel = 512
@@ -181,8 +180,6 @@ end
 -- this strict requirement makes it so that we never have to move down
 -- a block to check if we reached home, which is gud.
 EventLoop.run(function()
-    RemoteService.run({"farmer"})
-end, function()
     Utils.writeStartupFile("farmer")
     print(string.format("[farmer %s] booting...", version()))
     TurtleApi.setBreakable(ItemApi.isCropsBlock)

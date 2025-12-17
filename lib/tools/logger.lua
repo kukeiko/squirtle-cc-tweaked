@@ -15,7 +15,7 @@ local Logger = {context = defaultContext, messages = {}}
 ---@field level "log" | "error" | "warn"
 ---@field context string
 ---@field message string
----@field timestamp string
+---@field timestamp integer
 ---@field data? table
 ---
 
@@ -29,7 +29,8 @@ local function addMessage(level, message, data)
         level = level,
         context = Logger.context:getName(),
         message = message,
-        timestamp = Utils.getTime24(),
+        ---@diagnostic disable-next-line: param-type-mismatch
+        timestamp = os.time("local"),
         data = data
     }
     table.insert(Logger.messages, logMessage)

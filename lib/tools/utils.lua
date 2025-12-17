@@ -14,6 +14,11 @@ function Utils.getPlatform()
     end
 end
 
+---@return Platform[]
+function Utils.getPlatforms()
+    return {"computer", "pocket", "turtle"}
+end
+
 function Utils.isDev()
     return fs.exists("package.json") or fs.exists("is-dev")
 end
@@ -588,9 +593,10 @@ function Utils.restartTimer(timer, timeout)
     return os.startTimer(timeout)
 end
 
-function Utils.getTime24()
+---@param time? integer
+function Utils.getTime24(time)
     ---@diagnostic disable-next-line: param-type-mismatch
-    local time = os.time("local")
+    time = time or os.time("local")
     local hours = tostring(math.floor(time))
     local minutes = tostring(math.floor((time % 1) * 60))
     local seconds = tostring(math.floor((time * 100) % 1 * 60))
@@ -608,6 +614,29 @@ function Utils.getTime24()
     end
 
     return string.format("%s:%s:%s", hours, minutes, seconds)
+end
+
+---@param time integer
+---@return string
+function Utils.getDeltaTime(time)
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local now = os.time("local")
+    local delta = now - time
+    local hours = math.floor(delta)
+
+    if hours > 0 then
+        return string.format("%dh", hours)
+    end
+
+    local minutes = math.floor(delta * 60)
+
+    if minutes > 0 then
+        return string.format("%dm", minutes)
+    end
+
+    local seconds = math.floor(delta * 60 * 60)
+
+    return string.format("%ds", seconds)
 end
 
 ---@param str string

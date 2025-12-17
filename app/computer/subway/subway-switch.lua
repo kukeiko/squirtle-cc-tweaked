@@ -9,58 +9,33 @@ if not arg then
     return {version = version(), platform = "computer"}
 end
 
-local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local SubwayService = require "lib.transportation.subway-service"
-local RemoteService = require "lib.system.remote-service"
+local Shell = require "lib.system.shell"
+local EditEntity = require "lib.ui.edit-entity"
+local app = Shell.getApplication(arg)
 
-print(string.format("[subway-switch %s] booting...", version()))
+app:addWindow("Main", function()
+    print(string.format("[subway-switch %s] booting...", version()))
 
--- fixes a bug where we can't set a signal of 0 if chunk unloaded
-local currentSignal = redstone.getAnalogInput("bottom")
-redstone.setAnalogOutput("bottom", 15)
-os.sleep(1)
-redstone.setAnalogOutput("bottom", currentSignal)
+    -- fixes a bug where we can't set a signal of 0 if chunk unloaded
+    print("[refresh] signal")
+    local currentSignal = redstone.getAnalogInput("bottom")
+    redstone.setAnalogOutput("bottom", 15)
+    os.sleep(1)
+    redstone.setAnalogOutput("bottom", currentSignal)
 
-local maxDistance = tonumber(arg[1])
+    local editEntity = EditEntity.new("Subway Switch Options", ".kita/data/subway-switch.options.json")
+    editEntity:addInteger("radius", "Radius", {minValue = 1, maxValue = 64})
 
-if maxDistance then
-    Utils.writeStartupFile(string.format("subway-switch %d", maxDistance))
-else
-    Utils.writeStartupFile("subway-switch")
-end
+    ---@class SubwaySwitchOptions
+    ---@field radius integer
+    local options = editEntity:run({radius = 16}, app:wasAutorun())
+    SubwayService.maxDistance = options.radius
 
-local defaultMaxDistance = 15
-SubwayService.maxDistance = maxDistance or defaultMaxDistance
-print("[max-distance]", SubwayService.maxDistance)
-
-RemoteService.addIntParameter({
-    id = "subway:max-distance",
-    type = "int-parameter",
-    name = "Max. Distance",
-    get = function()
-        return SubwayService.maxDistance
-    end,
-    set = function(value)
-        SubwayService.maxDistance = value or defaultMaxDistance
-
-        if value then
-            Utils.writeStartupFile(string.format("subway-switch %d", value))
-            return true, string.format("Max. Distance set to %d", SubwayService.maxDistance)
-        else
-            Utils.writeStartupFile("subway-switch")
-            return true, string.format("Max. Distance set to %d (default)", SubwayService.maxDistance)
-        end
-    end,
-    min = 1,
-    max = 64,
-    nullable = true,
-    requiresReboot = true
-})
-
-EventLoop.run(function()
+    app:exposeRemoteOptions(editEntity)
     Rpc.host(SubwayService)
-end, function()
-    RemoteService.run({"subway-switch"})
 end)
+
+app:addLogsWindow()
+app:run()

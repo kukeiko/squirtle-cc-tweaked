@@ -11,14 +11,13 @@ end
 
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
-local RemoteService = require "lib.system.remote-service"
 local StorageService = require "lib.inventory.storage-service"
 local TaskService = require "lib.system.task-service"
 local Shell = require "lib.system.shell"
 local SearchableList = require "lib.ui.searchable-list"
 local readInteger = require "lib.ui.read-integer"
-local showLogs = require "lib.system.windows.logs-window"
 
+local app = Shell.getApplication(arg)
 local idleTimeout = 30
 local refreshIntervals = {dispense = 3, transfers = 1, missing = 1}
 
@@ -162,22 +161,17 @@ print(string.format("[dispenser %s] connecting to services...", version()))
 local storageService = Rpc.nearest(StorageService)
 local taskService = Rpc.nearest(TaskService)
 
-Shell:addWindow("Items", function()
+app:addWindow("Items", function()
     showItemList(storageService, taskService)
 end)
 
-Shell:addWindow("Transfers", function()
+app:addWindow("Transfers", function()
     showTransfers(storageService, taskService)
 end)
 
-Shell:addWindow("Missing", function()
+app:addWindow("Missing", function()
     showMissing(storageService, taskService)
 end)
 
-Shell:addWindow("Logs", showLogs)
-
-Shell:addWindow("RPC", function()
-    RemoteService.run({"dispenser"})
-end)
-
-Shell:run()
+app:addLogsWindow()
+app:run()

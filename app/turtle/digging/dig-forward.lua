@@ -6,6 +6,7 @@ local function main(args)
     for _ = 1, length do
         if turtle.getFuelLevel() == 0 then
             print("[help] out of fuel, exiting")
+            break;
         end
 
         while not turtle.forward() do

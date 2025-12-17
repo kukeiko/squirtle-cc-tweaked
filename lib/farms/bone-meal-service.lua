@@ -1,34 +1,19 @@
-local EventLoop = require "lib.tools.event-loop"
-
 ---@class BoneMealService : Service
 local BoneMealService = {name = "bone-meal"}
+local isOn = true
 
-function BoneMealService.run()
-    while true do
-        local event = EventLoop.pull()
-
-        if event == "terminate" then
-            return
-        elseif event == "bone-meal:reboot" then
-            os.reboot()
-        end
-    end
+function BoneMealService.isOn()
+    return isOn
 end
 
 function BoneMealService.on()
-    local isFull = BoneMealService.getStock()
-
-    if not isFull then
-        redstone.setOutput("bottom", false)
-    end
+    redstone.setOutput("bottom", false)
+    isOn = true
 end
 
 function BoneMealService.off()
     redstone.setOutput("bottom", true)
-end
-
-function BoneMealService.reboot()
-    EventLoop.queue("bone-meal:reboot")
+    isOn = false
 end
 
 ---@return boolean, integer, string

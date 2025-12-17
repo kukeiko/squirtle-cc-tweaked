@@ -34,13 +34,13 @@ local function draw(modal, value, values)
             modal.write("\142")
         else
             modal.write("\149")
-            local currentValue = values[y - 1]
+            local option = values[y - 1]
 
-            if currentValue == value then
-                modal.write(Utils.pad(currentValue, w - 2))
+            if option == value then
+                modal.write(Utils.pad(tostring(option), w - 2))
             else
                 modal.setTextColor(colors.lightGray)
-                modal.write(Utils.pad(currentValue, w - 2))
+                modal.write(Utils.pad(tostring(option), w - 2))
                 modal.setTextColor(colors.white)
             end
 
@@ -51,16 +51,22 @@ end
 
 ---@param value? string
 ---@param values string[]
+---@param optional? boolean
 ---@return string?
-return function(value, values)
+return function(value, values, optional)
     local originalValue = value
     local termWidth, termHeight = term.current().getSize()
     local longestWidth = getLongestLength(values)
     local modalWidth = longestWidth + 2 -- +2 for the borders
-    local modalHeight = #values + 2 -- +2 for the borders
+    local modalHeight = (#values + (optional and 1 or 0)) + 2 -- +2 for the borders
     local modalX = math.floor((termWidth - modalWidth) / 2)
     local modalY = math.ceil((termHeight - modalHeight) / 2)
     local modal = window.create(term.current(), modalX, modalY, modalWidth, modalHeight, true)
+
+    if optional then
+        values = Utils.copy(values)
+        table.insert(values, 1, nil)
+    end
 
     while true do
         draw(modal, value, values)
@@ -76,7 +82,7 @@ return function(value, values)
             end
 
             value = values[index]
-        elseif key == keys.enter or key == keys.numPadEnter then
+        elseif key == keys.space or key == keys.enter or key == keys.numPadEnter then
             modal.setVisible(false)
 
             return value

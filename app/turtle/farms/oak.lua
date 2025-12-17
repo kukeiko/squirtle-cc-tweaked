@@ -15,7 +15,6 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
-local RemoteService = require "lib.system.remote-service"
 local OakService = require "lib.farms.oak-service"
 
 local minFuel = 80 * 64;
@@ -83,8 +82,6 @@ end
 
 EventLoop.run(function()
     Rpc.host(OakService)
-end, function()
-    RemoteService.run({"oak"})
 end, function()
     print(string.format("[oak %s] booting...", version()))
     Utils.writeStartupFile("oak")
