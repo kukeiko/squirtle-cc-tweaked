@@ -422,6 +422,12 @@
         "tracks": []
     },
     {
+        "id": "aztec:village:exit",
+        "type": "endpoint",
+        "name": "Aztec: Village",
+        "tracks": []
+    },
+    {
         "id": "aztec:wheat:exit",
         "type": "endpoint",
         "name": "Aztec: Wheat Fields",
@@ -441,9 +447,28 @@
                 "signal": 1
             },
             {
+                "to": "aztec:village:switch",
+                "signal": 5
+            },
+            {
                 "duration": 12,
                 "to": "aztec:sunken-temple:exit",
                 "signal": 7
+            }
+        ]
+    },
+    {
+        "id": "aztec:village:switch",
+        "type": "switch",
+        "name": "Aztec: Village [SW]",
+        "tracks": [
+            {
+                "to": "aztec:wood:switch",
+                "signal": 0
+            },
+            {
+                "to": "aztec:village:exit",
+                "signal": 1
             }
         ]
     },
