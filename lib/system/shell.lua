@@ -104,7 +104,8 @@ local function createApplicationEnvironment(shellApplication)
     return setmetatable({
         arg = {[0] = shellApplication:getPath()}, -- [todo] ❌ implement & pass along program arguments
         nextId = nextId, -- making sure to have globally unique ids
-        Shell = Shell -- share Shell instance with bundle apps
+        Shell = Shell, -- share Shell instance with bundled apps
+        EventLoop = EventLoop -- share EventLoop instance with bundled apps (added for EventLoop.configure() to work)
     }, {__index = _ENV})
 end
 
@@ -293,6 +294,7 @@ function Shell.getApplication(arg)
     return application
 end
 
+-- [todo] ❌ support that multi platform apps can exist outside a platform folder (i.e. database is just in .kita/app)
 ---@param skipKita? boolean
 ---@return Application[]
 function Shell.getInstalled(skipKita)
@@ -407,6 +409,7 @@ end
 ---@param name string
 function Shell.addAutorun(name)
     if Utils.contains(Shell.settings.autorun, name) then
+        -- [todo] ❌ should still try to write startup file
         return
     end
 

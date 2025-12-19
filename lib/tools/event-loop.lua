@@ -1,3 +1,7 @@
+if _ENV["EventLoop"] then
+    return _ENV["EventLoop"] --[[@as EventLoop]]
+end
+
 local Utils = require "lib.tools.utils"
 
 ---@class EventLoopThread
@@ -7,6 +11,7 @@ local Utils = require "lib.tools.utils"
 ---@field callback? function
 ---@field window? table
 
+---@class EventLoop
 local EventLoop = {}
 
 ---@type EventLoopThread?

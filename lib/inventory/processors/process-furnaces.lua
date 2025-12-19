@@ -9,6 +9,7 @@ local fuelItems = {"minecraft:lava_bucket", "minecraft:charcoal", "minecraft:coa
 ---@param maxCount integer
 ---@return string[]
 local function getFurnacesForSmelting(furnaces, item, maxCount)
+    -- [todo] ❌ on the mp server, this seems to take a long time (~7s)
     local alreadyFilledFurnaces = Utils.filter(furnaces, function(furnace)
         local inputStack = InventoryPeripheral.getStack(furnace, 1)
 

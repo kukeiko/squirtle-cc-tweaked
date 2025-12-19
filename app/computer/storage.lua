@@ -157,5 +157,4 @@ app:addWindow("Processors", processorsWindow(processors))
 app:addWindow("Locks", activeLocksWindow)
 app:addWindow("Unlocks", activeUnlocksWindow)
 app:addWindow("Event Loop", eventLoopWindow)
-
 app:run()

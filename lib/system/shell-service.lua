@@ -80,10 +80,15 @@ function ShellService.update()
     end
 end
 
+-- [todo] ❌ not yet used
 ---@param name string
 function ShellService.install(name)
     local applicationService = Rpc.nearest(ApplicationService)
     ShellService.shell.install(name, applicationService)
+end
+
+-- [todo] ❌ implement & use
+function ShellService.addAutorun()
 end
 
 ---@return string

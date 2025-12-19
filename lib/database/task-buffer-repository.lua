@@ -5,7 +5,7 @@ local TaskBufferRepository = {}
 
 ---@return string
 local function getFilePath()
-    return "data/entities/task-buffers.json"
+    return ".kita/data/entities/task-buffers.json"
 end
 
 ---@class TaskBufferFile

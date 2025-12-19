@@ -27,13 +27,13 @@ app:addWindow("Main", function()
 
     local editEntity = EditEntity.new("Subway Switch Options", ".kita/data/subway-switch.options.json")
     editEntity:addInteger("radius", "Radius", {minValue = 1, maxValue = 64})
+    app:exposeRemoteOptions(editEntity)
 
     ---@class SubwaySwitchOptions
     ---@field radius integer
     local options = editEntity:run({radius = 16}, app:wasAutorun())
     SubwayService.maxDistance = options.radius
-
-    app:exposeRemoteOptions(editEntity)
+    print(string.format("[radius] %dm", options.radius))
     Rpc.host(SubwayService)
 end)
 

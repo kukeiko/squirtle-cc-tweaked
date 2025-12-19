@@ -52,8 +52,6 @@ app:addWindow("Apps", function()
             }
         end
 
-        local apps = getApps()
-
         local function getListOptions()
             local apps = getApps()
 
@@ -70,6 +68,8 @@ app:addWindow("Apps", function()
         local selected = list:run()
 
         if selected then
+            local apps = getApps()
+
             if selected.id == "computer" then
                 showApps(apps["computer"], "Computer")
             elseif selected.id == "pocket" then
@@ -136,57 +136,58 @@ app:addWindow("RPC / Upload", function()
     end)
 end)
 
-app:addWindow("Boot Disk", function()
-    while true do
-        os.sleep(1)
-        Utils.waitForUserToHitEnter("hit <enter> to create a boot disk")
+if Utils.getPlatform() == "computer" then
+    app:addWindow("Boot Disk", function()
+        while true do
+            os.sleep(1)
+            Utils.waitForUserToHitEnter("hit <enter> to create a boot disk")
 
-        while not fs.isDir("disk") do
-            Utils.waitForUserToHitEnter("no disk attached. attach one, then hit <enter>")
+            while not fs.isDir("disk") do
+                Utils.waitForUserToHitEnter("no disk attached. attach one, then hit <enter>")
+            end
+
+            print("[creating] boot disk...")
+
+            ---@type string[]
+            local paths = {}
+
+            -- create a program file in root so the user can just type "kita" to start kita
+            local programFile = fs.open("disk/kita", "w")
+            programFile.writeLine("local platform = (pocket and \"pocket\") or (turtle and \"turtle\") or \"computer\"")
+            programFile.writeLine("shell.run(string.format(\".kita/app/%s/kita\", platform), table.unpack(arg))")
+            programFile.close()
+            table.insert(paths, "kita")
+            print("[created] disk/kita")
+
+            for _, platform in ipairs(Utils.getPlatforms()) do
+                -- create kita app file for each platform
+                local kitaApp = ApplicationService.getApplication(platform, "kita", true)
+                local path = string.format("disk/.kita/app/%s/kita", platform)
+                local kitaAppFile = fs.open(path, "w")
+                kitaAppFile.write(kitaApp.content)
+                kitaAppFile.close()
+                table.insert(paths, string.format(".kita/app/%s/kita", platform))
+                print(string.format("[created] %s", path))
+            end
+
+            -- create startup file copying over everything and starting kita
+            local startupFile = fs.open("disk/startup", "w")
+
+            startupFile.writeLine("if fs.isDir(\"disk\") then")
+            for _, path in ipairs(paths) do
+                startupFile.writeLine(string.format("    if fs.exists(\"%s\") then fs.delete(\"%s\") end", path, path))
+                startupFile.writeLine(string.format("    fs.copy(\"/disk/%s\", \"%s\")", path, path))
+            end
+            startupFile.writeLine("else")
+            -- delete the startup file if not booting from a disk
+            startupFile.writeLine("    fs.delete(\"startup\")")
+            startupFile.writeLine("end")
+            startupFile.close()
+
+            print("[created] disk/startup")
         end
-
-        print("[creating] boot disk...")
-
-        ---@type string[]
-        local paths = {}
-
-        -- create a program file in root so the user can just type "kita" to start kita
-        local programFile = fs.open("disk/kita", "w")
-        programFile.writeLine("local platform = (pocket and \"pocket\") or (turtle and \"turtle\") or \"computer\"")
-        programFile.writeLine("shell.run(string.format(\".kita/app/%s/kita\", platform), table.unpack(arg))")
-        programFile.close()
-        table.insert(paths, "kita")
-        print("[created] disk/kita")
-
-        for _, platform in ipairs(Utils.getPlatforms()) do
-            -- create kita app file for each platform
-            local kitaApp = ApplicationService.getApplication(platform, "kita", true)
-            local path = string.format("disk/.kita/app/%s/kita", platform)
-            local kitaAppFile = fs.open(path, "w")
-            kitaAppFile.write(kitaApp.content)
-            kitaAppFile.close()
-            table.insert(paths, string.format(".kita/app/%s/kita", platform))
-            print(string.format("[created] %s", path))
-        end
-
-        -- create startup file copying over everything and starting kita
-        local startupFile = fs.open("disk/startup", "w")
-
-        startupFile.writeLine("if fs.isDir(\"disk\") then")
-        for _, path in ipairs(paths) do
-            startupFile.writeLine(string.format("    if fs.exists(\"%s\") then fs.delete(\"%s\") end", path, path))
-            startupFile.writeLine(string.format("    fs.copy(\"/disk/%s\", \"%s\")", path, path))
-        end
-        startupFile.writeLine("else")
-        -- delete the startup file if not booting from a disk
-        startupFile.writeLine("    fs.delete(\"startup\")")
-        startupFile.writeLine("end")
-
-        startupFile.writeLine("shell.run(\"kita\")")
-        startupFile.close()
-        print("[created] disk/startup")
-    end
-end)
+    end)
+end
 
 app:addLogsWindow()
 app:run()

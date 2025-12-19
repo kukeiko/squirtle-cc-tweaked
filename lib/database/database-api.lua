@@ -2,7 +2,7 @@ local Utils = require "lib.tools.utils"
 local CraftingRecipeRepository = require "lib.database.crafting-recipe-repository"
 
 ---@class DatabaseApi
-local DatabaseApi = {folder = "data"}
+local DatabaseApi = {folder = ".kita/data"}
 
 local entityTypes = {subwayStations = "subway-stations", turtleResumables = "turtle-resumables", turtleDiskState = "turtle-disk-state"}
 

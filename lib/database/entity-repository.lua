@@ -24,7 +24,7 @@ end
 
 ---@return string
 function EntityRepository:getFilePath()
-    return string.format("data/entities/%s.json", self.name)
+    return string.format(".kita/data/entities/%s.json", self.name)
 end
 
 ---@return EntityFile

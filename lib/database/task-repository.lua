@@ -6,7 +6,7 @@ local TaskRepository = {}
 
 ---@return string
 local function getFilePath()
-    return "data/entities/tasks.json"
+    return ".kita/data/entities/tasks.json"
 end
 
 ---@class TaskFile
