@@ -1,3 +1,4 @@
+local Side = require "lib.common.side"
 local Redstone = {}
 
 ---@param side string|string[]
@@ -12,6 +13,17 @@ function Redstone.getInput(side)
             return side[i]
         end
     end
+end
+
+---@return boolean
+function Redstone.hasInput()
+    for _, side in ipairs(Side.allNames()) do
+        if redstone.getInput(side) then
+            return true
+        end
+    end
+
+    return false
 end
 
 return Redstone

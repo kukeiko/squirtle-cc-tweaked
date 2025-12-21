@@ -19,7 +19,7 @@
                 "build computer:xylophone",
                 "build pocket:aqueduct",
                 "build pocket:bone-meal",
-                "build pocket:oak",
+                "build oak",
                 "build pocket:print3d",
                 "build pocket:remote",
                 "build pocket:remote-control",
@@ -124,6 +124,23 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/building/bone-meal.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/bone-meal"
         },
         {
+            "label": "build oak",
+            "dependsOn": [
+                "build oak:computer",
+                "build oak:turtle",
+            ]
+        },
+        {
+            "label": "build oak:computer",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/oak.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/oak"
+        },
+        {
+            "label": "build oak:turtle",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/oak.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/oak"
+        },
+        {
             "label": "build storage:computer",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/storage"
@@ -197,16 +214,6 @@
             "label": "build pocket:craft:dev",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/craft.lua -p app/pocket/?.lua -p ?.lua -o ../23/craft.lua"
-        },
-        {
-            "label": "build pocket:oak",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o .kita/app/pocket/oak"
-        },
-        {
-            "label": "build pocket:oak:dev",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/oak.lua -p app/pocket/?.lua -p ?.lua -o ../23/oak.lua"
         },
         {
             "label": "build pocket:print3d",
@@ -332,11 +339,6 @@
             "label": "build turtle:nether-lumberjack",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/nether-lumberjack.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/nether-lumberjack"
-        },
-        {
-            "label": "build turtle:oak",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/oak.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/oak"
         },
         {
             "label": "build turtle:password",

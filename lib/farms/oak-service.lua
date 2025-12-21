@@ -1,5 +1,5 @@
 ---@class OakService : Service
-local OakService = {name = "oak"}
+local OakService = {name = "oak",maxDistance = 32}
 
 local isOn = false
 
