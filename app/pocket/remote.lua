@@ -167,9 +167,9 @@ app:addWindow("Remotes", function(shellWindow)
     end, function()
         ---@return SearchableListOption[]
         local function getOptions()
-            return Utils.map(services, function(service)
+            local options = Utils.map(services, function(service)
                 ---@type SearchableListOption
-                local option = {id = service.host, name = service.host}
+                local option = {id = service.host, name = service.host, data = service}
 
                 if service.ping() and service.distance then
                     option.suffix = string.format("%sm", math.floor(service.distance))
@@ -179,6 +179,17 @@ app:addWindow("Remotes", function(shellWindow)
 
                 return option
             end)
+
+            table.sort(options, function(a, b)
+                ---@type (ShellService|RpcClient)
+                local serviceA = a.data
+                ---@type (ShellService|RpcClient)
+                local serviceB = b.data
+
+                return (serviceA.distance or math.huge) < (serviceB.distance or math.huge)
+            end)
+
+            return options
         end
 
         local list = SearchableList.new(getOptions(), "Remotes", nil, 1, getOptions)
