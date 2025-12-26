@@ -9,15 +9,15 @@ if not arg then
     return {version = version(), platform = "turtle"}
 end
 
-package.path = package.path .. ";/app/turtle/?.lua"
-local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemApi = require "lib.inventory.item-api"
 local InventoryApi = require "lib.inventory.inventory-api"
+local Shell = require "lib.system.shell"
 local TurtleApi = require "lib.turtle.turtle-api"
 local InventoryPeripheral = require "lib.inventory.inventory-peripheral"
 local FurnacePeripheral = require "lib.inventory.furnace-peripheral"
 
+local app = Shell.getApplication(arg)
 local maxLogs = 64
 local minBoneMealForPlanting = 1
 local minBoneMealForWork = 63
@@ -268,36 +268,40 @@ local function recover()
     end
 end
 
-EventLoop.run(function()
-    Utils.writeStartupFile("lumberjack")
-    print(string.format("[lumberjack %s] booting...", version()))
-    TurtleApi.setBreakable({ItemApi.birchLog, ItemApi.birchLeaves, ItemApi.birchSapling})
-    recover()
+app:addWindow("Main", function()
+    EventLoop.run(function()
+        print(string.format("[lumberjack %s] booting...", version()))
+        TurtleApi.setBreakable({ItemApi.birchLog, ItemApi.birchLeaves, ItemApi.birchSapling})
+        recover()
 
-    while true do
-        if isParked() then
-            doHomework()
-            TurtleApi.turn("left")
-            TurtleApi.move()
-        elseif isAtWork() then
-            doWork()
-            TurtleApi.turn("left")
-            TurtleApi.walk()
-        else
-            while not TurtleApi.tryWalk() do
-                local block = TurtleApi.probe()
+        while true do
+            if isParked() then
+                doHomework()
+                TurtleApi.turn("left")
+                TurtleApi.move()
+            elseif isAtWork() then
+                doWork()
+                TurtleApi.turn("left")
+                TurtleApi.walk()
+            else
+                while not TurtleApi.tryWalk() do
+                    local block = TurtleApi.probe()
 
-                if not block then
-                    error("could not move even though front seems to be free")
-                end
+                    if not block then
+                        error("could not move even though front seems to be free")
+                    end
 
-                if isLookingAtTree() then
-                    -- should only happen if sapling got placed by player
-                    TurtleApi.mine()
-                else
-                    TurtleApi.turn(getBlockTurnSide(block))
+                    if isLookingAtTree() then
+                        -- should only happen if sapling got placed by player
+                        TurtleApi.mine()
+                    else
+                        TurtleApi.turn(getBlockTurnSide(block))
+                    end
                 end
             end
         end
-    end
+    end)
 end)
+
+app:addLogsWindow()
+app:run()
