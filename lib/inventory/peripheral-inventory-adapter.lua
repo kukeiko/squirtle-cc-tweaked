@@ -1,3 +1,5 @@
+local ItemApi = require "lib.inventory.item-api"
+
 ---@class PeripheralInventoryAdapter : InventoryAdapter
 local PeripheralInventoryAdapter = {}
 
@@ -25,14 +27,30 @@ end
 ---@param slot integer
 ---@return ItemStack?
 function PeripheralInventoryAdapter.getStack(inventory, slot)
-    return peripheral.call(inventory, "getItemDetail", slot)
+    ---@type ItemStack?
+    local itemStack = peripheral.call(inventory, "getItemDetail", slot)
+
+    if itemStack and ItemApi.isCustomUnstackable(itemStack.name) then
+        itemStack.maxCount = 1
+    end
+
+    return itemStack
 end
 
 ---@param inventory string
 ---@param detailed? boolean
 ---@return ItemStacks
 function PeripheralInventoryAdapter.getStacks(inventory, detailed)
-    return peripheral.call(inventory, "list")
+    ---@type ItemStacks
+    local itemStacks = peripheral.call(inventory, "list")
+
+    for _, itemStack in pairs(itemStacks) do
+        if itemStack and ItemApi.isCustomUnstackable(itemStack.name) then
+            itemStack.maxCount = 1
+        end
+    end
+
+    return itemStacks
 end
 
 ---@param from string

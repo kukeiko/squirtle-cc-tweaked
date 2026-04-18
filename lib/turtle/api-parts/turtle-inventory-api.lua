@@ -1,4 +1,5 @@
 local ItemStock = require "lib.inventory.item-stock"
+local ItemApi = require "lib.inventory.item-api"
 
 ---@class TurtleInventoryApi
 local TurtleInventoryApi = {}
@@ -40,7 +41,14 @@ end
 ---@param detailed? boolean
 ---@return ItemStack?
 function TurtleInventoryApi.getStack(slot, detailed)
-    return turtle.getItemDetail(slot or TurtleInventoryApi.getSelectedSlot(), detailed)
+    ---@type ItemStack?
+    local itemStack = turtle.getItemDetail(slot or TurtleInventoryApi.getSelectedSlot(), detailed)
+
+    if itemStack and ItemApi.isCustomUnstackable(itemStack.name) then
+        itemStack.maxCount = 1
+    end
+
+    return itemStack
 end
 
 ---@param detailed? boolean

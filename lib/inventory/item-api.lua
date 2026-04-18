@@ -1,5 +1,13 @@
 local Utils = require "lib.tools.utils"
 
+---@type table<string, true>
+local unstackableHack = {
+    ["computercraft:computer_normal"] = true,
+    ["computercraft:computer_advanced"] = true,
+    ["computercraft:turtle_normal"] = true,
+    ["computercraft:turtle_advanced"] = true
+}
+
 ---@class ItemApi
 local ItemApi = {
     barrel = "minecraft:barrel",
@@ -118,6 +126,13 @@ local itemDetails = {}
 ---@param detail ItemDetail
 function ItemApi.addItemDetail(detail)
     itemDetails[detail.name] = detail
+end
+
+---@param details ItemDetails
+function ItemApi.addItemDetails(details)
+    for _, detail in pairs(details) do
+        ItemApi.addItemDetail(detail)
+    end
 end
 
 ---@param item string
@@ -291,6 +306,12 @@ end
 ---@return boolean
 function ItemApi.isCropsBlock(block)
     return block.tags["minecraft:crops"]
+end
+
+---@param name string
+---@return boolean
+function ItemApi.isCustomUnstackable(name)
+    return unstackableHack[name] == true
 end
 
 return ItemApi
