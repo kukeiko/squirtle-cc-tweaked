@@ -12,6 +12,7 @@ local nextId = require "lib.tools.next-id"
 ---@field type "pong"
 ---@field service string
 ---@field host string
+---@field activeCallIds table<string, true>
 
 ---@class RpcRequestPacket
 ---@field callId string
@@ -31,18 +32,21 @@ local nextId = require "lib.tools.next-id"
 ---@field service Service
 ---@field open function
 ---@field close function
+---@field activeCallIds table<string, true>
 ---@field getWiredName fun() : string
 
 ---@class RpcClient
 ---@field host string
----@field distance number
+---@field distance number?
 ---@field channel integer
+---@field serverActiveCallIds table<string, true>
 ---@field ping fun() : boolean
 
 ---@class DiscoveredServiceHost
 ---@field host string
 ---@field distance integer?
 ---@field channel integer
+---@field activeCallIds table<string, true>
 
 ---@class Service
 ---@field name string
@@ -130,9 +134,12 @@ end
 ---@field servers RpcServer[]
 local Rpc = {servers = {}}
 
+---Waits for an incoming "pong" modem_message from a matching service, forever.
+---If specified, has to be a modem_message from the given host.
 ---@param service Service
+---@param host? string
 ---@return DiscoveredServiceHost
-local function waitForPong(service)
+local function waitForPong(service, host)
     while true do
         local event = table.pack(EventLoop.pull("modem_message"))
         ---@type integer
@@ -142,9 +149,9 @@ local function waitForPong(service)
         ---@type integer
         local distance = event[6]
 
-        if type(message) == "table" and message.type == "pong" and message.service == service.name then
+        if type(message) == "table" and message.type == "pong" and message.service == service.name and (host == nil or message.host == host) then
             ---@type DiscoveredServiceHost
-            local discovered = {host = message.host, distance = distance, channel = replyChannel}
+            local discovered = {host = message.host, distance = distance, channel = replyChannel, activeCallIds = message.activeCallIds}
             return discovered
         end
     end
@@ -194,6 +201,7 @@ local function createClient(service, host, distance, channel, modemType)
         host = host,
         distance = distance,
         channel = channel or pingChannel,
+        serverActiveCallIds = {},
         ping = function()
             return true
         end
@@ -205,21 +213,10 @@ local function createClient(service, host, distance, channel, modemType)
             local ping = {type = "ping", service = service.name, host = host}
             modem.transmit(client.channel, clientChannel, ping)
 
-            while true do
-                local event = table.pack(EventLoop.pull("modem_message"))
-                ---@type integer
-                local replyChannel = event[4]
-                ---@type RpcPongPacket
-                local message = event[5]
-                ---@type number|nil
-                local distance = event[6]
-
-                if type(message) == "table" and message.type == "pong" and message.service == service.name and message.host == host then
-                    client.distance = distance or 0
-                    client.channel = replyChannel
-                    break
-                end
-            end
+            local response = waitForPong(service, host)
+            client.distance = response.distance
+            client.channel = response.channel
+            client.serverActiveCallIds = response.activeCallIds
         end)
     end
 
@@ -227,33 +224,70 @@ local function createClient(service, host, distance, channel, modemType)
         __index = function(_, k)
             return function(...)
                 local callId = nextCallId()
+                local arguments = {...}
+                local function sendRequest()
+                    ---@type RpcRequestPacket
+                    local packet = {
+                        type = "request",
+                        callId = callId,
+                        host = host,
+                        service = service.name,
+                        method = k,
+                        arguments = arguments
+                    }
+                    logClientRequest(k, clientChannel, client.channel, packet)
+                    modem.transmit(client.channel, clientChannel, packet)
+                end
 
-                ---@type RpcRequestPacket
-                local packet = {type = "request", callId = callId, host = host, service = service.name, method = k, arguments = {...}}
-                logClientRequest(k, clientChannel, client.channel, packet)
-                modem.transmit(client.channel, clientChannel, packet)
+                ---@type table?
+                local response
+                sendRequest()
 
-                while true do
-                    local event = {EventLoop.pull("modem_message")}
-                    ---@type integer
-                    local replyChannel = event[4]
-                    ---@type RpcResponsePacket
-                    local message = event[5]
-                    ---@type number?
-                    local distance = event[6]
+                EventLoop.waitForAny(function()
+                    -- [todo] 🧪 experimental: support services rebooting while a client is waiting for a response
+                    while true do
+                        os.sleep(30)
 
-                    if type(message) == "table" and message.callId == callId and message.type == "response" then
-                        logClientResponse(k, clientChannel, client.channel, message)
-                        client.distance = distance or 0
-                        client.channel = replyChannel
+                        if not client.ping() then
+                            while not client.ping() do
+                                os.sleep(3)
+                            end
+                        end
 
-                        if message.success then
-                            return table.unpack(message.response --[[@as table]] )
-                        else
-                            error(message.response)
+                        if not client.serverActiveCallIds[callId] then
+                            sendRequest()
                         end
                     end
+                end, function()
+                    while true do
+                        local event = {EventLoop.pull("modem_message")}
+                        ---@type integer
+                        local replyChannel = event[4]
+                        ---@type RpcResponsePacket
+                        local message = event[5]
+                        ---@type number?
+                        local distance = event[6]
+
+                        if type(message) == "table" and message.callId == callId and message.type == "response" then
+                            logClientResponse(k, clientChannel, client.channel, message)
+                            client.distance = distance
+                            client.channel = replyChannel
+
+                            if message.success then
+                                response = message.response --[[@as table]]
+                                return
+                            else
+                                error(message.response)
+                            end
+                        end
+                    end
+                end)
+
+                if not response then
+                    error(string.format("failed to get a response"))
                 end
+
+                return table.unpack(response)
             end
         end
     })
@@ -261,6 +295,7 @@ local function createClient(service, host, distance, channel, modemType)
     return client
 end
 
+---Find hosts for given service, returning them one by one. To be used in a for-in loop. Runs forever.
 ---@generic T
 ---@param service T | Service
 ---@param modemType? "wired" | "wireless"
@@ -299,6 +334,7 @@ local function createLocalHostClient(service)
         host = os.getComputerLabel(),
         distance = 0,
         channel = 0,
+        serverActiveCallIds = {},
         ping = function()
             return true
         end
@@ -309,6 +345,8 @@ local function createLocalHostClient(service)
     return client
 end
 
+---Tries to create a client connected to the nearest service. If timeout is omitted, runs forever.
+---Returns nil if timeout was hit and no service was found.
 ---@generic T
 ---@param service T | Service
 ---@param timeout? number
@@ -343,6 +381,8 @@ function Rpc.tryNearest(service, timeout, modemType)
     end
 end
 
+---Create a client to the nearest service, or throw an error in case none was found during the timeout period.
+---If no timeout is specified, runs forever.
 ---@generic T
 ---@param service T | Service
 ---@param timeout? number
@@ -358,6 +398,7 @@ function Rpc.nearest(service, timeout, modemType)
     return nearest
 end
 
+---Create a client connected to a specific service & host.
 ---@generic T
 ---@param service T | Service
 ---@param host string
@@ -445,6 +486,7 @@ function Rpc.server(service, modemType)
     ---@type RpcServer
     local server = {
         service = service,
+        activeCallIds = {},
         open = function()
             table.insert(Rpc.servers, this)
             EventLoop.runUntil(closeEvent, function()
@@ -466,15 +508,18 @@ function Rpc.server(service, modemType)
                         if message.type == "ping" then
                             logServerRequest("ping", replyChannel, receivedChannel, message)
                             ---@type RpcPongPacket
-                            local pong = {type = "pong", host = host, service = service.name}
+                            local pong = {type = "pong", host = host, service = service.name, activeCallIds = this.activeCallIds}
                             peripheral.call(modemReceived, "transmit", replyChannel, listenChannel, pong)
                             logServerResponse("pong", replyChannel, listenChannel, pong)
                         elseif message.type == "request" and message.host == host and type(service[message.method]) == "function" then
                             logServerRequest(message.method, replyChannel, receivedChannel, message)
+                            this.activeCallIds[message.callId] = true
 
                             local success, response = pcall(function()
                                 return table.pack(service[message.method](table.unpack(message.arguments)))
                             end)
+
+                            this.activeCallIds[message.callId] = nil
 
                             ---@type RpcResponsePacket
                             local packet = {callId = message.callId, type = "response", response = response, success = success}
