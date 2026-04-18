@@ -18,7 +18,7 @@ end
 ---@param item string
 ---@return CraftingRecipe?
 function CraftingRecipeRepository.find(item)
-    return repository:find(item)
+    return repository:findById(item)
 end
 
 ---@param recipe CraftingRecipe

@@ -1,9 +1,11 @@
+local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 
 ---@class BuildChunkStorageTaskWorker : TurtleTaskWorker 
@@ -44,6 +46,8 @@ function BuildChunkStorageTaskWorker:work()
             buildChunkStorage(storageComputerLabel, task.chestLayers)
         end)
 
+        -- [todo] 🧪 get item max counts from storage service
+        self:acquireItemDetails()
         local requiredItems, requiredShulkers = TurtleApi.getOpenStock(results.placed, true)
         local totalShulkers = math.max(requiredShulkers, 4)
 
@@ -77,10 +81,16 @@ function BuildChunkStorageTaskWorker:work()
 
     ---@param state BuildChunkStorageState
     resumable:setFinish(function(state)
+        print("[marking] storage as built...")
+        local chunkPylonService = Rpc.nearest(ChunkPylonService)
+        chunkPylonService.markStorageBuilt(task.chunkX, task.chunkZ)
+        print("[going] home!")
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)
+        print("[dumping] remaining items...")
         local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
         TurtleApi.dumpToStorage(stock)
+        print("[done] finished my task!")
     end)
 
     resumable:run()

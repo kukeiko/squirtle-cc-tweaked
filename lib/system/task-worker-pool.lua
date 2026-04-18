@@ -13,8 +13,9 @@ local TaskService = require "lib.system.task-service"
 local TaskWorkerPool = {}
 
 ---@param taskWorkerClass TaskWorker
----@param maxWorkers integer
+---@param maxWorkers? integer
 function TaskWorkerPool.new(taskWorkerClass, maxWorkers)
+    maxWorkers = maxWorkers or 1
     local id = nextId()
 
     ---@type TaskWorkerPool

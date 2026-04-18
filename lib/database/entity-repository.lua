@@ -125,8 +125,20 @@ function EntityRepository:getAll()
 end
 
 ---@param id integer|string
+---@return table
+function EntityRepository:getById(id)
+    local entity = self:findById(id)
+
+    if entity == nil then
+        error(string.format("%s #%s not found", self.name, tostring(id)))
+    end
+
+    return entity
+end
+
+---@param id integer|string
 ---@return table?
-function EntityRepository:find(id)
+function EntityRepository:findById(id)
     local file = self:loadFile()
 
     return Utils.find(file.entities, function(candidate)

@@ -18,7 +18,7 @@ local app = Shell.getApplication(arg)
 print(string.format("[io-crafter %s] booting...", version()))
 
 app:addWindow("Main", function()
-    TaskWorkerPool.new(CraftFromIngredientsTaskWorker, 1):run()
+    TaskWorkerPool.new(CraftFromIngredientsTaskWorker):run()
 end)
 
 app:addLogsWindow()

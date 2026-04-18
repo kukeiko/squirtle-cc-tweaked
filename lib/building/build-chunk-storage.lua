@@ -9,7 +9,8 @@ local InventoryApi = require "lib.inventory.inventory-api"
 ---Starting position is expected to be where a turtle would dock to the storage: directly in front of the modem block.
 ---@param storageLabel string The label to set for the storage computer
 ---@param chestLayers? integer How many layers of chests should be built - defaults to 9. Total number of chest blocks = numChestLayers * 4
-return function(storageLabel, chestLayers)
+---@param withWirelessModem? boolean If the turtle should also place a wireless modem on top of the computer.
+return function(storageLabel, chestLayers, withWirelessModem)
     chestLayers = chestLayers or 9
 
     local up = TurtleApi.up
@@ -216,7 +217,7 @@ return function(storageLabel, chestLayers)
         storageStartupFile.close()
 
         local startupFile = fs.open("disk/startup", "w")
-        startupFile.write("shell.run(\"copy disk/storage .kita/app/storage\")\n")
+        startupFile.write("shell.run(\"copy disk/storage .kita/app/computer/storage\")\n")
         startupFile.write("shell.run(\"copy disk/storage/storage.options.json .kita/data/storage.options.json\")\n")
         startupFile.write("shell.run(\"copy disk/storage-startup startup\")\n")
         startupFile.write(string.format("shell.run(\"label set \\\"%s\\\"\")\n", storageLabel))
@@ -233,11 +234,16 @@ return function(storageLabel, chestLayers)
     up()
     TurtleApi.suck()
     TurtleApi.dig()
-    up()
-    forward()
-    below(ItemApi.wirelessModem)
-    back()
-    down(2)
+
+    if withWirelessModem then
+        up()
+        forward()
+        below(ItemApi.wirelessModem)
+        back()
+        down()
+    end
+
+    down()
 
     if not TurtleApi.isSimulating() then
         peripheral.call("front", "reboot")

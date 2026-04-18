@@ -16,6 +16,7 @@ local ApplicationApi = require "lib.system.application-api"
 local ApplicationService = require "lib.system.application-service"
 local DatabaseService = require "lib.database.database-service"
 local TaskService = require "lib.system.task-service"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 local SearchableList = require "lib.ui.searchable-list"
 
 ---@param apps Application[]
@@ -96,6 +97,8 @@ app:addWindow("RPC / Upload", function()
         Rpc.host(DatabaseService)
     end, function()
         Rpc.host(TaskService)
+    end, function()
+        Rpc.host(ChunkPylonService)
     end, function()
         while true do
             local _, files = EventLoop.pull("file_transfer")

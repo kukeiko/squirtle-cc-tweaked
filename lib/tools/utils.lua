@@ -1,5 +1,6 @@
 local ccPretty = "cc.pretty"
 local Pretty = require(ccPretty)
+local Vector = require "lib.common.vector"
 
 local Utils = {}
 
@@ -642,6 +643,34 @@ end
 ---@param str string
 function Utils.escapePpattern(str)
     return str:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+end
+
+---@return Vector?
+function Utils.tryGetPosition()
+    local x, y, z = gps.locate()
+
+    if not x then
+        return nil
+    end
+
+    return Vector.create(x, y, z)
+end
+
+---@return Vector
+function Utils.getPosition()
+    local position = Utils.tryGetPosition()
+
+    if not position then
+        error("GPS position not available")
+    end
+
+    return position
+end
+
+---@param position Vector
+---@return integer, integer
+function Utils.toChunkXZ(position)
+    return math.floor(position.x % 16), math.floor(position.z % 16)
 end
 
 return Utils

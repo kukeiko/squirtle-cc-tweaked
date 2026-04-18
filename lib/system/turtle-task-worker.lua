@@ -1,8 +1,10 @@
+local Rpc = require "lib.tools.rpc"
 local EventLoop = require "lib.tools.event-loop"
 local TaskWorker = require "lib.system.task-worker"
 local TurtleApi = require "lib.turtle.turtle-api"
 local ItemApi = require "lib.inventory.item-api"
 local getIoSlots = require "lib.turtle.functions.get-io-slots"
+local StorageService = require "lib.inventory.storage-service"
 
 ---@class TurtleTaskWorker : TaskWorker 
 local TurtleTaskWorker = {}
@@ -35,6 +37,18 @@ function TurtleTaskWorker:requireFuel(level)
             self:provideItems({[ItemApi.charcoal] = requiredCharcoal}, {inventory}, "charcoal")
         end)
     end)
+end
+
+---@param wired? boolean
+function TurtleTaskWorker:acquireItemDetails(wired)
+    if wired then
+        TurtleApi.connectToStorage(function(_, storage, _)
+            ItemApi.addItemDetails(storage.getItemDetails())
+        end)
+    else
+        local storageService = Rpc.nearest(StorageService)
+        ItemApi.addItemDetails(storageService.getItemDetails())
+    end
 end
 
 ---@param quantity integer

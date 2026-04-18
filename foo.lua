@@ -74,38 +74,6 @@ local function testGetRequiredSlotCount()
     print(storageService.getRequiredSlotCount({["minecraft:stick"] = 129}))
 end
 
--- local function testCompactBuffer()
---     local storageService = Rpc.nearest(StorageService)
---     local taskBufferService = Rpc.nearest(TaskBufferService)
---     local bufferId = taskBufferService.allocateTaskBuffer(0, 26 * 3)
---     local buffer = taskBufferService.getBufferNames(bufferId)
---     local storages = storageService.getByType("storage")
---     storageService.transfer(storages, "withdraw", buffer, "buffer", {["minecraft:smooth_stone"] = 36})
---     Utils.waitForUserToHitEnter("[break] before compact")
---     taskBufferService.compact(bufferId)
---     Utils.waitForUserToHitEnter("[break] after compact")
---     print("[busy] flushing & freeing the buffer")
---     taskBufferService.flushBuffer(bufferId)
---     taskBufferService.freeBuffer(bufferId)
---     print("[done] flushed and freed up the buffer")
--- end
-
--- local function testResizeBufferSmaller()
---     local storage = Rpc.nearest(StorageService)
---     local taskBufferService = Rpc.nearest(StorageService)
---     local bufferId = taskBufferService.allocateTaskBuffer(0, 26 * 3)
---     local buffer = taskBufferService.getBufferNames(bufferId)
---     local storages = storage.getByType("storage")
---     storage.transfer(storages, "withdraw", buffer, "buffer", {["minecraft:smooth_stone"] = 36})
---     Utils.waitForUserToHitEnter("[break] before resize to 26")
---     taskBufferService.resize(bufferId, 26)
---     Utils.waitForUserToHitEnter("[break] after resize to 26")
---     print("[busy] flushing & freeing the buffer")
---     taskBufferService.flushBuffer(bufferId)
---     taskBufferService.freeBuffer(bufferId)
---     print("[done] flushed and freed up the buffer")
--- end
-
 local function testResizeBufferBigger()
     local storage = Rpc.nearest(StorageService)
     local bufferId = storage.allocateTaskBuffer(0, 26 * 1)
@@ -136,11 +104,6 @@ local function testInventoryLocks()
     end)
 end
 
-local function testSuckSlot()
-    os.sleep(1)
-    print(TurtleApi.suckItem("bottom", "minecraft:glass", 96))
-end
-
 local function testEditEntity()
     ---@type SubwayStation
     local subwayStation = {id = "foo", name = "Foo Bahnhof", type = "hub", tracks = {}}
@@ -156,55 +119,6 @@ local function testEditEntity()
 
     local result = editEntity:run(subwayStation)
     Utils.prettyPrint(result)
-end
-
-local function testEditEntityWithShell()
-    Shell:addWindow("Foo", function()
-        ---@type SubwayStation
-        local subwayStation = {id = "foo", name = "Foo Bahnhof", type = "hub", tracks = {}}
-        local editEntity = EditEntity.new("Edit Subway")
-
-        ---@type SubwayStationType[]
-        local types = {"hub", "endpoint", "platform", "switch"}
-
-        editEntity:addField("string", "id", "Id")
-        editEntity:addField("string", "name", "Name")
-        editEntity:addField("string", "type", "Type", {values = types})
-        editEntity:addField("integer", "foo", "Foo")
-
-        local result = editEntity:run(subwayStation)
-        Utils.prettyPrint(result)
-        Utils.waitForUserToHitEnter("<hit enter to continue>")
-    end)
-    Shell:addWindow("Bar", function()
-        print("hello, this is Bar!")
-        EventLoop.pullKey(keys.enter)
-
-        Shell:addWindow("Baz", function()
-            print("hello, this is Baz!")
-            EventLoop.pullKey(keys.enter)
-        end)
-    end)
-    Shell:run()
-
-end
-
-local function testShell()
-    Shell:addWindow("Foo", function()
-        print("hello, this is Foo!")
-        os.sleep(1)
-        -- EventLoop.pullKey(keys.enter)
-    end)
-    Shell:addWindow("Bar", function()
-        print("hello, this is Bar!")
-        EventLoop.pullKey(keys.enter)
-
-        Shell:addWindow("Baz", function()
-            print("hello, this is Baz!")
-            EventLoop.pullKey(keys.enter)
-        end)
-    end)
-    Shell:run()
 end
 
 local function testReadShulkers()
@@ -320,7 +234,7 @@ local function testBuildChunkStorageWorker()
     local taskService = Rpc.nearest(TaskService)
 
     EventLoop.run(function()
-        TaskWorkerPool.new(BuildChunkStorageTaskWorker, 1):run()
+        TaskWorkerPool.new(BuildChunkStorageTaskWorker):run()
     end, function()
         os.sleep(1)
         taskService.buildChunkStorage({
@@ -340,7 +254,7 @@ local function testDigChunkStorageWorker()
     local taskService = Rpc.nearest(TaskService)
 
     EventLoop.run(function()
-        TaskWorkerPool.new(DigChunkWorker, 1):run()
+        TaskWorkerPool.new(DigChunkWorker):run()
     end, function()
         os.sleep(1)
         taskService.digChunk({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = true})
@@ -351,7 +265,7 @@ local function testBuildChunkPylonWorker()
     local taskService = Rpc.nearest(TaskService)
 
     EventLoop.run(function()
-        TaskWorkerPool.new(BuildChunkPylonWorker, 1):run()
+        TaskWorkerPool.new(BuildChunkPylonWorker):run()
     end, function()
         os.sleep(1)
         taskService.buildChunkPylon({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
@@ -400,58 +314,23 @@ local function testEmptyChunkStorageWorker()
     local taskService = Rpc.nearest(TaskService)
 
     EventLoop.run(function()
-        TaskWorkerPool.new(EmptyChunkStorageWorker, 1):run()
+        TaskWorkerPool.new(EmptyChunkStorageWorker):run()
     end, function()
         os.sleep(1)
         taskService.emptyChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
     end)
 end
 
----@param folder string
----@return string[]
-local function getFiles(folder)
-    ---@type string[]
-    local files = {}
-
-    for _, name in ipairs(fs.list(folder)) do
-        local path = fs.combine(folder, name)
-
-        if fs.isDir(path) then
-            files = Utils.concat(files, getFiles(path))
-        else
-            table.insert(files, path)
-        end
-    end
-
-    return files
-end
-
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    -- testRequireItems()
-    -- testBuildChunkStorage()
-    -- testBuildChunkStorageWorker()
-    -- testDigChunkStorageWorker()
-    -- testToBuildChunkPylonIterations()
-    -- testBuildChunkPylonWorker()
-
-    -- duck()
-
-    -- TurtleApi.buildTripleFloor(5, 3, ItemApi.smoothStone)
-    -- testItemStockSlice()
-    -- testSliceStockForShulkers()
-    -- testEmptyChunkStorageWorker()
-    -- testEmptyTurtleToStorage()
-    -- print("howdy!")
-    -- Logger.log("hello there!")
-    -- Utils.prettyPrint(getFiles("app/turtle"))
-
-    -- local from = 0.1
-    -- local to = 1
-    -- local delta = to - from
-    -- local minutes = 
-    -- print(Utils.getTime24(delta))
+    while true do
+        term.clear()
+        term.setCursorPos(1, 1)
+        local position = Utils.getPosition()
+        print(Utils.toChunkXZ(position))
+        os.sleep(1)
+    end
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")
