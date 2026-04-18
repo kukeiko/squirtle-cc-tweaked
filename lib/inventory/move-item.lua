@@ -80,7 +80,7 @@ return function(from, to, item, total, options)
 
             if transferred ~= quantity then
                 -- "from" and/or "to" inventory cache is no longer valid, refreshing both
-                print(string.format("[stale] %d ~= %d, %s > %s", quantity, transferred, removePrefix(from), removePrefix(to)))
+                print(string.format("[stale] %d ~= %d, %s > %s", transferred, quantity, removePrefix(from), removePrefix(to)))
                 InventoryCollection.refresh({from, to}, lockId)
                 return
             end

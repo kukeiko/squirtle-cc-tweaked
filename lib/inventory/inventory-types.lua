@@ -12,6 +12,7 @@
 ---@field maxCount? integer
 ---@field displayName? string
 ---@field tags? table<string, boolean>
+---
 ---@alias ItemStacks table<integer, ItemStack>
 ---
 ---@class Inventory

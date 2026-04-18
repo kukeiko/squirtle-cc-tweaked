@@ -16,7 +16,6 @@ local Shell = require "lib.system.shell"
 local ShellService = require "lib.system.shell-service"
 local EntitySchema = require "lib.common.entity-schema"
 local SearchableList = require "lib.ui.searchable-list"
-local readInteger = require "lib.ui.read-integer"
 local EditEntity = require "lib.ui.edit-entity"
 
 local app = Shell.getApplication(arg)
