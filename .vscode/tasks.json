@@ -141,6 +141,23 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/oak.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/oak"
         },
         {
+            "label": "build teleport",
+            "dependsOn": [
+                "build teleport:computer",
+                "build teleport:pocket",
+            ]
+        },
+        {
+            "label": "build teleport:computer",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/teleport.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/teleport"
+        },
+        {
+            "label": "build teleport:pocket",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o .kita/app/pocket/teleport"
+        },
+        {
             "label": "build storage:computer",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/storage.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/storage"
@@ -189,11 +206,6 @@
             "label": "build computer:target-practice",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/target-practice.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/target-practice"
-        },
-        {
-            "label": "build computer:teleport",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/teleport.lua -p app/computer/?.lua -p ?.lua -o .kita/app/computer/teleport"
         },
         {
             "label": "build computer:xylophone",
@@ -261,11 +273,6 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/tasks.lua -p app/pocket/?.lua -p ?.lua -o ../23/tasks.lua"
         },
         {
-            "label": "build pocket:teleport",
-            "type": "shell",
-            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o .kita/app/pocket/teleport"
-        },
-        {
             "label": "build pocket:teleport:dev",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/teleport.lua -p app/pocket/?.lua -p ?.lua -o ../23/teleport.lua"
@@ -331,7 +338,7 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/crafting/io-crafter.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/io-crafter"
         },
         {
-            "label": "build turtle:lumberjack",
+            "label": "build lumberjack:turtle",
             "type": "shell",
             "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/farms/lumberjack.lua -p app/turtle/?.lua -p ?.lua -o .kita/app/turtle/lumberjack"
         },

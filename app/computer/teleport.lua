@@ -9,48 +9,40 @@ if not arg then
     return {version = version(), platform = "computer"}
 end
 
-local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local Shell = require "lib.system.shell"
+local EditEntity = require "lib.ui.edit-entity"
 local TeleportService = require "lib.transportation.teleport-service"
 
-local sides = {"left", "right", "top"}
+local app = Shell.getApplication(arg)
 
-for i, side in pairs(sides) do
-    local pdaId = tonumber(arg[i])
-    print(string.format("[%s] PDA = %s", side, tostring(pdaId)))
-    TeleportService.setPdaId(side, pdaId)
-end
+app:addWindow("Main", function()
+    local editEntity = EditEntity.new("Teleport Options", ".kita/data/teleport.options.json")
+    editEntity:addInteger("left", "PDA Id #1", {optional = true})
+    editEntity:addInteger("right", "PDA Id #2", {optional = true})
+    editEntity:addInteger("top", "PDA Id #3", {optional = true})
+    app:exposeRemoteOptions(editEntity)
 
-local function writeStartupFile()
-    local left = tostring(TeleportService.getPdaId("left"))
-    local right = tostring(TeleportService.getPdaId("right"))
-    local top = tostring(TeleportService.getPdaId("top"))
-    Utils.writeStartupFile(string.format("teleport %s %s %s", left, right, top))
-end
+    ---@class TeleportOptions
+    ---@field left integer?
+    ---@field right integer?
+    ---@field top integer?
+    local options = editEntity:run({}, app:wasAutorun())
 
-writeStartupFile()
+    if options.left then
+        TeleportService.setPdaId("left", options.left)
+    end
 
--- [todo] ❌ rework to use shell & options
--- for _, side in pairs(sides) do
---     RemoteService.addIntParameter({
---         id = string.format("teleport:%s-computer-id", side),
---         type = "int-parameter",
---         name = string.format("PDA Id %s", side),
---         get = function()
---             return TeleportService.getPdaId(side)
---         end,
---         set = function(value)
---             TeleportService.setPdaId(side, value)
---             writeStartupFile()
---             return true, string.format("PDA Id %s set to %s", side, tostring(value))
---         end,
---         min = 1,
---         nullable = true,
---         requiresReboot = true
---     })
--- end
+    if options.top then
+        TeleportService.setPdaId("top", options.left)
+    end
 
-EventLoop.run(function()
+    if options.right then
+        TeleportService.setPdaId("right", options.left)
+    end
+
     Rpc.host(TeleportService)
 end)
+
+app:addLogsWindow()
+app:run()
