@@ -80,21 +80,21 @@ function TaskService.failTask(id)
 end
 
 ---@param acceptedBy string
----@param taskType TaskType
+---@param taskTypes TaskType[]
 ---@param exceptTaskIds? integer[]
 ---@return Task
-function TaskService.acceptTask(acceptedBy, taskType, exceptTaskIds)
-    local acceptedTask = TaskRepository.getAcceptedTask(acceptedBy, taskType, exceptTaskIds)
+function TaskService.acceptTask(acceptedBy, taskTypes, exceptTaskIds)
+    local acceptedTask = TaskRepository.getAcceptedTask(acceptedBy, taskTypes, exceptTaskIds)
 
     if acceptedTask then
-        print(string.format("[found] %s #%d", taskType, acceptedTask.id))
+        print(string.format("[found] %s #%d", acceptedTask.type, acceptedTask.id))
         return acceptedTask
     end
 
-    local task = TaskRepository.getIssuedTask(taskType)
+    local task = TaskRepository.getIssuedTask(taskTypes)
 
     if not task then
-        print(string.format("[wait] for %s...", taskType))
+        print(string.format("[wait] for %s...", table.concat(taskTypes, ", ")))
     end
 
     -- [todo] ❌ check that client accepting a task still exists, somehow.
@@ -102,14 +102,14 @@ function TaskService.acceptTask(acceptedBy, taskType, exceptTaskIds)
     -- but the storage called acceptTask() and then there is nothing to actually run it.
     while not task do
         os.sleep(1)
-        task = TaskRepository.getIssuedTask(taskType)
+        task = TaskRepository.getIssuedTask(taskTypes)
 
         if not task then
-            task = TaskRepository.getAcceptedTask(acceptedBy, taskType, exceptTaskIds)
+            task = TaskRepository.getAcceptedTask(acceptedBy, taskTypes, exceptTaskIds)
         end
     end
 
-    print(string.format("[found] %s #%d", taskType, task.id))
+    print(string.format("[found] %s #%d", task.type, task.id))
 
     if task.status == "issued" then
         task.acceptedBy = acceptedBy

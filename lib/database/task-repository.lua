@@ -132,21 +132,21 @@ function TaskRepository.getTask(id)
 end
 
 ---@param acceptedBy string
----@param type TaskType
+---@param types TaskType[]
 ---@param exceptTaskIds? integer[]
 ---@return Task?
-function TaskRepository.getAcceptedTask(acceptedBy, type, exceptTaskIds)
+function TaskRepository.getAcceptedTask(acceptedBy, types, exceptTaskIds)
     return Utils.find(TaskRepository.getTasks(), function(task)
-        return task.status == "accepted" and task.type == type and task.acceptedBy == acceptedBy and
+        return task.status == "accepted" and Utils.contains(types, task.type) and task.acceptedBy == acceptedBy and
                    (not exceptTaskIds or not Utils.contains(exceptTaskIds, task.id))
     end)
 end
 
----@param type TaskType
+---@param types TaskType[]
 ---@return Task?
-function TaskRepository.getIssuedTask(type)
+function TaskRepository.getIssuedTask(types)
     return Utils.find(TaskRepository.getTasks(), function(task)
-        return task.type == type and task.status == "issued"
+        return task.status == "issued" and Utils.contains(types, task.type)
     end)
 end
 

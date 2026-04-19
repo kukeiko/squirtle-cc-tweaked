@@ -67,7 +67,10 @@ local processors = {
     refresh = {enabled = true, fn = refresh, interval = 10}
 }
 
-local numWorkersPerTaskType = 2
+local numTotalTaskWorkers = 6
+---@type TaskWorker[]
+local taskWorkerClasses = {AllocateIngredientsTaskWorker, CraftItemsTaskWorker, ProvideItemsTaskWorker}
+
 local Shell = require "lib.system.shell"
 local app = Shell.getApplication(arg)
 
@@ -77,7 +80,7 @@ app:addWindow("Main", function()
     ---@field powerChest string?
 
     local editEntity = EditEntity.new("Storage Options", ".kita/data/storage.options.json")
-    editEntity:addString("powerChest", "Power Chest", {values = {"top", "front", "bottom", "back"}, optional = true})
+    editEntity:addString("powerChest", "Power Chest", {values = {"top", "front", "bottom", "back", "right", "left"}, optional = true})
     editEntity:addBoolean("isAutoStorage", "Auto Storage")
 
     ---@type StorageAppOptions
@@ -91,12 +94,13 @@ app:addWindow("Main", function()
     end
 
     print(string.format("[storage %s] booting...", version()))
-    print(string.format("[storage] using %dx workers for each task", numWorkersPerTaskType))
+    print(string.format("[storage] using %dx task workers", numTotalTaskWorkers))
     InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
     Inventory.useAutoStorage(options.isAutoStorage)
     Inventory.discover()
     print("[storage] ready!")
+    EventLoop.queue("storage:ready")
 
     local processorFns = Utils.map(processors, function(processor)
         return function()
@@ -128,24 +132,18 @@ app:addWindow("Main", function()
 end)
 
 app:addWindow("Workers", function()
-    -- give system a bit of time until localhost StorageService is available & power items are read
-    -- [todo] ❌ use events instead
-    os.sleep(3)
-
-    EventLoop.run(function()
-        TaskWorkerPool.new(AllocateIngredientsTaskWorker, numWorkersPerTaskType):run()
-    end, function()
-        TaskWorkerPool.new(CraftItemsTaskWorker, numWorkersPerTaskType):run()
-    end, function()
-        TaskWorkerPool.new(ProvideItemsTaskWorker, numWorkersPerTaskType):run()
-    end)
+    EventLoop.pull("storage:ready")
+    print(string.format("[ready] storage ready, starting %d workers", numTotalTaskWorkers))
+    TaskWorkerPool.new(taskWorkerClasses, numTotalTaskWorkers):run()
 end)
 
 app:addLogsWindow()
 
 app:addWindow("RPC", function()
     EventLoop.run(function()
-        Rpc.host(StorageService)
+        if PeripheralApi.findWirelessModem() then
+            Rpc.host(StorageService)
+        end
     end, function()
         if PeripheralApi.findWiredModem() then
             Rpc.host(StorageService, "wired")

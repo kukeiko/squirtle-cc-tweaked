@@ -9,12 +9,12 @@ local TaskService = require "lib.system.task-service"
 ---@field maxWorkers integer
 ---@field availableEvent string
 ---@field workers TaskWorker[]
----@field taskWorkerClass TaskWorker
+---@field taskWorkerClasses TaskWorker[]
 local TaskWorkerPool = {}
 
----@param taskWorkerClass TaskWorker
+---@param taskWorkerClasses TaskWorker[]
 ---@param maxWorkers? integer
-function TaskWorkerPool.new(taskWorkerClass, maxWorkers)
+function TaskWorkerPool.new(taskWorkerClasses, maxWorkers)
     maxWorkers = maxWorkers or 1
     local id = nextId()
 
@@ -22,7 +22,7 @@ function TaskWorkerPool.new(taskWorkerClass, maxWorkers)
     local instance = {
         id = id,
         maxWorkers = maxWorkers,
-        taskWorkerClass = taskWorkerClass,
+        taskWorkerClasses = taskWorkerClasses,
         workers = {},
         availableEvent = string.format("task-worker-pool[%d]:available", id)
     }
@@ -38,7 +38,8 @@ function TaskWorkerPool:run()
 
     ---@param task Task
     local function assignTask(task)
-        local worker = self.taskWorkerClass.new(task, taskService)
+        local workerClass = self:getTaskWorkerClassByTaskType(task.type)
+        local worker = workerClass.new(task, taskService)
         table.insert(self.workers, worker)
 
         addThread(function()
@@ -62,11 +63,11 @@ function TaskWorkerPool:run()
 
     addThread(function()
         local acceptedBy = os.getComputerLabel()
-        local taskType = self.taskWorkerClass.getTaskType()
+        local taskTypes = self:getTaskTypes()
 
         while self:awaitCapacity() do
-            print(string.format("[awaiting] next %s...", taskType))
-            local task = taskService.acceptTask(acceptedBy, taskType, self:getWorkerTaskIds())
+            print(string.format("[awaiting] next %s...", table.concat(taskTypes, ", ")))
+            local task = taskService.acceptTask(acceptedBy, taskTypes, self:getWorkerTaskIds())
             assignTask(task)
         end
     end)
@@ -92,6 +93,27 @@ function TaskWorkerPool:getWorkerTaskIds()
     return Utils.map(self.workers, function(worker)
         return worker:getTaskId()
     end)
+end
+
+---@return TaskType[]
+function TaskWorkerPool:getTaskTypes()
+    return Utils.map(self.taskWorkerClasses, function(item)
+        return item.getTaskType()
+    end)
+end
+
+---@param taskType TaskType
+---@return TaskWorker
+function TaskWorkerPool:getTaskWorkerClassByTaskType(taskType)
+    local workerClass = Utils.find(self.taskWorkerClasses, function(item, index)
+        return item.getTaskType() == taskType
+    end)
+
+    if not workerClass then
+        error(string.format("no worker class found for task type %s", taskType))
+    end
+
+    return workerClass
 end
 
 return TaskWorkerPool
