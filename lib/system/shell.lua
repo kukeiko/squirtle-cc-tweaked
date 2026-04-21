@@ -5,6 +5,7 @@ end
 local version = require "version"
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local Logger = require "lib.tools.logger"
 local nextId = require "lib.tools.next-id"
 local PeripheralApi = require "lib.common.peripheral-api"
 local ApplicationApi = require "lib.system.application-api"
@@ -105,7 +106,8 @@ local function createApplicationEnvironment(shellApplication)
         arg = {[0] = shellApplication:getPath()}, -- [todo] ❌ implement & pass along program arguments
         nextId = nextId, -- making sure to have globally unique ids
         Shell = Shell, -- share Shell instance with bundled apps
-        EventLoop = EventLoop -- share EventLoop instance with bundled apps (added for EventLoop.configure() to work)
+        EventLoop = EventLoop, -- share EventLoop instance with bundled apps (added for EventLoop.configure() to work)
+        Logger = Logger
     }, {__index = _ENV})
 end
 
