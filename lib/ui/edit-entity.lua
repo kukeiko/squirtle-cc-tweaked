@@ -233,7 +233,6 @@ function EditEntity:run(entity, skipIfValid)
         local saved = Utils.readJson(self.savePath) or {}
 
         for _, property in ipairs(self.schema:getProperties()) do
-            -- if saved[property.key] ~= nil and entity[property.key] == nil then
             if saved[property.key] ~= nil then
                 entity[property.key] = saved[property.key]
             end
@@ -257,7 +256,11 @@ function EditEntity:run(entity, skipIfValid)
             if selected.options.values then
                 entity[selected.key], key = readOption(entity[selected.key], selected.options.values, selected.options.optional)
             else
-                entity[selected.key], key = readString(entity[selected.key], {cancel = controlKeys})
+                entity[selected.key], key = readString(entity[selected.key] or "", {cancel = controlKeys})
+
+                if selected.options.optional and #(entity[selected.key] or "") == 0 then
+                    entity[selected.key] = nil
+                end
             end
         elseif selected and selected.type == "integer" then
             entity[selected.key], key = readInteger(entity[selected.key], {cancel = controlKeys})

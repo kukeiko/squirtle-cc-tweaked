@@ -1,3 +1,7 @@
+if _ENV["Rpc"] then
+    return _ENV["Rpc"] --[[@as Rpc]]
+end
+
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Logger = require "lib.tools.logger"
@@ -6,12 +10,13 @@ local nextId = require "lib.tools.next-id"
 ---@class RpcPingPacket
 ---@field type "ping"
 ---@field service string
----@field host? string
+---@field host string?
 
 ---@class RpcPongPacket
 ---@field type "pong"
 ---@field service string
 ---@field host string
+---@field hub string?
 ---@field activeCallIds table<string, true>
 
 ---@class RpcRequestPacket
@@ -132,14 +137,21 @@ end
 
 ---@class Rpc
 ---@field servers RpcServer[]
-local Rpc = {servers = {}}
+---@field hub string?
+local Rpc = {servers = {}, hub = nil}
+
+---@param hub? string
+function Rpc.setHub(hub)
+    Rpc.hub = #(hub or "") > 0 and hub or nil
+end
 
 ---Waits for an incoming "pong" modem_message from a matching service, forever.
 ---If specified, has to be a modem_message from the given host.
 ---@param service Service
 ---@param host? string
+---@param hub? string
 ---@return DiscoveredServiceHost
-local function waitForPong(service, host)
+local function waitForPong(service, host, hub)
     while true do
         local event = table.pack(EventLoop.pull("modem_message"))
         ---@type integer
@@ -149,7 +161,8 @@ local function waitForPong(service, host)
         ---@type integer
         local distance = event[6]
 
-        if type(message) == "table" and message.type == "pong" and message.service == service.name and (host == nil or message.host == host) then
+        if type(message) == "table" and message.type == "pong" and message.service == service.name and (host == nil or message.host == host) and
+            (hub == nil or message.hub == hub) then
             ---@type DiscoveredServiceHost
             local discovered = {host = message.host, distance = distance, channel = replyChannel, activeCallIds = message.activeCallIds}
             return discovered
@@ -160,8 +173,9 @@ end
 ---@param service Service
 ---@param timeout number?
 ---@param modemType? "wired" | "wireless"
+---@param hub? string
 ---@return DiscoveredServiceHost[]
-local function findAllHosts(service, timeout, modemType)
+local function findAllHosts(service, timeout, modemType, hub)
     local modem = getModem(modemType)
     local channel = os.getComputerID()
     modem.open(pingChannel)
@@ -176,7 +190,7 @@ local function findAllHosts(service, timeout, modemType)
         modem.transmit(pingChannel, channel, ping)
 
         while true do
-            table.insert(hosts, waitForPong(service))
+            table.insert(hosts, waitForPong(service, nil, hub))
         end
     end)
 
@@ -366,7 +380,7 @@ function Rpc.tryNearest(service, timeout, modemType)
 
     EventLoop.runTimed(timeout, function()
         while not best do
-            local hosts = findAllHosts(service, nil, modemType)
+            local hosts = findAllHosts(service, nil, modemType, Rpc.hub)
 
             for i = 1, #hosts do
                 if best == nil or hosts[i].distance < best.distance then
@@ -508,7 +522,13 @@ function Rpc.server(service, modemType)
                         if message.type == "ping" then
                             logServerRequest("ping", replyChannel, receivedChannel, message)
                             ---@type RpcPongPacket
-                            local pong = {type = "pong", host = host, service = service.name, activeCallIds = this.activeCallIds}
+                            local pong = {
+                                type = "pong",
+                                host = host,
+                                service = service.name,
+                                hub = Rpc.hub,
+                                activeCallIds = this.activeCallIds
+                            }
                             peripheral.call(modemReceived, "transmit", replyChannel, listenChannel, pong)
                             logServerResponse("pong", replyChannel, listenChannel, pong)
                         elseif message.type == "request" and message.host == host and type(service[message.method]) == "function" then

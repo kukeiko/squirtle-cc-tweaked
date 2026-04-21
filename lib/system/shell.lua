@@ -7,11 +7,13 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Logger = require "lib.tools.logger"
 local nextId = require "lib.tools.next-id"
+local Rpc = require "lib.tools.rpc"
 local PeripheralApi = require "lib.common.peripheral-api"
 local ApplicationApi = require "lib.system.application-api"
 local ShellApplication = require "lib.system.shell-application"
 local ShellService = require "lib.system.shell-service"
 local appsWindow = require "lib.system.windows.apps-window"
+local settingsWindow = require "lib.system.windows.settings-window"
 local updateAppsWindow = require "lib.system.windows.update-apps-window"
 local installAppsWindow = require "lib.system.windows.install-apps-window"
 local logsWindow = require "lib.system.windows.logs-window"
@@ -20,6 +22,7 @@ local settingsPath = ".kita/settings.json"
 
 ---@class ShellSettings
 ---@field autorun string[]
+---@field rpcHub string?
 
 ---@return ShellSettings
 local function loadSettings()
@@ -45,6 +48,12 @@ local Shell = {
     settings = loadSettings(),
     remoteOptions = {}
 }
+
+local function applySettings()
+    Rpc.setHub(Shell.settings.rpcHub)
+end
+
+applySettings()
 
 ---@param name string
 ---@return ShellApplication?
@@ -99,6 +108,20 @@ function Shell.isShellWindowEvent(event)
     return isShellWindowEvent(event)
 end
 
+function Shell.getSettings()
+    return Shell.settings
+end
+
+---@param settings ShellSettings
+function Shell.saveSettings(settings)
+    if not Utils.isDev() then
+        Utils.writeJson(settingsPath, settings)
+    end
+
+    Shell.settings = settings
+    applySettings()
+end
+
 ---@param shellApplication ShellApplication
 ---@return table
 local function createApplicationEnvironment(shellApplication)
@@ -107,7 +130,8 @@ local function createApplicationEnvironment(shellApplication)
         nextId = nextId, -- making sure to have globally unique ids
         Shell = Shell, -- share Shell instance with bundled apps
         EventLoop = EventLoop, -- share EventLoop instance with bundled apps (added for EventLoop.configure() to work)
-        Logger = Logger
+        Logger = Logger,
+        Rpc = Rpc
     }, {__index = _ENV})
 end
 
@@ -121,6 +145,7 @@ local function createShellUi()
     local metadata = {name = "shell", path = "null", version = version()}
     local application = ShellApplication.new(metadata, createWindow(), Shell)
     application:addWindow("Apps", appsWindow)
+    application:addWindow("Settings", settingsWindow)
     application:addWindow("Update", updateAppsWindow)
     application:addWindow("Install", installAppsWindow)
     application:addWindow("Logs", logsWindow)
@@ -418,7 +443,7 @@ function Shell.addAutorun(name)
     table.insert(Shell.settings.autorun, name)
 
     if not Utils.isDev() then
-        Utils.writeJson(settingsPath, Shell.settings)
+        Shell.saveSettings(Shell.settings)
 
         if not fs.exists("startup") then
             if fs.getName(arg[0]) == "kita" then

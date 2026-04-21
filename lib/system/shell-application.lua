@@ -251,4 +251,14 @@ function ShellApplication:exposeRemoteOptions(editEntity)
     self.shell.exposeRemoteOptions(self.metadata.name, editEntity)
 end
 
+---@return ShellSettings
+function ShellApplication:getSettings()
+    return self.shell.getSettings()
+end
+
+---@param settings ShellSettings
+function ShellApplication:saveSettings(settings)
+    self.shell.saveSettings(settings)
+end
+
 return ShellApplication

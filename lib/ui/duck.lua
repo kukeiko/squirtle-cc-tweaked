@@ -31,7 +31,10 @@ return function(text, duration)
         end
     end
 
-    os.sleep(duration or 2)
+    if not Utils.isDev() then
+        os.sleep(duration or 2)
+    end
+
     term.setCursorPos(1, 1)
     term.clear()
 end

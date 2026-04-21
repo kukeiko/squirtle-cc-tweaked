@@ -1,3 +1,7 @@
+if _ENV["Logger"] then
+    return _ENV["Logger"] --[[@as Logger]]
+end
+
 local Utils = require "lib.tools.utils"
 local LoggingContext = require "lib.tools.logging-context"
 local nextId = require "lib.tools.next-id"
