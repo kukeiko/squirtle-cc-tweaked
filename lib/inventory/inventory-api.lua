@@ -190,8 +190,10 @@ function InventoryApi.restock(from, to, options)
     ---@type ItemStock
     local filteredOpenStock = {}
 
-    for item in pairs(fromStock) do
-        filteredOpenStock[item] = openStock[item]
+    for item, open in pairs(openStock) do
+        if open > 0 and (fromStock[item] or 0) > 0 then
+            filteredOpenStock[item] = openStock[item]
+        end
     end
 
     return transferStock(fromInventories, toInventories, filteredOpenStock, options)
