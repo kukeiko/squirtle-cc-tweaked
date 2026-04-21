@@ -1,15 +1,15 @@
 local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
+local ItemStock = require "lib.inventory.item-stock"
 local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local StorageService = require "lib.inventory.storage-service"
-local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
 local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 -- [todo] ❌ I'm thinking that the user should choose what kind of pylon should be built
 local pylonMaterials = {ItemApi.deepslate, ItemApi.stone, ItemApi.dirt, ItemApi.grassBlock}
@@ -43,43 +43,44 @@ function BuildChunkPylonWorker:work()
     local numShulkers = 4
     local task = self:getTask()
     local resumable = Resumable.new("build-chunk-pylon-worker")
-    local navigated = false
 
-    if not task.initialized and not task.navigated then
+    if not task.initialized then
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
         self:requireShulkers(numShulkers)
-        TurtleApi.locate()
-        TurtleApi.orientate("disk-drive")
+        task.hubHome = TurtleApi.locate()
+        task.hubFacing = TurtleApi.orientate("disk-drive")
         task.initialized = true
         self:updateTask()
     end
 
-    if not navigated then
-        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
+    if not task.navigated then
+        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
         TurtleApi.face(Cardinal.south)
         task.navigated = true
         self:updateTask()
     end
 
+    -- local lastLayer = -59
+    local firstLayer = 58 -- [todo] ❌ only for testing, set back to -59
+    local lastLayer = task.storageY - 1
+    local totalLayers = lastLayer - firstLayer
+
     if not task.iterations then
         local storage = Rpc.nearest(StorageService, nil, "wired")
         local storageStock = storage.getStock()
         -- [todo] ❌ type of materials to be read from task or sumthin'
-        task.iterations = toBuildChunkPylonIterations(pylonMaterialsDesert, storageStock, numShulkers)
+        task.iterations = toBuildChunkPylonIterations(pylonMaterialsDesert, storageStock, numShulkers, totalLayers)
         self:updateTask()
     end
 
-    local startY = task.y
-    local chunkCenter = TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ)
-    -- local bottomLayer = -59
-    local bottomLayer = 50 -- [todo] ❌ only for testing, set back to -59
+    local chunkCenter = TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ)
     local size = 14
 
     resumable:setStart(function(_, options)
         TurtleApi.locate()
 
         ---@class BuildChunkPylonState
-        local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive"), nextY = bottomLayer}
+        local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive"), nextY = firstLayer}
 
         options.requireFuel = true
 
@@ -131,6 +132,7 @@ function BuildChunkPylonWorker:work()
                 -- need to go up once because the buildFloor() fn will build below the turtle
                 TurtleApi.up()
 
+                -- deepslate can never be built with multiple layers at once due to its different orientations
                 if layer + 1 < iteration.layers and stock[material] >= (size * size * 3) and material ~= ItemApi.deepslate then
                     -- we can build 3x layers at once
                     TurtleApi.buildTripleFloor(size, size, material)
@@ -160,15 +162,19 @@ function BuildChunkPylonWorker:work()
             TurtleApi.moveToPoint(localChunkCenter)
             print(string.format("[move] to %d/%d/%d", localChunkCenter.x, localChunkCenter.y, localChunkCenter.z))
             TurtleApi.face(Cardinal.south)
-            TurtleApi.up(startY - TurtleApi.getPosition().y)
+            TurtleApi.up(task.storageY - TurtleApi.getPosition().y)
             state.nextY = state.nextY + iteration.layers
         end)
     end
 
     ---@param state BuildChunkPylonState
     resumable:setFinish(function(state)
-        TurtleApi.navigate(state.home)
-        TurtleApi.face(state.facing)
+        local service = Rpc.nearest(ChunkPylonService)
+        service.markPylonBuilt(task.chunkX, task.chunkZ)
+        TurtleApi.navigate(task.hubHome)
+        TurtleApi.face(task.hubFacing)
+        local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
+        TurtleApi.dumpToStorage(stock)
     end)
 
     resumable:run()

@@ -49,7 +49,7 @@ function EmptyChunkStorageWorker:work()
         if task.loadUp then
             -- go to chunk storage & load up
             print("[going] to chunk storage...")
-            TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
+            TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
             TurtleApi.face(Cardinal.south)
             print("[loading] up!")
             local storage = Rpc.nearest(StorageService, nil, "wired")

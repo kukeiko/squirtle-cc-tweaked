@@ -1,6 +1,7 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
+local Logger = require "lib.tools.logger"
 local Cardinal = require "lib.common.cardinal"
 local Vector = require "lib.common.vector"
 local ItemStock = require "lib.inventory.item-stock"
@@ -550,12 +551,16 @@ function TurtleApi.tryPut(side, block)
     while TurtleApi.tryMine(side) do
     end
 
-    -- [todo] band-aid fix
-    while turtle.attack() do
-        os.sleep(1)
+    if native() then
+        return true
     end
 
-    return native()
+    -- [todo] band-aid fix
+    while not native() do
+        getNative("attack", side)()
+    end
+
+    return true
 end
 
 ---@param side? string
@@ -1491,6 +1496,7 @@ end
 
 ---@param fn fun(inventory: string, storage: StorageService|RpcClient, refresh: fun() : nil) : any
 function TurtleApi.connectToStorage(fn)
+    Logger.log("connecting to storage")
     local wiredModem = PeripheralApi.findWiredModem() or error("no wired modem next to me found")
 
     if not TurtleApi.isWiredModemPowered(wiredModem) then
@@ -1498,8 +1504,11 @@ function TurtleApi.connectToStorage(fn)
     end
 
     local storageService = Rpc.nearest(StorageService, nil, "wired")
+    Logger.log("connected to storage")
+    Logger.log("start inventory server")
     local inventoryServer = Rpc.server(TurtleInventoryService, wiredModem)
     local inventory = inventoryServer.getWiredName()
+    Logger.log(string.format("inventory name is %s", inventory))
     local success = true
     local message = nil
     local refresh = function()

@@ -199,14 +199,15 @@ return function(storageLabel, chestLayers, withWirelessModem)
         local storageApp = appService.getApplication("computer", "storage", true)
         local kitaApp = appService.getApplication("computer", "kita", true)
 
-        -- [todo] ❌ files need adaptation
-        local storageFile = fs.open("disk/storage", "w")
-        storageFile.write(storageApp.content)
-        storageFile.close()
+        local storageAppFile = fs.open("disk/storage", "w")
+        storageAppFile.write(storageApp.content)
+        storageAppFile.close()
 
-        local kitaFile = fs.open("disk/kita", "w")
-        kitaFile.write(kitaApp.content)
-        kitaFile.close()
+        local kitaAppFile = fs.open("disk/kita", "w")
+        kitaAppFile.write(kitaApp.content)
+        kitaAppFile.close()
+
+        Utils.writeKitaShortcutFile("disk/kita-shortcut")
 
         ---@type StorageAppOptions
         local storageOptions = {isAutoStorage = true, powerChest = "right"}
@@ -218,7 +219,9 @@ return function(storageLabel, chestLayers, withWirelessModem)
 
         local startupFile = fs.open("disk/startup", "w")
         startupFile.write("shell.run(\"copy disk/storage .kita/app/computer/storage\")\n")
-        startupFile.write("shell.run(\"copy disk/storage/storage.options.json .kita/data/storage.options.json\")\n")
+        startupFile.write("shell.run(\"copy disk/kita .kita/app/computer/kita\")\n")
+        startupFile.write("shell.run(\"copy disk/kita-shortcut kita\")\n")
+        startupFile.write("shell.run(\"copy disk/storage.options.json .kita/data/storage.options.json\")\n")
         startupFile.write("shell.run(\"copy disk/storage-startup startup\")\n")
         startupFile.write(string.format("shell.run(\"label set \\\"%s\\\"\")\n", storageLabel))
         startupFile.close()

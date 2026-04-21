@@ -65,6 +65,14 @@ function SearchableList:setOptions(options)
     end
 end
 
+function SearchableList:setTitle(title)
+    self.title = title
+
+    if self.isRunning then
+        self:draw()
+    end
+end
+
 ---@return SearchableListOption?, SearchableListAction?
 function SearchableList:run()
     ---@type SearchableListOption?

@@ -55,12 +55,10 @@ function TaskService.deleteTask(id)
 end
 
 ---@param taskType TaskType
----@param partOfTaskId integer
----@param label string
----@return Task?
-function TaskService.findTask(taskType, partOfTaskId, label)
-    return Utils.find(TaskRepository.getTasks(), function(task)
-        return task.type == taskType and task.partOfTaskId == partOfTaskId and task.label == label
+---@return Task[]
+function TaskService.getAcceptedTasksByType(taskType)
+    return Utils.filter(TaskRepository.getTasks(), function(task)
+        return task.type == taskType and task.status == "accepted"
     end)
 end
 
@@ -224,7 +222,7 @@ end
 ---@class BuildChunkStorageTaskOptions : TaskOptions
 ---@field chunkX integer
 ---@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@field chestLayers integer?
 ---@param options BuildChunkStorageTaskOptions
 ---@return BuildChunkStorageTask
@@ -235,7 +233,7 @@ function TaskService.buildChunkStorage(options)
         task = constructTask(options.issuedBy, "build-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkStorageTask]]
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
-        task.y = options.y or error("y option missing")
+        task.storageY = options.storageY or error("storageY option missing")
         task.chestLayers = options.chestLayers
         task = TaskRepository.createTask(task) --[[@as BuildChunkStorageTask]]
     end
@@ -250,7 +248,7 @@ end
 ---@class DigChunkTaskOptions : TaskOptions
 ---@field chunkX integer
 ---@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@param options DigChunkTaskOptions
 ---@return DigChunkTask
 function TaskService.digChunk(options)
@@ -260,7 +258,7 @@ function TaskService.digChunk(options)
         task = constructTask(options.issuedBy, "dig-chunk", options.partOfTaskId, options.label, options.autoDelete) --[[@as DigChunkTask]]
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
-        task.y = options.y or error("y option missing")
+        task.storageY = options.storageY or error("storageY option missing")
         task = TaskRepository.createTask(task) --[[@as DigChunkTask]]
     end
 
@@ -274,7 +272,7 @@ end
 ---@class BuildChunkPylonTaskOptions : TaskOptions
 ---@field chunkX integer
 ---@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@param options BuildChunkPylonTaskOptions
 ---@return BuildChunkPylonTask
 function TaskService.buildChunkPylon(options)
@@ -284,7 +282,7 @@ function TaskService.buildChunkPylon(options)
         task = constructTask(options.issuedBy, "build-chunk-pylon", options.partOfTaskId, options.label, options.autoDelete) --[[@as BuildChunkPylonTask]]
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
-        task.y = options.y or error("y option missing")
+        task.storageY = options.storageY or error("storageY option missing")
         task.initialized = false
         task.navigated = false
         task = TaskRepository.createTask(task) --[[@as BuildChunkPylonTask]]
@@ -300,7 +298,7 @@ end
 ---@class EmptyChunkStorageTaskOptions : TaskOptions
 ---@field chunkX integer
 ---@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@param options EmptyChunkStorageTaskOptions
 ---@return EmptyChunkStorageTask
 function TaskService.emptyChunkStorage(options)
@@ -310,7 +308,7 @@ function TaskService.emptyChunkStorage(options)
         task = constructTask(options.issuedBy, "empty-chunk-storage", options.partOfTaskId, options.label, options.autoDelete) --[[@as EmptyChunkStorageTask]]
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
-        task.y = options.y or error("y option missing")
+        task.storageY = options.storageY or error("storageY option missing")
         task.loadUp = true
         task.isEmpty = false
         task = TaskRepository.createTask(task) --[[@as EmptyChunkStorageTask]]

@@ -51,6 +51,15 @@ function ShellWindow:runUntilInvisible(fn)
     EventLoop.runUntil("shell-window:invisible", fn)
 end
 
+---Runs the given function every time the window becomes visible, until it becomes invisible.
+---@param fn fun() : any
+function ShellWindow:runWhileVisible(fn)
+    while true do
+        self:pullIsVisible()
+        self:runUntilInvisible(fn)
+    end
+end
+
 function ShellWindow:clear()
     self.window.clear()
     self.window.setCursorPos(1, 1)

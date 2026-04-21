@@ -50,38 +50,37 @@
 ---@field usedRecipes UsedCraftingRecipe[]?
 ---@field crafted ItemStock
 ---
----@class BuildChunkStorageTask : Task
----@field type "build-chunk-storage"
+---@class ChunkTaskBase : Task
 ---@field chunkX integer
 ---@field chunkZ integer
----@field y integer
+---
+---@class BuildChunkStorageTask : ChunkTaskBase
+---@field type "build-chunk-storage"
+---@field storageY integer
 ---@field chestLayers integer?
 ---
----@class DigChunkTask : Task
+---@class DigChunkTask : ChunkTaskBase
 ---@field type "dig-chunk"
----@field chunkX integer
----@field chunkZ integer
----@field y integer
+---@field storageY integer
+---@field progress integer?
 ---
----@class BuildChunkPylonTask : Task
+---@class BuildChunkPylonTask : ChunkTaskBase
 ---@field type "build-chunk-pylon"
----@field chunkX integer
----@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@field initialized boolean
 ---@field navigated boolean
 ---@field iterations BuildChunkPylonIteration[]?
+---@field hubHome Vector
+---@field hubFacing integer
 ---
 ---@class BuildChunkPylonIteration
 ---@field layers integer
 ---@field stock ItemStock
 ---@field materials string[]
 ---
----@class EmptyChunkStorageTask : Task
+---@class EmptyChunkStorageTask : ChunkTaskBase
 ---@field type "empty-chunk-storage"
----@field chunkX integer
----@field chunkZ integer
----@field y integer
+---@field storageY integer
 ---@field home Vector?
 ---@field homeFacing integer?
 ---@field loadUp boolean

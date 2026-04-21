@@ -154,11 +154,8 @@ if Utils.getPlatform() == "computer" then
             ---@type string[]
             local paths = {}
 
-            -- create a program file in root so the user can just type "kita" to start kita
-            local programFile = fs.open("disk/kita", "w")
-            programFile.writeLine("local platform = (pocket and \"pocket\") or (turtle and \"turtle\") or \"computer\"")
-            programFile.writeLine("shell.run(string.format(\".kita/app/%s/kita\", platform), table.unpack(arg))")
-            programFile.close()
+            -- create a shortcut file in root so the user can just type "kita" to start kita
+            Utils.writeKitaShortcutFile("disk/kita")
             table.insert(paths, "kita")
             print("[created] disk/kita")
 

@@ -71,7 +71,7 @@ function BuildChunkStorageTaskWorker:work()
 
     resumable:addMain("navigate", function()
         local task = self:getTask()
-        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
+        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
         TurtleApi.face(Cardinal.south)
     end)
 

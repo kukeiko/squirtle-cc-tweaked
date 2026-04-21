@@ -13,6 +13,8 @@ end
 ---@field chunkZ integer
 ---@field storageY integer
 ---@field isStorageBuilt boolean
+---@field isChunkDugOut boolean
+---@field isPylonBuilt boolean
 ---@field isBuildingStorage boolean
 ---@field isRemovingStorage boolean
 ---@field isDiggingChunk boolean
@@ -57,7 +59,9 @@ function ChunkPylonRepository.create(chunkX, chunkZ, storageY)
         isDiggingChunk = false,
         isRebuildingChunk = false,
         isRemovingStorage = false,
-        isStorageBuilt = false
+        isStorageBuilt = false,
+        isChunkDugOut = false,
+        isPylonBuilt = false
     }
     return repository:create(chunkPylon)
 end

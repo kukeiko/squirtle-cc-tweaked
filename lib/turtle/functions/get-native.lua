@@ -53,6 +53,14 @@ local natives = {
         forward = turtle.compare,
         bottom = turtle.compareDown,
         down = turtle.compareDown
+    },
+    attack = {
+        top = turtle.attackUp,
+        up = turtle.attackUp,
+        front = turtle.attack,
+        forward = turtle.attack,
+        bottom = turtle.attackDown,
+        down = turtle.attackDown
     }
 }
 

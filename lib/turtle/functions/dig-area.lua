@@ -83,6 +83,7 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
             end
 
             if row ~= depth then
+                TurtleApi.dig()
                 TurtleApi.move()
             end
         end
@@ -102,6 +103,7 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
         end
 
         TurtleApi.turn(direction)
+        TurtleApi.dig()
         TurtleApi.move()
         TurtleApi.turn(direction)
     end

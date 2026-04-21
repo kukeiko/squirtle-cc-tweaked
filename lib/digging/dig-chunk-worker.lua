@@ -1,9 +1,13 @@
+local Utils = require "lib.tools.utils"
+local EventLoop = require "lib.tools.event-loop"
+local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 ---@class DigChunkWorker : TurtleTaskWorker 
 local DigChunkWorker = {}
@@ -32,11 +36,14 @@ end
 function DigChunkWorker:work()
     local resumable = Resumable.new("dig-chunk-worker")
     local task = self:getTask()
-    local firstLayerY = task.y - 1
-    local numShulkers = 8 -- [todo] ❓reduce to 4 instead?
-    local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)
-    local height = firstLayerY + 60
-    local iterations = math.ceil(height / layersPerIteration)
+    local firstLayerY = task.storageY - 1
+    local numShulkers = 4
+    local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.5)
+    -- local lastLayer = -59;
+    -- [todo] ❌ set back to -59
+    local lastLayer = 50;
+    local totalDigHeight = (firstLayerY - lastLayer) + 1
+    local iterations = math.ceil(totalDigHeight / layersPerIteration)
 
     resumable:setStart(function()
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
@@ -56,19 +63,15 @@ function DigChunkWorker:work()
     end)
 
     resumable:addMain("navigate", function()
-        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.y, task.chunkZ))
+        TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
         TurtleApi.face(Cardinal.south)
     end)
 
     for i = 1, iterations do
         ---@param state DigChunkState
         resumable:addSimulatableMain(string.format("dig-%d", i), function(state)
-            local targetLayerY = firstLayerY - ((i - 1) * layersPerIteration)
-            local digHeight = -layersPerIteration
-
-            if targetLayerY + digHeight <= -60 then
-                digHeight = -60 - targetLayerY
-            end
+            local startY = firstLayerY - ((i - 1) * layersPerIteration)
+            local digHeight = Utils.toDigDownHeight(startY, lastLayer, layersPerIteration)
 
             -- move to start position of current iteration
             TurtleApi.move("down")
@@ -78,8 +81,21 @@ function DigChunkWorker:work()
             TurtleApi.move("forward", 8)
             TurtleApi.turn("back")
             TurtleApi.move("down", layersPerIteration * (i - 1))
+
             -- dig out
-            TurtleApi.digArea(16, -16, digHeight, TurtleApi.getPosition(), TurtleApi.getFacing())
+            EventLoop.waitForAny(function()
+                TurtleApi.digArea(16, -16, digHeight, TurtleApi.getPosition(), TurtleApi.getFacing())
+            end, function()
+                if not TurtleApi.isSimulating() then
+                    while true do
+                        os.sleep(60)
+                        local deltaY = firstLayerY - TurtleApi.getPosition().y
+                        task.progress = math.floor((deltaY / totalDigHeight) * 100)
+                        self:updateTask()
+                    end
+                end
+            end)
+
             -- move back to storage
             TurtleApi.move("up", layersPerIteration * (i - 1))
             TurtleApi.move("forward", 8)
@@ -90,7 +106,6 @@ function DigChunkWorker:work()
         end)
 
         resumable:addMain(string.format("dump-%d", i), function(state)
-            -- [todo] ❌ dump items into storage
             local stock = TurtleApi.getStock(true)
             local dump = ItemStock.subtract(stock, {[ItemApi.shulkerBox] = stock[ItemApi.shulkerBox] or 0, [ItemApi.diskDrive] = 1})
             TurtleApi.dumpToStorage(dump)
@@ -99,6 +114,10 @@ function DigChunkWorker:work()
 
     ---@param state DigChunkState
     resumable:setFinish(function(state)
+        task.progress = 100
+        self:updateTask()
+        local service = Rpc.nearest(ChunkPylonService)
+        service.markChunkDugOut(task.chunkX, task.chunkZ)
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)
         local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})

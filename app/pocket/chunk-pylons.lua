@@ -14,12 +14,28 @@ local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Shell = require "lib.system.shell"
 local ShellService = require "lib.system.shell-service"
+local TaskService = require "lib.system.task-service"
 local EntitySchema = require "lib.common.entity-schema"
 local SearchableList = require "lib.ui.searchable-list"
 local EditEntity = require "lib.ui.edit-entity"
 local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 local app = Shell.getApplication(arg)
+
+---@param service ChunkPylonService|RpcClient
+---@return boolean, ChunkPylon?, integer?, integer?
+local function getCurrentChunkPylon(service)
+    local position = Utils.tryGetPosition()
+
+    if not position then
+        return false
+    end
+
+    local chunkX, chunkZ = Utils.toChunkXZ(position)
+    local chunkPylon = service.tryGet(chunkX, chunkZ)
+
+    return true, chunkPylon, chunkX, chunkZ
+end
 
 app:addWindow("Chunk Pylons", function()
     local service = Rpc.nearest(ChunkPylonService)
@@ -41,43 +57,133 @@ app:addWindow("Chunk Pylons", function()
     end
 end)
 
-app:addWindow("New Pylon", function()
-    local service = Rpc.nearest(ChunkPylonService)
+app:addWindow("Current Pylon", function(shellWindow)
+    local function getTitle()
+        local position = Utils.tryGetPosition()
 
-    ---@type Vector?
-    local position
-    ---@type ChunkPylon?
-    local chunkPylon
+        if not position then
+            return "No GPS available"
+        end
 
-    EventLoop.run(function()
-        while true do
-            position = Utils.tryGetPosition()
+        local chunkX, chunkZ = Utils.toChunkXZ(position)
+        return string.format("Pylon %d/%d", chunkX, chunkZ)
+    end
 
-            if position then
-                local chunkX, chunkZ = Utils.toChunkXZ(position)
-                chunkPylon = service.tryGet(chunkX, chunkZ)
-            else
-                chunkPylon = nil
+    shellWindow:runWhileVisible(function()
+        local service = Rpc.nearest(ChunkPylonService)
+
+        local function getOptions()
+            local hasPosition, chunkPylon = getCurrentChunkPylon(service)
+
+            if not hasPosition then
+                -- [todo] ❌ somehow add UI to show that GPS is missing
+                return {}
             end
 
-            term.clear()
-            term.setCursorPos(1, 1)
+            if not chunkPylon then
+                ---@type SearchableListOption[]
+                local options = {{id = "create-here", name = "Create Here"}}
 
-            if not position then
-                print("Position not available")
-            elseif not chunkPylon then
-                print("<hit enter to create pylon at x/z>")
+                return options
             else
-                print("chunk pylon already exists")
-            end
+                ---@type SearchableListOption[]
+                local options = {
+                    {
+                        id = "build-storage",
+                        name = "Build Storage",
+                        suffix = chunkPylon.isBuildingStorage and "[busy]" or chunkPylon.isStorageBuilt and "[done]" or ""
+                    },
+                    {
+                        id = "dig-chunk",
+                        name = "Dig Chunk",
+                        suffix = chunkPylon.isDiggingChunk and "[busy]" or chunkPylon.isChunkDugOut and "[done]" or ""
+                    },
+                    {
+                        id = "build-pylon",
+                        name = "Build Pylon",
+                        suffix = chunkPylon.isRebuildingChunk and "[busy]" or chunkPylon.isPylonBuilt and "[done]" or ""
+                    },
+                    {id = "empty-storage", name = "Empty Storage"}
+                }
 
-            os.sleep(1)
+                return options
+            end
         end
-    end, function()
-        while true do
-            EventLoop.pullKeys({keys.enter, keys.numPadEnter})
-        end
+
+        local list = SearchableList.new(getOptions(), getTitle(), 30, 3, getOptions)
+
+        EventLoop.waitForAny(function()
+            while true do
+                list:setTitle(getTitle())
+                os.sleep(1)
+            end
+        end, function()
+            while true do
+                local selected = list:run()
+
+                if selected then
+                    if selected.id == "create-here" then
+                        local position = Utils.getPosition()
+                        local chunkX, chunkZ = Utils.toChunkXZ(position)
+                        -- first layer is the layer the player stands on
+                        local storageY = math.floor(position.y - 2)
+                        service.create(chunkX, chunkZ, storageY)
+                        list:setOptions(getOptions())
+                    elseif selected.id == "build-storage" then
+                        local _, chunkPylon = getCurrentChunkPylon(service)
+
+                        if chunkPylon and not chunkPylon.isBuildingStorage and not chunkPylon.isStorageBuilt then
+                            service.buildStorage(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
+                        end
+                    elseif selected.id == "dig-chunk" then
+                        local _, chunkPylon = getCurrentChunkPylon(service)
+
+                        if chunkPylon and not chunkPylon.isDiggingChunk and not chunkPylon.isChunkDugOut then
+                            service.digChunk(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
+                        end
+                    elseif selected.id == "build-pylon" then
+                        local _, chunkPylon = getCurrentChunkPylon(service)
+
+                        -- [todo] ❌ implement choosing between desert or default materials
+                        if chunkPylon and not chunkPylon.isRebuildingChunk and not chunkPylon.isPylonBuilt then
+                            service.buildPylon(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
+                        end
+                    elseif selected.id == "empty-storage" then
+                        local taskService = Rpc.nearest(TaskService)
+                        local _, chunkPylon = getCurrentChunkPylon(service)
+
+                        if chunkPylon then
+                            taskService.emptyChunkStorage({
+                                issuedBy = os.getComputerLabel(),
+                                chunkX = chunkPylon.chunkX,
+                                chunkZ = chunkPylon.chunkZ,
+                                storageY = chunkPylon.storageY,
+                                autoDelete = true,
+                                skipAwait = true
+                            })
+                        end
+                    end
+                end
+            end
+        end)
     end)
+end)
+
+app:addWindow("Test", function()
+    local service = Rpc.nearest(ChunkPylonService)
+    local hasPosition, chunkPylon, chunkX, chunkZ = getCurrentChunkPylon(service)
+
+    if not hasPosition then
+        error("no gps")
+    end
+
+    if not chunkX or not chunkZ then
+        error("no chunkX or chunkZ")
+    end
+
+    local taskService = Rpc.nearest(TaskService)
+    Utils.waitForUserToHitEnter("<hit enter to empty storage>")
+    taskService.emptyChunkStorage({issuedBy = os.getComputerLabel(), chunkX = chunkX, chunkZ = chunkZ, storageY = 60})
 end)
 
 app:run()

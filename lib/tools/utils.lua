@@ -670,7 +670,33 @@ end
 ---@param position Vector
 ---@return integer, integer
 function Utils.toChunkXZ(position)
-    return math.floor(position.x % 16), math.floor(position.z % 16)
+    return math.floor(position.x / 16), math.floor(position.z / 16)
+end
+
+---@param path string
+function Utils.writeKitaShortcutFile(path)
+    local kitaShortcutFile = fs.open(path, "w")
+    kitaShortcutFile.writeLine("local platform = (pocket and \"pocket\") or (turtle and \"turtle\") or \"computer\"")
+    kitaShortcutFile.writeLine("shell.run(string.format(\".kita/app/%s/kita\", platform), table.unpack(arg))")
+    kitaShortcutFile.close()
+end
+
+---@param firstLayer integer
+---@param lastLayer integer
+---@param maxLayers integer?
+---@return integer
+function Utils.toDigDownHeight(firstLayer, lastLayer, maxLayers)
+    if firstLayer < lastLayer or (maxLayers ~= nil and maxLayers <= 0) then
+        return 0
+    end
+
+    local endY = lastLayer
+
+    if maxLayers then
+        endY = math.max(firstLayer - (maxLayers - 1), lastLayer)
+    end
+
+    return endY - 1 - firstLayer
 end
 
 return Utils
