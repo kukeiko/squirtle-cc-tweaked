@@ -241,7 +241,7 @@ local function testBuildChunkStorageWorker()
             issuedBy = "foo",
             chunkX = 3,
             chunkZ = 1,
-            y = 60,
+            storageY = 60,
             chestLayers = 1,
             skipAwait = true,
             autoDelete = true
@@ -257,7 +257,7 @@ local function testDigChunkStorageWorker()
         TaskWorkerPool.new({DigChunkWorker}):run()
     end, function()
         os.sleep(1)
-        taskService.digChunk({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = true})
+        taskService.digChunk({issuedBy = "foo", chunkX = 3, chunkZ = 1, storageY = 60, skipAwait = true, autoDelete = true})
     end)
 end
 
@@ -268,7 +268,7 @@ local function testBuildChunkPylonWorker()
         TaskWorkerPool.new({BuildChunkPylonWorker}):run()
     end, function()
         os.sleep(1)
-        taskService.buildChunkPylon({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
+        taskService.buildChunkPylon({issuedBy = "foo", chunkX = 3, chunkZ = 1, storageY = 60, skipAwait = true, autoDelete = false})
     end)
 end
 
@@ -317,20 +317,21 @@ local function testEmptyChunkStorageWorker()
         TaskWorkerPool.new({EmptyChunkStorageWorker}):run()
     end, function()
         os.sleep(1)
-        taskService.emptyChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, y = 60, skipAwait = true, autoDelete = false})
+        taskService.emptyChunkStorage({issuedBy = "foo", chunkX = 3, chunkZ = 1, storageY = 60, skipAwait = true, autoDelete = false})
     end)
 end
 
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    while true do
-        term.clear()
-        term.setCursorPos(1, 1)
-        local position = Utils.getPosition()
-        print(Utils.toChunkXZ(position))
-        os.sleep(1)
-    end
+    print(Utils.toDigDownHeight(-30, -30, 3))
+    -- while true do
+    --     term.clear()
+    --     term.setCursorPos(1, 1)
+    --     local position = Utils.getPosition()
+    --     print(Utils.toChunkXZ(position))
+    --     os.sleep(1)
+    -- end
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

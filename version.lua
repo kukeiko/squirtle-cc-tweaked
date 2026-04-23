@@ -1,3 +1,3 @@
 return function()
-    return "7.0-v"
+    return "7.0-w"
 end
