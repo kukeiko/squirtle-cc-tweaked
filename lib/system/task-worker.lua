@@ -37,7 +37,8 @@ function TaskWorker:work()
 end
 
 function TaskWorker:cleanup()
-    error("child class did not implement cleanup()")
+    -- [todo] ❓ figure out how we want to handle failures
+    -- error("child class did not implement cleanup()")
 end
 
 ---@param items ItemStock
