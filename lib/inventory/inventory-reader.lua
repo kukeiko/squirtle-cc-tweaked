@@ -21,6 +21,7 @@ local readTrash = require "lib.inventory.readers.read-trash"
 local readTurtleBuffer = require "lib.inventory.readers.read-turtle-buffer"
 local readDispenser = require "lib.inventory.readers.read-dispenser"
 local readTurtle = require "lib.inventory.readers.read-turtle"
+local readShulker = require "lib.inventory.readers.read-shulker"
 
 local baseTypeLookup = {
     ["minecraft:chest"] = ItemApi.chest,
@@ -102,10 +103,7 @@ function InventoryReader.read(name, autoStorage)
         if baseType == ItemApi.furnace then
             return readFurnace(name, stacks)
         elseif baseType == ItemApi.shulkerBox then
-            local shulker = readStorage(name, stacks)
-            shulker.type = "shulker"
-
-            return shulker
+            return readShulker(name, stacks)
         elseif baseType == ItemApi.dispenser then
             return readDispenser(name, stacks)
         elseif baseType == "turtle" then
