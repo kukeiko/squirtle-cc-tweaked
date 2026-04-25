@@ -2,7 +2,6 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
-local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local TurtleApi = require "lib.turtle.turtle-api"
@@ -105,10 +104,8 @@ function DigChunkWorker:work()
             TurtleApi.move("up")
         end)
 
-        resumable:addMain(string.format("dump-%d", i), function(state)
-            local stock = TurtleApi.getStock(true)
-            local dump = ItemStock.subtract(stock, {[ItemApi.shulkerBox] = stock[ItemApi.shulkerBox] or 0, [ItemApi.diskDrive] = 1})
-            TurtleApi.dumpToStorage(dump)
+        resumable:addMain(string.format("dump-%d", i), function()
+            TurtleApi.dumpAllToStorage({[ItemApi.shulkerBox] = numShulkers, [ItemApi.diskDrive] = 1})
         end)
     end
 
@@ -120,8 +117,7 @@ function DigChunkWorker:work()
         service.markChunkDugOut(task.chunkX, task.chunkZ)
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)
-        local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
-        TurtleApi.dumpToStorage(stock)
+        TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1})
     end)
 
     resumable:run()

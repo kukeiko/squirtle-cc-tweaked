@@ -68,8 +68,7 @@ function EmptyChunkStorageWorker:work()
             TurtleApi.navigate(task.home)
             TurtleApi.face(task.homeFacing)
             print("[dumping] to hub...")
-            local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = numShulkers})
-            TurtleApi.dumpToStorage(stock)
+            TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = numShulkers})
             task.loadUp = true
             self:updateTask()
         end
@@ -78,8 +77,7 @@ function EmptyChunkStorageWorker:work()
     print("[dumping] shulkers...")
     TurtleApi.navigate(task.home)
     TurtleApi.face(task.homeFacing)
-    local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
-    TurtleApi.dumpToStorage(stock)
+    TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1})
 end
 
 return EmptyChunkStorageWorker

@@ -1,6 +1,5 @@
 local Vector = require "lib.common.vector"
 local Cardinal = require "lib.common.cardinal"
-local ItemStock = require "lib.inventory.item-stock"
 local Utils = require "lib.tools.utils"
 local Rpc = require "lib.tools.rpc"
 local StorageService = require "lib.inventory.storage-service"
@@ -92,7 +91,7 @@ function BuildChunkPylonWorker:work()
         TurtleApi.orientate("disk-drive")
     end)
 
-    -- [todo] ❌ if last layer is a dirt layer, and there is grass in the storage:
+    -- [todo] ❌ if top layer is a dirt layer, and there is grass in the storage:
     -- grab 1x grass block and place it somewhere on the top dirt layer
     for i, iteration in ipairs(task.iterations) do
         resumable:addMain(string.format("load-up-%d", i), function()
@@ -173,8 +172,7 @@ function BuildChunkPylonWorker:work()
         service.markPylonBuilt(task.chunkX, task.chunkZ)
         TurtleApi.navigate(task.hubHome)
         TurtleApi.face(task.hubFacing)
-        local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
-        TurtleApi.dumpToStorage(stock)
+        TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1})
     end)
 
     resumable:run()

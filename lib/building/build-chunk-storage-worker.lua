@@ -2,7 +2,6 @@ local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local Shell = require "lib.system.shell"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
-local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
@@ -89,8 +88,7 @@ function BuildChunkStorageTaskWorker:work()
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)
         print("[dumping] remaining items...")
-        local stock = ItemStock.subtract(TurtleApi.getStock(true), {[ItemApi.diskDrive] = 1})
-        TurtleApi.dumpToStorage(stock)
+        TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1})
         print("[done] finished my task!")
     end)
 

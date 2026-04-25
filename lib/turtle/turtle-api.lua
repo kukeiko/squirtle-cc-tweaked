@@ -1556,6 +1556,17 @@ function TurtleApi.requireItemsFromStorage(items, alwaysUseShulker)
     end)
 end
 
+---@param except? ItemStock
+function TurtleApi.dumpAllToStorage(except)
+    local stock = TurtleApi.getStock(true)
+
+    if except then
+        stock = ItemStock.subtract(stock, except)
+    end
+
+    TurtleApi.dumpToStorage(stock)
+end
+
 ---@param items ItemStock
 function TurtleApi.dumpToStorage(items)
     local ioSlots = getIoSlots()
