@@ -38,9 +38,8 @@ function DigChunkWorker:work()
     local firstLayerY = task.storageY - 1
     local numShulkers = 4
     local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.5)
-    -- local lastLayer = -59;
-    -- [todo] ❌ set back to -59
-    local lastLayer = 50;
+    -- local lastLayer = 50;
+    local lastLayer = -59;
     local totalDigHeight = (firstLayerY - lastLayer) + 1
     local iterations = math.ceil(totalDigHeight / layersPerIteration)
 
