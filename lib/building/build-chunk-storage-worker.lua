@@ -1,5 +1,6 @@
 local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
+local Shell = require "lib.system.shell"
 local TurtleTaskWorker = require "lib.system.turtle-task-worker"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
@@ -43,7 +44,7 @@ function BuildChunkStorageTaskWorker:work()
 
     resumable:setStart(function()
         local results = TurtleApi.simulate(function()
-            buildChunkStorage(storageComputerLabel, task.chestLayers)
+            buildChunkStorage(storageComputerLabel, task.chestLayers, false)
         end)
 
         -- [todo] 🧪 get item max counts from storage service
@@ -76,7 +77,7 @@ function BuildChunkStorageTaskWorker:work()
     end)
 
     resumable:addSimulatableMain("build", function()
-        buildChunkStorage(storageComputerLabel, task.chestLayers)
+        buildChunkStorage(storageComputerLabel, task.chestLayers, false, Shell.getSettings().rpcHub)
     end)
 
     ---@param state BuildChunkStorageState

@@ -10,7 +10,8 @@ local InventoryApi = require "lib.inventory.inventory-api"
 ---@param storageLabel string The label to set for the storage computer
 ---@param chestLayers? integer How many layers of chests should be built - defaults to 9. Total number of chest blocks = numChestLayers * 4
 ---@param withWirelessModem? boolean If the turtle should also place a wireless modem on top of the computer.
-return function(storageLabel, chestLayers, withWirelessModem)
+---@param rpcHub? string The RPC hub to configure for the storage
+return function(storageLabel, chestLayers, withWirelessModem, rpcHub)
     chestLayers = chestLayers or 9
 
     local up = TurtleApi.up
@@ -207,6 +208,7 @@ return function(storageLabel, chestLayers, withWirelessModem)
         kitaAppFile.write(kitaApp.content)
         kitaAppFile.close()
 
+        Utils.writeJson("disk/kita-settings.json", {rpcHub = rpcHub})
         Utils.writeKitaShortcutFile("disk/kita-shortcut")
 
         ---@type StorageAppOptions
@@ -221,6 +223,7 @@ return function(storageLabel, chestLayers, withWirelessModem)
         startupFile.write("shell.run(\"copy disk/storage .kita/app/computer/storage\")\n")
         startupFile.write("shell.run(\"copy disk/kita .kita/app/computer/kita\")\n")
         startupFile.write("shell.run(\"copy disk/kita-shortcut kita\")\n")
+        startupFile.write("shell.run(\"copy disk/kita-settings.json .kita/settings.json\")\n")
         startupFile.write("shell.run(\"copy disk/storage.options.json .kita/data/storage.options.json\")\n")
         startupFile.write("shell.run(\"copy disk/storage-startup startup\")\n")
         startupFile.write(string.format("shell.run(\"label set \\\"%s\\\"\")\n", storageLabel))
