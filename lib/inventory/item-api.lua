@@ -24,6 +24,7 @@ local ItemApi = {
     chest = "minecraft:chest",
     coal = "minecraft:coal",
     coalBlock = "minecraft:coal_block",
+    cobbled_deepslate = "minecraft:cobbled_deepslate",
     cobblestone = "minecraft:cobblestone",
     comparator = "minecraft:comparator",
     composter = "minecraft:composter",

@@ -34,8 +34,6 @@ return function(materials, storageStock, numShulkers, maxLayers)
             local carryableQuantity = math.min(openStock[material] or 0, remainingSlots * 64)
             local layersOfMaterial = math.min(remainingLayers, math.floor(carryableQuantity / (14 * 14)))
             local materialQuantity = layersOfMaterial * (14 * 14)
-            -- using full chunk width/depth to ensure we're not rebuilding the chunk taller than it was
-            local subtractedMaterialQuantity = layersOfMaterial * (16 * 16)
 
             if materialQuantity == 0 then
                 break
@@ -50,7 +48,7 @@ return function(materials, storageStock, numShulkers, maxLayers)
 
             remainingLayers = remainingLayers - iteration.layers
             remainingSlots = remainingSlots - (materialQuantity / 64)
-            openStock[material] = openStock[material] - subtractedMaterialQuantity
+            openStock[material] = openStock[material] - materialQuantity
         end
     end
 
