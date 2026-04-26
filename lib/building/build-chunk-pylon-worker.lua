@@ -11,7 +11,7 @@ local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-i
 local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 -- [todo] ❌ I'm thinking that the user should choose what kind of pylon should be built
-local pylonMaterials = {ItemApi.deepslate, ItemApi.stone, ItemApi.dirt, ItemApi.grassBlock}
+local pylonMaterials = {ItemApi.deepslate, ItemApi.cobbled_deepslate, ItemApi.cobblestone, ItemApi.stone, ItemApi.dirt, ItemApi.grassBlock}
 local pylonMaterialsDesert = {ItemApi.deepslate, ItemApi.stone, ItemApi.sandstone, ItemApi.sand}
 
 ---@class BuildChunkPylonWorker : TurtleTaskWorker 
@@ -59,16 +59,15 @@ function BuildChunkPylonWorker:work()
         self:updateTask()
     end
 
-    -- local lastLayer = -59
-    local firstLayer = 58 -- [todo] ❌ only for testing, set back to -59
-    local lastLayer = task.storageY - 1
-    local totalLayers = lastLayer - firstLayer
+    local fromLayer = Utils.isDev() and 55 or -59
+    local toLayer = task.storageY - 1
+    local totalLayers = toLayer - fromLayer
 
     if not task.iterations then
         local storage = Rpc.nearest(StorageService, nil, "wired")
         local storageStock = storage.getStock()
         -- [todo] ❌ type of materials to be read from task or sumthin'
-        task.iterations = toBuildChunkPylonIterations(pylonMaterialsDesert, storageStock, numShulkers, totalLayers)
+        task.iterations = toBuildChunkPylonIterations(pylonMaterials, storageStock, numShulkers, totalLayers)
         self:updateTask()
     end
 
@@ -79,7 +78,7 @@ function BuildChunkPylonWorker:work()
         TurtleApi.locate()
 
         ---@class BuildChunkPylonState
-        local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive"), nextY = firstLayer}
+        local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive"), nextY = fromLayer}
 
         options.requireFuel = true
 
