@@ -156,7 +156,8 @@ app:addWindow("Current Pylon", function(shellWindow)
                                 chunkZ = chunkPylon.chunkZ,
                                 storageY = chunkPylon.storageY,
                                 autoDelete = true,
-                                skipAwait = true
+                                skipAwait = true,
+                                label = chunkPylon.id
                             })
                         end
                     end
@@ -177,11 +178,10 @@ app:addWindow("Chunk Pylons", function()
 
             if item.isRebuildingChunk then
                 -- [todo] ❌ move progress calculation to ChunkPylonService
-                -- [todo] ❌ doesn't even work yet as returned pylons are not hydrated from active tasks
-                local totalLayers = (item.storageY - 1) - item.lastBuiltY
-                local layersBuilt = -60 + item.lastBuiltY
+                local totalLayers = (item.storageY - 1) - (-60)
+                local layersBuilt = item.lastBuiltY - (-60)
                 local progress = math.floor((layersBuilt / totalLayers) * 100)
-                option.suffix = string.format("%d%", progress)
+                option.suffix = string.format("%d%%", progress)
             end
 
             return option

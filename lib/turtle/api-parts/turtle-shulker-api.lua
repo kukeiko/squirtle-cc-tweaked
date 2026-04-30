@@ -122,6 +122,7 @@ local function replaceShulkerAtOneOf(TurtleApi, sides)
             TurtleApi.select(slot)
 
             if not TurtleApi.place(side) then
+                -- [todo] ❌ try to attack mobs if they are in the way
                 error(string.format("failed to place shulker at %s", side))
             end
 
@@ -154,6 +155,7 @@ local function tryPlaceShulker(TurtleApi, slot)
         diskState.shulkerSides = {}
         DatabaseApi.saveTurtleDiskState(diskState)
 
+        -- [todo] ❌ try to attack mobs if they are in the way
         return nil, "failed to place shulker"
     end
 

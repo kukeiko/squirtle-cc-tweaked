@@ -35,6 +35,7 @@ end
 function DigChunkWorker:work()
     local resumable = Resumable.new("dig-chunk-worker")
     local task = self:getTask()
+    -- [todo] ❌ record lastDugY and use it for resuming
     local firstLayerY = task.storageY - 1
     local numShulkers = 4
     local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)

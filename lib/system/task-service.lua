@@ -63,7 +63,15 @@ end
 ---@return Task[]
 function TaskService.getAcceptedTasksByType(taskType)
     return Utils.filter(TaskRepository.getTasks(), function(task)
-        return task.type == taskType and task.status == "accepted"
+        return task.status == "accepted" and task.type == taskType
+    end)
+end
+
+---@param taskTypes TaskType[]
+---@return Task[]
+function TaskService.getAcceptedTasksByTypes(taskTypes)
+    return Utils.filter(TaskRepository.getTasks(), function(task)
+        return task.status == "accepted" and Utils.contains(taskTypes, task.type)
     end)
 end
 

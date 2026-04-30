@@ -14,10 +14,11 @@ return function(materials, storageStock, numShulkers, maxLayers)
     end
 
     local remainingLayers = maxLayers
-    -- [todo] ❌ numShulkers was 4, but still managed to want 5x shulkers when requiring the items to build the chunk
+    -- [todo] ❌ numShulkers was 4, but still managed to want 5x shulkers when requiring the items to build the chunk.
+    -- happened when this function was using both cobbled_deepslate and cobblestone to build layers.
     local availableSlots = 27 * numShulkers
     local remainingSlots = availableSlots
-    local requiredSlots = (14 * 14) / 64
+    local requiredSlotsPerLayer = (14 * 14) / 64
     ---@type BuildChunkPylonIteration[]
     local iterations = {}
     ---@type BuildChunkPylonIteration
@@ -25,7 +26,7 @@ return function(materials, storageStock, numShulkers, maxLayers)
 
     for _, material in ipairs(materials) do
         while (openStock[material] or 0) > 0 and remainingLayers > 0 do
-            if remainingSlots < requiredSlots then
+            if remainingSlots < requiredSlotsPerLayer then
                 -- start new iteration as there not enough slots available to build another layer
                 table.insert(iterations, iteration)
                 iteration = {layers = 0, stock = {}, materials = {}}

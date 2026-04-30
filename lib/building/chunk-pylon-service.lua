@@ -5,22 +5,39 @@ local TaskService = require "lib.system.task-service"
 ---@class ChunkPylonService : Service
 local ChunkPylonService = {name = "chunk-pylon"}
 
+---@param tasks Task[]
 ---@param chunkX integer
 ---@param chunkZ integer
 ---@param taskType TaskType
 ---@return boolean
-local function hasChunkTask(chunkX, chunkZ, taskType)
-    local chunkTasks = TaskService.getAcceptedTasksByType(taskType) --[[@as table<integer, ChunkTaskBase>]]
-    local task = Utils.find(chunkTasks, function(item)
-        return item.chunkX == chunkX and item.chunkZ == chunkZ
+local function hasChunkTask(tasks, chunkX, chunkZ, taskType)
+    local task = Utils.find(tasks, function(item)
+        return item.type == taskType and item.chunkX == chunkX and item.chunkZ == chunkZ
     end)
 
     return task ~= nil
 end
 
+---@param chunkPylon ChunkPylon
+---@param tasks Task[]
+local function assignTaskStatus(chunkPylon, tasks)
+    local chunkX = chunkPylon.chunkX
+    local chunkZ = chunkPylon.chunkZ
+    chunkPylon.isBuildingStorage = hasChunkTask(tasks, chunkX, chunkZ, "build-chunk-storage")
+    chunkPylon.isDiggingChunk = hasChunkTask(tasks, chunkX, chunkZ, "dig-chunk")
+    chunkPylon.isRebuildingChunk = hasChunkTask(tasks, chunkX, chunkZ, "build-chunk-pylon")
+end
+
 ---@return ChunkPylon[]
 function ChunkPylonService.getAll()
-    return ChunkPylonRepository.getAll()
+    local chunkTasks = TaskService.getAcceptedTasksByTypes({"build-chunk-storage", "dig-chunk", "build-chunk-pylon"})
+    local chunkPylons = ChunkPylonRepository.getAll()
+
+    for _, chunkPylon in ipairs(chunkPylons) do
+        assignTaskStatus(chunkPylon, chunkTasks)
+    end
+
+    return chunkPylons
 end
 
 ---@param chunkX integer
@@ -33,9 +50,8 @@ function ChunkPylonService.tryGet(chunkX, chunkZ)
         return nil
     end
 
-    chunkPylon.isBuildingStorage = hasChunkTask(chunkX, chunkZ, "build-chunk-storage")
-    chunkPylon.isDiggingChunk = hasChunkTask(chunkX, chunkZ, "dig-chunk")
-    chunkPylon.isRebuildingChunk = hasChunkTask(chunkX, chunkZ, "build-chunk-pylon")
+    local chunkTasks = TaskService.getAcceptedTasksByTypes({"build-chunk-storage", "dig-chunk", "build-chunk-pylon"})
+    assignTaskStatus(chunkPylon, chunkTasks)
 
     return chunkPylon
 end

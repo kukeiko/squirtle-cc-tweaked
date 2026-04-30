@@ -111,6 +111,8 @@ function BuildChunkPylonWorker:work()
                 print(string.format(" - %dx %s", quantity, item))
             end
 
+            -- [todo] ❌ sometimes, storage moved item into inventory and turtle doesn't realize it, so it is waiting for
+            -- more to come even though it is already in its inventory.
             TurtleApi.requireItemsFromStorage(iteration.stock, true)
             print("[ready] for building")
         end)

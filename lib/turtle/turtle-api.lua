@@ -1596,11 +1596,11 @@ function TurtleApi.dumpToStorage(items)
                         break
                     end
                 end
-            end
 
-            -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
-            storage.transfer({inventory}, storages, open, {toSequential = true})
-            os.sleep(1)
+                -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
+                storage.transfer({inventory}, storages, open, {toSequential = true})
+                os.sleep(1)
+            end
         end
     end)
 
