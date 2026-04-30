@@ -37,13 +37,12 @@ function DigChunkWorker:work()
     local task = self:getTask()
     local firstLayerY = task.storageY - 1
     local numShulkers = 4
-    local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.5)
-    -- local lastLayer = 50;
-    local lastLayer = -59;
+    local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)
+    local lastLayer = Utils.isDev() and 50 or -59;
     local totalDigHeight = (firstLayerY - lastLayer) + 1
     local iterations = math.ceil(totalDigHeight / layersPerIteration)
 
-    resumable:setStart(function()
+    resumable:setStart(function(_, options)
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
         self:requireShulkers(numShulkers)
         TurtleApi.locate()
@@ -52,12 +51,20 @@ function DigChunkWorker:work()
         ---@class DigChunkState
         local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive")}
 
+        -- [todo] 🧪 setting this flag in addition to fueling to limit to ensure the fuel tank is big enough for the task
+        options.requireFuel = true
+
         return state
     end)
 
     resumable:setResume(function()
         TurtleApi.locate()
         TurtleApi.orientate("disk-drive")
+    end)
+
+    ---@param state DigChunkState
+    resumable:addMain("disengage-hub", function(state)
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(state.home))
     end)
 
     resumable:addMain("navigate", function()
@@ -107,6 +114,11 @@ function DigChunkWorker:work()
             TurtleApi.dumpAllToStorage({[ItemApi.shulkerBox] = numShulkers, [ItemApi.diskDrive] = 1})
         end)
     end
+
+    ---@param state DigChunkState
+    resumable:addMain("engage-hub", function(state)
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(state.home))
+    end)
 
     ---@param state DigChunkState
     resumable:setFinish(function(state)

@@ -4,6 +4,7 @@ local programs = {
     ["Storage"] = "app/kita.lua storage",
     ["Home"] = "app/kita.lua dispenser",
     ["Crafty"] = "app/kita.lua io-crafter",
+    ["Hub Worker"] = "app/kita.lua hub-worker",
     ["Farmer"] = "app/turtle/farmer.lua",
     ["Lumberjack"] = "app/turtle/lumberjack.lua",
     ["Oak"] = "app/kita.lua oak",

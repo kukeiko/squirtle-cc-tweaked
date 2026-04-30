@@ -49,6 +49,7 @@ function EmptyChunkStorageWorker:work()
         if task.loadUp then
             -- go to chunk storage & load up
             print("[going] to chunk storage...")
+            TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.home))
             TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
             TurtleApi.face(Cardinal.south)
             print("[loading] up!")
@@ -65,6 +66,7 @@ function EmptyChunkStorageWorker:work()
         else
             -- go to hub and dump
             print("[going] to hub...")
+            TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.home))
             TurtleApi.navigate(task.home)
             TurtleApi.face(task.homeFacing)
             print("[dumping] to hub...")
@@ -75,6 +77,7 @@ function EmptyChunkStorageWorker:work()
     end
 
     print("[dumping] shulkers...")
+    TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.home))
     TurtleApi.navigate(task.home)
     TurtleApi.face(task.homeFacing)
     TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1})

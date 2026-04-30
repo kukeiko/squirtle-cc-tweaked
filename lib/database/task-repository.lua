@@ -54,7 +54,8 @@ end
 
 ---@param id integer
 ---@param status TaskStatus
-function TaskRepository.completeTask(id, status)
+---@param message? string
+function TaskRepository.completeTask(id, status, message)
     local tasks = TaskRepository.getTasks()
     local task = Utils.find(tasks, function(item)
         return item.id == id
@@ -65,6 +66,7 @@ function TaskRepository.completeTask(id, status)
     end
 
     task.status = status
+    task.message = message
     local delete = task.autoDelete and status == "finished"
 
     tasks = Utils.filter(tasks, function(item)

@@ -45,6 +45,7 @@ end
 ---@param entity table
 ---@return table
 function EntityRepository:create(entity)
+    -- [todo] ❌ throw if already exists
     local file = self:loadFile()
 
     if self.autoId then

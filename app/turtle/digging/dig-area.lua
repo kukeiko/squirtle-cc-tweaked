@@ -62,7 +62,7 @@ app:addWindow("Main", function()
             }
 
             options.requireFuel = true
-            -- [todo] ❌ also make it so dig-area is the shown app
+            -- [todo] ❌ also make it so that dig-area is automatically shown on reboot
             Shell.addAutorun("dig-area")
 
             -- [todo] ❌ band-aid fix to make space for disk-drive/shulker-box

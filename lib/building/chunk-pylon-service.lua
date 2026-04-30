@@ -42,9 +42,50 @@ end
 
 ---@param chunkX integer
 ---@param chunkZ integer
+---@return ChunkPylon
+function ChunkPylonService.get(chunkX, chunkZ)
+    local chunkPylon = ChunkPylonService.tryGet(chunkX, chunkZ)
+
+    if not chunkPylon then
+        error(string.format("chunk pylon %d/%d not found", chunkX, chunkZ))
+    end
+
+    return chunkPylon
+end
+
+---@param chunkX integer
+---@param chunkZ integer
 ---@param storageY integer
 function ChunkPylonService.create(chunkX, chunkZ, storageY)
     ChunkPylonRepository.create(chunkX, chunkZ, storageY)
+end
+
+---@param chunkX integer
+---@param chunkZ integer
+---@return boolean
+function ChunkPylonService.canUpdateStorageY(chunkX, chunkZ)
+    local chunkPylon = ChunkPylonService.get(chunkX, chunkZ)
+    local storageBusy = chunkPylon.isBuildingStorage or chunkPylon.isStorageBuilt
+    local diggingBusy = chunkPylon.isDiggingChunk or chunkPylon.isChunkDugOut
+    local pylonBusy = chunkPylon.isRebuildingChunk or chunkPylon.isPylonBuilt
+    local removalBusy = chunkPylon.isRemovingStorage
+
+    return not storageBusy and not diggingBusy and not pylonBusy and not removalBusy
+end
+
+---@param chunkX integer
+---@param chunkZ integer
+---@param storageY integer
+function ChunkPylonService.updateStorageY(chunkX, chunkZ, storageY)
+    if not ChunkPylonService.canUpdateStorageY(chunkX, chunkZ) then
+        error(string.format("not allowed to update storageY of chunk pylon %d/%d", chunkX, chunkZ))
+    end
+
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+    chunkPylon.storageY = storageY
+    ChunkPylonRepository.save(chunkPylon)
+
+    return chunkPylon
 end
 
 ---@param issuedBy string
@@ -119,6 +160,24 @@ end
 function ChunkPylonService.markPylonBuilt(chunkX, chunkZ)
     local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
     chunkPylon.isPylonBuilt = true
+    ChunkPylonRepository.save(chunkPylon)
+end
+
+---@param chunkX integer
+---@param chunkZ integer
+---@param y integer
+function ChunkPylonService.markLayerDugOut(chunkX, chunkZ, y)
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+    chunkPylon.lastDugY = y
+    ChunkPylonRepository.save(chunkPylon)
+end
+
+---@param chunkX integer
+---@param chunkZ integer
+---@param y integer
+function ChunkPylonService.markLayerBuilt(chunkX, chunkZ, y)
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+    chunkPylon.lastBuiltY = y
     ChunkPylonRepository.save(chunkPylon)
 end
 

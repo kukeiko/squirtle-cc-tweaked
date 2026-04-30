@@ -285,7 +285,7 @@ local function testRequireItems()
 end
 
 local function testToBuildChunkPylonIterations()
-    local iterations = toBuildChunkPylonIterations({ItemApi.stone}, {[ItemApi.stone] = 16 * 16 * 7}, 1)
+    local iterations = toBuildChunkPylonIterations({ItemApi.stone}, {[ItemApi.stone] = 16 * 16 * 7}, 1, 3)
     Utils.prettyPrint(iterations)
 end
 

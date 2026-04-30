@@ -196,6 +196,7 @@ local function wrapRunApplication(application, run, switchBackTo)
             if not success then
                 print(string.format("%s crashed", application.metadata.name))
                 print(message)
+                Logger.crash(message)
                 Utils.waitForUserToHitEnter("<hit enter to continue>")
             end
         end)

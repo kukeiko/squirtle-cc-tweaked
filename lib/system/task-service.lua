@@ -54,6 +54,11 @@ function TaskService.deleteTask(id)
     TaskRepository.deleteTask(id)
 end
 
+---@return Task[]
+function TaskService.getTasks()
+    return TaskRepository.getTasks()
+end
+
 ---@param taskType TaskType
 ---@return Task[]
 function TaskService.getAcceptedTasksByType(taskType)
@@ -73,8 +78,9 @@ function TaskService.finishTask(id)
 end
 
 ---@param id integer
-function TaskService.failTask(id)
-    TaskRepository.completeTask(id, "failed")
+---@param message string
+function TaskService.failTask(id, message)
+    TaskRepository.completeTask(id, "failed", message)
 end
 
 ---@param acceptedBy string

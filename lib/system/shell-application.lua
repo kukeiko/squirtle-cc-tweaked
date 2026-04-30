@@ -1,5 +1,6 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
+local Logger = require "lib.tools.logger"
 local ShellWindow = require "lib.system.shell-window"
 local nextId = require "lib.tools.next-id"
 local logsWindow = require "lib.system.windows.logs-window"
@@ -101,6 +102,7 @@ function ShellApplication:addWindow(title, fn)
             shellWindow.window.setCursorPos(1, 1)
             print(string.format("%s crashed", shellWindow.title))
             print(message)
+            Logger.crash(message)
             Utils.waitForUserToHitEnter("<hit enter to continue>")
         end
 

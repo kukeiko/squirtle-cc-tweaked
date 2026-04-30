@@ -54,6 +54,10 @@ end
 ---Runs the given function every time the window becomes visible, until it becomes invisible.
 ---@param fn fun() : any
 function ShellWindow:runWhileVisible(fn)
+    if self:isVisible() then
+        self:runUntilInvisible(fn)
+    end
+
     while true do
         self:pullIsVisible()
         self:runUntilInvisible(fn)

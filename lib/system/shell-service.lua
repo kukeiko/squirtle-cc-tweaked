@@ -107,4 +107,17 @@ function ShellService.tryGetLivePosition()
     return Vector.create(x, y, z)
 end
 
+function ShellService.isTurtle()
+    return Utils.getPlatform() == "turtle"
+end
+
+---@return integer
+function ShellService.getFuelLevel()
+    if not Utils.getPlatform() == "turtle" then
+        error("not a turtle")
+    end
+
+    return turtle.getFuelLevel()
+end
+
 return ShellService

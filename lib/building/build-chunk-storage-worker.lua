@@ -46,10 +46,9 @@ function BuildChunkStorageTaskWorker:work()
             buildChunkStorage(storageComputerLabel, task.chestLayers, false)
         end)
 
-        -- [todo] 🧪 get item max counts from storage service
         self:acquireItemDetails()
         local requiredItems, requiredShulkers = TurtleApi.getOpenStock(results.placed, true)
-        local totalShulkers = math.max(requiredShulkers, 4)
+        local totalShulkers = math.min(requiredShulkers, 4)
 
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
         self:requireShulkers(totalShulkers)
@@ -69,6 +68,11 @@ function BuildChunkStorageTaskWorker:work()
         TurtleApi.orientate("disk-drive")
     end)
 
+    ---@param state BuildChunkStorageState
+    resumable:addMain("disengage-hub", function(state)
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(state.home))
+    end)
+
     resumable:addMain("navigate", function()
         local task = self:getTask()
         TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
@@ -77,6 +81,11 @@ function BuildChunkStorageTaskWorker:work()
 
     resumable:addSimulatableMain("build", function()
         buildChunkStorage(storageComputerLabel, task.chestLayers, false, Shell.getSettings().rpcHub)
+    end)
+
+    ---@param state BuildChunkStorageState
+    resumable:addMain("engage-hub", function(state)
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(state.home))
     end)
 
     ---@param state BuildChunkStorageState

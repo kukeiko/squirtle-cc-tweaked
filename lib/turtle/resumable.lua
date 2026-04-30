@@ -155,6 +155,8 @@ local function resume(self, resumable)
             error("failed to resume")
         end
 
+        DatabaseApi.updateTurtleResumable(resumable)
+
         return Utils.indexOf(self.resumableFns, resumableFn) + 1
     else
         return Utils.indexOf(self.resumableFns, resumableFn)

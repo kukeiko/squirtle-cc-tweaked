@@ -53,7 +53,7 @@ function TaskWorkerPool:run()
             if not success then
                 print(string.format("[failed] %s #%d: %s", task.type, task.id, message))
                 worker:cleanup()
-                taskService.failTask(task.id)
+                taskService.failTask(task.id, message or "unknown error")
             end
 
             Utils.remove(self.workers, worker)

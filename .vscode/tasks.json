@@ -101,6 +101,16 @@
             "command": "node_modules/luabundler/bin/run.cmd bundle app/computer/database.lua -p app/computer/?.lua -p ?.lua -o .kita/app/pocket/database"
         },
         {
+            "label": "build chunk-pylons:pocket",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/pocket/chunk-pylons.lua -p app/chunk-pylons/?.lua -p ?.lua -o .kita/app/pocket/chunk-pylons"
+        },
+        {
+            "label": "build hub-worker:turtle",
+            "type": "shell",
+            "command": "node_modules/luabundler/bin/run.cmd bundle app/turtle/hub-worker.lua -p ?.lua -o .kita/app/turtle/hub-worker"
+        },
+        {
             "label": "build bone-meal",
             "dependsOn": [
                 "build bone-meal:computer",

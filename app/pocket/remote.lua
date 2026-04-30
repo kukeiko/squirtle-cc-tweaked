@@ -48,6 +48,8 @@ local function doLocateCommand(remote)
     EventLoop.waitForAny(function()
         print("[trying] to get position...")
         local position = remote.tryGetLivePosition()
+        local isTurtle = remote.isTurtle()
+        local fuel = isTurtle and remote.getFuelLevel() or nil
 
         while true do
             term.setCursorPos(1, 1)
@@ -70,8 +72,13 @@ local function doLocateCommand(remote)
             print(string.format("Z: %s", z))
             print(string.format("Distance: %s", distance))
 
+            if fuel ~= nil then
+                print(string.format("Fuel: %d", fuel))
+            end
+
             os.sleep(1)
             position = remote.tryGetLivePosition()
+            fuel = isTurtle and remote.getFuelLevel() or nil
         end
     end, function()
         EventLoop.pullKey(keys.f4)

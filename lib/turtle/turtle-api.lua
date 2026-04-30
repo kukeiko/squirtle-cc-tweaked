@@ -1607,4 +1607,9 @@ function TurtleApi.dumpToStorage(items)
     TurtleApi.condense()
 end
 
+---@param hubHome Vector
+function TurtleApi.getHubDockingPosition(hubHome)
+    return Vector.plus(hubHome, Vector.create(0, 7, 0))
+end
+
 return TurtleApi

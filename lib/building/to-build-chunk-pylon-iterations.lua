@@ -14,6 +14,7 @@ return function(materials, storageStock, numShulkers, maxLayers)
     end
 
     local remainingLayers = maxLayers
+    -- [todo] ❌ numShulkers was 4, but still managed to want 5x shulkers when requiring the items to build the chunk
     local availableSlots = 27 * numShulkers
     local remainingSlots = availableSlots
     local requiredSlots = (14 * 14) / 64
@@ -47,7 +48,7 @@ return function(materials, storageStock, numShulkers, maxLayers)
             end
 
             remainingLayers = remainingLayers - iteration.layers
-            remainingSlots = remainingSlots - (materialQuantity / 64)
+            remainingSlots = remainingSlots - math.ceil(materialQuantity / 64)
             openStock[material] = openStock[material] - materialQuantity
         end
     end

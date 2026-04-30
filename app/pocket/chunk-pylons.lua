@@ -37,26 +37,6 @@ local function getCurrentChunkPylon(service)
     return true, chunkPylon, chunkX, chunkZ
 end
 
-app:addWindow("Chunk Pylons", function()
-    local service = Rpc.nearest(ChunkPylonService)
-
-    local function getOptions()
-        local chunkPylons = service.getAll()
-        return Utils.map(chunkPylons, function(item)
-            ---@type SearchableListOption
-            local option = {id = item.id, name = string.format("%d/%d", item.chunkX, item.chunkZ)}
-
-            return option
-        end)
-    end
-
-    local list = SearchableList.new(getOptions(), "Chunk Pylons", 10, 1, getOptions)
-
-    while true do
-        list:run()
-    end
-end)
-
 app:addWindow("Current Pylon", function(shellWindow)
     local function getTitle()
         local position = Utils.tryGetPosition()
@@ -86,6 +66,8 @@ app:addWindow("Current Pylon", function(shellWindow)
 
                 return options
             else
+                local canUpdateStorageY = service.canUpdateStorageY(chunkPylon.chunkX, chunkPylon.chunkZ)
+
                 ---@type SearchableListOption[]
                 local options = {
                     {
@@ -105,6 +87,12 @@ app:addWindow("Current Pylon", function(shellWindow)
                     },
                     {id = "empty-storage", name = "Empty Storage"}
                 }
+
+                if canUpdateStorageY then
+                    ---@type SearchableListOption
+                    local updateStorageYOption = {id = "update-storage-y", name = "Update Storage Y"}
+                    table.insert(options, updateStorageYOption)
+                end
 
                 return options
             end
@@ -129,6 +117,15 @@ app:addWindow("Current Pylon", function(shellWindow)
                         local storageY = math.floor(position.y - 2)
                         service.create(chunkX, chunkZ, storageY)
                         list:setOptions(getOptions())
+                    elseif selected.id == "update-storage-y" then
+                        local position = Utils.getPosition()
+                        local _, chunkPylon = getCurrentChunkPylon(service)
+
+                        if chunkPylon then
+                            service.updateStorageY(chunkPylon.chunkX, chunkPylon.chunkZ, math.floor(position.y - 2))
+                            print("Storage Y updated!")
+                            os.sleep(1)
+                        end
                     elseif selected.id == "build-storage" then
                         local _, chunkPylon = getCurrentChunkPylon(service)
 
@@ -169,21 +166,33 @@ app:addWindow("Current Pylon", function(shellWindow)
     end)
 end)
 
-app:addWindow("Test", function()
+app:addWindow("Chunk Pylons", function()
     local service = Rpc.nearest(ChunkPylonService)
-    local hasPosition, chunkPylon, chunkX, chunkZ = getCurrentChunkPylon(service)
 
-    if not hasPosition then
-        error("no gps")
+    local function getOptions()
+        local chunkPylons = service.getAll()
+        return Utils.map(chunkPylons, function(item)
+            ---@type SearchableListOption
+            local option = {id = item.id, name = string.format("%d/%d", item.chunkX, item.chunkZ)}
+
+            if item.isRebuildingChunk then
+                -- [todo] ❌ move progress calculation to ChunkPylonService
+                -- [todo] ❌ doesn't even work yet as returned pylons are not hydrated from active tasks
+                local totalLayers = (item.storageY - 1) - item.lastBuiltY
+                local layersBuilt = -60 + item.lastBuiltY
+                local progress = math.floor((layersBuilt / totalLayers) * 100)
+                option.suffix = string.format("%d%", progress)
+            end
+
+            return option
+        end)
     end
 
-    if not chunkX or not chunkZ then
-        error("no chunkX or chunkZ")
-    end
+    local list = SearchableList.new(getOptions(), "Chunk Pylons", 10, 1, getOptions)
 
-    local taskService = Rpc.nearest(TaskService)
-    Utils.waitForUserToHitEnter("<hit enter to empty storage>")
-    taskService.emptyChunkStorage({issuedBy = os.getComputerLabel(), chunkX = chunkX, chunkZ = chunkZ, storageY = 60})
+    while true do
+        list:run()
+    end
 end)
 
 app:run()

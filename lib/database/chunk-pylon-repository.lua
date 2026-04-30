@@ -19,6 +19,8 @@ end
 ---@field isRemovingStorage boolean
 ---@field isDiggingChunk boolean
 ---@field isRebuildingChunk boolean
+---@field lastBuiltY integer?
+---@field lastDugY integer?
 ---
 
 ---@class ChunkPylonRepository

@@ -6,6 +6,7 @@
 ---@field acceptedBy string?
 ---@field partOfTaskId integer?
 ---@field label string?
+---@field message string?
 ---@field status TaskStatus
 ---@field type TaskType
 ---@field autoDelete boolean
@@ -68,6 +69,7 @@
 ---@field type "build-chunk-pylon"
 ---@field storageY integer
 ---@field initialized boolean
+---@field disengaged boolean
 ---@field navigated boolean
 ---@field iterations BuildChunkPylonIteration[]?
 ---@field hubHome Vector

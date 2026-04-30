@@ -15,6 +15,7 @@ local Shell = require "lib.system.shell"
 local StorageService = require "lib.inventory.storage-service"
 local TaskService = require "lib.system.task-service"
 local SearchableList = require "lib.ui.searchable-list"
+local tasksWindow = require "lib.system.windows.tasks-window"
 
 local app = Shell.getApplication(arg)
 print(string.format("[tasks %s] connecting to services...", version()))
@@ -37,7 +38,7 @@ local function showMissingDetails(taskService)
         return options
     end
 
-    local searchableList = SearchableList.new(getOptions(), "Missing Info", idleTimeout, refreshIntervals.missingDetails, getOptions)
+    local searchableList = SearchableList.new(getOptions(), "Missing Stored", idleTimeout, refreshIntervals.missingDetails, getOptions)
 
     while true do
         searchableList:run()
@@ -65,6 +66,8 @@ local function showMissing(storageService, taskService)
         searchableList:run()
     end
 end
+
+app:addWindow("Tasks", tasksWindow)
 
 app:addWindow("Missing Ingredients", function()
     showMissing(storageService, taskService)

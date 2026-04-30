@@ -42,6 +42,7 @@ function BuildChunkPylonWorker:work()
     local numShulkers = 4
     local task = self:getTask()
     local resumable = Resumable.new("build-chunk-pylon-worker")
+    local service = Rpc.nearest(ChunkPylonService)
 
     if not task.initialized then
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
@@ -52,6 +53,12 @@ function BuildChunkPylonWorker:work()
         self:updateTask()
     end
 
+    if not task.disengaged then
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.hubHome))
+        task.disengaged = true
+        self:updateTask()
+    end
+
     if not task.navigated then
         TurtleApi.navigate(TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ))
         TurtleApi.face(Cardinal.south)
@@ -59,7 +66,9 @@ function BuildChunkPylonWorker:work()
         self:updateTask()
     end
 
-    local fromLayer = Utils.isDev() and 55 or -59
+    local chunkPylon = service.get(task.chunkX, task.chunkZ)
+    local lastBuiltLayer = chunkPylon.lastBuiltY or (Utils.isDev() and 50 or -60)
+    local fromLayer = lastBuiltLayer + 1
     local toLayer = task.storageY - 1
     local totalLayers = toLayer - fromLayer
 
@@ -80,6 +89,7 @@ function BuildChunkPylonWorker:work()
         ---@class BuildChunkPylonState
         local state = {home = TurtleApi.getPosition(), facing = TurtleApi.orientate("disk-drive"), nextY = fromLayer}
 
+        -- [todo] 🧪 setting this flag in addition to fueling to limit to ensure the fuel tank is big enough for the task
         options.requireFuel = true
 
         return state
@@ -150,6 +160,10 @@ function BuildChunkPylonWorker:work()
                     layer = layer + 1
                 end
 
+                if not TurtleApi.isSimulating() then
+                    service.markLayerBuilt(task.chunkX, task.chunkZ, TurtleApi.getPosition().y - 1)
+                end
+
                 if stock[material] == 0 then
                     materialIndex = materialIndex + 1
                 end
@@ -165,9 +179,12 @@ function BuildChunkPylonWorker:work()
         end)
     end
 
+    resumable:addMain("engage-hub", function()
+        TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.hubHome))
+    end)
+
     ---@param state BuildChunkPylonState
     resumable:setFinish(function(state)
-        local service = Rpc.nearest(ChunkPylonService)
         service.markPylonBuilt(task.chunkX, task.chunkZ)
         TurtleApi.navigate(task.hubHome)
         TurtleApi.face(task.hubFacing)

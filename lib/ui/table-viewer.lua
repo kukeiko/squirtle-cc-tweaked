@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local SearchableList = require "lib.ui.searchable-list"
 
 ---@class TableViewer
@@ -27,6 +28,18 @@ local function getOptions(data)
     return options
 end
 
+---@param data string
+---@param title string
+local function showString(data, title)
+    term.clear()
+    term.setCursorPos(1, 1)
+    print(string.format("%s:", title))
+    local w = term.getSize()
+    print(string.rep("-", w))
+    print(data)
+    Utils.waitForUserToHitEnter()
+end
+
 ---@param data table
 ---@param title string
 local function showList(data, title)
@@ -37,6 +50,8 @@ local function showList(data, title)
         if selected then
             if type(selected.data) == "table" then
                 showList(selected.data, string.format("%s > %s", title, selected.name))
+            elseif type(selected.data) == "string" then
+                showString(selected.data, selected.name)
             end
         else
             break

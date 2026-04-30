@@ -26,7 +26,8 @@ local Logger = {context = defaultContext, messages = {}}
 ---@param level "log" | "error" | "warn"
 ---@param message string
 ---@param data? table
-local function addMessage(level, message, data)
+---@param file? string
+local function addMessage(level, message, data, file)
     ---@type LogMessage
     local logMessage = {
         id = nextId(),
@@ -37,7 +38,14 @@ local function addMessage(level, message, data)
         timestamp = os.time("local"),
         data = data
     }
+
     table.insert(Logger.messages, logMessage)
+
+    if file then
+        local logFile = Utils.readJson(file) or {}
+        table.insert(logFile, logMessage)
+        Utils.writeJson(file, logFile)
+    end
 
     if #Logger.messages >= maxLogs then
         ---@type LogMessage[]
@@ -84,6 +92,11 @@ end
 ---@param message string
 function Logger.warn(message)
     addMessage("warn", message)
+end
+
+---@param message string
+function Logger.crash(message)
+    addMessage("error", message, nil, ".kita/crash-log.json")
 end
 
 ---@return LogMessage[]
