@@ -24,7 +24,7 @@ local buildDoubleFloor = require "lib.turtle.functions.build-double-floor"
 local buildTripleFloor = require "lib.turtle.functions.build-triple-floor"
 local harvestBirchTree = require "lib.turtle.functions.harvest-birch-tree"
 local requireItems = require "lib.turtle.functions.require-items"
-local getIoSlots = require "lib.turtle.functions.get-io-slots"
+local dumpToStorage = require "lib.turtle.functions.dump-to-storage"
 
 ---@alias OrientationMethod "move" | "disk-drive"
 ---@alias DiskDriveOrientationSide "top" | "bottom"
@@ -711,6 +711,16 @@ function TurtleApi.getSelectedSlot()
     return TurtleInventoryApi.getSelectedSlot()
 end
 
+---@return integer[]
+function TurtleApi.getIoSlots()
+    return TurtleInventoryApi.getIoSlots()
+end
+
+---@return integer[]
+function TurtleApi.getNonIoSlots()
+    return TurtleInventoryApi.getNonIoSlots()
+end
+
 ---@param slot integer
 ---@return boolean
 function TurtleApi.select(slot)
@@ -726,7 +736,7 @@ end
 
 ---@param slot integer
 ---@param quantity? integer
----@return boolean
+---@return boolean, integer
 function TurtleApi.transferTo(slot, quantity)
     return TurtleInventoryApi.transferTo(slot, quantity)
 end
@@ -781,9 +791,10 @@ function TurtleApi.getItemStock(predicate)
 end
 
 ---@param includeShulkers? boolean
+---@param excludeIo? boolean
 ---@return table<string, integer>
-function TurtleApi.getStock(includeShulkers)
-    return TurtleInventoryApi.getStock(TurtleApi, includeShulkers)
+function TurtleApi.getStock(includeShulkers, excludeIo)
+    return TurtleInventoryApi.getStock(TurtleApi, includeShulkers, excludeIo)
 end
 
 ---@return ItemStock
@@ -793,9 +804,10 @@ end
 
 ---@param name string
 ---@param nbt? string
+---@param slots? integer[]
 ---@return integer?
-function TurtleApi.find(name, nbt)
-    return TurtleInventoryApi.find(name, nbt)
+function TurtleApi.find(name, nbt, slots)
+    return TurtleInventoryApi.find(name, nbt, slots)
 end
 
 ---@param item string
@@ -1153,6 +1165,9 @@ function TurtleApi.doHomework(options)
     TurtleApi.suckAll(options.barrel)
 end
 
+---Tries to select an item in the inventory. If not found, will try to load from a carried shulker and place it into inventory.
+---
+---Returns the selected slot or nil on failure.
 ---@param item string
 ---@return integer?
 function TurtleApi.selectItem(item)
@@ -1234,15 +1249,17 @@ function TurtleApi.sliceStockForShulkers(stock, itemDetails)
 end
 
 ---@param item string
+---@param keepPlaced boolean?
 ---@return integer?
-function TurtleApi.loadFromShulker(item)
-    return TurtleShulkerApi.loadFromShulker(TurtleApi, item)
+function TurtleApi.loadFromShulker(item, keepPlaced)
+    return TurtleShulkerApi.loadFromShulker(TurtleApi, item, keepPlaced)
 end
 
 ---@param slot integer
+---@param keepPlaced boolean?
 ---@return boolean success, string? message
-function TurtleApi.loadIntoShulker(slot)
-    return TurtleShulkerApi.loadIntoShulker(TurtleApi, slot)
+function TurtleApi.loadIntoShulker(slot, keepPlaced)
+    return TurtleShulkerApi.loadIntoShulker(TurtleApi, slot, keepPlaced)
 end
 
 function TurtleApi.digShulkers()
@@ -1569,42 +1586,7 @@ end
 
 ---@param items ItemStock
 function TurtleApi.dumpToStorage(items)
-    local ioSlots = getIoSlots()
-    local keepStock = ItemStock.subtract(TurtleApi.getStock(true), items)
-
-    local function getOpen()
-        return ItemStock.subtract(TurtleApi.getStock(true), keepStock)
-    end
-
-    -- [todo] ❌ missing logic to move items that are not to be dumped out of the io slots
-    -- [todo] 🛠️ this is really slow as its only transfering one stack at a time
-    TurtleApi.connectToStorage(function(inventory, storage)
-        local storages = storage.getByType("storage")
-
-        while true do
-            local open = getOpen()
-
-            if Utils.isEmpty(open) then
-                break
-            end
-
-            for item, quantity in pairs(open) do
-                TurtleApi.selectItem(item)
-
-                for _, slot in ipairs(ioSlots) do
-                    if TurtleApi.transferTo(slot, math.min(quantity, 64)) then
-                        break
-                    end
-                end
-
-                -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
-                storage.transfer({inventory}, storages, open, {toSequential = true})
-                os.sleep(1)
-            end
-        end
-    end)
-
-    TurtleApi.condense()
+    dumpToStorage(TurtleApi, items)
 end
 
 ---@param hubHome Vector

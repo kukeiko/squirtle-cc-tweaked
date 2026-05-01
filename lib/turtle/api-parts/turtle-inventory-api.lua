@@ -1,5 +1,7 @@
+local Utils = require "lib.tools.utils"
 local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
+local getIoSlots = require "lib.turtle.functions.get-io-slots"
 
 ---@class TurtleInventoryApi
 local TurtleInventoryApi = {}
@@ -24,6 +26,26 @@ end
 ---@return integer
 function TurtleInventoryApi.getSelectedSlot()
     return turtle.getSelectedSlot()
+end
+
+---@return integer[]
+function TurtleInventoryApi.getIoSlots()
+    return getIoSlots()
+end
+
+---@return integer[]
+function TurtleInventoryApi.getNonIoSlots()
+    ---@type integer[]
+    local nonIoSlots = {}
+    local ioSlots = getIoSlots()
+
+    for slot = 1, TurtleInventoryApi.size() do
+        if not Utils.contains(ioSlots, slot) then
+            table.insert(nonIoSlots, slot)
+        end
+    end
+
+    return nonIoSlots
 end
 
 ---@param TurtleApi TurtleApi
@@ -52,15 +74,19 @@ function TurtleInventoryApi.getStack(slot, detailed)
 end
 
 ---@param detailed? boolean
+---@param excludeIo? boolean
 ---@return ItemStack[]
-function TurtleInventoryApi.getStacks(detailed)
+function TurtleInventoryApi.getStacks(detailed, excludeIo)
+    local ioSlots = getIoSlots()
     local stacks = {}
 
     for slot = 1, TurtleInventoryApi.size() do
-        local item = TurtleInventoryApi.getStack(slot, detailed)
+        if not excludeIo or not Utils.contains(ioSlots, slot) then
+            local item = TurtleInventoryApi.getStack(slot, detailed)
 
-        if item then
-            stacks[slot] = item
+            if item then
+                stacks[slot] = item
+            end
         end
     end
 
@@ -93,12 +119,13 @@ end
 
 ---@param TurtleApi TurtleApi
 ---@param includeShulkers? boolean
+---@param excludeIo? boolean
 ---@return table<string, integer>
-function TurtleInventoryApi.getStock(TurtleApi, includeShulkers)
+function TurtleInventoryApi.getStock(TurtleApi, includeShulkers, excludeIo)
     ---@type table<string, integer>
     local stock = {}
 
-    for _, stack in pairs(TurtleInventoryApi.getStacks()) do
+    for _, stack in pairs(TurtleInventoryApi.getStacks(false, excludeIo)) do
         stock[stack.name] = (stock[stack.name] or 0) + stack.count
     end
 
@@ -111,9 +138,12 @@ end
 
 ---@param slot integer
 ---@param quantity? integer
----@return boolean
+---@return boolean, integer
 function TurtleInventoryApi.transferTo(slot, quantity)
-    return turtle.transferTo(slot, quantity)
+    local currentQuantity = TurtleInventoryApi.getItemCount(slot)
+    local success = turtle.transferTo(slot, quantity)
+
+    return success, currentQuantity - TurtleInventoryApi.getItemCount(slot)
 end
 
 ---@param TurtleApi TurtleApi
@@ -158,7 +188,7 @@ end
 
 ---@param startAt? number
 function TurtleInventoryApi.firstEmptySlot(startAt)
-    -- [todo] ❌ this startAt logic works a bit differently to "Backpack.selectEmpty()" as it does not wrap around
+    -- [todo] ❌ this startAt logic works a bit differently to "TurtleInventoryApi.selectEmpty()" as it does not wrap around
     startAt = startAt or 1
 
     for slot = startAt, TurtleInventoryApi.size() do
@@ -207,13 +237,16 @@ end
 
 ---@param name string
 ---@param nbt? string
+---@param slots? integer[]
 ---@return integer?
-function TurtleInventoryApi.find(name, nbt)
+function TurtleInventoryApi.find(name, nbt, slots)
     for slot = 1, TurtleInventoryApi.size() do
-        local item = TurtleInventoryApi.getStack(slot)
+        if not slots or Utils.contains(slots, slot) then
+            local item = TurtleInventoryApi.getStack(slot)
 
-        if item and item.name == name and (nbt == nil or item.nbt == nbt) then
-            return slot
+            if item and item.name == name and (nbt == nil or item.nbt == nbt) then
+                return slot
+            end
         end
     end
 end

@@ -185,48 +185,9 @@ local function placeShulker(TurtleApi, slot)
     return placedSide
 end
 
----@param TurtleApi TurtleApi
----@param name string
----@return PlaceSide?, string?
-local function placeShulkerByName(TurtleApi, name)
-    if Utils.contains(TurtleStateApi.getShulkerSides(), name) then
-        return name
-    end
-
-    for slot, item in pairs(TurtleApi.getStacks()) do
-        if item.name == ItemApi.shulkerBox and (item.nbt or "") == name then
-            return placeShulker(TurtleApi, slot)
-        end
-    end
-
-    error(string.format("no shulker found w/ name %s", name))
-end
-
----@param TurtleApi TurtleApi
----@param item string
----@return PlaceSide?, string?
-local function placeShulkerTakingItem(TurtleApi, item)
-    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
-
-    for _, shulker in pairs(shulkers) do
-        if shulker.items[item.name] and Inventory.canTakeItem(shulker, item, "buffer") then
-            return placeShulkerByName(TurtleApi, shulker.name)
-        end
-    end
-
-    for _, shulker in pairs(shulkers) do
-        if Inventory.canTakeItem(shulker, item, "buffer") then
-            return placeShulkerByName(TurtleApi, shulker.name)
-        end
-    end
-
-    return nil, string.format("no shulker available to take item %s", item)
-end
-
----@param TurtleApi TurtleApi
 ---@param name string
 ---@return boolean
-local function isCached(TurtleApi, name)
+local function isCached(name)
     local shulker = Utils.find(Utils.reverse(TurtleStateApi.getShulkers()), function(candidate)
         return candidate.name == name
     end)
@@ -245,7 +206,7 @@ end
 local function indexUncachedShulker(TurtleApi)
     -- we need to read already placed shulkers first as they might get removed to read the contents of carried shulkers
     for _, side in pairs(TurtleStateApi.getShulkerSides()) do
-        if peripheral.getType(side) == ItemApi.shulkerBox and not isCached(TurtleApi, side) then
+        if peripheral.getType(side) == ItemApi.shulkerBox and not isCached(side) then
             local shulker = readPlacedShulker(side, side)
             TurtleStateApi.addShulker(shulker)
 
@@ -255,7 +216,7 @@ local function indexUncachedShulker(TurtleApi)
 
     for slot, item in pairs(TurtleApi.getStacks()) do
         if item.name == ItemApi.shulkerBox then
-            if item.nbt and not isCached(TurtleApi, item.nbt) then
+            if item.nbt and not isCached(item.nbt) then
                 digShulker(TurtleApi, placeShulker(TurtleApi, slot))
 
                 return true
@@ -290,17 +251,16 @@ local function getPresentShulkerNames(TurtleApi)
     return names
 end
 
+---Returns a clone of the currently carried shulkers. Reads from a cache, and refreshes that cache in case it is stale.
 ---@param TurtleApi TurtleApi
 ---@return Inventory[]
-function TurtleShulkerApi.readShulkers(TurtleApi)
-    local _, unlock = InventoryLocks.lock({"backpack"})
-
+local function readShulkers(TurtleApi)
     -- read every present shulker into the cache. I've chosen to do it in a while loop like this
-    -- so that this works even if a player manipulates the inventory of the turtle.
+    -- so that this works even if a player manipulates the inventory of the turtle while it is indexing.
     while indexUncachedShulker(TurtleApi) do
     end
 
-    -- after, we make sure the cache is not stale by only keeping present shulkers
+    -- after, we make sure the cache is not stale by omitting stale shulkers
     ---@type Inventory[]
     local shulkers = {}
     local cache = Utils.reverse(TurtleStateApi.getShulkers()) -- we want oldest last
@@ -314,23 +274,51 @@ function TurtleShulkerApi.readShulkers(TurtleApi)
             error(string.format("did not find shulker %s in cache", name))
         end
 
-        -- cloning is required as we might carry 2x equal shulkers which would be only 1x entry in cache
+        -- cloning is required as we might carry 2x equal shulkers which would otherwise be only 1x entry in cache
         table.insert(shulkers, Utils.clone(shulker))
     end
 
     TurtleStateApi.setShulkers(shulkers)
 
-    unlock()
     return Utils.clone(shulkers)
 end
 
 ---@param TurtleApi TurtleApi
-function TurtleShulkerApi.getShulkerStock(TurtleApi)
-    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
+---@param name string
+---@return PlaceSide?, string?
+local function placeShulkerByName(TurtleApi, name)
+    if Utils.contains(TurtleStateApi.getShulkerSides(), name) then
+        return name
+    end
 
-    return ItemStock.merge(Utils.map(shulkers, function(shulker)
-        return shulker.items
-    end))
+    for slot, item in pairs(TurtleApi.getStacks()) do
+        if item.name == ItemApi.shulkerBox and (item.nbt or "") == name then
+            return placeShulker(TurtleApi, slot)
+        end
+    end
+
+    error(string.format("no shulker found w/ name %s", name))
+end
+
+---@param TurtleApi TurtleApi
+---@param item string
+---@return PlaceSide?, string?
+local function placeShulkerTakingItem(TurtleApi, item)
+    local shulkers = readShulkers(TurtleApi)
+
+    for _, shulker in pairs(shulkers) do
+        if shulker.items[item.name] and Inventory.canTakeItem(shulker, item, "buffer") then
+            return placeShulkerByName(TurtleApi, shulker.name)
+        end
+    end
+
+    for _, shulker in pairs(shulkers) do
+        if Inventory.canTakeItem(shulker, item, "buffer") then
+            return placeShulkerByName(TurtleApi, shulker.name)
+        end
+    end
+
+    return nil, string.format("no shulker available to take item %s", item)
 end
 
 ---@param TurtleApi TurtleApi
@@ -349,15 +337,52 @@ local function nextSlotThatIsNotShulker(TurtleApi, alsoIgnoreSlot)
 end
 
 ---@param TurtleApi TurtleApi
+local function digShulkers(TurtleApi)
+    for _, side in pairs(TurtleStateApi.getShulkerSides()) do
+        if peripheral.getType(side) == ItemApi.shulkerBox then
+            digShulker(TurtleApi, side)
+        end
+    end
+end
+
+---Returns a clone of the currently carried shulkers. Reads from a cache, and refreshes that cache in case it is stale.
+---@param TurtleApi TurtleApi
+---@return Inventory[]
+function TurtleShulkerApi.readShulkers(TurtleApi)
+    local _, unlock = InventoryLocks.lock({"backpack"})
+    local shulkers = readShulkers(TurtleApi)
+    unlock()
+
+    return shulkers
+end
+
+---@param TurtleApi TurtleApi
+function TurtleShulkerApi.getShulkerStock(TurtleApi)
+    local _, unlock = InventoryLocks.lock({"backpack"})
+    local shulkers = readShulkers(TurtleApi)
+
+    local shulkerStock = ItemStock.merge(Utils.map(shulkers, function(shulker)
+        return shulker.items
+    end))
+
+    unlock()
+
+    return shulkerStock
+end
+
+---@param TurtleApi TurtleApi
 ---@param item string
+---@param keepPlaced boolean?
 ---@return integer?
-function TurtleShulkerApi.loadFromShulker(TurtleApi, item)
-    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
+function TurtleShulkerApi.loadFromShulker(TurtleApi, item, keepPlaced)
+    local _, unlock = InventoryLocks.lock({"backpack"})
+    local shulkers = readShulkers(TurtleApi)
     local shulker = Utils.find(shulkers, function(candidate)
         return candidate.items[item] ~= nil
     end)
 
     if not shulker then
+        unlock()
         return
     end
 
@@ -370,13 +395,15 @@ function TurtleShulkerApi.loadFromShulker(TurtleApi, item)
         local slot = TurtleApi.find(ItemApi.shulkerBox, shulker.name)
 
         if not slot then
+            unlock()
             error(string.format("shulker containing %s unexpectedly missing", item))
         end
 
         side = placeShulker(TurtleApi, slot)
     end
 
-    local slot = TurtleApi.selectEmpty()
+    -- try taking a slot after those that are usually reserved for shulkers
+    local slot = TurtleApi.selectEmpty(#shulkers + 1)
 
     for stackSlot, stack in pairs(shulker.stacks) do
         if stack.name == item then
@@ -388,7 +415,8 @@ function TurtleShulkerApi.loadFromShulker(TurtleApi, item)
                 local slotToPutIntoShulker = nextSlotThatIsNotShulker(TurtleApi, slot)
 
                 if not slotToPutIntoShulker then
-                    error("i seem to be full with shulkers")
+                    unlock()
+                    error("I seem to be full with shulkers")
                 end
 
                 TurtleApi.select(slotToPutIntoShulker)
@@ -396,51 +424,73 @@ function TurtleShulkerApi.loadFromShulker(TurtleApi, item)
                 TurtleApi.select(slot)
             end
 
-            digShulker(TurtleApi, side)
+            if not keepPlaced then
+                digShulker(TurtleApi, side)
+            end
 
+            unlock()
             return slot
         end
     end
 
-    digShulker(TurtleApi, side)
+    if not keepPlaced then
+        digShulker(TurtleApi, side)
+    end
+
+    unlock()
 end
 
 ---@param TurtleApi TurtleApi
 ---@param slot integer
+---@param keepPlaced boolean?
 ---@return boolean success, string? message
-function TurtleShulkerApi.loadIntoShulker(TurtleApi, slot)
+function TurtleShulkerApi.loadIntoShulker(TurtleApi, slot, keepPlaced)
     local item = TurtleApi.getStack(slot)
 
     if not item then
-        error(string.format("no item in slot %d"))
+        return false, string.format("no item in slot %d")
     end
 
+    local _, unlock = InventoryLocks.lock({"backpack"})
     local open = item.count
 
     while open > 0 do
         local placedSide, message = placeShulkerTakingItem(TurtleApi, item.name)
 
         if not placedSide then
+            if not keepPlaced then
+                digShulkers(TurtleApi)
+            end
+
+            unlock()
             return false, message
         end
 
         TurtleApi.select(slot)
-        -- [todo] ❌ need a more intelligent drop, should drop into slots that already contain the item
         TurtleApi.drop(placedSide)
         item = TurtleApi.getStack(slot)
         open = item and item.count or 0
     end
 
+    if not keepPlaced then
+        digShulkers(TurtleApi)
+    end
+
+    unlock()
     return true
 end
 
 ---@param TurtleApi TurtleApi
 function TurtleShulkerApi.digShulkers(TurtleApi)
+    local _, unlock = InventoryLocks.lock({"backpack"})
+
     for _, side in pairs(TurtleStateApi.getShulkerSides()) do
         if peripheral.getType(side) == ItemApi.shulkerBox then
             digShulker(TurtleApi, side)
         end
     end
+
+    unlock()
 end
 
 ---@param TurtleApi TurtleApi
@@ -448,6 +498,7 @@ end
 ---@param itemDetails ItemDetails
 ---@return ItemStock sliced, ItemStock open
 function TurtleShulkerApi.sliceStock(TurtleApi, stock, itemDetails)
+    local _, unlock = InventoryLocks.lock({"backpack"})
     local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
     local open = stock
     ---@type ItemStock
@@ -462,6 +513,8 @@ function TurtleShulkerApi.sliceStock(TurtleApi, stock, itemDetails)
             break
         end
     end
+
+    unlock()
 
     return sliced, open
 end
@@ -491,6 +544,7 @@ end
 ---@param items ItemStock
 ---@return integer
 function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
+    local _, unlock = InventoryLocks.lock({"backpack"})
     -- [todo] ❌ use Inventory.sliceStock()
     local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
     local open = Utils.copy(items)
@@ -519,6 +573,8 @@ function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
             end
         end
     end
+
+    unlock()
 
     if Utils.isEmpty(open) then
         return 0
