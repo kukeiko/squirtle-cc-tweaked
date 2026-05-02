@@ -67,7 +67,7 @@ function BuildChunkPylonWorker:work()
     end
 
     local chunkPylon = service.get(task.chunkX, task.chunkZ)
-    local lastBuiltLayer = chunkPylon.lastBuiltY or (Utils.isDev() and 50 or -60)
+    local lastBuiltLayer = chunkPylon.lastBuiltY or (Utils.isDev() and 49 or -60)
     local fromLayer = lastBuiltLayer + 1
     local toLayer = task.storageY - 1
     local totalLayers = toLayer - fromLayer
@@ -126,6 +126,9 @@ function BuildChunkPylonWorker:work()
             end
 
             local target = TurtleApi.getChunkNorthWest(task.chunkX, state.nextY, task.chunkZ)
+            target.x = target.x + 1
+            target.z = target.z + 1
+
             print(string.format("[move] to %d/%d/%d", target.x, target.y, target.z))
             TurtleApi.moveToPoint(target)
             TurtleApi.face(Cardinal.east)

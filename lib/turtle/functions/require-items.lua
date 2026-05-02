@@ -74,7 +74,7 @@ local function loadIntoShulker(TurtleApi, items)
                     loadedItem = true
                 end
             elseif item and items[item.name] then
-                if TurtleApi.loadIntoShulker(slot) then
+                if TurtleApi.loadIntoShulker(slot, true) then
                     loadedItem = true
                 end
             end
@@ -106,6 +106,7 @@ local function requireItemsInShulkers(TurtleApi, items, open)
             end
 
             searchableList:setOptions(getOptions(open))
+            -- [todo] ❌ additionally, use a small timeout since it seems like the "turtle_inventory" event can get lost occasionally
             EventLoop.pullOneOf({"turtle_inventory", "peripheral", "peripheral_detach"})
         end
     end)

@@ -12,7 +12,6 @@ local function moveOpenToIoSlots(TurtleApi, keepStock)
         return false
     end
 
-    print("[found] movable stock")
     -- [todo] ❌ once this works, I really should make use of InventoryApi functions
     local nonIoSlots = TurtleApi.getNonIoSlots()
 
@@ -67,7 +66,6 @@ return function(TurtleApi, items)
                 -- [todo] ❌ i think this can crash the turtle because of simultaneous access to shulkers
                 local open = getOpen()
                 -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
-                print("[storage] transfer")
                 storage.transfer({inventory}, storages, open, {toSequential = true})
                 os.sleep(1)
             end

@@ -429,8 +429,9 @@ end
 ---@param height integer
 ---@param homePosition? Vector
 ---@param homeFacing? integer
-function TurtleApi.digArea(depth, width, height, homePosition, homeFacing)
-    return digArea(TurtleApi, depth, width, height, homePosition, homeFacing)
+---@param onLayerDug? fun(y: integer) : any
+function TurtleApi.digArea(depth, width, height, homePosition, homeFacing, onLayerDug)
+    return digArea(TurtleApi, depth, width, height, homePosition, homeFacing, onLayerDug)
 end
 
 ---@param depth integer
@@ -1211,7 +1212,7 @@ function TurtleApi.tryLoadShulkers()
 
     for slot, stack in pairs(TurtleApi.getStacks()) do
         if stack.name ~= ItemApi.shulkerBox and stack.name ~= ItemApi.diskDrive then
-            if not TurtleApi.loadIntoShulker(slot) then
+            if not TurtleApi.loadIntoShulker(slot, true) then
                 unloadedAll = false
             end
         end
@@ -1309,8 +1310,8 @@ end
 ---@param chunkZ integer
 ---@return Vector
 function TurtleApi.getChunkNorthWest(chunkX, y, chunkZ)
-    local x = (chunkX * 16) + 8 - 7
-    local z = (chunkZ * 16) + 8 - 7
+    local x = (chunkX * 16)
+    local z = (chunkZ * 16)
 
     return Vector.create(x, y, z)
 end

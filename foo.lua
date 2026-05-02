@@ -324,14 +324,10 @@ end
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    print(Utils.toDigDownHeight(-30, -30, 3))
-    -- while true do
-    --     term.clear()
-    --     term.setCursorPos(1, 1)
-    --     local position = Utils.getPosition()
-    --     print(Utils.toChunkXZ(position))
-    --     os.sleep(1)
-    -- end
+    -- TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = 3})
+    TurtleApi.digArea(2, 1, 5, nil, nil, function(y)
+        print("[dug] layer", y)
+    end)
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

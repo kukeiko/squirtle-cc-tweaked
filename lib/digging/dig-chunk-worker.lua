@@ -1,5 +1,4 @@
 local Utils = require "lib.tools.utils"
-local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Cardinal = require "lib.common.cardinal"
 local ItemApi = require "lib.inventory.item-api"
@@ -35,10 +34,12 @@ end
 function DigChunkWorker:work()
     local resumable = Resumable.new("dig-chunk-worker")
     local task = self:getTask()
-    -- [todo] ❌ record lastDugY and use it for resuming
-    local firstLayerY = task.storageY - 1
+    local service = Rpc.nearest(ChunkPylonService)
+    local chunkPylon = service.get(task.chunkX, task.chunkZ)
+    local firstLayerY = (chunkPylon.lastDugY or task.storageY) - 1
+    print("[first] layer", firstLayerY)
     local numShulkers = 4
-    local layersPerIteration = math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)
+    local layersPerIteration = (Utils.isDev() and 3) or math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)
     local lastLayer = Utils.isDev() and 50 or -59;
     local totalDigHeight = (firstLayerY - lastLayer) + 1
     local iterations = math.ceil(totalDigHeight / layersPerIteration)
@@ -79,36 +80,30 @@ function DigChunkWorker:work()
             local startY = firstLayerY - ((i - 1) * layersPerIteration)
             local digHeight = Utils.toDigDownHeight(startY, lastLayer, layersPerIteration)
 
-            -- move to start position of current iteration
-            TurtleApi.move("down")
-            TurtleApi.turn("right")
-            TurtleApi.move("forward", 8)
-            TurtleApi.turn("right")
-            TurtleApi.move("forward", 8)
-            TurtleApi.turn("back")
-            TurtleApi.move("down", layersPerIteration * (i - 1))
+            -- disengage from storage
+            TurtleApi.down()
 
-            -- dig out
-            EventLoop.waitForAny(function()
-                TurtleApi.digArea(16, -16, digHeight, TurtleApi.getPosition(), TurtleApi.getFacing())
-            end, function()
-                if not TurtleApi.isSimulating() then
-                    while true do
-                        os.sleep(60)
-                        local deltaY = firstLayerY - TurtleApi.getPosition().y
-                        task.progress = math.floor((deltaY / totalDigHeight) * 100)
-                        self:updateTask()
-                    end
-                end
+            -- move to start position of current iteration
+            local target = TurtleApi.getChunkNorthWest(task.chunkX, startY, task.chunkZ)
+            print(string.format("[move] to %d/%d/%d to dig", target.x, target.y, target.z))
+            TurtleApi.moveToPoint(target)
+            TurtleApi.face(Cardinal.east)
+
+            -- dig out iteration
+            TurtleApi.digArea(16, 16, digHeight, nil, nil, function(y)
+                -- record last dug layer for faster resume in case of task failure
+                service.markLayerDugOut(task.chunkX, task.chunkZ, y)
             end)
 
             -- move back to storage
-            TurtleApi.move("up", layersPerIteration * (i - 1))
-            TurtleApi.move("forward", 8)
-            TurtleApi.turn("left")
-            TurtleApi.move("forward", 8)
-            TurtleApi.turn("right")
-            TurtleApi.move("up")
+            local currentLayerCenter = TurtleApi.getChunkCenter(task.chunkX, TurtleApi.getPosition().y, task.chunkZ)
+            print(string.format("[move] to center %d/%d/%d", currentLayerCenter.x, currentLayerCenter.y, currentLayerCenter.z))
+            TurtleApi.moveToPoint(currentLayerCenter)
+
+            local storageHome = TurtleApi.getChunkCenter(task.chunkX, task.storageY, task.chunkZ)
+            print(string.format("[move] to storage %d/%d/%d", storageHome.x, storageHome.y, storageHome.z))
+            TurtleApi.moveToPoint(storageHome)
+            TurtleApi.face(Cardinal.south)
         end)
 
         resumable:addMain(string.format("dump-%d", i), function()
@@ -125,7 +120,6 @@ function DigChunkWorker:work()
     resumable:setFinish(function(state)
         task.progress = 100
         self:updateTask()
-        local service = Rpc.nearest(ChunkPylonService)
         service.markChunkDugOut(task.chunkX, task.chunkZ)
         TurtleApi.navigate(state.home)
         TurtleApi.face(state.facing)

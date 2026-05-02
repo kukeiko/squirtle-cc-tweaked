@@ -499,7 +499,7 @@ end
 ---@return ItemStock sliced, ItemStock open
 function TurtleShulkerApi.sliceStock(TurtleApi, stock, itemDetails)
     local _, unlock = InventoryLocks.lock({"backpack"})
-    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
+    local shulkers = readShulkers(TurtleApi)
     local open = stock
     ---@type ItemStock
     local sliced = {}
@@ -546,7 +546,7 @@ end
 function TurtleShulkerApi.getRequiredAdditionalShulkers(TurtleApi, items)
     local _, unlock = InventoryLocks.lock({"backpack"})
     -- [todo] ❌ use Inventory.sliceStock()
-    local shulkers = TurtleShulkerApi.readShulkers(TurtleApi)
+    local shulkers = readShulkers(TurtleApi)
     local open = Utils.copy(items)
 
     -- first we fill up existing stacks in shulkers

@@ -21,6 +21,14 @@ function Vector.create(x, y, z)
     return instance
 end
 
+function Vector.up()
+    return Vector.create(0, 1, 0)
+end
+
+function Vector.down()
+    return Vector.create(0, -1, 0)
+end
+
 ---@param vector Vector
 ---@return Vector
 function Vector.copy(vector)

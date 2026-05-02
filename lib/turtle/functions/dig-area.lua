@@ -1,3 +1,5 @@
+local Vector = require "lib.common.vector"
+
 ---@generic T
 ---@param a T
 ---@param b T
@@ -6,15 +8,14 @@ local function swap(a, b)
     return b, a
 end
 
--- [todo] ❌ using dig() for up/down, but move() for digging forward, and move() probes blocks, while dig() doesn't.
--- I think I should just also use dig() for forward digging, as the probing from move() costs quite a lot of time.
 ---@param TurtleApi TurtleApi
 ---@param depth integer
 ---@param width integer
 ---@param height integer
 ---@param homePosition? Vector
 ---@param homeFacing? integer
-return function(TurtleApi, depth, width, height, homePosition, homeFacing)
+---@param onLayerDug? fun(y: integer) : any
+return function(TurtleApi, depth, width, height, homePosition, homeFacing, onLayerDug)
     assert(depth > 0, "depth must be greater than 0")
     assert(width ~= 0, "width can't be 0")
     assert(height ~= 0, "height can't be 0")
@@ -26,21 +27,34 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
 
     height = math.abs(height)
 
+    local function reportLayerDug()
+        if onLayerDug and not TurtleApi.isSimulating() then
+            local deltaY = vertical == "up" and Vector.up() or Vector.down()
+            local dugLayer = Vector.plus(TurtleApi.getPosition(), deltaY).y
+            onLayerDug(dugLayer)
+        end
+    end
+
     if depth < 3 and math.abs(width) == 1 then
         for y = 1, height do
             if depth == 2 then
                 TurtleApi.dig()
             end
 
+            reportLayerDug()
+
             if y ~= height then
+                TurtleApi.dig(vertical == "up" and "up" or "down")
                 TurtleApi.move(vertical)
             end
         end
 
-        if vertical == "down" then
-            TurtleApi.move("up", height - 1)
-        else
-            TurtleApi.move("down", height - 1)
+        if homePosition then
+            TurtleApi.moveToPoint(homePosition)
+
+            if homeFacing then
+                TurtleApi.face(homeFacing)
+            end
         end
 
         return
@@ -129,6 +143,8 @@ return function(TurtleApi, depth, width, height, homePosition, homeFacing)
                 moveToNextColumn(column, layer)
             end
         end
+
+        reportLayerDug()
 
         if layer < layers then
             if layer + 1 == layers and remainder ~= 0 then
