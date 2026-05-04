@@ -81,7 +81,6 @@ function SearchableList:run()
     local action = nil
     self.window.setCursorBlink(false)
     self.isRunning = true
-    self.searchText = ""
     self:filter()
 
     local idleTimer, refreshTimer
