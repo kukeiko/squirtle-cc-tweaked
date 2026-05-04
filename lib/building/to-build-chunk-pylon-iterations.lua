@@ -14,8 +14,6 @@ return function(materials, storageStock, numShulkers, maxLayers)
     end
 
     local remainingLayers = maxLayers
-    -- [todo] ❌ numShulkers was 4, but still managed to want 5x shulkers when requiring the items to build the chunk.
-    -- happened when this function was using both cobbled_deepslate and cobblestone to build layers.
     local availableSlots = 27 * numShulkers
     local remainingSlots = availableSlots
     local requiredSlotsPerLayer = (14 * 14) / 64

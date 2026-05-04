@@ -188,6 +188,10 @@ local function distribute(from, to, item, total, options)
                 end
             end
 
+            if open == 0 then
+                break
+            end
+
             unlockFrom()
         end
 
