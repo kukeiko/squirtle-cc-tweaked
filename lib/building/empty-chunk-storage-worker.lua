@@ -44,10 +44,11 @@ function EmptyChunkStorageWorker:work()
         self:requireShulkers(numShulkers)
         task.home = TurtleApi.getPosition()
         task.homeFacing = TurtleApi.getFacing()
+        task.loadUp = true
         self:updateTask()
     end
 
-    while not task.isEmpty do
+    while task.loadUp or task.dump do
         if task.loadUp then
             -- go to chunk storage & load up
             print("[going] to chunk storage...")
@@ -63,6 +64,7 @@ function EmptyChunkStorageWorker:work()
             TurtleApi.requireItemsFromStorage(total, true)
             task.isEmpty = Utils.isEmpty(open)
             task.loadUp = false
+            task.dump = true
             self:updateTask()
             print("[loaded] up")
         else
@@ -73,7 +75,8 @@ function EmptyChunkStorageWorker:work()
             TurtleApi.face(task.homeFacing)
             print("[dumping] to hub...")
             TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = numShulkers})
-            task.loadUp = true
+            task.loadUp = not task.isEmpty
+            task.dump = false
             self:updateTask()
         end
     end

@@ -86,5 +86,6 @@
 ---@field home Vector?
 ---@field homeFacing integer?
 ---@field loadUp boolean
+---@field dump boolean
 ---@field isEmpty boolean
 ---

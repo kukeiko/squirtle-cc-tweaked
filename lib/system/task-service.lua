@@ -324,6 +324,7 @@ function TaskService.emptyChunkStorage(options)
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
         task.storageY = options.storageY or error("storageY option missing")
         task.loadUp = true
+        task.dump = false
         task.isEmpty = false
         task = TaskRepository.createTask(task) --[[@as EmptyChunkStorageTask]]
     end
