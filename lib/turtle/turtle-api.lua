@@ -498,7 +498,11 @@ function TurtleApi.place(direction, text)
         return true
     end
 
-    if TurtleApi.probe(direction) then
+    -- [note] ✏️ have to probe because we're using a datapack that allows right-clicking blocks,
+    -- and turtle.place() will return true - because it right-clicked the block, not because it placed a block.
+    local block = TurtleApi.probe(direction)
+
+    if block and not block.tags["minecraft:replaceable"] then
         return false
     end
 
