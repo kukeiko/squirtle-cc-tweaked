@@ -132,6 +132,7 @@ function ChunkPylonService.digChunk(issuedBy, chunkX, chunkZ)
         chunkX = chunkPylon.chunkX,
         chunkZ = chunkPylon.chunkZ,
         storageY = chunkPylon.storageY,
+        firstLayer = (chunkPylon.lastDugY or chunkPylon.storageY) - 1,
         issuedBy = issuedBy,
         label = chunkPylon.id,
         autoDelete = true,
@@ -150,6 +151,7 @@ function ChunkPylonService.buildPylon(issuedBy, chunkX, chunkZ)
         chunkX = chunkPylon.chunkX,
         chunkZ = chunkPylon.chunkZ,
         storageY = chunkPylon.storageY,
+        firstLayer = (chunkPylon.lastBuiltY or (Utils.isDev() and 49 or -60)) + 1,
         label = chunkPylon.id,
         autoDelete = true,
         skipAwait = true

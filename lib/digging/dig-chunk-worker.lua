@@ -35,8 +35,7 @@ function DigChunkWorker:work()
     local resumable = Resumable.new("dig-chunk-worker")
     local task = self:getTask()
     local service = Rpc.nearest(ChunkPylonService)
-    local chunkPylon = service.get(task.chunkX, task.chunkZ)
-    local firstLayerY = (chunkPylon.lastDugY or task.storageY) - 1
+    local firstLayerY = task.firstLayer
     print("[first] layer", firstLayerY)
     local numShulkers = 4
     local layersPerIteration = (Utils.isDev() and 3) or math.floor((numShulkers * 27 * 64) / (16 * 16) * 0.8)
@@ -75,8 +74,7 @@ function DigChunkWorker:work()
     end)
 
     for i = 1, iterations do
-        ---@param state DigChunkState
-        resumable:addSimulatableMain(string.format("dig-%d", i), function(state)
+        resumable:addSimulatableMain(string.format("dig-%d", i), function()
             local startY = firstLayerY - ((i - 1) * layersPerIteration)
             local digHeight = Utils.toDigDownHeight(startY, lastLayer, layersPerIteration)
 

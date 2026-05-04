@@ -263,6 +263,7 @@ end
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field storageY integer
+---@field firstLayer integer
 ---@param options DigChunkTaskOptions
 ---@return DigChunkTask
 function TaskService.digChunk(options)
@@ -273,6 +274,7 @@ function TaskService.digChunk(options)
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
         task.storageY = options.storageY or error("storageY option missing")
+        task.firstLayer = options.firstLayer or error("firstLayer option missing")
         task = TaskRepository.createTask(task) --[[@as DigChunkTask]]
     end
 
@@ -287,6 +289,7 @@ end
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field storageY integer
+---@field firstLayer integer
 ---@param options BuildChunkPylonTaskOptions
 ---@return BuildChunkPylonTask
 function TaskService.buildChunkPylon(options)
@@ -297,6 +300,7 @@ function TaskService.buildChunkPylon(options)
         task.chunkX = options.chunkX or error("chunkX option missing")
         task.chunkZ = options.chunkZ or error("chunkZ option missing")
         task.storageY = options.storageY or error("storageY option missing")
+        task.firstLayer = options.firstLayer or error("firstLayer option missing")
         task.initialized = false
         task.navigated = false
         task = TaskRepository.createTask(task) --[[@as BuildChunkPylonTask]]

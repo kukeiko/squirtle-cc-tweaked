@@ -66,9 +66,7 @@ function BuildChunkPylonWorker:work()
         self:updateTask()
     end
 
-    local chunkPylon = service.get(task.chunkX, task.chunkZ)
-    local lastBuiltLayer = chunkPylon.lastBuiltY or (Utils.isDev() and 49 or -60)
-    local fromLayer = lastBuiltLayer + 1
+    local fromLayer = task.firstLayer
     local toLayer = task.storageY - 1
     local totalLayers = toLayer - fromLayer
 
@@ -100,12 +98,8 @@ function BuildChunkPylonWorker:work()
         TurtleApi.orientate("disk-drive")
     end)
 
-    -- [todo] ❌ if top layer is a dirt layer, and there is grass in the storage:
-    -- grab 1x grass block and place it somewhere on the top dirt layer
     for i, iteration in ipairs(task.iterations) do
         resumable:addMain(string.format("load-up-%d", i), function()
-            -- [todo] ❌ need to use provideItems(). issue with that is that we only have 2x buffer barrels in the chunk-storage,
-            -- limiting us to only 2x shulkers
             print("[connect] to storage to load:")
             for item, quantity in pairs(iteration.stock) do
                 print(string.format(" - %dx %s", quantity, item))

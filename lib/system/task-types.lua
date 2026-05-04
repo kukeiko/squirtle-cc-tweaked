@@ -63,11 +63,13 @@
 ---@class DigChunkTask : ChunkTaskBase
 ---@field type "dig-chunk"
 ---@field storageY integer
+---@field firstLayer integer
 ---@field progress integer?
 ---
 ---@class BuildChunkPylonTask : ChunkTaskBase
 ---@field type "build-chunk-pylon"
 ---@field storageY integer
+---@field firstLayer integer
 ---@field initialized boolean
 ---@field disengaged boolean
 ---@field navigated boolean
