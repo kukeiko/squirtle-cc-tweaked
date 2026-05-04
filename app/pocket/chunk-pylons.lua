@@ -95,6 +95,18 @@ app:addWindow("Current Pylon", function(shellWindow)
                     table.insert(options, updateStorageYOption)
                 end
 
+                if chunkPylon.lastBuiltY then
+                    ---@type SearchableListOption
+                    local lastBuiltY = {id = "last-built-y", name = "Last Built Y", suffix = tostring(chunkPylon.lastBuiltY)}
+                    table.insert(options, lastBuiltY)
+                end
+
+                if chunkPylon.lastDugY then
+                    ---@type SearchableListOption
+                    local lastDugY = {id = "last-dug-y", name = "Last Dug Y", suffix = tostring(chunkPylon.lastDugY)}
+                    table.insert(options, lastDugY)
+                end
+
                 return options
             end
         end

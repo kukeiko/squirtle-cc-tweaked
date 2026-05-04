@@ -29,6 +29,7 @@ local buildChunkStorage = require "lib.building.build-chunk-storage"
 local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
 local duck = require "lib.ui.duck"
 local ShellService = require "lib.system.shell-service"
+local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
 
 local function testGetCraftingDetails()
     local function testCampfires()
@@ -250,28 +251,6 @@ local function testBuildChunkStorageWorker()
     end)
 end
 
-local function testDigChunkStorageWorker()
-    local taskService = Rpc.nearest(TaskService)
-
-    EventLoop.run(function()
-        TaskWorkerPool.new({DigChunkWorker}):run()
-    end, function()
-        os.sleep(1)
-        taskService.digChunk({issuedBy = "foo", chunkX = 3, chunkZ = 1, storageY = 60, skipAwait = true, autoDelete = true})
-    end)
-end
-
-local function testBuildChunkPylonWorker()
-    local taskService = Rpc.nearest(TaskService)
-
-    EventLoop.run(function()
-        TaskWorkerPool.new({BuildChunkPylonWorker}):run()
-    end, function()
-        os.sleep(1)
-        taskService.buildChunkPylon({issuedBy = "foo", chunkX = 3, chunkZ = 1, storageY = 60, skipAwait = true, autoDelete = false})
-    end)
-end
-
 local function testEmptyTurtleToStorage()
     local stock = TurtleApi.getStock(true)
     stock[ItemApi.shulkerBox] = nil
@@ -321,13 +300,56 @@ local function testEmptyChunkStorageWorker()
     end)
 end
 
+local function testToBuildChunkPylonIterations()
+    local pylonMaterials = {ItemApi.cobbled_deepslate, ItemApi.cobblestone}
+    ---@type ItemStock
+    local storageStock = {[ItemApi.cobbled_deepslate] = 14 * 14 * 27, [ItemApi.cobblestone] = 14 * 14 * 8}
+    local numShulkers = 4
+    local totalLayers = 10000
+    local iterations = toBuildChunkPylonIterations(pylonMaterials, storageStock, numShulkers, totalLayers)
+    Utils.writeJson("pylon-iterations.json", iterations)
+
+    for _, iteration in ipairs(iterations) do
+        local requiredSlots = 0
+
+        for _, quantity in pairs(iteration.stock) do
+            requiredSlots = requiredSlots + math.ceil(quantity / 64)
+        end
+
+        print("[slots] required:", requiredSlots)
+        print("[shulkers] required:", math.ceil(requiredSlots / 27))
+        Utils.waitForUserToHitEnter()
+
+        TurtleApi.requireItems(iteration.stock, true)
+    end
+end
+
+local function testRequireItemsFromStorage()
+    ---@type ItemStock
+    local items = {[ItemApi.cobblestone] = 13}
+
+    TurtleApi.requireItemsFromStorage(items, true)
+
+    local actual = TurtleApi.getStock(true)
+    Utils.prettyPrint(actual)
+end
+
+local function testTransferFromStorage()
+    ---@type ItemStock
+    local items = {[ItemApi.cobblestone] = 13}
+
+    TurtleApi.connectToStorage(function(inventory, storage)
+        storage.transfer(storage.getByType("storage"), {inventory}, items)
+    end)
+
+    local actual = TurtleApi.getStock(true)
+    Utils.prettyPrint(actual)
+end
+
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    -- TurtleApi.dumpAllToStorage({[ItemApi.diskDrive] = 1, [ItemApi.shulkerBox] = 3})
-    TurtleApi.digArea(2, 1, 5, nil, nil, function(y)
-        print("[dug] layer", y)
-    end)
+    testRequireItemsFromStorage()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")
