@@ -26,6 +26,7 @@ local function assignTaskStatus(chunkPylon, tasks)
     chunkPylon.isBuildingStorage = hasChunkTask(tasks, chunkX, chunkZ, "build-chunk-storage")
     chunkPylon.isDiggingChunk = hasChunkTask(tasks, chunkX, chunkZ, "dig-chunk")
     chunkPylon.isRebuildingChunk = hasChunkTask(tasks, chunkX, chunkZ, "build-chunk-pylon")
+    chunkPylon.isEmptyingStorage = hasChunkTask(tasks, chunkX, chunkZ, "empty-chunk-storage")
 end
 
 ---@return ChunkPylon[]
@@ -50,7 +51,7 @@ function ChunkPylonService.tryGet(chunkX, chunkZ)
         return nil
     end
 
-    local chunkTasks = TaskService.getAcceptedTasksByTypes({"build-chunk-storage", "dig-chunk", "build-chunk-pylon"})
+    local chunkTasks = TaskService.getAcceptedTasksByTypes({"build-chunk-storage", "dig-chunk", "build-chunk-pylon", "empty-chunk-storage"})
     assignTaskStatus(chunkPylon, chunkTasks)
 
     return chunkPylon
@@ -155,6 +156,23 @@ function ChunkPylonService.buildPylon(issuedBy, chunkX, chunkZ)
     })
 end
 
+---@param issuedBy string
+---@param chunkX integer
+---@param chunkZ integer
+function ChunkPylonService.emptyStorage(issuedBy, chunkX, chunkZ)
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+
+    TaskService.emptyChunkStorage({
+        issuedBy = issuedBy,
+        chunkX = chunkPylon.chunkX,
+        chunkZ = chunkPylon.chunkZ,
+        storageY = chunkPylon.storageY,
+        autoDelete = true,
+        skipAwait = true,
+        label = chunkPylon.id
+    })
+end
+
 ---@param chunkX integer
 ---@param chunkZ integer
 function ChunkPylonService.markStorageBuilt(chunkX, chunkZ)
@@ -194,6 +212,14 @@ end
 function ChunkPylonService.markLayerBuilt(chunkX, chunkZ, y)
     local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
     chunkPylon.lastBuiltY = y
+    ChunkPylonRepository.save(chunkPylon)
+end
+
+---@param chunkX integer
+---@param chunkZ integer
+function ChunkPylonService.markStorageEmpty(chunkX, chunkZ)
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+    chunkPylon.isStorageEmpty = true
     ChunkPylonRepository.save(chunkPylon)
 end
 

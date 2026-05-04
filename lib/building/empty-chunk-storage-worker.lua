@@ -6,6 +6,7 @@ local ItemStock = require "lib.inventory.item-stock"
 local ItemApi = require "lib.inventory.item-api"
 local TurtleApi = require "lib.turtle.turtle-api"
 local StorageService = require "lib.inventory.storage-service"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 ---@class EmptyChunkStorageWorker : TurtleTaskWorker 
 local EmptyChunkStorageWorker = {}
@@ -36,6 +37,7 @@ function EmptyChunkStorageWorker:work()
     local numShulkers = 4
     TurtleApi.locate()
     TurtleApi.orientate("disk-drive")
+    local service = Rpc.nearest(ChunkPylonService)
 
     if not task.home then
         self:requireFuel(TurtleApi.getFiniteFuelLimit())
@@ -75,6 +77,9 @@ function EmptyChunkStorageWorker:work()
             self:updateTask()
         end
     end
+
+    print("[mark] storage as empty")
+    service.markStorageEmpty(task.chunkX, task.chunkZ)
 
     print("[dumping] shulkers...")
     TurtleApi.navigate(TurtleApi.getHubDockingPosition(task.home))

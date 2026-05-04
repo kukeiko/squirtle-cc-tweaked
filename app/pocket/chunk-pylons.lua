@@ -13,11 +13,7 @@ local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local Shell = require "lib.system.shell"
-local ShellService = require "lib.system.shell-service"
-local TaskService = require "lib.system.task-service"
-local EntitySchema = require "lib.common.entity-schema"
 local SearchableList = require "lib.ui.searchable-list"
-local EditEntity = require "lib.ui.edit-entity"
 local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 local app = Shell.getApplication(arg)
@@ -68,6 +64,7 @@ app:addWindow("Current Pylon", function(shellWindow)
             else
                 local canUpdateStorageY = service.canUpdateStorageY(chunkPylon.chunkX, chunkPylon.chunkZ)
 
+                --- [todo] ❌ add info of current last built/dug y
                 ---@type SearchableListOption[]
                 local options = {
                     {
@@ -85,7 +82,11 @@ app:addWindow("Current Pylon", function(shellWindow)
                         name = "Build Pylon",
                         suffix = chunkPylon.isRebuildingChunk and "[busy]" or chunkPylon.isPylonBuilt and "[done]" or ""
                     },
-                    {id = "empty-storage", name = "Empty Storage"}
+                    {
+                        id = "empty-storage",
+                        name = "Empty Storage",
+                        suffix = chunkPylon.isEmptyingStorage and "[busy]" or chunkPylon.isStorageEmpty and "[done]" or ""
+                    }
                 }
 
                 if canUpdateStorageY then
@@ -146,19 +147,10 @@ app:addWindow("Current Pylon", function(shellWindow)
                             service.buildPylon(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
                         end
                     elseif selected.id == "empty-storage" then
-                        local taskService = Rpc.nearest(TaskService)
                         local _, chunkPylon = getCurrentChunkPylon(service)
 
-                        if chunkPylon then
-                            taskService.emptyChunkStorage({
-                                issuedBy = os.getComputerLabel(),
-                                chunkX = chunkPylon.chunkX,
-                                chunkZ = chunkPylon.chunkZ,
-                                storageY = chunkPylon.storageY,
-                                autoDelete = true,
-                                skipAwait = true,
-                                label = chunkPylon.id
-                            })
+                        if chunkPylon and not chunkPylon.isEmptyingStorage and not chunkPylon.isStorageEmpty then
+                            service.emptyStorage(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
                         end
                     end
                 end
@@ -179,6 +171,7 @@ app:addWindow("Chunk Pylons", function()
             if item.isRebuildingChunk then
                 -- [todo] ❌ move progress calculation to ChunkPylonService
                 local totalLayers = (item.storageY - 1) - (-60)
+                -- [todo] ❌ lastBuiltY can be nil
                 local layersBuilt = item.lastBuiltY - (-60)
                 local progress = math.floor((layersBuilt / totalLayers) * 100)
                 option.suffix = string.format("%d%%", progress)
