@@ -13,6 +13,34 @@ local function showTask(taskId, taskService)
     tablewViewer:run()
 end
 
+---@param parentTaskId integer?
+---@param tasks Task[]
+---@return Task[]
+local function getChildTasks(parentTaskId, tasks)
+    return Utils.filter(tasks, function(candidate)
+        return candidate.partOfTaskId == parentTaskId
+    end)
+end
+
+---@param tasks Task[]
+---@return Task[]
+local function toOrderedTasksByHierarchy(tasks)
+    ---@type Task[]
+    local ordered = {}
+
+    ---@param parentTaskId integer?
+    local function addTasks(parentTaskId)
+        for _, child in ipairs(getChildTasks(parentTaskId, tasks)) do
+            table.insert(ordered, child)
+            addTasks(child.id)
+        end
+    end
+
+    addTasks(nil)
+
+    return ordered
+end
+
 ---@param shellWindow ShellWindow
 return function(shellWindow)
     print("[connect] to task service...")
@@ -20,11 +48,21 @@ return function(shellWindow)
     local taskService = Rpc.nearest(TaskService)
 
     local function getOptions()
-        local tasks = taskService.getTasks()
+        local tasks = toOrderedTasksByHierarchy(taskService.getTasks())
 
         return Utils.map(tasks, function(task)
+            local indicator = " "
+
+            if task.status == "failed" then
+                indicator = "\19"
+            elseif task.status == "accepted" then
+                indicator = "\07"
+            end
+
+            local name = task.partOfTaskId ~= nil and string.format("\183%s", task.type) or task.type
+            local suffix = string.format("#%d%s", task.id, indicator)
             ---@type SearchableListOption
-            local option = {id = tostring(task.id), name = task.type, suffix = "#" .. task.id}
+            local option = {id = tostring(task.id), name = name, suffix = suffix}
 
             return option
         end)
