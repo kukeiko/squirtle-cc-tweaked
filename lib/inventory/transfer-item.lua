@@ -188,11 +188,11 @@ local function distribute(from, to, item, total, options)
                 end
             end
 
+            unlockFrom()
+
             if open == 0 then
                 break
             end
-
-            unlockFrom()
         end
 
         from = getFromCandidates(from, item, options.fromTag)
