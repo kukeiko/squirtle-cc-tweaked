@@ -1,3 +1,4 @@
+local Utils = require "lib.tools.utils"
 local EntityRepository = require "lib.database.entity-repository"
 
 ---@param chunkX integer
@@ -12,17 +13,18 @@ end
 ---@field chunkX integer
 ---@field chunkZ integer
 ---@field storageY integer
+---@field lastDugY integer?
+---@field lastBuiltY integer?
+---@field dugStock ItemStock?
 ---@field isStorageBuilt boolean
 ---@field isChunkDugOut boolean
 ---@field isPylonBuilt boolean
 ---@field isStorageEmpty boolean
----@field isBuildingStorage boolean
----@field isRemovingStorage boolean
----@field isEmptyingStorage boolean
----@field isDiggingChunk boolean
----@field isRebuildingChunk boolean
----@field lastBuiltY integer?
----@field lastDugY integer?
+---@field isBuildingStorage boolean?
+---@field isDiggingChunk boolean?
+---@field isRebuildingChunk boolean?
+---@field isEmptyingStorage boolean?
+---@field isRemovingStorage boolean?
 ---
 
 ---@class ChunkPylonRepository
@@ -59,14 +61,9 @@ function ChunkPylonRepository.create(chunkX, chunkZ, storageY)
         chunkX = chunkX,
         chunkZ = chunkZ,
         storageY = storageY,
-        isBuildingStorage = false,
-        isDiggingChunk = false,
-        isRebuildingChunk = false,
-        isRemovingStorage = false,
         isStorageBuilt = false,
         isChunkDugOut = false,
         isPylonBuilt = false,
-        isEmptyingStorage = false,
         isStorageEmpty = false
     }
 
@@ -75,6 +72,12 @@ end
 
 ---@param chunkPylon ChunkPylon
 function ChunkPylonRepository.save(chunkPylon)
+    chunkPylon = Utils.clone(chunkPylon)
+    chunkPylon.isBuildingStorage = nil
+    chunkPylon.isDiggingChunk = nil
+    chunkPylon.isRebuildingChunk = nil
+    chunkPylon.isEmptyingStorage = nil
+    chunkPylon.isRemovingStorage = nil
     repository:save(chunkPylon)
 end
 

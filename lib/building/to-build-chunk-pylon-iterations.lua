@@ -25,7 +25,7 @@ return function(materials, storageStock, numShulkers, maxLayers)
     for _, material in ipairs(materials) do
         while (openStock[material] or 0) > 0 and remainingLayers > 0 do
             if remainingSlots < requiredSlotsPerLayer then
-                -- start new iteration as there not enough slots available to build another layer
+                -- start new iteration as there are not enough slots available to build another layer
                 table.insert(iterations, iteration)
                 iteration = {layers = 0, stock = {}, materials = {}}
                 remainingSlots = availableSlots

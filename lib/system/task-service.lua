@@ -51,6 +51,7 @@ end
 
 ---@param id integer
 function TaskService.deleteTask(id)
+    -- [todo] ❌ also delete all child tasks
     TaskRepository.deleteTask(id)
 end
 

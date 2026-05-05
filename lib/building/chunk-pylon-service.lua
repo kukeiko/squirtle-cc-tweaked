@@ -105,6 +105,15 @@ function ChunkPylonService.updateStorageY(chunkX, chunkZ, storageY)
     return chunkPylon
 end
 
+---@param chunkX integer
+---@param chunkZ integer
+---@param dugStock ItemStock
+function ChunkPylonService.setDugStock(chunkX, chunkZ, dugStock)
+    local chunkPylon = ChunkPylonRepository.get(chunkX, chunkZ)
+    chunkPylon.dugStock = dugStock
+    ChunkPylonRepository.save(chunkPylon)
+end
+
 ---@param issuedBy string
 ---@param chunkX integer
 ---@param chunkZ integer

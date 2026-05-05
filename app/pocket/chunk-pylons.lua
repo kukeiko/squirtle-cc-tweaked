@@ -142,6 +142,7 @@ app:addWindow("Current Pylon", function(shellWindow)
                     elseif selected.id == "build-storage" then
                         local _, chunkPylon = getCurrentChunkPylon(service)
 
+                        -- [todo] ❌ for this option and all others: even if already done, allow doing again, but require confirmation.
                         if chunkPylon and not chunkPylon.isBuildingStorage and not chunkPylon.isStorageBuilt then
                             service.buildStorage(os.getComputerLabel(), chunkPylon.chunkX, chunkPylon.chunkZ)
                         end

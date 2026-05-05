@@ -63,7 +63,6 @@ return function(TurtleApi, items)
 
         EventLoop.waitForAny(function()
             while true do
-                -- [todo] ❌ i think this can crash the turtle because of simultaneous access to shulkers
                 local open = getOpen()
                 -- [todo] ❌ hack: should be up to storage to define toSequential or not, for now it is here to support autoStorage
                 storage.transfer({inventory}, storages, open, {toSequential = true})

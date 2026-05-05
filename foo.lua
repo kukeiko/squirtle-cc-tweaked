@@ -301,13 +301,13 @@ local function testEmptyChunkStorageWorker()
 end
 
 local function testToBuildChunkPylonIterations()
-    local pylonMaterials = {ItemApi.cobbled_deepslate, ItemApi.cobblestone}
+    local pylonMaterials = {ItemApi.cobbled_deepslate, ItemApi.cobblestone, ItemApi.dirt}
     ---@type ItemStock
-    local storageStock = {[ItemApi.cobbled_deepslate] = 14 * 14 * 27, [ItemApi.cobblestone] = 14 * 14 * 8}
+    local storageStock = {[ItemApi.cobbled_deepslate] = 14 * 14 * 3, [ItemApi.cobblestone] = (14 * 14 * 30), [ItemApi.dirt] = (14 * 14 * 3)}
     local numShulkers = 4
     local totalLayers = 10000
     local iterations = toBuildChunkPylonIterations(pylonMaterials, storageStock, numShulkers, totalLayers)
-    Utils.writeJson("pylon-iterations.json", iterations)
+    -- Utils.writeJson("pylon-iterations.json", iterations)
 
     for _, iteration in ipairs(iterations) do
         local requiredSlots = 0
@@ -316,11 +316,11 @@ local function testToBuildChunkPylonIterations()
             requiredSlots = requiredSlots + math.ceil(quantity / 64)
         end
 
-        print("[slots] required:", requiredSlots)
-        print("[shulkers] required:", math.ceil(requiredSlots / 27))
-        Utils.waitForUserToHitEnter()
-
-        TurtleApi.requireItems(iteration.stock, true)
+        print("[layers]", iteration.layers)
+        -- print("[slots] required:", requiredSlots)
+        -- print("[shulkers] required:", math.ceil(requiredSlots / 27))
+        -- Utils.waitForUserToHitEnter()
+        -- TurtleApi.requireItems(iteration.stock, true)
     end
 end
 
@@ -349,7 +349,7 @@ end
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    testRequireItemsFromStorage()
+    testToBuildChunkPylonIterations()
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

@@ -109,8 +109,16 @@ function DigChunkWorker:work()
         end)
     end
 
+    resumable:addMain("record-dug-stock", function()
+        print("[record] setting dug-stock")
+        TurtleApi.connectToStorage(function(_, storage)
+            service.setDugStock(task.chunkX, task.chunkZ, storage.getStock())
+        end)
+    end)
+
     ---@param state DigChunkState
     resumable:addMain("engage-hub", function(state)
+        print("[record] engaging hub")
         TurtleApi.navigate(TurtleApi.getHubDockingPosition(state.home))
     end)
 
