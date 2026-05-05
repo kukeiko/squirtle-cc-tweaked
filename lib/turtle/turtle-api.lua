@@ -1541,7 +1541,8 @@ function TurtleApi.connectToStorage(fn)
         inventoryServer.open()
     end, function()
         while true do
-            EventLoop.pull("turtle_inventory")
+            -- using timeout in case the event gets lost
+            EventLoop.pullTimed("turtle_inventory", 3)
             refresh()
         end
     end, function()
@@ -1562,6 +1563,9 @@ end
 ---@param alwaysUseShulker boolean?
 function TurtleApi.requireItemsFromStorage(items, alwaysUseShulker)
     -- [todo] ❌ should also transfer shulkers from storage if needed
+    -- [todo] ❌ when building pylons and it wants both cobblestone + cobbled_deepslate, it can manage to not put them in efficiently so that instead of
+    -- 4 shulkers it now wants 5. storage seems to now transfer the correct amount. I found 5x cobblestone in a shulker full of cobbled_deepslate, and a
+    -- non-full stack of cobblestone in another shulker it should've gone into.
     TurtleApi.connectToStorage(function(inventory, storage)
         EventLoop.run(function()
             TurtleApi.requireItems(items, alwaysUseShulker)

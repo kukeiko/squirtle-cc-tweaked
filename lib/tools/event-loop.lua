@@ -271,6 +271,22 @@ function EventLoop.runTimed(timeout, ...)
     return not timeoutHit
 end
 
+---@param event string
+---@param timeout integer
+function EventLoop.pullTimed(event, timeout)
+    EventLoop.runTimed(timeout, function()
+        EventLoop.pull(event)
+    end)
+end
+
+---@param events string[]
+---@param timeout integer
+function EventLoop.pullOneOfTimed(events, timeout)
+    EventLoop.runTimed(timeout, function()
+        EventLoop.pullOneOf(events)
+    end)
+end
+
 ---@param timerId integer
 function EventLoop.pullTimer(timerId)
     while true do

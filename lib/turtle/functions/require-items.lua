@@ -106,8 +106,8 @@ local function requireItemsInShulkers(TurtleApi, items, open)
             end
 
             searchableList:setOptions(getOptions(open))
-            -- [todo] ❌ additionally, use a small timeout since it seems like the "turtle_inventory" event can get lost occasionally
-            EventLoop.pullOneOf({"turtle_inventory", "peripheral", "peripheral_detach"})
+            -- using timeout in case one of the events gets lost
+            EventLoop.pullOneOfTimed({"turtle_inventory", "peripheral", "peripheral_detach"}, 3)
         end
     end)
 
