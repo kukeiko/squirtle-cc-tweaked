@@ -52,6 +52,7 @@ function TaskWorkerPool:run()
 
             if not success then
                 print(string.format("[failed] %s #%d: %s", task.type, task.id, message))
+                Utils.waitForUserToHitEnter("<hit enter to crash>")
                 worker:cleanup()
                 taskService.failTask(task.id, message or "unknown error")
             end
