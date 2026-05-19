@@ -148,7 +148,7 @@ function SearchableList:run()
                 elseif value == keys.enter or value == keys.numPadEnter or value == keys.delete then
                     if (#self.list > 0) then
                         selected = self.list[self.index]
-                        action = value == keys.enter and "select" or "delete"
+                        action = (value == keys.enter or value == keys.numPadEnter) and "select" or "delete"
                         EventLoop.queue("searchable-list:selected", self.id)
                         break
                     end

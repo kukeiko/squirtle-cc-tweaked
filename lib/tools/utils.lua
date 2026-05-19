@@ -420,6 +420,25 @@ function Utils.waitForUserToHitEnter(text)
     end
 end
 
+---@param message string
+---@return boolean
+function Utils.confirm(message)
+    term.clear()
+    term.setCursorPos(1, 1)
+    print(message)
+    print("(enter to confirm, any other to cancel)")
+    local _, key = os.pullEvent("key")
+
+    -- [todo] ❌ hack to prevent event bleeding through to searchable list.
+    os.sleep(.1)
+
+    if key == keys.enter or key == keys.numPadEnter then
+        return true
+    else
+        return false
+    end
+end
+
 ---@param ... string
 function Utils.writeStartupFile(...)
     if Utils.isDev() then
