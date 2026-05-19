@@ -9,15 +9,14 @@ if not arg then
     return {version = version(), platform = {"computer", "pocket", "turtle"}}
 end
 
+term.clear()
+term.setCursorPos(1, 1)
+
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local ApplicationService = require "lib.system.application-service"
 local Shell = require "lib.system.shell"
 local duck = require "lib.ui.duck"
-
--- [todo] ❌ script to install kita on the root server hosting database + applications
--- [todo] ❌ script to install kita using the root server
--- [todo] ❌ script to install via pastebin
 
 ---@type string?
 local autorun = arg[1]
@@ -33,7 +32,31 @@ if autorun then
     Shell.addAutorun(autorun)
 end
 
-duck({string.format("%s", autorun), "", string.format("[kita %s]", version())})
+if Shell.getSettings().autoUpdate then
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("[auto-update] checking for updates...")
+    local applicationService = Rpc.tryNearest(ApplicationService, 1)
+
+    if not applicationService then
+        print("[auto-update] no application service reachable, skipping updates")
+        os.sleep(1)
+    else
+        local didUpdate = Shell.update(applicationService)
+
+        if didUpdate then
+            print("[reboot] in 3s...")
+            os.sleep(3)
+            os.reboot()
+        end
+    end
+end
+
+if autorun then
+    duck({string.format("%s", autorun), "", string.format("[kita %s]", version())})
+else
+    duck({string.format("[kita %s]", version())})
+end
 
 EventLoop.run(function()
     app:run(true)

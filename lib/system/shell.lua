@@ -23,6 +23,7 @@ local settingsPath = ".kita/settings.json"
 ---@class ShellSettings
 ---@field autorun string[]
 ---@field rpcHub string?
+---@field autoUpdate boolean?
 
 ---@return ShellSettings
 local function loadSettings()
@@ -286,6 +287,8 @@ local function bootstrap(applications, root, shown)
             if Shell.current ~= Shell.root then
                 switchToApplication(Shell.root)
             end
+
+            Shell.root:switchToWindowIndex(1)
         end
     end, function()
         while true do
@@ -353,12 +356,36 @@ end
 ---@param applicationService ApplicationService|RpcClient
 function Shell.install(name, applicationService)
     if Utils.isDev() then
+        print("[skip] install due to dev environment")
         return
     end
 
     local app = applicationService.getApplication(Utils.getPlatform(), name, true)
+    print(string.format("[install] %s %s", name, app.version))
     ApplicationApi.writeApp(fs.combine(".kita/app", Utils.getPlatform()), app)
     EventLoop.queue("shell:app-installed")
+end
+
+---@param applicationService ApplicationService|RpcClient
+---@return boolean
+function Shell.update(applicationService)
+    local available = Utils.toMap(applicationService.getApplications(Utils.getPlatform()), function(item)
+        return item.name
+    end)
+
+    local didUpdate = false
+
+    for _, installed in ipairs(Shell.getInstalled()) do
+        local newest = available[installed.name]
+
+        if newest and installed.version < newest.version then
+            print(string.format("[found] %s %s > %s", newest.name, installed.version, newest.version))
+            Shell.install(newest.name, applicationService)
+            didUpdate = true
+        end
+    end
+
+    return didUpdate
 end
 
 ---@param application ShellApplication

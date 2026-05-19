@@ -37,6 +37,7 @@ function ShellApplication.new(metadata, window, shell, isAutorun)
         shell = shell,
         isAutorun = isAutorun or false
     }
+
     setmetatable(instance, {__index = ShellApplication})
 
     return instance
@@ -233,6 +234,8 @@ function ShellApplication:pullApplicationStateChange()
     return self.shell.pullApplicationStateChange()
 end
 
+---Returns true if this application was automatically run on startup of kita.
+---@return boolean
 function ShellApplication:wasAutorun()
     return self.isAutorun
 end

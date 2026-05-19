@@ -5,6 +5,7 @@ local EditEntity = require "lib.ui.edit-entity"
 return function(shellWindow)
     local editSettings = EditEntity.new("Change Settings")
     editSettings:addString("rpcHub", "RPC Hub", {optional = true})
+    editSettings:addBoolean("autoUpdate", "Auto Update", {optional = true})
 
     EventLoop.run(function()
         while true do

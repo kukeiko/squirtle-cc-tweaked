@@ -30,6 +30,7 @@ local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-i
 local duck = require "lib.ui.duck"
 local ShellService = require "lib.system.shell-service"
 local toBuildChunkPylonIterations = require "lib.building.to-build-chunk-pylon-iterations"
+local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
 local function testGetCraftingDetails()
     local function testCampfires()
@@ -349,7 +350,10 @@ end
 local now = os.epoch("utc")
 
 EventLoop.run(function()
-    testToBuildChunkPylonIterations()
+    local service = Rpc.nearest(ChunkPylonService)
+    TurtleApi.connectToStorage(function(_, storage)
+        service.setDugStock(3, 1, storage.getStock())
+    end)
 end)
 
 print("[time]", (os.epoch("utc") - now) / 1000, "ms")

@@ -33,7 +33,13 @@ local function draw(self, entity)
     local width = win.getSize()
     win.clear()
     win.setCursorPos(1, 1)
-    win.write(self.title)
+
+    if #self.title > width then
+        win.write(Utils.ellipsisLeft(self.title, width))
+    else
+        win.write(Utils.pad(self.title, width))
+    end
+
     win.setCursorPos(1, 2)
     win.write(string.rep("-", width))
     win.setCursorPos(1, 3)
