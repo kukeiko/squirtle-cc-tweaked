@@ -37,6 +37,18 @@ local function getFiles(folder)
 end
 
 ---@param folder string
+function ApplicationApi.initializeVersions(folder)
+    ---@type string[]
+    local files = getFiles(folder)
+
+    for _, path in ipairs(files) do
+        local version = getAppVersion(path)
+        print(string.format("%s @ %s", path, version))
+        os.sleep(.5)
+    end
+end
+
+---@param folder string
 ---@param filter? string[]
 ---@param withContent? boolean
 ---@param version? string

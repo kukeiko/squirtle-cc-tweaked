@@ -43,6 +43,11 @@ end
 local Shell = require "lib.system.shell"
 local app = Shell.getApplication(arg)
 
+print("[initialize] versions...")
+ApplicationApi.initializeVersions(".kita/app/computer")
+ApplicationApi.initializeVersions(".kita/app/pocket")
+ApplicationApi.initializeVersions(".kita/app/turtle")
+
 app:addWindow("Apps", function()
     while true do
         local function getApps()
