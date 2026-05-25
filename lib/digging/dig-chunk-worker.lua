@@ -7,7 +7,8 @@ local TurtleApi = require "lib.turtle.turtle-api"
 local Resumable = require "lib.turtle.resumable"
 local ChunkPylonService = require "lib.building.chunk-pylon-service"
 
----@class DigChunkWorker : TurtleTaskWorker 
+---@class DigChunkWorker : TurtleTaskWorker
+---@field resumable Resumable?
 local DigChunkWorker = {}
 setmetatable(DigChunkWorker, {__index = TurtleTaskWorker})
 
@@ -31,8 +32,17 @@ function DigChunkWorker:getTask()
     return self.task --[[@as DigChunkTask]]
 end
 
+function DigChunkWorker:cleanup()
+    TurtleTaskWorker.cleanup(self)
+
+    if self.resumable then
+        self.resumable:delete()
+    end
+end
+
 function DigChunkWorker:work()
     local resumable = Resumable.new("dig-chunk-worker")
+    self.resumable = resumable
     local task = self:getTask()
     local service = Rpc.nearest(ChunkPylonService)
     local firstLayerY = task.firstLayer

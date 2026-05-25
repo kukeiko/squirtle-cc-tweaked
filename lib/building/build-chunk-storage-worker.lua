@@ -9,6 +9,7 @@ local ChunkPylonService = require "lib.building.chunk-pylon-service"
 local buildChunkStorage = require "lib.building.build-chunk-storage"
 
 ---@class BuildChunkStorageTaskWorker : TurtleTaskWorker 
+---@field resumable Resumable?
 local BuildChunkStorageTaskWorker = {}
 setmetatable(BuildChunkStorageTaskWorker, {__index = TurtleTaskWorker})
 
@@ -32,12 +33,21 @@ function BuildChunkStorageTaskWorker:getTask()
     return self.task --[[@as BuildChunkStorageTask]]
 end
 
+function BuildChunkStorageTaskWorker:cleanup()
+    TurtleTaskWorker.cleanup(self)
+
+    if self.resumable then
+        self.resumable:delete()
+    end
+end
+
 function BuildChunkStorageTaskWorker:work()
     -- [todo] ❌ assert that turtle is connected to turtle hub
     -- [todo] ❓ clean out any unneeded items before starting?
     -- [todo] ❓ turtle needs disk-drive to connect to storage, but needs storage to get a disk-drive.
 
     local resumable = Resumable.new("build-chunk-storage-worker")
+    self.resumable = resumable
     local task = self:getTask()
     local storageComputerLabel = string.format("Chunk Storage %d/%d", task.chunkX, task.chunkZ)
 

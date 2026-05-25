@@ -14,7 +14,8 @@ local ChunkPylonService = require "lib.building.chunk-pylon-service"
 local pylonMaterials = {ItemApi.deepslate, ItemApi.cobbled_deepslate, ItemApi.cobblestone, ItemApi.stone, ItemApi.dirt, ItemApi.grassBlock}
 local pylonMaterialsDesert = {ItemApi.deepslate, ItemApi.stone, ItemApi.sandstone, ItemApi.sand}
 
----@class BuildChunkPylonWorker : TurtleTaskWorker 
+---@class BuildChunkPylonWorker : TurtleTaskWorker
+---@field resumable Resumable?
 local BuildChunkPylonWorker = {}
 setmetatable(BuildChunkPylonWorker, {__index = TurtleTaskWorker})
 
@@ -38,10 +39,19 @@ function BuildChunkPylonWorker:getTask()
     return self.task --[[@as BuildChunkPylonTask]]
 end
 
+function BuildChunkPylonWorker:cleanup()
+    TurtleTaskWorker.cleanup(self)
+
+    if self.resumable then
+        self.resumable:delete()
+    end
+end
+
 function BuildChunkPylonWorker:work()
     local numShulkers = 4
     local task = self:getTask()
     local resumable = Resumable.new("build-chunk-pylon-worker")
+    self.resumable = resumable
     local service = Rpc.nearest(ChunkPylonService)
 
     if not task.initialized then

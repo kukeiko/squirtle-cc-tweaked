@@ -60,6 +60,10 @@ function Resumable:addSimulatableMain(name, fn)
     table.insert(self.resumableFns, resumableFn)
 end
 
+function Resumable:delete()
+    DatabaseApi.deleteTurtleResumable(self.name)
+end
+
 ---@return SimulationState
 local function getSimulationState()
     return {facing = TurtleApi.getFacing(), fuel = TurtleApi.getFiniteFuelLevel(), position = TurtleApi.getPosition()}
