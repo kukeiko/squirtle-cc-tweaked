@@ -53,7 +53,7 @@ if Shell.getSettings().autoUpdate then
 end
 
 if autorun then
-    duck({string.format("%s", autorun), "", string.format("[kita %s]", version())})
+    duck({string.format("%s %s", autorun, app.metadata.version), "", string.format("[kita %s]", version())})
 else
     duck({string.format("[kita %s]", version())})
 end
