@@ -130,19 +130,26 @@ end
 ---@param missingCharcoalInIO integer
 ---@return boolean
 local function shouldProduceMoreCharcoal(charcoalForRefuel, missingCharcoalInIO)
-    local charcoalInFurnace = FurnacePeripheral.getOutputCount("front")
-    local charcoalInStash = InventoryPeripheral.getItemCount("bottom", ItemApi.charcoal)
     local hasStashedBirchLogs = InventoryPeripheral.getItemCount("bottom", ItemApi.birchLog) > 0
 
-    return hasStashedBirchLogs and (charcoalInFurnace + charcoalInStash) < (missingCharcoalInIO + charcoalForRefuel)
+    if not hasStashedBirchLogs then
+        return false
+    end
+
+    local charcoalInFurnace = FurnacePeripheral.getOutputCount("front")
+    local charcoalInStash = InventoryPeripheral.getItemCount("bottom", ItemApi.charcoal)
+
+    return (charcoalInFurnace + charcoalInStash) < (missingCharcoalInIO + charcoalForRefuel)
 end
 
 ---@param charcoalForRefuel integer
 ---@param missingCharcoalInIO integer
 local function doFurnaceWork(charcoalForRefuel, missingCharcoalInIO)
     TurtleApi.turn("right")
+    FurnacePeripheral.pushOutput("front", "bottom")
 
     while shouldProduceMoreCharcoal(charcoalForRefuel, missingCharcoalInIO) do
+        print("[furnace] putting logs into furnace")
         putLogsIntoFurnaceInput()
         print("[furnace] push charcoal into stash")
         FurnacePeripheral.pushOutput("front", "bottom")
@@ -167,13 +174,17 @@ local function doHomework()
     local requiredFuelCharcoal = math.ceil(TurtleApi.getOpenFuel(minFuel) / 80)
     doFurnaceWork(requiredFuelCharcoal, missingCharcoalInIO)
 
+    -- [todo] turtle waits for logs to be drained if those are full, but should return to work if more charcoal is needed
     TurtleApi.doHomework({
         barrel = "bottom",
         ioChest = "front",
         minFuel = minFuel,
         drainDropper = "bottom",
         input = {required = {[ItemApi.boneMeal] = minBoneMealForWork}, max = {[ItemApi.boneMeal] = maxPulledBoneMeal}},
-        output = {kept = {[ItemApi.birchSapling] = minSaplings}, ignoreIfFull = {ItemApi.birchSapling, ItemApi.charcoal}}
+        output = {
+            kept = {[ItemApi.birchSapling] = minSaplings},
+            ignoreIfFull = {ItemApi.birchSapling, {ItemApi.charcoal, ItemApi.birchLog}}
+        }
     })
 
     TurtleApi.requireItem(ItemApi.birchSapling, 1)

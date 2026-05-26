@@ -993,7 +993,7 @@ end
 ---@param from string
 ---@param to string
 ---@param keep? ItemStock
----@param ignoreIfFull? string[]
+---@param ignoreIfFull? table<string|string[]>
 ---@return boolean success, ItemStock transferred, ItemStock open
 function TurtleApi.pushOutput(from, to, keep, ignoreIfFull)
     keep = keep or {}
@@ -1017,7 +1017,19 @@ function TurtleApi.pushOutput(from, to, keep, ignoreIfFull)
         local openIgnored = Utils.copy(open)
 
         for _, item in pairs(ignoreIfFull) do
-            openIgnored[item] = nil
+            if type(item) == "table" then
+                local isEveryFull = Utils.every(item, function(item)
+                    return openIgnored[item] ~= nil and openIgnored[item] > 0
+                end)
+
+                if not isEveryFull then
+                    for _, item in ipairs(item) do
+                        openIgnored[item] = nil
+                    end
+                end
+            else
+                openIgnored[item] = nil
+            end
         end
 
         return Utils.isEmpty(openIgnored), transferred, open
@@ -1027,7 +1039,7 @@ end
 ---@param from string
 ---@param to string
 ---@param keep? ItemStock
----@param ignoreIfFull? string[]
+---@param ignoreIfFull? table<string|string[]>
 function TurtleApi.pushAllOutput(from, to, keep, ignoreIfFull)
     local logged = false
 
@@ -1088,7 +1100,7 @@ end
 ---@field max ItemStock?
 ---@class TurtleDoHomeworkOutputOptions
 ---@field kept ItemStock?
----@field ignoreIfFull string[]?
+---@field ignoreIfFull table<string|string[]>?
 ---@param options TurtleDoHomeworkOptions
 function TurtleApi.doHomework(options)
     local required = options.input and options.input.required or {}
