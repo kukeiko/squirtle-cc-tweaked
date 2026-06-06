@@ -1,6 +1,7 @@
 local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local ItemApi = require "lib.inventory.item-api"
+local ItemStock = require "lib.inventory.item-stock"
 local SearchableList = require "lib.ui.searchable-list"
 
 ---@param TurtleApi TurtleApi
@@ -129,6 +130,14 @@ return function(TurtleApi, items, alwaysUseShulkers)
     local open, requiredShulkers = getOpen(TurtleApi, items, alwaysUseShulkers)
 
     if Utils.isEmpty(open) then
+        if alwaysUseShulkers then
+            local openInBackpack = ItemStock.subtract(items, TurtleApi.getShulkerStock())
+
+            if not Utils.isEmpty(openInBackpack) then
+                loadIntoShulker(TurtleApi, openInBackpack)
+            end
+        end
+
         TurtleApi.digShulkers()
         TurtleApi.condense()
         return
