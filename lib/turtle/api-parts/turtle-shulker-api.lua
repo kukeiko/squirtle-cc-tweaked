@@ -307,7 +307,7 @@ local function placeShulkerTakingItem(TurtleApi, item)
     local shulkers = readShulkers(TurtleApi)
 
     for _, shulker in pairs(shulkers) do
-        if shulker.items[item.name] and Inventory.canTakeItem(shulker, item, "buffer") then
+        if shulker.items[item] and Inventory.canTakeItem(shulker, item, "buffer") then
             return placeShulkerByName(TurtleApi, shulker.name)
         end
     end
