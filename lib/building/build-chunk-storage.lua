@@ -203,7 +203,9 @@ return function(storageLabel, chestLayers, withWirelessModem, rpcHub)
         kitaAppFile.write(kitaApp.content)
         kitaAppFile.close()
 
-        Utils.writeJson("disk/kita-settings.json", {rpcHub = rpcHub})
+        ---@type ShellSettings
+        local shellSettings = {autorun = {}, rpcHub = rpcHub}
+        Utils.writeJson("disk/kita-settings.json", shellSettings)
         Utils.writeKitaShortcutFile("disk/kita-shortcut")
 
         ---@type StorageAppOptions
@@ -215,6 +217,9 @@ return function(storageLabel, chestLayers, withWirelessModem, rpcHub)
         storageStartupFile.close()
 
         local startupFile = fs.open("disk/startup", "w")
+        startupFile.write("shell.run(\"rm .kita\")\n")
+        startupFile.write("shell.run(\"rm kita\")\n")
+        startupFile.write("shell.run(\"rm startup\")\n")
         startupFile.write("shell.run(\"copy disk/storage .kita/app/computer/storage\")\n")
         startupFile.write("shell.run(\"copy disk/kita .kita/app/computer/kita\")\n")
         startupFile.write("shell.run(\"copy disk/kita-shortcut kita\")\n")
