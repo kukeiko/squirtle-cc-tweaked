@@ -12,6 +12,7 @@ end
 term.clear()
 term.setCursorPos(1, 1)
 
+local Utils = require "lib.tools.utils"
 local EventLoop = require "lib.tools.event-loop"
 local Rpc = require "lib.tools.rpc"
 local ApplicationService = require "lib.system.application-service"
@@ -53,7 +54,9 @@ if Shell.getSettings().autoUpdate then
 end
 
 if autorun then
-    duck({string.format("%s %s", autorun, app.metadata.version), "", string.format("[kita %s]", version())})
+    local autorunApp = ApplicationService.getApplication(Utils.getPlatform(), autorun)
+    -- [todo] 🧪 app.metadata.version is wrong: it is the version of kita, not the autorun app
+    duck({string.format("%s %s", autorun, autorunApp.version), "", string.format("[kita %s]", version())})
 else
     duck({string.format("[kita %s]", version())})
 end
