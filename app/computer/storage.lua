@@ -98,6 +98,16 @@ app:addWindow("Main", function()
     InventoryPeripheral.addAdapter(TurtleInventoryAdapter)
     Inventory.useCache(true)
     Inventory.useAutoStorage(options.isAutoStorage)
+
+    if options.isAutoStorage then
+        for _, v in pairs(processors) do
+            v.enabled = false
+        end
+
+        processors.refresh.enabled = true
+        print("[auto-storage] active, only refresh processor will be enabled")
+    end
+
     Inventory.discover()
     print("[storage] ready!")
     EventLoop.queue("storage:ready")
